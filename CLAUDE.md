@@ -16,6 +16,12 @@ Awan — native Android client for an AI-assisted adaptive scheduling app. A clo
 
 Gradle 9.4.1 with configuration cache enabled; daemon toolchain is JVM 21. AGP 9.2.1, Kotlin 2.2.10, compileSdk 36 / minSdk 24, Compose BOM 2026.02.01. Version catalog: `gradle/libs.versions.toml`.
 
+## Git & Jira
+
+Work is tracked in the `AWAN` Jira project (site: ezdo.atlassian.net). Before every commit or push, the relevant Jira issue ID (e.g. `AWAN-12`) must appear in either the branch name or the commit message — e.g. branch `feature/AWAN-12-kebab-description`, or commit message prefixed `AWAN-12: <summary>`.
+
+If the issue ID isn't already known from context, search the `AWAN` Jira project for a matching issue by summary before committing. If no confident match is found, ask the user for the issue ID rather than guessing or omitting it.
+
 ## Architecture
 
 Current state: fresh single-`:app` Compose template. It is being restructured to **Now in Android (NiA) architecture** — do not add code to the flat template structure; build toward the target below.
