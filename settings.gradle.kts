@@ -24,4 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Awan"
 include(":app")
- 
+
+includeBuild("build-logic")
