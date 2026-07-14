@@ -1,12 +1,8 @@
 name: Android Pull Request Check
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-
   pull_request:
+    types: [opened, synchronize, reopened]
 
   workflow_dispatch:
 
@@ -19,7 +15,7 @@ env:
 
 jobs:
   android-build:
-    name: Android Build
+    name: Android Build & Check
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -51,10 +47,25 @@ jobs:
       - name: Build Android App
         run: ./gradlew assembleDebug
 
+      - name: Run Detekt
+        run: ./gradlew detekt
+
+      - name: Upload Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-reports
+          path: |
+            **/build/reports/lint-results*.xml
+            **/build/reports/lint-results*.html
+            **/build/reports/detekt/**
+          if-no-files-found: ignore
+
       - name: Upload Android APK
-        if: github.event_name == 'push'
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: android-apk-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 14

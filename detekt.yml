@@ -1,0 +1,23 @@
+Compose:
+  PreviewPublic:
+    active: true
+
+  ViewModelForwarding:
+    active: true
+
+style:
+  MagicNumber:
+    active: false
+
+  WildcardImport:
+    active: false
+
+  NewLineAtEndOfFile:
+    active: false
+
+  UnusedPrivateMember:
+    active: false
+
+naming:
+  FunctionNaming:
+    active: false
