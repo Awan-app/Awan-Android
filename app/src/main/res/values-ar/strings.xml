@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">أوان</string>
+    <string name="greeting_name">أندرويد</string>
+    <string name="greeting_text">مرحبًا %1$s!</string>
+</resources>
