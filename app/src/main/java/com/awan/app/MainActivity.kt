@@ -32,18 +32,25 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String,modifier: Modifier = Modifier) {
+fun Greeting(
+    name: String,
+    modifier: Modifier = Modifier,
+) {
     Text(
-        text = name,
+        text = stringResource(
+            R.string.greeting_text,
+            name,
+        ),
         modifier = modifier,
     )
 }
 
-@Suppress("UnusedPrivateMember")
 @Preview(showBackground = true)
 @Composable
 private fun GreetingPreview() {
     AwanTheme {
-       // Greeting(stringResource(R.string.greeting_name))
+        Greeting(
+            name = "Android",
+        )
     }
 }

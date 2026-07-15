@@ -13,7 +13,7 @@ style:
     active: false
 
   NewLineAtEndOfFile:
-    active: false
+    active: true
 
   UnusedPrivateMember:
     active: false

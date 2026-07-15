@@ -44,6 +44,17 @@ jobs:
       - name: Run Lint
         run: ./gradlew lint
 
+      - name: Run Lint Auto Fix
+        run: ./gradlew lintFix
+
+      - name: Run Detekt Auto Correct
+        run: ./gradlew detekt --auto-correct
+
+      - name: Commit formatting changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Apply automatic formatting fixes"
+
       - name: Build Android App
         run: ./gradlew assembleDebug
 
