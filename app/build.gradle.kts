@@ -68,5 +68,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     lintChecks(libs.composeLintChecks)
     detektPlugins(libs.detekt.compose.rules)
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
+    detektPlugins(libs.detekt.formatting)
 }
