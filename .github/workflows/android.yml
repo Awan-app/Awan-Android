@@ -3,12 +3,14 @@ name: Android Pull Request Check
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 env:
   JAVA_VERSION: 17
@@ -44,17 +46,11 @@ jobs:
       - name: Run Lint
         run: ./gradlew lint
 
-      - name: Run Lint Auto Fix
-        run: ./gradlew lintFix
-
-      - name: Run Detekt Auto Correct
-        run: ./gradlew detekt --auto-correct
+      - name: Run Detekt
+        run: ./gradlew detekt
 
       - name: Build Android App
         run: ./gradlew assembleDebug
-
-      - name: Run Detekt
-        run: ./gradlew detekt
 
       - name: Upload Reports
         if: always()

@@ -15,9 +15,7 @@ style:
   NewLineAtEndOfFile:
     active: false
 
-  UnusedPrivateMember:
-    active: false
-
 naming:
   FunctionNaming:
-    active: false
+    active: true
+    ignoreAnnotated: ['Composable']
