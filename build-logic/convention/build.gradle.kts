@@ -32,5 +32,13 @@ gradlePlugin {
             id = "awan.android.compose"
             implementationClass = "AndroidComposeConventionPlugin"
         }
+        register("androidLibrary") {
+            id = "awan.android.library"
+            implementationClass = "AndroidLibraryConventionPlugin"
+        }
+        register("androidFeature") {
+            id = "awan.feature"
+            implementationClass = "AndroidFeatureConventionPlugin"
+        }
     }
 }
