@@ -15,6 +15,10 @@ style:
   NewLineAtEndOfFile:
     active: false
 
+  UnusedPrivateMember:
+    active: true
+    ignoreAnnotated: ['Preview']
+
 naming:
   FunctionNaming:
     active: true
