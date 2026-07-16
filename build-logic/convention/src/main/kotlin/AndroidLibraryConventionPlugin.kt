@@ -13,7 +13,9 @@ abstract class AndroidLibraryConventionPlugin : Plugin<Project> {
                 configureKotlinAndroid(this)
                 defaultConfig {
                     // Consumer proguard files
-                    consumerProguardFiles("consumer-rules.pro")
+                    if (file("consumer-rules.pro").exists()) {
+                        consumerProguardFiles("consumer-rules.pro")
+                    }
                 }
             }
         }
