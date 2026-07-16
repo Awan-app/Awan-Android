@@ -15,6 +15,8 @@ android {
 
     defaultConfig {
         applicationId = "com.awan.app"
+        minSdk = 24
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -86,4 +88,9 @@ dependencies {
     lintChecks(libs.composeLintChecks)
     detektPlugins(libs.detekt.compose.rules)
     detektPlugins(libs.detekt.formatting)
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.material3.adaptive.navigation3)
+    implementation(libs.kotlinx.serialization.core)
 }
