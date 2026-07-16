@@ -8,30 +8,29 @@ import org.gradle.kotlin.dsl.dependencies
 class AndroidFeatureConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
+            // Compose library foundation: com.android.library + kotlin.android + configureKotlinAndroid()
             pluginManager.apply("awan.android.library")
+            // Compose compiler + buildFeatures.compose + BOM (both impl and androidTest)
             pluginManager.apply("awan.android.compose")
 
             extensions.configure<LibraryExtension> {
                 // targetSdk in LibraryExtension.defaultConfig is deprecated in AGP 8.x.
-                // For library modules, set it via lint instead.
+                // Library modules don't ship an APK so targetSdk only affects lint.
                 lint {
-                    targetSdk = 35
+                    targetSdk = 37
                 }
             }
 
             dependencies {
-                // Core dependencies required by every feature module
+                // Core Android dependencies every feature UI module needs.
+                // Compose artifacts (ui, material3, graphics, tooling-preview) are intentionally
+                // NOT pinned here — they're resolved transitively via the BOM added by awan.android.compose.
                 add("implementation", libs.findLibrary("androidx-core-ktx").get())
                 add("implementation", libs.findLibrary("androidx-lifecycle-runtime-ktx").get())
                 add("implementation", libs.findLibrary("androidx-activity-compose").get())
-                add("implementation", libs.findLibrary("androidx-compose-material3").get())
-                add("implementation", libs.findLibrary("androidx-compose-ui").get())
-                add("implementation", libs.findLibrary("androidx-compose-ui-graphics").get())
-                add("implementation", libs.findLibrary("androidx-compose-ui-tooling-preview").get())
 
-                // Common testing dependencies
+                // Test dependencies
                 add("testImplementation", libs.findLibrary("junit").get())
-                add("androidTestImplementation", platform(libs.findLibrary("androidx-compose-bom").get()))
                 add("androidTestImplementation", libs.findLibrary("androidx-junit").get())
                 add("androidTestImplementation", libs.findLibrary("androidx-espresso-core").get())
             }
