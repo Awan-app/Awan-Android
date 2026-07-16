@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.compose)
+    id("awan.android.application")
+    id("awan.android.compose")
     alias(libs.plugins.detekt)
     alias(libs.plugins.jetbrains.kotlin.serialization)
 }
@@ -15,8 +15,6 @@ android {
 
     defaultConfig {
         applicationId = "com.awan.app"
-        minSdk = 24
-        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -25,17 +23,12 @@ android {
 
     buildTypes {
         release {
-            optimization {
-                enable = false
-            }
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    buildFeatures {
-        compose = true
     }
 
     lint {
@@ -46,34 +39,51 @@ android {
         error += "MissingTranslation"
     }
 }
+
 detekt {
     buildUponDefaultConfig = true
     allRules = false
     config.setFrom(files("$rootDir/detekt.yml"))
 }
+
 dependencies {
+    // Core modules
+    implementation(project(":core:common"))
+    implementation(project(":core:datastore"))
+    implementation(project(":core:network"))
+
+    // Compose (platform managed by awan.android.compose convention plugin)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material.icons.core)
+
+    // Lifecycle
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+
+    // Navigation 3
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.material3.adaptive.navigation3)
+    implementation(libs.hilt.android)
+
+    // Serialization
+    implementation(libs.kotlinx.serialization.core)
+
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // Lint / Detekt
     lintChecks(libs.composeLintChecks)
     detektPlugins(libs.detekt.compose.rules)
     detektPlugins(libs.detekt.formatting)
-    implementation(libs.androidx.navigation3.ui)
-    implementation(libs.androidx.navigation3.runtime)
-    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
-    implementation(libs.androidx.material3.adaptive.navigation3)
-    implementation(libs.kotlinx.serialization.core)
 }
