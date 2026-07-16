@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google {
             content {
@@ -24,4 +25,11 @@ dependencyResolutionManagement {
 
 rootProject.name = "Awan"
 include(":app")
- 
+
+includeBuild("build-logic")
+
+// Core modules
+include(":core:common")
+include(":core:datastore-proto")
+include(":core:datastore")
+include(":core:network")
