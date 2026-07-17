@@ -15,7 +15,17 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class NoAuthOkHttpClient
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class NoAuthRetrofit
+
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
@@ -42,6 +52,18 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @NoAuthOkHttpClient
+    fun providesNoAuthOkHttpClient(
+        loggingInterceptor: HttpLoggingInterceptor,
+    ): OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(loggingInterceptor)
+        .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .build()
+
+    @Provides
+    @Singleton
     fun providesOkHttpClient(
         authInterceptor: AuthInterceptor,
         tokenAuthenticator: TokenAuthenticator,
@@ -57,6 +79,18 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @NoAuthRetrofit
+    fun providesNoAuthRetrofit(
+        @NoAuthOkHttpClient okHttpClient: OkHttpClient,
+        json: Json,
+    ): Retrofit = Retrofit.Builder()
+        .baseUrl(BuildConfig.AWAN_BASE_URL)
+        .client(okHttpClient)
+        .addConverterFactory(json.asConverterFactory("application/json; charset=UTF8".toMediaType()))
+        .build()
+
+    @Provides
+    @Singleton
     fun providesRetrofit(
         okHttpClient: OkHttpClient,
         json: Json,
@@ -68,6 +102,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun providesAuthApiService(retrofit: Retrofit): AuthApiService =
+    fun providesAuthApiService(@NoAuthRetrofit retrofit: Retrofit): AuthApiService =
         retrofit.create(AuthApiService::class.java)
 }
