@@ -1,7 +1,7 @@
 plugins {
-    id("awan.android.application")
-    id("awan.android.compose")
-    id("awan.android.hilt")
+    alias(libs.plugins.awan.android.application)
+    alias(libs.plugins.awan.android.compose)
+    alias(libs.plugins.awan.android.hilt)
     alias(libs.plugins.detekt)
     alias(libs.plugins.jetbrains.kotlin.serialization)
 }

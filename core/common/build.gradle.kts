@@ -9,5 +9,5 @@ android {
 
 dependencies {
     // kotlinx-coroutines for Flow operators used in asResult().
-    implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.coroutines.core)
 }
