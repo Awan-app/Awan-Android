@@ -3,6 +3,7 @@ package com.awan.app.core.network.error
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.dto.ApiErrorResponse
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
@@ -43,9 +44,17 @@ suspend fun <T> safeApiCall(
     val execute: suspend () -> Result<T> = {
         try {
             Result.Success(call())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.Error(e.toAppError(json))
         }
     }
-    return if (dispatcher != null) withContext(dispatcher) { execute() } else execute()
+
+    return if (dispatcher != null) {
+        withContext(dispatcher) { execute() }
+    } else {
+        execute()
+    }
 }
+
