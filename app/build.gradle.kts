@@ -1,22 +1,16 @@
 plugins {
     id("awan.android.application")
     id("awan.android.compose")
+    id("awan.android.hilt")
     alias(libs.plugins.detekt)
     alias(libs.plugins.jetbrains.kotlin.serialization)
 }
 
 android {
     namespace = "com.awan.app"
-    compileSdk {
-        version = release(37) {
-            minorApiLevel = 1
-        }
-    }
 
     defaultConfig {
         applicationId = "com.awan.app"
-        minSdk = 24
-        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -55,7 +49,6 @@ dependencies {
     implementation(project(":core:network"))
 
     // Compose (platform managed by awan.android.compose convention plugin)
-    implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui)
@@ -71,26 +64,18 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.material3.adaptive.navigation3)
-    implementation(libs.hilt.android)
 
     // Serialization
     implementation(libs.kotlinx.serialization.core)
 
     // Testing
     testImplementation(libs.junit)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Lint / Detekt
     lintChecks(libs.composeLintChecks)
     detektPlugins(libs.detekt.compose.rules)
     detektPlugins(libs.detekt.formatting)
-    implementation(libs.androidx.navigation3.ui)
-    implementation(libs.androidx.navigation3.runtime)
-    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
-    implementation(libs.androidx.material3.adaptive.navigation3)
-    implementation(libs.kotlinx.serialization.core)
 }
