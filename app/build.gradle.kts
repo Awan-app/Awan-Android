@@ -43,16 +43,39 @@ detekt {
 }
 
 dependencies {
+    // Feature modules
+    implementation(project(":feature:splash:impl"))
+    implementation(project(":feature:onboarding:api"))
+    implementation(project(":feature:onboarding:impl"))
+    implementation(project(":feature:auth:api"))
+    implementation(project(":feature:auth:impl"))
+    implementation(project(":feature:home:api"))
+    implementation(project(":feature:home:impl"))
+    implementation(project(":feature:calendar:api"))
+    implementation(project(":feature:calendar:impl"))
+    implementation(project(":feature:chat:api"))
+    implementation(project(":feature:chat:impl"))
+    implementation(project(":feature:goals:api"))
+    implementation(project(":feature:goals:impl"))
+    implementation(project(":feature:profile:api"))
+    implementation(project(":feature:profile:impl"))
+    implementation(project(":feature:profile-setup:api"))
+    implementation(project(":feature:profile-setup:impl"))
+
     // Core modules
     implementation(project(":core:common"))
     implementation(project(":core:datastore"))
     implementation(project(":core:network"))
+    implementation(project(":core:navigation"))
+    implementation(project(":feature:splash:api"))
+
 
     // Compose (platform managed by awan.android.compose convention plugin)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material.icons.core)
 
     // Lifecycle
@@ -70,6 +93,7 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
