@@ -8,8 +8,10 @@ import androidx.compose.foundation.style.disabled
 import androidx.compose.foundation.style.focused
 import androidx.compose.foundation.style.pressed
 import androidx.compose.foundation.style.selected
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
 private val StyleScope.colors: AwanColors
@@ -20,6 +22,23 @@ private val StyleScope.typography: AwanTypography
 
 private val StyleScope.shapes: AwanShapes
     get() = LocalAwanTheme.currentValue.shapes
+
+internal fun buttonPressedTranslationX(layoutDirection: LayoutDirection) =
+    if (layoutDirection == LayoutDirection.Ltr) -AwanButtonRimSide else AwanButtonRimSide
+
+private fun StyleScope.buttonPressedTransform() {
+    pressed {
+        animate(
+            tween(
+                durationMillis = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
+                easing = LinearOutSlowInEasing,
+            )
+        ) {
+            translationX(buttonPressedTranslationX(LocalLayoutDirection.currentValue).toPx())
+            translationY(AwanButtonRimDepth.toPx())
+        }
+    }
+}
 
 object AwanStyles {
     val screen = Style {
@@ -63,12 +82,7 @@ object AwanStyles {
         contentPadding(horizontal = 13.dp, vertical = 13.dp)
         contentColor(colors.onFilledControl)
         textStyle(typography.button)
-        pressed {
-            animate(tween(durationMillis = 120, easing = LinearOutSlowInEasing)) {
-                translationX((-2).dp.toPx())
-                translationY(4.dp.toPx())
-            }
-        }
+        buttonPressedTransform()
         disabled {
             background(colors.disabledSurface)
             contentColor(colors.disabledContent)
@@ -88,12 +102,7 @@ object AwanStyles {
         contentPadding(horizontal = 12.dp, vertical = 12.dp)
         contentColor(colors.skyPressed)
         textStyle(typography.button)
-        pressed {
-            animate(tween(durationMillis = 120, easing = LinearOutSlowInEasing)) {
-                translationX((-2).dp.toPx())
-                translationY(4.dp.toPx())
-            }
-        }
+        buttonPressedTransform()
         disabled {
             background(colors.disabledSurface)
             borderColor(colors.line)
@@ -114,12 +123,7 @@ object AwanStyles {
         contentPadding(horizontal = 13.dp, vertical = 13.dp)
         contentColor(colors.onDestructive)
         textStyle(typography.button)
-        pressed {
-            animate(tween(durationMillis = 120, easing = LinearOutSlowInEasing)) {
-                translationX((-2).dp.toPx())
-                translationY(4.dp.toPx())
-            }
-        }
+        buttonPressedTransform()
         disabled {
             background(colors.disabledSurface)
             contentColor(colors.disabledContent)

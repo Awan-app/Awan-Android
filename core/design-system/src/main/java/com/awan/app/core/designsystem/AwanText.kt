@@ -13,7 +13,7 @@ fun AwanText(
     modifier: Modifier = Modifier,
     style: Style = Style,
     maxLines: Int = Int.MAX_VALUE,
-    overflow: TextOverflow = TextOverflow.Clip,
+    overflow: TextOverflow = TextOverflow.Ellipsis,
 ) {
     BasicText(
         text = text,

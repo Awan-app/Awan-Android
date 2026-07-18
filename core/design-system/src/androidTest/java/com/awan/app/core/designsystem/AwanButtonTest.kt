@@ -12,6 +12,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.LayoutDirection
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -64,5 +65,11 @@ class AwanButtonTest {
         }
 
         composeRule.onNodeWithText("TARGET").assertHeightIsAtLeast(48.dp)
+    }
+
+    @Test
+    fun pressedTranslation_movesTowardLayoutStart() {
+        assertEquals(-AwanButtonRimSide, buttonPressedTranslationX(LayoutDirection.Ltr))
+        assertEquals(AwanButtonRimSide, buttonPressedTranslationX(LayoutDirection.Rtl))
     }
 }

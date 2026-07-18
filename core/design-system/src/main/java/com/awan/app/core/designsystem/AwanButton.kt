@@ -46,7 +46,7 @@ fun AwanButton(
     style: Style = Style,
     variant: AwanButtonVariant = AwanButtonVariant.Primary,
     enabled: Boolean = true,
-    icon: ImageVector? = null,
+    icon: (@Composable () -> Unit)? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -64,16 +64,22 @@ fun AwanButton(
         AwanButtonVariant.Quiet -> AwanTheme.styles.quietButtonFace
     }
     val contentColor = buttonContentColor(variant = variant, enabled = enabled)
-    val rimDepth = if (variant == AwanButtonVariant.Quiet) 0.dp else 4.dp
-    val rimSide = if (variant == AwanButtonVariant.Quiet) 0.dp else 2.dp
+    val rimDepth = if (variant == AwanButtonVariant.Quiet) 0.dp else AwanButtonRimDepth
+    val rimSide = if (variant == AwanButtonVariant.Quiet) 0.dp else AwanButtonRimSide
     val rimTopInset = animateDpAsState(
-        targetValue = if (styleState.isPressed) 4.dp else 0.dp,
-        animationSpec = tween(durationMillis = 120, easing = LinearOutSlowInEasing),
+        targetValue = if (styleState.isPressed) AwanButtonRimDepth else 0.dp,
+        animationSpec = tween(
+            durationMillis = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
+            easing = LinearOutSlowInEasing,
+        ),
         label = "AwanButtonRimTopInset",
     ).value
     val rimStartInset = animateDpAsState(
         targetValue = if (styleState.isPressed) rimSide else 0.dp,
-        animationSpec = tween(durationMillis = 120, easing = LinearOutSlowInEasing),
+        animationSpec = tween(
+            durationMillis = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
+            easing = LinearOutSlowInEasing,
+        ),
         label = "AwanButtonRimStartInset",
     ).value
 
@@ -105,18 +111,45 @@ fun AwanButton(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (icon != null) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = contentColor,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier.size(AwanTheme.spacing.xl),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        icon()
+                    }
+                    Spacer(modifier = Modifier.width(AwanTheme.spacing.xs))
                 }
                 content()
             }
         }
     }
+}
+
+@Composable
+fun AwanButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    style: Style = Style,
+    variant: AwanButtonVariant = AwanButtonVariant.Primary,
+    enabled: Boolean = true,
+    icon: ImageVector,
+    content: @Composable RowScope.() -> Unit,
+) {
+    AwanButton(
+        onClick = onClick,
+        modifier = modifier,
+        style = style,
+        variant = variant,
+        enabled = enabled,
+        icon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = LocalContentColor.current,
+            )
+        },
+        content = content,
+    )
 }
 
 @Composable
