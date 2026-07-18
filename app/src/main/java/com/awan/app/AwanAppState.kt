@@ -45,4 +45,3 @@ class AwanAppState(
 ) {
     val topLevelDestinations: List<TopLevelDestination> = TopLevelDestination.entries
 }
-

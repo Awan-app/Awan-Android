@@ -39,14 +39,14 @@ class EncryptedTokenStorage @Inject constructor(
 
     override suspend fun saveTokens(accessToken: String, refreshToken: String): Unit =
         withContext(ioDispatcher) {
-            sharedPreferences.edit()
-                .putString(KEY_ACCESS_TOKEN, accessToken)
-                .putString(KEY_REFRESH_TOKEN, refreshToken)
-                .apply()
+            sharedPreferences.edit {
+                    putString(KEY_ACCESS_TOKEN, accessToken)
+                    .putString(KEY_REFRESH_TOKEN, refreshToken)
+                }
         }
 
     override suspend fun clearTokens(): Unit = withContext(ioDispatcher) {
-        sharedPreferences.edit().clear().apply()
+        sharedPreferences.edit {clear()}
     }
 
     private companion object {

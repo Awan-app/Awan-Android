@@ -1,14 +1,14 @@
 package com.awan.app
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -25,6 +25,7 @@ import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.profile_setup.impl.navigation.profileSetupEntry
 import com.awan.feature.splash.impl.navigation.splashEntry
 
+@Suppress("LongMethod")
 @Composable
 fun AwanApp(
     appState: AwanAppState,
@@ -69,7 +70,7 @@ fun AwanApp(
                     onNavigateToNext = { navigator.replaceAll(com.awan.feature.profile_setup.api.ProfileSetupRoute) }
                 )
                 profileSetupEntry(
-                    onNavigateToHome = {navigator.replaceAll(com.awan.feature.home.api.HomeRoute)}
+                    onNavigateToHome = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) }
                 )
                 homeEntry()
                 calendarEntry()
@@ -92,4 +93,3 @@ fun AwanApp(
         }
     }
 }
-
