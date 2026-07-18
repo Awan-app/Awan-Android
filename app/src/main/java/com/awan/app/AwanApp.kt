@@ -60,14 +60,15 @@ fun AwanApp(
         Column(modifier = Modifier.padding(padding)) {
             val entryProvider = entryProvider {
                 splashEntry(
-                    onNavigateToNext = { navigator.replaceAll(com.awan.feature.onboarding.api.OnboardingRoute) }
-                )
-                onboardingEntry(
-                    onNavigateToNext = { navigator.navigate(com.awan.feature.auth.api.LoginRoute) }
+                    onNavigateToNext = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
                 )
                 authEntry(
                     onNavigateToOtp = { navigator.navigate(com.awan.feature.auth.api.OtpRoute) },
-                    onNavigateToNext = { navigator.replaceAll(com.awan.feature.profile_setup.api.ProfileSetupRoute) }
+                    onNavigateToNext = { navigator.replaceAll(com.awan.feature.onboarding.api.OnboardingRoute) }
+                )
+                onboardingEntry(
+                    onComplete = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) },
+                    onExit = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
                 )
                 profileSetupEntry(
                     onNavigateToHome = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) }

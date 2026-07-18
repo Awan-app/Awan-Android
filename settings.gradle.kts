@@ -31,6 +31,9 @@ include(":core:design-system")
 include(":core:navigation")
 
 // Core modules
+include(":core:model")
+include(":core:domain")
+include(":core:data")
 include(":core:common")
 include(":core:datastore-proto")
 include(":core:datastore")

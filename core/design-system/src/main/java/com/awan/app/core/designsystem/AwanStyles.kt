@@ -58,7 +58,13 @@ object AwanStyles {
     val titleText = Style { textStyle(typography.title); contentColor(colors.textPrimary) }
     val headingText = Style { textStyle(typography.heading); contentColor(colors.textPrimary) }
     val bodyText = Style { textStyle(typography.body); contentColor(colors.textPrimary) }
+    val bodySecondaryText = Style { textStyle(typography.body); contentColor(colors.textSecondary) }
     val captionText = Style { textStyle(typography.caption); contentColor(colors.textSecondary) }
+    val metaText = Style { textStyle(typography.caption); contentColor(colors.meta) }
+    val fieldPlaceholder = Style { textStyle(typography.body); contentColor(colors.meta) }
+    val skipLink = Style { textStyle(typography.buttonCompact); contentColor(colors.skyPressed) }
+    val buttonCompactText = Style { textStyle(typography.buttonCompact); contentColor(colors.skyPressed) }
+    val zoneBandLabel = Style { textStyle(typography.caption); contentColor(Color.White) }
 
     val buttonFocus = Style {
         shape(androidx.compose.foundation.shape.RoundedCornerShape(23.dp))

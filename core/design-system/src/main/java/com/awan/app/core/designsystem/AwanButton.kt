@@ -84,7 +84,7 @@ fun AwanButton(
     ).value
 
     Box(
-        modifier = modifier
+        modifier = Modifier
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -104,7 +104,7 @@ fun AwanButton(
         )
         CompositionLocalProvider(LocalContentColor provides contentColor) {
             Row(
-                modifier = Modifier
+                modifier = modifier
                     .padding(bottom = rimDepth, start = rimSide)
                     .styleable(styleState, faceStyle, style),
                 horizontalArrangement = Arrangement.Center,
