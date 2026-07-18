@@ -2,4 +2,8 @@
     <string name="app_name">Awan</string>
     <string name="greeting_name">Android</string>
     <string name="greeting_text">Hello %1$s!</string>
+    <string name="navigation_home">Home</string>
+    <string name="navigation_arena">Arena</string>
+    <string name="navigation_calendar">Calendar</string>
+    <string name="navigation_settings">Settings</string>
 </resources>

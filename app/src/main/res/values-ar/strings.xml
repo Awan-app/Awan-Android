@@ -3,4 +3,8 @@
     <string name="app_name">أوان</string>
     <string name="greeting_name">أندرويد</string>
     <string name="greeting_text">مرحبًا %1$s!</string>
+    <string name="navigation_home">الرئيسية</string>
+    <string name="navigation_arena">الساحة</string>
+    <string name="navigation_calendar">التقويم</string>
+    <string name="navigation_settings">الإعدادات</string>
 </resources>

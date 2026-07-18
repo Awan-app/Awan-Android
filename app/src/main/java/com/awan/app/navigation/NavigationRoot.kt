@@ -1,9 +1,10 @@
 package com.awan.app.navigation
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.style.styleable
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
@@ -12,6 +13,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
+import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.features.arena.ArenaScreen
 import com.awan.app.features.calender.CalenderScreen
 import com.awan.app.features.home.HomeScreen
@@ -37,11 +39,15 @@ fun NavigationRoot(
         Route.Home
     )
 
-    Box(
-        modifier = modifier.fillMaxSize()
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .styleable(null, AwanTheme.styles.screen)
     ) {
         NavDisplay(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             backStack = backStack,
             entryDecorators = listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),
@@ -76,7 +82,6 @@ fun NavigationRoot(
 
         AwanBottomBar(
             backStack = backStack,
-            modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
 }
