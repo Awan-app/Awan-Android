@@ -47,6 +47,7 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:datastore"))
     implementation(project(":core:network"))
+    implementation(project(":core:designsystem"))
 
     // Compose (platform managed by awan.android.compose convention plugin)
     implementation(libs.androidx.activity.compose)

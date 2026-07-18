@@ -1,110 +1,85 @@
 package com.awan.app.navigation
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.style.rememberUpdatedStyleState
+import androidx.compose.foundation.style.styleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.annotation.StringRes
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import com.awan.app.R
+import com.awan.app.core.designsystem.AwanText
+import com.awan.app.core.designsystem.AwanTheme
 
 private val TOP_LEVEL_ROUTES = mapOf<Route, NavBarItem>(
-    Route.Home to NavBarItem(icon = Icons.Default.Home, label = "Home"),
-    Route.Arena to NavBarItem(icon = Icons.Default.Person, label = "Arena"),
-    Route.Calender to NavBarItem(icon = Icons.Default.DateRange, label = "Calender"),
-    Route.Settings to NavBarItem(icon = Icons.Default.Settings, label = "Settings")
+    Route.Home to NavBarItem(icon = Icons.Default.Home, label = R.string.navigation_home),
+    Route.Arena to NavBarItem(icon = Icons.Default.Person, label = R.string.navigation_arena),
+    Route.Calender to NavBarItem(icon = Icons.Default.DateRange, label = R.string.navigation_calendar),
+    Route.Settings to NavBarItem(icon = Icons.Default.Settings, label = R.string.navigation_settings)
 )
 
 private data class NavBarItem(
     val icon: ImageVector,
-    val label: String
+    @StringRes val label: Int,
 )
 
-@Suppress("LongMethod")
 @Composable
 fun AwanBottomBar(
     backStack: NavBackStack<NavKey>,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier
-            .padding(horizontal = 24.dp)
-            .padding(bottom = 16.dp)
-            .navigationBarsPadding()
-            .fillMaxWidth()
-            .shadow(
-                elevation = 16.dp,
-                shape = CircleShape,
-                clip = false,
-                ambientColor = Color.Black.copy(alpha = 0.15f),
-                spotColor = Color.Black.copy(alpha = 0.25f)
-            ),
-        shape = CircleShape,
-        color = Color.White,
-        tonalElevation = 0.dp
+    Column(
+        modifier = modifier.fillMaxWidth()
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .styleable(null, AwanTheme.styles.navigationDivider)
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .styleable(null, AwanTheme.styles.navigationBar)
+                .navigationBarsPadding(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             TOP_LEVEL_ROUTES.forEach { (key, value) ->
                 val isSelected = backStack.contains(key) && backStack.lastOrNull() == key
+                val label = stringResource(value.label)
+                val interactionSource = remember(key) { MutableInteractionSource() }
+                val styleState = rememberUpdatedStyleState(interactionSource) {
+                    it.isSelected = isSelected
+                }
+                val iconColor = if (isSelected) AwanTheme.colors.sky else AwanTheme.colors.meta
 
-                val itemBgColor by animateColorAsState(
-                    targetValue = if (isSelected) {
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
-                    } else {
-                        Color.Transparent
-                    }
-                )
-
-                val contentColor by animateColorAsState(
-                    targetValue = if (isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    }
-                )
-
-                Row(
+                Column(
                     modifier = Modifier
-                        .clip(CircleShape)
-                        .background(itemBgColor)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
+                        .weight(1f)
+                        .selectable(
+                            selected = isSelected,
+                            interactionSource = interactionSource,
                             indication = null,
+                            role = Role.Tab,
                             onClick = {
                                 if (backStack.contains(key)) {
                                     while (backStack.lastOrNull() != key) {
@@ -122,27 +97,16 @@ fun AwanBottomBar(
                                 }
                             }
                         )
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                        .animateContentSize(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                        .styleable(styleState, AwanTheme.styles.navigationItem),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(
                         imageVector = value.icon,
-                        contentDescription = value.label,
-                        tint = contentColor,
-                        modifier = Modifier.size(22.dp)
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(24.dp)
                     )
-                    if (isSelected) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = value.label,
-                            color = contentColor,
-                            fontSize = 12.sp,
-                            style = MaterialTheme.typography.labelLarge,
-                            maxLines = 1
-                        )
-                    }
+                    AwanText(text = label, maxLines = 1)
                 }
             }
         }
