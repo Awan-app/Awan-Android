@@ -65,7 +65,8 @@ object AwanStyles {
         textStyle(typography.button)
         pressed {
             animate(tween(durationMillis = 120, easing = LinearOutSlowInEasing)) {
-                translationY(3.dp.toPx())
+                translationX((-2).dp.toPx())
+                translationY(4.dp.toPx())
             }
         }
         disabled {
@@ -89,7 +90,8 @@ object AwanStyles {
         textStyle(typography.button)
         pressed {
             animate(tween(durationMillis = 120, easing = LinearOutSlowInEasing)) {
-                translationY(3.dp.toPx())
+                translationX((-2).dp.toPx())
+                translationY(4.dp.toPx())
             }
         }
         disabled {
@@ -114,7 +116,8 @@ object AwanStyles {
         textStyle(typography.button)
         pressed {
             animate(tween(durationMillis = 120, easing = LinearOutSlowInEasing)) {
-                translationY(3.dp.toPx())
+                translationX((-2).dp.toPx())
+                translationY(4.dp.toPx())
             }
         }
         disabled {
