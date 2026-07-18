@@ -26,6 +26,7 @@ abstract class AndroidFeatureConventionPlugin : Plugin<Project> {
                 // Every feature gets core:common for Result / AppError / dispatchers.
                 add("implementation", project(":core:common"))
                 add("implementation", libs.findLibrary("androidx-activity-compose").get())
+                add("implementation", libs.findLibrary("androidx-compose-material3").get())
 
                 // Test dependencies
                 add("testImplementation", libs.findLibrary("junit").get())
@@ -35,4 +36,5 @@ abstract class AndroidFeatureConventionPlugin : Plugin<Project> {
         }
     }
 }
+
 

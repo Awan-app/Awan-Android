@@ -5,10 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.ComposeFoundationFlags
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
 import com.awan.app.core.designsystem.AwanTheme
-import com.awan.app.navigation.NavigationRoot
+import com.awan.feature.calendar.api.CalendarRoute
+import com.awan.feature.chat.api.ChatRoute
+import com.awan.feature.goals.api.GoalsRoute
+import com.awan.feature.home.api.HomeRoute
+import com.awan.feature.profile.api.ProfileRoute
+import com.awan.feature.splash.api.SplashRoute
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -18,10 +21,19 @@ class MainActivity : ComponentActivity() {
         ComposeFoundationFlags.isInheritedTextStyleEnabled = true
         enableEdgeToEdge()
         setContent {
-            AwanTheme {
-                NavigationRoot(
-                    modifier = Modifier.fillMaxSize()
+            val appState = rememberAwanAppState(
+                startKey = SplashRoute,
+                topLevelKeys = listOf(
+                    HomeRoute,
+                    CalendarRoute,
+                    ChatRoute,
+                    GoalsRoute,
+                    ProfileRoute
                 )
+            )
+
+            AwanTheme {
+                AwanApp(appState = appState)
             }
         }
     }
