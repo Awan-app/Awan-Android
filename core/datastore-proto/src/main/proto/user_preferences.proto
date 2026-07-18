@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option java_package = "com.awan.app.core.datastore.proto";
+// Generates a separate .java file per top-level message/enum — avoids a single
+// monolithic outer class and improves incremental compilation.
+option java_multiple_files = true;
+
+/**
+ * UserPreferences — persisted application-level settings for a single Awan user.
+ *
+ * Schema evolution rules (protobuf wire-compatibility):
+ *  - NEVER renumber existing field tags (1–6 are frozen).
+ *  - NEVER change the type of an existing field.
+ *  - Add new optional fields with new tag numbers (7, 8, …).
+ *  - Use sensible proto3 defaults: bool → false, string → "".
+ *
+ * The Kotlin lite DSL allows immutable updates:
+ *   dataStore.updateData { current -> current.copy { darkThemeEnabled = true } }
+ */
+message UserPreferences {
+  // Theme & display
+  bool dark_theme_enabled = 1;
+  bool use_dynamic_color   = 2;
+
+  // Onboarding
+  bool onboarding_completed = 3;
+
+  // Scheduling
+  // The name of the user's default scheduling zone (Study | Work | Play | Personal).
+  // Empty string means "not set" — the UI will prompt the user to choose.
+  string default_zone = 4;
+
+  // Localisation
+  // BCP-47 language tag, e.g. "en-US", "ar-EG". Empty = system default.
+  string locale = 5;
+
+  // Region used by the AI Architect for context-aware scheduling.
+  // ISO 3166-1 alpha-2, e.g. "EG", "US". Empty = not configured.
+  string default_region = 6;
+}

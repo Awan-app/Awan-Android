@@ -1,25 +1,18 @@
-import com.android.build.api.dsl.LibraryExtension
-import com.awan.app.buildlogic.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.kotlin.dsl.configure
+import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.kotlin.dsl.dependencies
+import org.gradle.kotlin.dsl.getByType
 
-class AndroidFeatureConventionPlugin : Plugin<Project> {
+abstract class AndroidFeatureConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
-            // Compose library foundation: com.android.library + kotlin.android + configureKotlinAndroid()
-            pluginManager.apply("awan.android.library")
-            // Compose compiler + buildFeatures.compose + BOM (both impl and androidTest)
-            pluginManager.apply("awan.android.compose")
-
-            extensions.configure<LibraryExtension> {
-                // targetSdk in LibraryExtension.defaultConfig is deprecated in AGP 8.x.
-                // Library modules don't ship an APK so targetSdk only affects lint.
-                lint {
-                    targetSdk = 37
-                }
+            with(pluginManager) {
+                apply("awan.android.library")
+                apply("awan.android.hilt")
             }
+
+            val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
 
             dependencies {
                 // Core Android dependencies every feature UI module needs.
@@ -27,6 +20,11 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
                 // NOT pinned here — they're resolved transitively via the BOM added by awan.android.compose.
                 add("implementation", libs.findLibrary("androidx-core-ktx").get())
                 add("implementation", libs.findLibrary("androidx-lifecycle-runtime-ktx").get())
+                add("implementation", libs.findLibrary("androidx-navigation3-runtime").get())
+                add("implementation", libs.findLibrary("androidx-navigation3-ui").get())
+                add("implementation", libs.findLibrary("androidx-lifecycle-viewmodel-navigation3").get())
+                // Every feature gets core:common for Result / AppError / dispatchers.
+                add("implementation", project(":core:common"))
                 add("implementation", libs.findLibrary("androidx-activity-compose").get())
 
                 // Test dependencies
@@ -37,3 +35,4 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
         }
     }
 }
+
