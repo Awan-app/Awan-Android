@@ -27,6 +27,7 @@ includeBuild("build-logic")
 
 // App module
 include(":app")
+include(":core:design-system")
 include(":core:navigation")
 
 // Core modules

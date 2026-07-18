@@ -66,6 +66,7 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:datastore"))
     implementation(project(":core:network"))
+    implementation(project(":core:design-system"))
     implementation(project(":core:navigation"))
     implementation(project(":feature:splash:api"))
 

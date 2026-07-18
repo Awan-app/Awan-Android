@@ -4,7 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.awan.app.ui.theme.AwanTheme
+import androidx.compose.foundation.ComposeFoundationFlags
+import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.calendar.api.CalendarRoute
 import com.awan.feature.chat.api.ChatRoute
 import com.awan.feature.goals.api.GoalsRoute
@@ -17,6 +18,7 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ComposeFoundationFlags.isInheritedTextStyleEnabled = true
         enableEdgeToEdge()
         setContent {
             val appState = rememberAwanAppState(
