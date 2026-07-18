@@ -1,5 +1,6 @@
 package com.awan.app.navigation
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +25,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.annotation.StringRes
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.awan.app.R
@@ -44,6 +44,7 @@ private data class NavBarItem(
 )
 
 @Composable
+@Suppress("LongMethod")
 fun AwanBottomBar(
     backStack: NavBackStack<NavKey>,
     modifier: Modifier = Modifier

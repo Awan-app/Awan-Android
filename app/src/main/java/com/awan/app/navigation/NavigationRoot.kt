@@ -13,11 +13,11 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
+import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.features.arena.ArenaScreen
 import com.awan.app.features.calender.CalenderScreen
 import com.awan.app.features.home.HomeScreen
 import com.awan.app.features.settings.SettingsScreen
-import com.awan.app.core.designsystem.AwanTheme
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 
