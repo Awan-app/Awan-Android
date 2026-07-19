@@ -49,8 +49,20 @@ jobs:
       - name: Grant Gradlew Permission
         run: chmod +x gradlew
 
-      - name: Run Build Verification
-        run: ./gradlew test lint assembleDebug
+      - name: Run Unit Tests
+        id: test
+        continue-on-error: true
+        run: ./gradlew test
+
+      - name: Run Lint
+        id: lint
+        continue-on-error: true
+        run: ./gradlew lint
+
+      - name: Assemble Debug APK
+        id: build
+        continue-on-error: true
+        run: ./gradlew assembleDebug
 
       - name: Check Results
         if: always()
