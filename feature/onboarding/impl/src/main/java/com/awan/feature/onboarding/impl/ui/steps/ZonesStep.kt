@@ -5,13 +5,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.OnboardingAction
 import com.awan.feature.onboarding.impl.presentation.OnboardingState
-import com.awan.feature.onboarding.impl.ui.components.ChangeAnytimeChip
 import com.awan.feature.onboarding.impl.ui.components.DayPreview
 import com.awan.feature.onboarding.impl.ui.components.StepHeadline
 import com.awan.feature.onboarding.impl.ui.components.StepScaffold
@@ -25,18 +26,17 @@ fun ZonesStep(state: OnboardingState, onAction: (OnboardingAction) -> Unit) {
         progressCurrent = state.step.dotIndex,
         footer = {
             AwanButton(onClick = { onAction(OnboardingAction.Next) }, modifier = Modifier.fillMaxWidth()) {
-                AwanText("USE THIS")
+                AwanText(stringResource(R.string.onboarding_zones_use_this))
             }
             AwanButton(onClick = { onAction(OnboardingAction.UseSuggestedZones) }, variant = AwanButtonVariant.Quiet) {
-                AwanText("Reset to my suggestion", style = AwanTheme.styles.skipLink)
+                AwanText(stringResource(R.string.onboarding_zones_reset), style = AwanTheme.styles.skipLink)
             }
         },
     ) {
         StepHeadline(
-            "Here's a day I sketched for you",
-            "The first & last 30 minutes stay free for your wake-up and wind-down routine.",
+            stringResource(R.string.onboarding_zones_title),
+            stringResource(R.string.onboarding_zones_subtitle),
         )
-        ChangeAnytimeChip()
         DayPreview(state.dayPreview)
         Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs), modifier = Modifier.fillMaxWidth()) {
             state.zones.forEachIndexed { index, zone ->

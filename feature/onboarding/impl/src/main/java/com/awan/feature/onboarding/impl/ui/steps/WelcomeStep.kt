@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,7 @@ import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.MascotExpression
+import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.OnboardingAction
 import com.awan.feature.onboarding.impl.ui.components.StepScaffold
 
@@ -42,9 +44,9 @@ fun WelcomeStep(onAction: (OnboardingAction) -> Unit) {
             AwanButton(
                 onClick = { onAction(OnboardingAction.Next) },
                 modifier = Modifier.fillMaxWidth(),
-            ) { AwanText("LET'S GO") }
+            ) { AwanText(stringResource(R.string.onboarding_welcome_lets_go)) }
             AwanButton(onClick = { onAction(OnboardingAction.Skip) }, variant = AwanButtonVariant.Quiet) {
-                AwanText("Skip setup →", style = AwanTheme.styles.skipLink)
+                AwanText(stringResource(R.string.onboarding_welcome_skip_setup), style = AwanTheme.styles.skipLink)
             }
         },
     ) {
@@ -58,7 +60,7 @@ fun WelcomeStep(onAction: (OnboardingAction) -> Unit) {
             ) {
                 AwanMascot(MascotExpression.Greet, width = 190.dp)
                 BasicText(
-                    text = "Hi, I'm Awan.\nThe sky is yours today.",
+                    text = stringResource(R.string.onboarding_welcome_greeting),
                     style = AwanTheme.typography.display.copy(
                         color = AwanTheme.colors.textPrimary,
                         fontSize = 32.sp,
@@ -68,7 +70,7 @@ fun WelcomeStep(onAction: (OnboardingAction) -> Unit) {
                 )
                 Box(Modifier.widthIn(max = 300.dp)) {
                     BasicText(
-                        text = "Tell me a little about your day and I'll build a schedule that quietly heals itself when life happens.",
+                        text = stringResource(R.string.onboarding_welcome_subtitle),
                         style = AwanTheme.typography.body.copy(
                             color = AwanTheme.colors.textSecondary,
                             fontWeight = FontWeight.Bold,

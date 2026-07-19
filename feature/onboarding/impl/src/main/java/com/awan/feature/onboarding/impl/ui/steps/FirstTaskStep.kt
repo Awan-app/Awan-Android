@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
@@ -33,6 +34,7 @@ import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.MascotExpression
 import com.awan.app.core.model.FirstTask
 import com.awan.app.core.model.Zone
+import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.OnboardingAction
 import com.awan.feature.onboarding.impl.presentation.OnboardingState
 import com.awan.feature.onboarding.impl.ui.components.StepHeadline
@@ -53,23 +55,31 @@ fun FirstTaskStep(state: OnboardingState, onAction: (OnboardingAction) -> Unit) 
                 onClick = { onAction(if (landed) OnboardingAction.Next else OnboardingAction.SubmitFirstTask) },
                 enabled = landed || state.canSubmitFirstTask,
                 modifier = Modifier.fillMaxWidth(),
-            ) { AwanText(if (state.isSubmittingTask) "SCHEDULING…" else if (landed) "CONTINUE" else "ADD IT") }
+            ) {
+                AwanText(
+                    when {
+                        state.isSubmittingTask -> stringResource(R.string.onboarding_first_task_scheduling)
+                        landed -> stringResource(R.string.onboarding_continue)
+                        else -> stringResource(R.string.onboarding_first_task_add)
+                    },
+                )
+            }
             AwanButton(onClick = { onAction(OnboardingAction.Skip) }, variant = AwanButtonVariant.Quiet) {
-                AwanText("Skip for now →", style = AwanTheme.styles.skipLink)
+                AwanText(stringResource(R.string.onboarding_first_task_skip), style = AwanTheme.styles.skipLink)
             }
         },
     ) {
         Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             AwanMascot(if (landed) MascotExpression.Celebrate else MascotExpression.Curious, width = 148.dp)
         }
-        StepHeadline("Let's add your first thing for today")
+        StepHeadline(stringResource(R.string.onboarding_first_task_title))
         AwanTextField(
             value = state.firstTaskTitle,
             onValueChange = { onAction(OnboardingAction.FirstTaskTitleChanged(it.take(TITLE_MAX))) },
-            placeholder = "e.g. Read Clean Code, Ch. 1",
+            placeholder = stringResource(R.string.onboarding_first_task_placeholder),
             modifier = Modifier.fillMaxWidth(),
         )
-        AwanText("Try \"Go for a run\", \"Call Mum\", or \"Inbox to zero\".", style = AwanTheme.styles.metaText)
+        AwanText(stringResource(R.string.onboarding_first_task_examples), style = AwanTheme.styles.metaText)
 
         AnimatedVisibility(
             visible = landed,
@@ -88,11 +98,15 @@ fun FirstTaskStep(state: OnboardingState, onAction: (OnboardingAction) -> Unit) 
 private fun LandedTaskCard(task: FirstTask, zone: Zone) {
     val zoneColor = Color(zone.colorArgb)
     AwanCard(modifier = Modifier.fillMaxWidth()) {
-        AwanText("…AND IT LANDS IN YOUR DAY", style = AwanTheme.styles.metaText)
+        AwanText(stringResource(R.string.onboarding_first_task_lands_label), style = AwanTheme.styles.metaText)
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
             AwanText(zone.name, style = AwanTheme.styles.headingText)
             AwanText(
-                "${formatClock(zone.startMinutes)} – ${formatClock(zone.endMinutes)}",
+                stringResource(
+                    R.string.onboarding_time_range,
+                    formatClock(zone.startMinutes),
+                    formatClock(zone.endMinutes),
+                ),
                 style = AwanTheme.styles.metaText,
             )
         }
@@ -110,9 +124,12 @@ private fun LandedTaskCard(task: FirstTask, zone: Zone) {
             Box(Modifier.size(20.dp).clip(CircleShape).border(2.dp, AwanTheme.colors.line, CircleShape))
             Column(modifier = Modifier.weight(1f)) {
                 AwanText(task.title, style = AwanTheme.styles.bodyText)
-                AwanText("${task.durationMinutes} min · ${zone.name}", style = AwanTheme.styles.metaText)
+                AwanText(
+                    stringResource(R.string.onboarding_first_task_duration_zone, task.durationMinutes, zone.name),
+                    style = AwanTheme.styles.metaText,
+                )
             }
-            AwanChip(text = "NEW", tone = AwanChipTone.Violet)
+            AwanChip(text = stringResource(R.string.onboarding_first_task_new_badge), tone = AwanChipTone.Violet)
         }
     }
 }

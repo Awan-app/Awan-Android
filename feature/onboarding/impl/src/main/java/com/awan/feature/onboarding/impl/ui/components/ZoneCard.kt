@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanButton
@@ -29,6 +30,7 @@ import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.ui.formatClock
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -81,11 +83,11 @@ fun ZoneCard(
             ) {
                 ReorderButton("↑", canMoveUp, onMoveUp)
                 ReorderButton("↓", canMoveDown, onMoveDown)
-                EditTimeChip("Starts", startMinutes, onSetStart)
-                EditTimeChip("Ends", endMinutes, onSetEnd)
+                EditTimeChip(stringResource(R.string.onboarding_zone_starts), startMinutes, onSetStart)
+                EditTimeChip(stringResource(R.string.onboarding_zone_ends), endMinutes, onSetEnd)
             }
             if (overlapping) {
-                AwanText("Overlaps another zone", style = AwanTheme.styles.captionText)
+                AwanText(stringResource(R.string.onboarding_zone_overlap), style = AwanTheme.styles.captionText)
             }
         }
     }

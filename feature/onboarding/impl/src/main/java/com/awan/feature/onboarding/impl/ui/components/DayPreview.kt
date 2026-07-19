@@ -19,11 +19,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.DayPreviewModel
 import com.awan.feature.onboarding.impl.ui.formatClock
 
@@ -43,8 +45,11 @@ fun DayPreview(
 ) {
     AwanCard(modifier = modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            AwanText("YOUR DAY", style = AwanTheme.styles.metaText)
-            AwanText("${wakingHours(preview)} h of open sky", style = AwanTheme.styles.metaText)
+            AwanText(stringResource(R.string.onboarding_day_preview_label), style = AwanTheme.styles.metaText)
+            AwanText(
+                stringResource(R.string.onboarding_day_preview_open_sky, wakingHours(preview)),
+                style = AwanTheme.styles.metaText,
+            )
         }
         Spacer(Modifier.height(AwanTheme.spacing.xs))
         Column(
@@ -109,7 +114,12 @@ private fun androidx.compose.foundation.layout.BoxScope.ZoneBands(preview: DayPr
                     .border(2.dp, Color(task.colorArgb), AwanTheme.shapes.chip)
                     .padding(horizontal = 10.dp, vertical = 6.dp),
             ) {
-                AwanText("★ ${task.label}", style = AwanTheme.styles.captionText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                AwanText(
+                    stringResource(R.string.onboarding_day_preview_starred_task, task.label),
+                    style = AwanTheme.styles.captionText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }
@@ -124,7 +134,7 @@ private fun androidx.compose.foundation.layout.BoxScope.HintPill() {
             .background(Color.White.copy(alpha = 0.7f))
             .padding(horizontal = 12.dp, vertical = 5.dp),
     ) {
-        AwanText("Zones will fill this in next", style = AwanTheme.styles.captionText)
+        AwanText(stringResource(R.string.onboarding_day_preview_zones_hint), style = AwanTheme.styles.captionText)
     }
 }
 

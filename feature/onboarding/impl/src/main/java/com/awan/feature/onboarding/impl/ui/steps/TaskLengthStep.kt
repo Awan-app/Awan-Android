@@ -8,13 +8,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.OnboardingAction
 import com.awan.feature.onboarding.impl.presentation.OnboardingState
-import com.awan.feature.onboarding.impl.ui.components.ChangeAnytimeChip
 import com.awan.feature.onboarding.impl.ui.components.StepHeadline
 import com.awan.feature.onboarding.impl.ui.components.StepScaffold
 import com.awan.feature.onboarding.impl.ui.components.TaskLengthSlider
@@ -28,19 +29,18 @@ fun TaskLengthStep(state: OnboardingState, onAction: (OnboardingAction) -> Unit)
         progressCurrent = state.step.dotIndex,
         footer = {
             AwanButton(onClick = { onAction(OnboardingAction.Next) }, modifier = Modifier.fillMaxWidth()) {
-                AwanText("CONTINUE")
+                AwanText(stringResource(R.string.onboarding_continue))
             }
         },
     ) {
-        StepHeadline("How long do you like to focus in one go?")
-        ChangeAnytimeChip()
+        StepHeadline(stringResource(R.string.onboarding_task_length_title))
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs),
         ) {
             AwanText(humanDuration(state.preferredTaskLengthMinutes), style = AwanTheme.styles.displayText)
-            AwanText("preferred focus block", style = AwanTheme.styles.metaText)
+            AwanText(stringResource(R.string.onboarding_task_length_caption), style = AwanTheme.styles.metaText)
         }
         Box(Modifier.fillMaxWidth().padding(top = AwanTheme.spacing.sm)) {
             TaskLengthSlider(
@@ -51,8 +51,7 @@ fun TaskLengthStep(state: OnboardingState, onAction: (OnboardingAction) -> Unit)
         }
         AwanCard(modifier = Modifier.fillMaxWidth(), background = AwanTheme.colors.background) {
             AwanText(
-                "Longer means fewer, deeper blocks; shorter means more, lighter ones. " +
-                    "Anything longer gets split into linked sessions.",
+                stringResource(R.string.onboarding_task_length_hint),
                 style = AwanTheme.styles.bodySecondaryText,
             )
         }

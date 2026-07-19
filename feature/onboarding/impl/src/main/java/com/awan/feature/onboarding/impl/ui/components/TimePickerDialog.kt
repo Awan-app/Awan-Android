@@ -5,11 +5,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.model.DayBounds
+import com.awan.feature.onboarding.impl.R
 
 /** Shared native time picker; reports the chosen time as minutes-from-midnight. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,12 +31,12 @@ fun TimePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             AwanButton(onClick = { onConfirm(state.hour * 60 + state.minute) }, variant = AwanButtonVariant.Quiet) {
-                AwanText("Set", style = AwanTheme.styles.skipLink)
+                AwanText(stringResource(R.string.onboarding_time_picker_set), style = AwanTheme.styles.skipLink)
             }
         },
         dismissButton = {
             AwanButton(onClick = onDismiss, variant = AwanButtonVariant.Quiet) {
-                AwanText("Cancel", style = AwanTheme.styles.metaText)
+                AwanText(stringResource(R.string.onboarding_time_picker_cancel), style = AwanTheme.styles.metaText)
             }
         },
         text = { TimePicker(state = state) },

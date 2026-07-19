@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
@@ -21,6 +22,7 @@ import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.MascotExpression
+import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.OnboardingAction
 import com.awan.feature.onboarding.impl.presentation.OnboardingState
 import com.awan.feature.onboarding.impl.ui.components.CenteredHeadline
@@ -33,30 +35,30 @@ fun NotificationsStep(state: OnboardingState, onAction: (OnboardingAction) -> Un
         progressCurrent = state.step.dotIndex,
         footer = {
             AwanButton(onClick = { onAction(OnboardingAction.EnableNotifications) }, modifier = Modifier.fillMaxWidth()) {
-                AwanText("TURN ON NUDGES")
+                AwanText(stringResource(R.string.onboarding_notifications_turn_on))
             }
             AwanButton(onClick = { onAction(OnboardingAction.Next) }, variant = AwanButtonVariant.Quiet) {
-                AwanText("Not now", style = AwanTheme.styles.skipLink)
+                AwanText(stringResource(R.string.onboarding_notifications_not_now), style = AwanTheme.styles.skipLink)
             }
         },
     ) {
         Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             AwanMascot(MascotExpression.Idle, width = 136.dp)
         }
-        CenteredHeadline("Want a gentle nudge when it's time?")
+        CenteredHeadline(stringResource(R.string.onboarding_notifications_title))
         SampleNotification()
         Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm), modifier = Modifier.fillMaxWidth()) {
-            NotificationBullet("Only when a block starts — no buzzing all day.")
-            NotificationBullet("Only when a plan needs a tiny fix you'd want to know.")
-            NotificationBullet("Never spam — turn it off in one tap, anytime.")
+            NotificationBullet(stringResource(R.string.onboarding_notifications_bullet_starts))
+            NotificationBullet(stringResource(R.string.onboarding_notifications_bullet_fix))
+            NotificationBullet(stringResource(R.string.onboarding_notifications_bullet_spam))
         }
         AwanText(
-            "The system will ask next — this is just so you know why.",
+            stringResource(R.string.onboarding_notifications_permission_note),
             style = AwanTheme.styles.metaText,
         )
         if (state.notificationsPermanentlyDenied) {
             AwanText(
-                "Notifications are off in system settings — tap \"Turn on nudges\" to open them.",
+                stringResource(R.string.onboarding_notifications_denied),
                 style = AwanTheme.styles.captionText,
             )
         }
@@ -74,8 +76,8 @@ private fun SampleNotification() {
                 AwanText("🔔", style = AwanTheme.styles.headingText)
             }
             Column(modifier = Modifier.weight(1f)) {
-                AwanText("Awan · now", style = AwanTheme.styles.headingText)
-                AwanText("Work starts in 5 min — Design review is up first.", style = AwanTheme.styles.bodySecondaryText)
+                AwanText(stringResource(R.string.onboarding_notifications_preview_sender), style = AwanTheme.styles.headingText)
+                AwanText(stringResource(R.string.onboarding_notifications_preview_body), style = AwanTheme.styles.bodySecondaryText)
             }
         }
     }

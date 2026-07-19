@@ -16,13 +16,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
+import com.awan.app.core.designsystem.AwanChip
 import com.awan.app.core.designsystem.AwanIconButton
 import com.awan.app.core.designsystem.AwanStepProgress
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.OnboardingStep
 
 /**
@@ -54,14 +57,19 @@ fun StepScaffold(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (showBack) {
-                    AwanIconButton(onClick = onBack, contentDescription = "Back", icon = { BackChevron() })
+                    AwanButton(
+                        onClick = onBack,
+                        variant = AwanButtonVariant.Secondary,
+                    ) {
+                        BackChevron()
+                    }
                 } else {
                     Spacer(Modifier.size(38.dp))
                 }
                 Spacer(Modifier.weight(1f))
                 if (onSkip != null) {
                     AwanButton(onClick = onSkip, variant = AwanButtonVariant.Quiet) {
-                        AwanText("Skip", style = AwanTheme.styles.skipLink)
+                        AwanText(stringResource(R.string.onboarding_skip), style = AwanTheme.styles.skipLink)
                     }
                 }
             }
@@ -129,15 +137,6 @@ fun CenteredHeadline(title: String, subtitle: String? = null, modifier: Modifier
 }
 
 @Composable
-fun ChangeAnytimeChip(modifier: Modifier = Modifier) {
-    com.awan.app.core.designsystem.AwanChip(
-        text = "You can change this anytime",
-        modifier = modifier,
-        leadingIcon = { SyncGlyph() },
-    )
-}
-
-@Composable
 private fun BackChevron() {
     Box(Modifier.size(20.dp)) {
         androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
@@ -153,18 +152,6 @@ private fun BackChevron() {
             }
             drawPath(path, color = ink, style = stroke)
         }
-    }
-}
-
-@Composable
-private fun SyncGlyph() {
-    androidx.compose.foundation.Canvas(Modifier.size(12.dp)) {
-        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(
-            width = 1.8.dp.toPx(),
-            cap = androidx.compose.ui.graphics.StrokeCap.Round,
-        )
-        drawArc(sky, 150f, 180f, false, style = stroke)
-        drawArc(sky, -30f, 180f, false, style = stroke)
     }
 }
 
