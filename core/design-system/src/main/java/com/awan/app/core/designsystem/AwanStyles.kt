@@ -54,11 +54,37 @@ object AwanStyles {
         contentPadding(horizontal = 13.dp, vertical = 11.dp)
     }
 
-    val displayText = Style { textStyle(typography.display); contentColor(colors.textPrimary) }
-    val titleText = Style { textStyle(typography.title); contentColor(colors.textPrimary) }
-    val headingText = Style { textStyle(typography.heading); contentColor(colors.textPrimary) }
-    val bodyText = Style { textStyle(typography.body); contentColor(colors.textPrimary) }
-    val captionText = Style { textStyle(typography.caption); contentColor(colors.textSecondary) }
+    val displayText = Style {
+        textStyle(typography.display)
+        fontFamily(typography.display.fontFamily!!)
+        contentColor(colors.textPrimary)
+    }
+    val titleText = Style {
+        textStyle(typography.title)
+        fontFamily(typography.title.fontFamily!!)
+        contentColor(colors.textPrimary)
+    }
+    val headingText = Style {
+        textStyle(typography.heading)
+        fontFamily(typography.heading.fontFamily!!)
+        contentColor(colors.textPrimary)
+    }
+    val bodyText = Style {
+        textStyle(typography.body)
+        fontFamily(typography.body.fontFamily!!)
+        contentColor(colors.textPrimary)
+    }
+    val captionText = Style {
+        textStyle(typography.caption)
+        fontFamily(typography.caption.fontFamily!!)
+        contentColor(colors.textSecondary)
+    }
+    val placeholderText = Style {
+        textStyle(typography.body)
+        fontFamily(typography.body.fontFamily!!)
+        contentColor(colors.textSecondary)
+    }
+
 
     val buttonFocus = Style {
         shape(androidx.compose.foundation.shape.RoundedCornerShape(23.dp))
@@ -82,6 +108,7 @@ object AwanStyles {
         contentPadding(horizontal = 13.dp, vertical = 13.dp)
         contentColor(colors.onFilledControl)
         textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
         buttonPressedTransform()
         disabled {
             background(colors.disabledSurface)
@@ -102,6 +129,7 @@ object AwanStyles {
         contentPadding(horizontal = 12.dp, vertical = 12.dp)
         contentColor(colors.skyPressed)
         textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
         buttonPressedTransform()
         disabled {
             background(colors.disabledSurface)
@@ -123,6 +151,7 @@ object AwanStyles {
         contentPadding(horizontal = 13.dp, vertical = 13.dp)
         contentColor(colors.onDestructive)
         textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
         buttonPressedTransform()
         disabled {
             background(colors.disabledSurface)
@@ -142,6 +171,7 @@ object AwanStyles {
         contentPadding(horizontal = 4.dp, vertical = 4.dp)
         contentColor(colors.skyPressed)
         textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
         disabled { contentColor(colors.disabledContent) }
     }
 
@@ -159,6 +189,7 @@ object AwanStyles {
         contentPadding(4.dp)
         contentColor(colors.meta)
         textStyle(typography.caption)
+        fontFamily(typography.caption.fontFamily!!)
         selected { contentColor(colors.sky) }
         pressed {
             animate(tween(durationMillis = 120, easing = LinearOutSlowInEasing)) {
@@ -166,4 +197,77 @@ object AwanStyles {
             }
         }
     }
+
+    val textField = Style {
+        background(colors.surface)
+        border(InputStrokeWidth, colors.line)
+        shape(shapes.button)
+        minHeight(AuthInputHeight)
+        contentPadding(horizontal = 16.dp, vertical = 14.dp)
+        contentColor(colors.textPrimary)
+        textStyle(typography.body)
+        fontFamily(typography.body.fontFamily!!)
+        focused {
+            border(InputStrokeWidthActive, colors.sky)
+        }
+        disabled {
+            background(colors.disabledSurface)
+            contentColor(colors.disabledContent)
+        }
+    }
+
+    val textFieldError = Style {
+        border(InputStrokeWidthActive, colors.destructive)
+    }
+
+    val otpCell = Style {
+        background(colors.surface)
+        border(InputStrokeWidth, colors.line)
+        shape(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+        minWidth(OtpCellWidth)
+        minHeight(OtpCellSize)
+        contentColor(colors.textPrimary)
+        textStyle(typography.title)
+        fontFamily(typography.title.fontFamily!!)
+    }
+
+    val otpCellActive = Style {
+        border(InputStrokeWidthActive, colors.sky)
+    }
+
+    val otpCellError = Style {
+        background(colors.destructive.copy(alpha = 0.08f))
+        border(InputStrokeWidthActive, colors.destructive)
+        contentColor(colors.destructive)
+    }
+
+    val otpCellDisabled = Style {
+        background(colors.disabledSurface)
+        border(InputStrokeWidth, colors.line)
+        contentColor(colors.disabledContent)
+    }
+
+    val authDivider = Style {
+        background(colors.line)
+        minHeight(1.dp)
+    }
+
+
+    val socialButtonGoogleRim = Style {
+        background(colors.line)
+        shape(shapes.button)
+    }
+
+    val socialButtonGoogleFace = Style {
+        background(colors.surface)
+        border(InputStrokeWidth, colors.line)
+        shape(shapes.button)
+        minHeight(48.dp)
+        contentPadding(horizontal = 16.dp, vertical = 12.dp)
+        contentColor(colors.textPrimary)
+        textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
+        buttonPressedTransform()
+    }
 }
+

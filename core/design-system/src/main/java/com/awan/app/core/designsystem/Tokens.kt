@@ -151,7 +151,7 @@ internal val AwanTypographyTokens = AwanTypography(
     display = TextStyle(
         fontFamily = Baloo2,
         fontWeight = FontWeight.ExtraBold,
-        fontSize = 28.sp,
+        fontSize = 44.sp,
         lineHeight = 31.sp,
     ),
     title = TextStyle(
@@ -221,3 +221,23 @@ data class AwanSpacing(
 )
 
 internal val AwanSpacingTokens = AwanSpacing()
+
+
+val AuthInputHeight = 56.dp
+
+val OtpCellSize = 56.dp
+
+val OtpCellWidth = 44.dp
+
+val OtpCellSpacing = 8.dp
+
+val InputStrokeWidth = 1.5.dp
+
+val InputStrokeWidthActive = 2.dp
+
+val MascotSize = 200.dp
+
+const val OTP_SHAKE_DURATION_MILLIS = 400
+
+const val AUTH_ENTER_DURATION_MILLIS = 300
+
