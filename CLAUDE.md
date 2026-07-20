@@ -61,6 +61,15 @@ The app follows **Now in Android (NiA) architecture**; the multi-module skeleton
 - No change is committed without user approval — conflicts surface an Intelligent Nudge (Skip / Double Up / Reschedule / Approve).
 - Nightly Sweep runs via WorkManager but must always catch up on app foreground; never assume the background job ran.
 
+## Feature plans
+
+Every plan written for a feature — initial implementation, a refactor, a bugfix, any change — is saved to `docs/feature/<feature_name>/` before work starts.
+
+- Filename: `YYYY-MM-DD-<what-the-plan-covers>.md`, e.g. `2026-07-20-implementation-plan.md`, `2026-08-03-zone-windows-refactor.md`. The date prefix sorts the folder chronologically — the newest file is the current state of the feature.
+- Plans are immutable once written. A change of direction gets a **new** dated plan, never an edit to an older one; the older plan stays as the record of what was true then.
+- When the work described by a plan is finished, append an **`## Implementation notes (what actually differed)`** section to the bottom of that plan — this is the only edit an existing plan ever gets. Record: build/test/lint status and how it was verified; anything that only showed up at runtime, with the root cause and why it would be easy to reintroduce; and every deviation from the plan as written. See `docs/feature/onboarding/2026-07-20-motion-and-zones-plan.md` for the shape.
+- Before debugging or refactoring a feature, read its folder newest-first: latest plan for current behavior, older ones for how it got there. The implementation notes are usually the highest-value part — they hold the traps.
+
 ## Localization
 
 - Every UI-facing string (and any string that will be rendered to the user) lives in `strings.xml` — never hardcode a display string in Kotlin/Compose.
