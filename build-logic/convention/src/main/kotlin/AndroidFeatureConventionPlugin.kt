@@ -29,7 +29,11 @@ abstract class AndroidFeatureConventionPlugin : Plugin<Project> {
                 add("implementation", libs.findLibrary("androidx-compose-material3").get())
 
                 // Test dependencies
-                add("testImplementation", libs.findLibrary("junit").get())
+                add("testImplementation", libs.findLibrary("junit-jupiter").get())
+                add("testImplementation", libs.findLibrary("assertk").get())
+                add("testImplementation", libs.findLibrary("turbine").get())
+                add("testImplementation", libs.findLibrary("kotlinx-coroutines-test").get())
+                add("testRuntimeOnly", libs.findLibrary("junit-platform-launcher").get())
                 add("androidTestImplementation", libs.findLibrary("androidx-junit").get())
                 add("androidTestImplementation", libs.findLibrary("androidx-espresso-core").get())
             }

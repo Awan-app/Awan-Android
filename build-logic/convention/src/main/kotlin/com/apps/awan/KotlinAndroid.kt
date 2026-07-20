@@ -23,6 +23,7 @@ import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
+import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -41,11 +42,7 @@ internal fun Project.configureKotlinAndroid(ext: LibraryExtension) {
         }
     }
 
-    tasks.withType<KotlinCompile>().configureEach {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
+    configureKotlinJvmTarget()
 }
 
 internal fun Project.configureKotlinAndroid(ext: ApplicationExtension) {
@@ -71,5 +68,9 @@ private fun Project.configureKotlinJvmTarget() {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
+    }
+
+    tasks.withType<Test>().configureEach {
+        useJUnitPlatform()
     }
 }
