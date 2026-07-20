@@ -13,11 +13,11 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "AWAN_BASE_URL", "\"https://api.awan.app/\"")
+            buildConfigField("String", "AWAN_BASE_URL", "\"https://backend-production-dec8.up.railway.app/api/\"")
             buildConfigField("String", "ENVIRONMENT", "\"debug\"")
         }
         release {
-            buildConfigField("String", "AWAN_BASE_URL", "\"https://api.awan.app/\"")
+            buildConfigField("String", "AWAN_BASE_URL", "\"https://backend-production-dec8.up.railway.app/api/\"")
             buildConfigField("String", "ENVIRONMENT", "\"release\"")
         }
     }

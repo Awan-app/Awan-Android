@@ -1,12 +1,17 @@
 package com.awan.app.core.network.di
 
+import android.content.Context
 import com.awan.app.core.network.BuildConfig
 import com.awan.app.core.network.api.AuthApiService
+import com.awan.app.core.network.device.AndroidDeviceIdProvider
+import com.awan.app.core.network.device.DeviceIdProvider
 import com.awan.app.core.network.interceptor.AuthInterceptor
 import com.awan.app.core.network.interceptor.TokenAuthenticator
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -104,4 +109,10 @@ object NetworkModule {
     @Singleton
     fun providesAuthApiService(@NoAuthRetrofit retrofit: Retrofit): AuthApiService =
         retrofit.create(AuthApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesDeviceIdProvider(
+        @ApplicationContext context: Context,
+    ): DeviceIdProvider = AndroidDeviceIdProvider(context)
 }
