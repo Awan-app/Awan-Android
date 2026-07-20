@@ -31,10 +31,7 @@ android {
         disable += setOf(
             "TypographyFractions",
             "TypographyQuotes",
-            "UnusedResources",
-            "ObsoleteSdkInt",
             "IconMissingDensityFolder",
-            "ContentDescription"
         )
         error += "HardcodedText"
         error += "MissingTranslation"
