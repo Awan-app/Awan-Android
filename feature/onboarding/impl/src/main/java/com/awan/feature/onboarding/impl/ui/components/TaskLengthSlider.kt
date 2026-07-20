@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -40,6 +39,7 @@ import kotlin.math.roundToInt
 
 private val KnobSize = 32.dp
 private val TrackHeight = 10.dp
+private val LabelSlot = 48.dp
 
 /** Chunky Skyward slider snapping across the preferred-focus-length stops. Tap a tick or drag the knob. */
 @Composable
@@ -56,11 +56,15 @@ fun TaskLengthSlider(
     val density = LocalDensity.current
     val stateLabel = humanDuration(selected)
 
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(KnobSize)) {
-            val widthPx = with(density) { maxWidth.toPx() }
-            val knobPx = with(density) { KnobSize.toPx() }
-            val usable = (widthPx - knobPx).coerceAtLeast(1f)
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val widthPx = with(density) { maxWidth.toPx() }
+        val knobPx = with(density) { KnobSize.toPx() }
+        val usable = (widthPx - knobPx).coerceAtLeast(1f)
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
+        ) {
 
             fun indexFromX(x: Float): Int =
                 (((x - knobPx / 2f) / usable) * (count - 1)).roundToInt().coerceIn(0, count - 1)
@@ -91,6 +95,7 @@ fun TaskLengthSlider(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(KnobSize)
                     .progressSemantics(index.toFloat(), 0f..(count - 1f), (count - 2).coerceAtLeast(0))
                     .semantics { stateDescription = stateLabel }
                     .pointerInput(usable, options) { detectTapGestures { emit(it.x) } }
@@ -124,14 +129,25 @@ fun TaskLengthSlider(
                         .border(3.dp, colors.sky, CircleShape),
                 )
             }
-        }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            options.forEachIndexed { i, minutes ->
-                AwanText(
-                    tickLabel(minutes),
-                    style = if (i == index) AwanTheme.styles.buttonCompactText else AwanTheme.styles.metaText,
-                    maxLines = 1,
-                )
+
+            // Labels share the knob's coordinate system rather than being spaced by a Row, so each
+            // one is centred on the stop its knob actually lands on.
+            Box(Modifier.fillMaxWidth()) {
+                options.forEachIndexed { i, minutes ->
+                    val centre = with(density) { (knobPx / 2f + usable * i / (count - 1)).toDp() }
+                    Box(
+                        modifier = Modifier
+                            .offset(x = centre - LabelSlot / 2)
+                            .width(LabelSlot),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        AwanText(
+                            tickLabel(minutes),
+                            style = if (i == index) AwanTheme.styles.buttonCompactText else AwanTheme.styles.metaText,
+                            maxLines = 1,
+                        )
+                    }
+                }
             }
         }
     }

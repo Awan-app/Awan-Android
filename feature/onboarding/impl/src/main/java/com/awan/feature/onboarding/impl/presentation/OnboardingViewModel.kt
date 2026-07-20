@@ -58,7 +58,9 @@ class OnboardingViewModel @Inject constructor(
                     }
                 }
             }
-            is OnboardingAction.ReorderZone -> updateZones { reordered(action.fromIndex, action.toIndex) }
+            is OnboardingAction.ReorderZone -> updateZones {
+                ZoneEditRules.resequence(reordered(action.fromIndex, action.toIndex), _state.value.bounds)
+            }
             is OnboardingAction.ToggleZoneEnabled -> updateZones {
                 map { if (it.id == action.zoneId) it.copy(isEnabled = !it.isEnabled) else it }
             }

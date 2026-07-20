@@ -51,7 +51,6 @@
     <string name="onboarding_day_preview_label">YOUR DAY</string>
     <string name="onboarding_day_preview_open_sky">%1$d h of open sky</string>
     <string name="onboarding_day_preview_starred_task">★ %1$s</string>
-    <string name="onboarding_day_preview_zones_hint">Zones will fill this in next</string>
 
     <string name="onboarding_zones_use_this">USE THIS</string>
     <string name="onboarding_zones_reset">Reset to my suggestion</string>
@@ -68,7 +67,9 @@
 
     <string name="onboarding_task_length_title">How long do you like to focus in one go?</string>
     <string name="onboarding_task_length_caption">preferred focus block</string>
-    <string name="onboarding_task_length_hint">Longer means fewer, deeper blocks; shorter means more, lighter ones. Anything longer gets split into linked sessions.</string>
+    <string name="onboarding_task_length_hint_short">Short and light — more blocks, and much easier to start when you are putting something off.</string>
+    <string name="onboarding_task_length_hint_balanced">A balanced block. Deep enough to matter, short enough to still fit around the rest of your day.</string>
+    <string name="onboarding_task_length_hint_deep">Long and deep. Awan splits anything this size into linked sessions with breaks between them.</string>
 
     <string name="onboarding_first_task_title">Let\'s add your first thing for today</string>
     <string name="onboarding_first_task_placeholder">e.g. Read Clean Code, Ch. 1</string>

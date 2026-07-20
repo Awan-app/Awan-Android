@@ -22,11 +22,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.style.styleable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,7 +37,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -103,13 +104,21 @@ fun StepScaffold(
         StepProgress(current = chrome.progressCurrent)
 
         LookaheadScope {
+            // The body slot's measurement rules must not change between steps. AnimatedContent
+            // keeps the outgoing body composed for the whole transition, and a body that lost its
+            // height bound mid-flight would report its full scroll height and blow up the region.
+            val lead by animateDpAsState(
+                targetValue = chrome.leadingSpace,
+                animationSpec = motion.settle.spec(),
+                label = "leadingSpace",
+            )
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .clipToBounds(),
-                verticalArrangement = if (chrome.centeredContent) Arrangement.Center else Arrangement.Top,
             ) {
+                Spacer(Modifier.height(lead))
                 Mascot(
                     expression = chrome.mascot,
                     width = chrome.mascotWidth,
@@ -117,13 +126,7 @@ fun StepScaffold(
                         .align(Alignment.CenterHorizontally)
                         .animateBounds(this@LookaheadScope, boundsTransform = mascotBounds),
                 )
-                Box(
-                    if (chrome.centeredContent) {
-                        Modifier.fillMaxWidth()
-                    } else {
-                        Modifier.weight(1f).fillMaxWidth()
-                    },
-                ) {
+                Box(Modifier.weight(1f).fillMaxWidth()) {
                     body()
                 }
             }
@@ -299,6 +302,9 @@ private fun BackSlot(visible: Boolean, onBack: () -> Unit) {
 
 @Composable
 private fun BackChevron() {
+    // AwanButton provides the variant's animated content colour; reading it keeps the chevron
+    // correct in both themes and through the disabled and pressed states.
+    val ink = LocalContentColor.current
     Box(Modifier.size(20.dp)) {
         Canvas(Modifier.fillMaxSize()) {
             val stroke = Stroke(
@@ -315,5 +321,3 @@ private fun BackChevron() {
         }
     }
 }
-
-private val ink = Color(0xFF16455E)

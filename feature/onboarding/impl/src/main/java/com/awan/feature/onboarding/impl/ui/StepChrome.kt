@@ -24,7 +24,12 @@ data class StepChrome(
     val secondary: StepAction? = null,
     val mascot: MascotExpression? = null,
     val mascotWidth: Dp = 0.dp,
-    val centeredContent: Boolean = false,
+    /**
+     * Space above the mascot. Welcome uses it to sit its mascot + greeting cluster near the middle
+     * of the region; every other step leaves it at zero. It is a value rather than a layout switch
+     * so the scaffold's measurement rules stay identical on every step — see [StepScaffold].
+     */
+    val leadingSpace: Dp = 0.dp,
 )
 
 /** The per-step configuration of the persistent chrome, resolved in one place. */
@@ -42,7 +47,7 @@ fun stepChrome(state: OnboardingState, onAction: (OnboardingAction) -> Unit): St
             secondary = StepAction(stringResource(R.string.onboarding_welcome_skip_setup), skip),
             mascot = MascotExpression.Greet,
             mascotWidth = 190.dp,
-            centeredContent = true,
+            leadingSpace = 64.dp,
         )
 
         OnboardingStep.Name -> StepChrome(

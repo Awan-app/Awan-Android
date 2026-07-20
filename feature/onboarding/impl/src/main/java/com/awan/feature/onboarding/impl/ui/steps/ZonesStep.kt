@@ -12,7 +12,6 @@ import com.awan.app.core.designsystem.CascadeItem
 import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.OnboardingAction
 import com.awan.feature.onboarding.impl.presentation.OnboardingState
-import com.awan.feature.onboarding.impl.ui.components.DayTimeline
 import com.awan.feature.onboarding.impl.ui.components.StepBody
 import com.awan.feature.onboarding.impl.ui.components.StepHeadline
 import com.awan.feature.onboarding.impl.ui.components.ZoneReorderList
@@ -31,9 +30,6 @@ fun ZonesStepBody(state: OnboardingState, onAction: (OnboardingAction) -> Unit) 
             )
         }
         CascadeItem(1, Modifier.fillMaxWidth()) {
-            DayTimeline(state.dayPreview)
-        }
-        CascadeItem(2, Modifier.fillMaxWidth()) {
             ZoneReorderList(
                 zones = state.zones,
                 overlappingIds = state.overlappingZoneIds,

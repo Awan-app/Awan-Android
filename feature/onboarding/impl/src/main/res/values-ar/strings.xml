@@ -59,7 +59,6 @@
     <string name="onboarding_day_preview_label">يومك</string>
     <string name="onboarding_day_preview_open_sky">%1$d ساعة من السماء المفتوحة</string>
     <string name="onboarding_day_preview_starred_task">★ %1$s</string>
-    <string name="onboarding_day_preview_zones_hint">ستملأ المناطق هذا لاحقاً</string>
 
     <string name="onboarding_zones_use_this">استخدم هذا</string>
     <string name="onboarding_zones_reset">العودة إلى اقتراحي</string>
@@ -76,7 +75,9 @@
 
     <string name="onboarding_task_length_title">كم تحبّ أن تركّز في الجلسة الواحدة؟</string>
     <string name="onboarding_task_length_caption">مدة التركيز المفضّلة</string>
-    <string name="onboarding_task_length_hint">المدة الأطول تعني جلسات أقل وأعمق؛ والأقصر تعني جلسات أكثر وأخفّ. وأي مدة أطول تُقسَّم إلى جلسات مترابطة.</string>
+    <string name="onboarding_task_length_hint_short">قصيرة وخفيفة — جلسات أكثر، وأسهل بكثير في البدء حين تكون مماطلاً في شيء ما.</string>
+    <string name="onboarding_task_length_hint_balanced">جلسة متوازنة. عميقة بما يكفي لتُحدث فرقاً، وقصيرة بما يكفي لتتسع لبقية يومك.</string>
+    <string name="onboarding_task_length_hint_deep">طويلة وعميقة. يقسّم أوان أي مدة بهذا الحجم إلى جلسات مترابطة تتخللها استراحات.</string>
 
     <string name="onboarding_first_task_title">لنُضِف أول مهمة ليومك</string>
     <string name="onboarding_first_task_placeholder">مثال: اقرأ الفصل 1 من Clean Code</string>

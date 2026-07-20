@@ -33,10 +33,6 @@ import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.DayPreviewModel
 import com.awan.feature.onboarding.impl.ui.formatClock
 
-private val SkyDawn = Color(0xFFFFF5D6)
-private val SkyDay = Color(0xFFDCEFFF)
-private val SkyNight = Color(0xFF20344A)
-
 private val TrackHeight = 44.dp
 private val MinSegmentWidth = 2.dp
 private val MinLabelWidth = 44.dp
@@ -52,26 +48,36 @@ fun DayTimeline(
     modifier: Modifier = Modifier,
     showZones: Boolean = true,
 ) {
+    val colors = AwanTheme.colors
     AwanCard(modifier = modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            AwanText(stringResource(R.string.onboarding_day_preview_label), style = AwanTheme.styles.metaText)
-            AwanText(
-                stringResource(R.string.onboarding_day_preview_open_sky, wakingHours(preview)),
-                style = AwanTheme.styles.metaText,
-            )
-        }
+        AwanText(stringResource(R.string.onboarding_day_preview_label), style = AwanTheme.styles.metaText)
         Spacer(Modifier.height(AwanTheme.spacing.xs))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(TrackHeight)
                 .clip(AwanTheme.shapes.chip)
-                .background(Brush.horizontalGradient(0f to SkyDawn, 0.55f to SkyDay, 1f to SkyNight)),
+                .background(
+                    Brush.horizontalGradient(
+                        0f to colors.skyDawn,
+                        0.28f to colors.skyMorning,
+                        0.62f to colors.skyMidday,
+                        1f to colors.skyDusk,
+                    ),
+                )
+                // Vertical shade over the sky ramp so the 44dp band reads as a lit surface
+                // rather than a flat swatch.
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.White.copy(alpha = 0.08f),
+                        1f to Color.Black.copy(alpha = 0.10f),
+                    ),
+                ),
         ) {
             if (showZones && preview.zones.any { it.enabled }) {
                 ZoneSegments(preview)
             } else {
-                HintPill()
+                OpenSkyPill(wakingHours(preview))
             }
         }
         Spacer(Modifier.height(AwanTheme.spacing.xxs))
@@ -151,15 +157,18 @@ private fun ZoneSegments(preview: DayPreviewModel) {
 }
 
 @Composable
-private fun BoxScope.HintPill() {
+private fun BoxScope.OpenSkyPill(hours: Int) {
     Box(
         modifier = Modifier
             .align(Alignment.Center)
             .clip(AwanTheme.shapes.pill)
-            .background(Color.White.copy(alpha = 0.7f))
+            .background(AwanTheme.colors.surface.copy(alpha = 0.82f))
             .padding(horizontal = 12.dp, vertical = 5.dp),
     ) {
-        AwanText(stringResource(R.string.onboarding_day_preview_zones_hint), style = AwanTheme.styles.captionText)
+        AwanText(
+            stringResource(R.string.onboarding_day_preview_open_sky, hours),
+            style = AwanTheme.styles.captionText,
+        )
     }
 }
 

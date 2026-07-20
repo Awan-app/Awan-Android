@@ -50,4 +50,50 @@ class ZoneEditRulesTest {
         val b = Zone("b", "B", 0, startMinutes = 675, endMinutes = 900)
         assertTrue(ZoneEditRules.overlappingZoneIds(listOf(a, b), bounds).isEmpty())
     }
+
+    @Test
+    fun `resequence keeps durations and chains zones back to back`() {
+        val zones = listOf(
+            Zone("a", "A", 0, startMinutes = 450, endMinutes = 570),
+            Zone("b", "B", 0, startMinutes = 570, endMinutes = 750),
+            Zone("c", "C", 0, startMinutes = 750, endMinutes = 810),
+        )
+        val moved = listOf(zones[2], zones[0], zones[1])
+
+        val result = ZoneEditRules.resequence(moved, bounds)
+
+        assertEquals(listOf(60, 120, 180), result.map { it.durationMinutes })
+        assertEquals(450, result[0].startMinutes)
+        assertEquals(510, result[1].startMinutes)
+        assertEquals(630, result[2].startMinutes)
+        assertTrue(ZoneEditRules.overlappingZoneIds(result, bounds).isEmpty())
+    }
+
+    @Test
+    fun `resequence is a no-op on an already contiguous schedule`() {
+        val zones = listOf(
+            Zone("a", "A", 0, startMinutes = 450, endMinutes = 570),
+            Zone("b", "B", 0, startMinutes = 570, endMinutes = 750),
+        )
+        assertEquals(zones, ZoneEditRules.resequence(zones, bounds))
+    }
+
+    @Test
+    fun `resequence chains correctly when the waking window crosses midnight`() {
+        val overnight = DayBounds(wakeMinutes = 22 * 60, sleepMinutes = 6 * 60)
+        val zones = listOf(
+            Zone("a", "A", 0, startMinutes = 23 * 60, endMinutes = 23 * 60 + 60),
+            Zone("b", "B", 0, startMinutes = 22 * 60 + 30, endMinutes = 22 * 60 + 90),
+            Zone("c", "C", 0, startMinutes = 60, endMinutes = 120),
+        )
+
+        val result = ZoneEditRules.resequence(zones, overnight)
+
+        // Anchored at the earliest occupied start (22:30), then chained straight through midnight.
+        assertEquals(22 * 60 + 30, result[0].startMinutes)
+        assertEquals(23 * 60 + 30, result[1].startMinutes)
+        assertEquals(30, result[2].startMinutes)
+        assertEquals(listOf(60, 60, 60), result.map { it.durationMinutes })
+        assertTrue(ZoneEditRules.overlappingZoneIds(result, overnight).isEmpty())
+    }
 }

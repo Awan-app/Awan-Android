@@ -104,8 +104,12 @@ fun OnboardingScreen(
             targetState = state.step,
             label = "onboardingStep",
             transitionSpec = {
-                fadeIn(tween(exitMillis)) togetherWith
-                    fadeOut(tween(exitMillis)) + slideOutVertically(tween(exitMillis)) { it / 12 }
+                // The scaffold gives every step the same bounded slot, so there is no size to
+                // transform — leaving the default in would animate a difference that isn't there.
+                (
+                    fadeIn(tween(exitMillis)) togetherWith
+                        fadeOut(tween(exitMillis)) + slideOutVertically(tween(exitMillis)) { it / 12 }
+                    ) using null
             },
         ) { step ->
             when (step) {

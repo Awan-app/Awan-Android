@@ -1,6 +1,8 @@
 package com.awan.feature.onboarding.impl.ui.steps
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -57,13 +59,21 @@ fun TaskLengthStepBody(state: OnboardingState, onAction: (OnboardingAction) -> U
         }
         CascadeItem(3, Modifier.fillMaxWidth()) {
             AwanCard(modifier = Modifier.fillMaxWidth(), background = AwanTheme.colors.background) {
-                AwanText(
-                    stringResource(R.string.onboarding_task_length_hint),
-                    style = AwanTheme.styles.bodySecondaryText,
-                )
+                // Crossfade, not AnimatedContent: the copy is multi-line, so a size transform
+                // would jitter the card height on every stop crossed.
+                Crossfade(targetState = hintFor(state.preferredTaskLengthMinutes), label = "taskLengthHint") {
+                    AwanText(stringResource(it), style = AwanTheme.styles.bodySecondaryText)
+                }
             }
         }
     }
+}
+
+@StringRes
+private fun hintFor(minutes: Int): Int = when {
+    minutes <= 45 -> R.string.onboarding_task_length_hint_short
+    minutes <= 90 -> R.string.onboarding_task_length_hint_balanced
+    else -> R.string.onboarding_task_length_hint_deep
 }
 
 @Composable

@@ -102,4 +102,18 @@ class OnboardingViewModelTest {
         assertFalse(state.isSubmittingTask)
         assertEquals("Write brief", repository.draft.first().firstTask?.title)
     }
+
+    @Test
+    fun `reordering a zone moves its window, not just its row`() {
+        val before = viewModel.state.value.zones
+        val moved = before.last()
+
+        viewModel.onAction(OnboardingAction.ReorderZone(before.lastIndex, 0))
+
+        val after = viewModel.state.value.zones
+        assertEquals(moved.id, after.first().id)
+        assertEquals(before.first().startMinutes, after.first().startMinutes)
+        assertEquals(moved.durationMinutes, after.first().durationMinutes)
+        assertTrue(viewModel.state.value.overlappingZoneIds.isEmpty())
+    }
 }

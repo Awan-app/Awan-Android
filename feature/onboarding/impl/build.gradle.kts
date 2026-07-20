@@ -15,6 +15,7 @@ dependencies {
     implementation(project(":core:model"))
 
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

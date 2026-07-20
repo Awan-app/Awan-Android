@@ -40,6 +40,20 @@ object ZoneEditRules {
         return zone.copy(startMinutes = absStart, endMinutes = absStart + duration)
     }
 
+    /**
+     * Re-lay the zones back-to-back in list order. Each zone keeps its own duration; the chain is
+     * anchored at the earliest start currently occupied, so the wake-up routine margin survives a
+     * reorder. Disabled zones stay in the chain — they still own their slot in the day.
+     */
+    fun resequence(zones: List<Zone>, bounds: DayBounds): List<Zone> {
+        var cursor = zones.minOfOrNull { linear(it.startMinutes, bounds.wakeMinutes) } ?: return zones
+        return zones.map { zone ->
+            val start = absolute(cursor, bounds.wakeMinutes)
+            cursor += zone.durationMinutes
+            zone.copy(startMinutes = start, endMinutes = start + zone.durationMinutes)
+        }
+    }
+
     /** IDs of enabled zones that overlap at least one other enabled zone. Non-blocking flag only. */
     fun overlappingZoneIds(zones: List<Zone>, bounds: DayBounds): Set<String> {
         val enabled = zones.filter { it.isEnabled }
