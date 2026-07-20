@@ -1,0 +1,168 @@
+package com.awan.feature.auth.impl.ui.email
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.awan.app.core.designsystem.AwanButtonVariant
+import com.awan.app.core.designsystem.AwanText
+import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.MascotState
+import com.awan.app.core.designsystem.R as DesignR
+import com.awan.feature.auth.impl.ui.components.AuthButton
+import com.awan.feature.auth.impl.ui.components.AuthDivider
+import com.awan.feature.auth.impl.ui.components.AuthEmailField
+import com.awan.feature.auth.impl.ui.components.AuthScreenLayout
+import com.awan.feature.auth.impl.ui.components.SocialButton
+import com.awan.feature.auth.impl.ui.components.rememberCountdownTimerState
+
+@Composable
+fun EmailRouteScreen(
+    onNext: (email: String) -> Unit,
+    viewModel: EmailViewModel = hiltViewModel(),
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(viewModel.events) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is EmailEvent.NavigateToOtp -> onNext(event.email)
+            }
+        }
+    }
+
+    EmailScreen(
+        state = state,
+        onEmailChanged = viewModel::onEmailChanged,
+        onContinue = viewModel::onSendCode,
+        onSignInWithGoogle = { /* TODO: Google sign-in */ },
+    )
+}
+
+enum class EmailErrorBanner { None, RateLimited, Offline }
+
+@Composable
+fun EmailScreen(
+    state: EmailUiState,
+    onEmailChanged: (String) -> Unit,
+    onContinue: () -> Unit,
+    onSignInWithGoogle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val mascotState = when {
+        state.isLoading -> MascotState.Loading
+        state.errorMessage != null -> MascotState.Sad
+        state.email.isNotEmpty() -> MascotState.Typing
+        else -> MascotState.Idle
+    }
+
+    val rateLimitTimer = rememberCountdownTimerState(
+        initialSeconds = state.rateLimitSecondsRemaining,
+    )
+
+    val bannerState = when {
+        state.isRateLimited -> EmailErrorBanner.RateLimited
+        state.isOffline -> EmailErrorBanner.Offline
+        else -> EmailErrorBanner.None
+    }
+
+    AuthScreenLayout(
+        modifier = modifier,
+        title = "Awan",
+        subtitle = "Turn your goals into a day that plans itself",
+        mascotState = mascotState,
+        formContent = {
+            AwanText(
+                text = "EMAIL",
+                style = AwanTheme.styles.captionText,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            AuthEmailField(
+                value = state.email,
+                onValueChange = onEmailChanged,
+                modifier = Modifier.fillMaxWidth(),
+                isError = state.errorMessage != null,
+                errorMessage = state.errorMessage,
+                enabled = !state.isLoading,
+                onDone = onContinue,
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            AnimatedContent(
+                targetState = bannerState,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "email-error-banner",
+            ) { targetBanner ->
+                when (targetBanner) {
+                    EmailErrorBanner.None -> {
+                        // Empty space, no banner
+                    }
+                    EmailErrorBanner.RateLimited -> {
+                        Column {
+                            AwanText(
+                                text = "Too many attempts. Try again in ${rateLimitTimer.formattedTime}.",
+                                style = AwanTheme.styles.captionText,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .semantics { contentDescription = "Rate limited. Wait ${rateLimitTimer.formattedTime}" },
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                    EmailErrorBanner.Offline -> {
+                        Column {
+                            AwanText(
+                                text = "You're offline — we'll send the code when you reconnect.",
+                                style = AwanTheme.styles.captionText,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+            }
+
+            AuthButton(
+                text = if (state.isRateLimited) {
+                    "SEND CODE · ${rateLimitTimer.formattedTime}"
+                } else {
+                    "SEND CODE"
+                },
+                onClick = onContinue,
+                enabled = state.canSubmit,
+                isLoading = state.isLoading,
+            )
+        },
+        bottomContent = {
+            AuthDivider()
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            SocialButton(
+                text = "Continue with Google",
+                onClick = onSignInWithGoogle,
+                painter = painterResource(DesignR.drawable.ic_google),
+                socialType = AwanButtonVariant.Google,
+                contentDescription = "Continue with Google",
+            )
+        }
+    )
+}
