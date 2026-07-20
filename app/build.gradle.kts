@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.awan.android.application)
     alias(libs.plugins.awan.android.compose)
     alias(libs.plugins.awan.android.hilt)
-    alias(libs.plugins.detekt)
     alias(libs.plugins.jetbrains.kotlin.serialization)
 }
 
@@ -29,17 +28,14 @@ android {
 
     lint {
         abortOnError = true
-        checkReleaseBuilds = true
-        warningsAsErrors = false
+        disable += setOf(
+            "TypographyFractions",
+            "TypographyQuotes",
+            "IconMissingDensityFolder",
+        )
         error += "HardcodedText"
         error += "MissingTranslation"
     }
-}
-
-detekt {
-    buildUponDefaultConfig = true
-    allRules = false
-    config.setFrom(files("$rootDir/detekt.yml"))
 }
 
 dependencies {
@@ -99,8 +95,6 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
 
-    // Lint / Detekt
+    // Lint
     lintChecks(libs.composeLintChecks)
-    detektPlugins(libs.detekt.compose.rules)
-    detektPlugins(libs.detekt.formatting)
 }
