@@ -15,6 +15,7 @@ internal data class AwanThemeValues(
     val typography: AwanTypography,
     val shapes: AwanShapes,
     val spacing: AwanSpacing,
+    val motion: AwanMotion,
 )
 
 internal val LocalAwanTheme = staticCompositionLocalOf<AwanThemeValues> {
@@ -33,6 +34,9 @@ object AwanTheme {
 
     val spacing: AwanSpacing
         @Composable @ReadOnlyComposable get() = LocalAwanTheme.current.spacing
+
+    val motion: AwanMotion
+        @Composable @ReadOnlyComposable get() = LocalAwanTheme.current.motion
 
     val styles: AwanStyles = AwanStyles
 
@@ -85,6 +89,7 @@ object AwanTheme {
             typography = AwanTypographyTokens,
             shapes = AwanShapeTokens,
             spacing = AwanSpacingTokens,
+            motion = AwanMotionTokens,
         )
 
         androidx.compose.runtime.CompositionLocalProvider(LocalAwanTheme provides values) {

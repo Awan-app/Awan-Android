@@ -18,16 +18,20 @@ import androidx.compose.foundation.style.rememberUpdatedStyleState
 import androidx.compose.foundation.style.styleable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -46,9 +50,11 @@ fun AwanButton(
     style: Style = Style,
     variant: AwanButtonVariant = AwanButtonVariant.Primary,
     enabled: Boolean = true,
+    haptic: HapticFeedbackType? = awanButtonHaptic(variant),
     icon: (@Composable () -> Unit)? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val styleState = rememberUpdatedStyleState(interactionSource) { it.isEnabled = enabled }
     val rimStyle = when (variant) {
@@ -63,7 +69,11 @@ fun AwanButton(
         AwanButtonVariant.Destructive -> AwanTheme.styles.destructiveButtonFace
         AwanButtonVariant.Quiet -> AwanTheme.styles.quietButtonFace
     }
-    val contentColor = buttonContentColor(variant = variant, enabled = enabled)
+    val contentColor by animateColorAsState(
+        targetValue = buttonContentColor(variant = variant, enabled = enabled),
+        animationSpec = tween(durationMillis = AwanTheme.motion.standardMillis),
+        label = "AwanButtonContentColor",
+    )
     val rimDepth = if (variant == AwanButtonVariant.Quiet) 0.dp else AwanButtonRimDepth
     val rimSide = if (variant == AwanButtonVariant.Quiet) 0.dp else AwanButtonRimSide
     val rimTopInset = animateDpAsState(
@@ -90,7 +100,10 @@ fun AwanButton(
                 indication = null,
                 enabled = enabled,
                 role = Role.Button,
-                onClick = onClick,
+                onClick = {
+                    haptic?.let(hapticFeedback::performHapticFeedback)
+                    onClick()
+                },
             )
             .focusable(enabled = enabled, interactionSource = interactionSource)
             .styleable(styleState, AwanTheme.styles.buttonFocus),
@@ -102,7 +115,10 @@ fun AwanButton(
                 .padding(top = rimTopInset, end = rimStartInset)
                 .styleable(styleState, rimStyle)
         )
-        CompositionLocalProvider(LocalContentColor provides contentColor) {
+        CompositionLocalProvider(
+            LocalContentColor provides contentColor,
+            LocalAwanTextStyle provides AwanTheme.styles.buttonLabel,
+        ) {
             Row(
                 modifier = modifier
                     .padding(bottom = rimDepth, start = rimSide)
@@ -132,6 +148,7 @@ fun AwanButton(
     style: Style = Style,
     variant: AwanButtonVariant = AwanButtonVariant.Primary,
     enabled: Boolean = true,
+    haptic: HapticFeedbackType? = awanButtonHaptic(variant),
     icon: ImageVector,
     content: @Composable RowScope.() -> Unit,
 ) {
@@ -141,6 +158,7 @@ fun AwanButton(
         style = style,
         variant = variant,
         enabled = enabled,
+        haptic = haptic,
         icon = {
             Icon(
                 imageVector = icon,

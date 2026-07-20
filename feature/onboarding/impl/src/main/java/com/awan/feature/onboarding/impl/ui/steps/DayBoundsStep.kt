@@ -11,57 +11,63 @@ import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.CascadeItem
 import com.awan.app.core.domain.onboarding.DayBoundsValidation
 import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.OnboardingAction
 import com.awan.feature.onboarding.impl.presentation.OnboardingState
-import com.awan.feature.onboarding.impl.ui.components.DayPreview
+import com.awan.feature.onboarding.impl.ui.components.DayTimeline
 import com.awan.feature.onboarding.impl.ui.components.InlineNotice
 import com.awan.feature.onboarding.impl.ui.components.NoticeTone
+import com.awan.feature.onboarding.impl.ui.components.StepBody
 import com.awan.feature.onboarding.impl.ui.components.StepHeadline
-import com.awan.feature.onboarding.impl.ui.components.StepScaffold
 import com.awan.feature.onboarding.impl.ui.components.WakeSleepRow
 
 @Composable
-fun DayBoundsStep(state: OnboardingState, onAction: (OnboardingAction) -> Unit) {
-    StepScaffold(
-        onBack = { onAction(OnboardingAction.Back) },
-        onSkip = { onAction(OnboardingAction.Skip) },
-        progressCurrent = state.step.dotIndex,
-        footer = {
-            AwanButton(
-                onClick = { onAction(OnboardingAction.Next) },
-                enabled = state.canContinueBounds,
-                modifier = Modifier.fillMaxWidth(),
-            ) { AwanText(stringResource(R.string.onboarding_continue)) }
-        },
-    ) {
-        StepHeadline(stringResource(R.string.onboarding_day_bounds_step_title), null)
-        WakeSleepRow(
-            glyph = "☀️",
-            label = stringResource(R.string.onboarding_i_usually_wake_up_at),
-            minutes = state.bounds.wakeMinutes,
-            selected = false,
-            onPick = { onAction(OnboardingAction.WakeChanged(it)) },
-        )
-        WakeSleepRow(
-            glyph = "🌙",
-            label = stringResource(R.string.onboarding_i_usually_sleep_at),
-            minutes = state.bounds.sleepMinutes,
-            selected = false,
-            onPick = { onAction(OnboardingAction.SleepChanged(it)) },
-        )
-        DayPreview(state.dayPreview, showZones = false)
+fun DayBoundsStepBody(state: OnboardingState, onAction: (OnboardingAction) -> Unit) {
+    StepBody {
+        CascadeItem(0) {
+            StepHeadline(stringResource(R.string.onboarding_day_bounds_step_title), null)
+        }
+        CascadeItem(1, Modifier.fillMaxWidth()) {
+            WakeSleepRow(
+                glyph = "☀️",
+                label = stringResource(R.string.onboarding_i_usually_wake_up_at),
+                minutes = state.bounds.wakeMinutes,
+                selected = false,
+                onPick = { onAction(OnboardingAction.WakeChanged(it)) },
+            )
+        }
+        CascadeItem(2, Modifier.fillMaxWidth()) {
+            WakeSleepRow(
+                glyph = "🌙",
+                label = stringResource(R.string.onboarding_i_usually_sleep_at),
+                minutes = state.bounds.sleepMinutes,
+                selected = false,
+                onPick = { onAction(OnboardingAction.SleepChanged(it)) },
+            )
+        }
+        CascadeItem(3, Modifier.fillMaxWidth()) {
+            DayTimeline(state.dayPreview, showZones = false)
+        }
         when {
             state.boundsValidation == DayBoundsValidation.SameTime ->
                 InlineNotice(stringResource(R.string.onboarding_bounds_same_time_error), NoticeTone.Error)
+
             state.showWakingWarning -> Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                InlineNotice(stringResource(R.string.onboarding_bounds_short_day_warning), NoticeTone.Warning, modifier = Modifier.weight(1f))
-                AwanButton(onClick = { onAction(OnboardingAction.DismissWakingWarning) }, variant = AwanButtonVariant.Quiet) {
+                InlineNotice(
+                    stringResource(R.string.onboarding_bounds_short_day_warning),
+                    NoticeTone.Warning,
+                    modifier = Modifier.weight(1f),
+                )
+                AwanButton(
+                    onClick = { onAction(OnboardingAction.DismissWakingWarning) },
+                    variant = AwanButtonVariant.Quiet,
+                ) {
                     AwanText(stringResource(R.string.onboarding_got_it), style = AwanTheme.styles.skipLink)
                 }
             }

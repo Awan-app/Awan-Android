@@ -1,8 +1,6 @@
 package com.awan.feature.onboarding.impl.ui.steps
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
@@ -22,73 +20,55 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.awan.app.core.designsystem.AwanButton
-import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanChip
 import com.awan.app.core.designsystem.AwanChipTone
-import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
-import com.awan.app.core.designsystem.MascotExpression
+import com.awan.app.core.designsystem.CascadeItem
 import com.awan.app.core.model.FirstTask
 import com.awan.app.core.model.Zone
 import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.OnboardingAction
 import com.awan.feature.onboarding.impl.presentation.OnboardingState
+import com.awan.feature.onboarding.impl.ui.components.SparkleBurst
+import com.awan.feature.onboarding.impl.ui.components.StepBody
 import com.awan.feature.onboarding.impl.ui.components.StepHeadline
-import com.awan.feature.onboarding.impl.ui.components.StepScaffold
 import com.awan.feature.onboarding.impl.ui.formatClock
 
 private const val TITLE_MAX = 140
 
 @Composable
-fun FirstTaskStep(state: OnboardingState, onAction: (OnboardingAction) -> Unit) {
+fun FirstTaskStepBody(state: OnboardingState, onAction: (OnboardingAction) -> Unit) {
     val landed = state.firstTask != null
-    StepScaffold(
-        onBack = { onAction(OnboardingAction.Back) },
-        onSkip = { onAction(OnboardingAction.Skip) },
-        progressCurrent = state.step.dotIndex,
-        footer = {
-            AwanButton(
-                onClick = { onAction(if (landed) OnboardingAction.Next else OnboardingAction.SubmitFirstTask) },
-                enabled = landed || state.canSubmitFirstTask,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                AwanText(
-                    when {
-                        state.isSubmittingTask -> stringResource(R.string.onboarding_first_task_scheduling)
-                        landed -> stringResource(R.string.onboarding_continue)
-                        else -> stringResource(R.string.onboarding_first_task_add)
-                    },
-                )
-            }
-            AwanButton(onClick = { onAction(OnboardingAction.Skip) }, variant = AwanButtonVariant.Quiet) {
-                AwanText(stringResource(R.string.onboarding_first_task_skip), style = AwanTheme.styles.skipLink)
-            }
-        },
-    ) {
-        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            AwanMascot(if (landed) MascotExpression.Celebrate else MascotExpression.Curious, width = 148.dp)
+    StepBody {
+        CascadeItem(0) {
+            StepHeadline(stringResource(R.string.onboarding_first_task_title))
         }
-        StepHeadline(stringResource(R.string.onboarding_first_task_title))
-        AwanTextField(
-            value = state.firstTaskTitle,
-            onValueChange = { onAction(OnboardingAction.FirstTaskTitleChanged(it.take(TITLE_MAX))) },
-            placeholder = stringResource(R.string.onboarding_first_task_placeholder),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        AwanText(stringResource(R.string.onboarding_first_task_examples), style = AwanTheme.styles.metaText)
+        CascadeItem(1, Modifier.fillMaxWidth()) {
+            AwanTextField(
+                value = state.firstTaskTitle,
+                onValueChange = { onAction(OnboardingAction.FirstTaskTitleChanged(it.take(TITLE_MAX))) },
+                placeholder = stringResource(R.string.onboarding_first_task_placeholder),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        CascadeItem(2) {
+            AwanText(stringResource(R.string.onboarding_first_task_examples), style = AwanTheme.styles.metaText)
+        }
 
         AnimatedVisibility(
             visible = landed,
-            enter = fadeIn() + slideInVertically(spring(dampingRatio = Spring.DampingRatioMediumBouncy)) { it / 2 },
+            enter = fadeIn() + slideInVertically(AwanTheme.motion.bouncy.spec()) { it / 2 },
         ) {
             val task = state.firstTask
             val zone = state.zones.firstOrNull { it.id == task?.zoneId }
             if (task != null && zone != null) {
-                LandedTaskCard(task, zone)
+                Box(Modifier.fillMaxWidth()) {
+                    LandedTaskCard(task, zone)
+                    SparkleBurst(celebrate = state.celebrateTask)
+                }
             }
         }
     }
@@ -99,7 +79,10 @@ private fun LandedTaskCard(task: FirstTask, zone: Zone) {
     val zoneColor = Color(zone.colorArgb)
     AwanCard(modifier = Modifier.fillMaxWidth()) {
         AwanText(stringResource(R.string.onboarding_first_task_lands_label), style = AwanTheme.styles.metaText)
-        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
+        ) {
             AwanText(zone.name, style = AwanTheme.styles.headingText)
             AwanText(
                 stringResource(

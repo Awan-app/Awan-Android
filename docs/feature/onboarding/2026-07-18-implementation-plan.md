@@ -1,5 +1,7 @@
 # Onboarding Flow — Implementation Plan (AWAN-47)
 
+> **Status: implemented.** A follow-up motion/UX pass is planned in [`2026-07-20-motion-and-zones-plan.md`](./2026-07-20-motion-and-zones-plan.md), which supersedes the Zones step interaction design described in step 3 below (reorder buttons and always-visible time chips → drag-and-drop plus a time sheet).
+
 ## Context
 
 AWAN-47 (*Story 1.3 — First-run onboarding, Android*) covers the post-auth first-run flow that

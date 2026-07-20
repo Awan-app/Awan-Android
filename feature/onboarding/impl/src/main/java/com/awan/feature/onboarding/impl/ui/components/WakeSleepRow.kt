@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
@@ -38,8 +39,8 @@ fun WakeSleepRow(
                 AwanText(label, style = AwanTheme.styles.bodySecondaryText)
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
-                AwanText(formatClock(minutes), style = AwanTheme.styles.headingText)
-                AwanText("⌄", style = AwanTheme.styles.metaText)
+                AwanText(formatClock(minutes), style = AwanTheme.styles.clockText, maxLines = 1)
+                AwanText("⌄", style = AwanTheme.styles.metaText, modifier = Modifier.clearAndSetSemantics {})
             }
         }
     }

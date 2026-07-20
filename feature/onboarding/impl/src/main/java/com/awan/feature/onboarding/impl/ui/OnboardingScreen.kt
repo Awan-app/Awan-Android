@@ -16,13 +16,15 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -32,13 +34,15 @@ import com.awan.feature.onboarding.impl.presentation.OnboardingEvent
 import com.awan.feature.onboarding.impl.presentation.OnboardingState
 import com.awan.feature.onboarding.impl.presentation.OnboardingStep
 import com.awan.feature.onboarding.impl.presentation.OnboardingViewModel
-import com.awan.feature.onboarding.impl.ui.steps.DayBoundsStep
-import com.awan.feature.onboarding.impl.ui.steps.FirstTaskStep
-import com.awan.feature.onboarding.impl.ui.steps.NameStep
-import com.awan.feature.onboarding.impl.ui.steps.NotificationsStep
-import com.awan.feature.onboarding.impl.ui.steps.TaskLengthStep
-import com.awan.feature.onboarding.impl.ui.steps.WelcomeStep
-import com.awan.feature.onboarding.impl.ui.steps.ZonesStep
+import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.onboarding.impl.ui.components.StepScaffold
+import com.awan.feature.onboarding.impl.ui.steps.DayBoundsStepBody
+import com.awan.feature.onboarding.impl.ui.steps.FirstTaskStepBody
+import com.awan.feature.onboarding.impl.ui.steps.NameStepBody
+import com.awan.feature.onboarding.impl.ui.steps.NotificationsStepBody
+import com.awan.feature.onboarding.impl.ui.steps.TaskLengthStepBody
+import com.awan.feature.onboarding.impl.ui.steps.WelcomeStepBody
+import com.awan.feature.onboarding.impl.ui.steps.ZonesStepBody
 
 @Composable
 fun OnboardingRoot(
@@ -83,25 +87,36 @@ fun OnboardingScreen(
     modifier: Modifier = Modifier,
 ) {
     BackHandler { onAction(OnboardingAction.Back) }
-    AnimatedContent(
-        targetState = state.step,
-        label = "onboardingStep",
+    val exitMillis = AwanTheme.motion.standardMillis
+
+    // No step-change haptic here: AwanButton fires its own on the press that caused the step change.
+    val haptics = LocalHapticFeedback.current
+    LaunchedEffect(state.celebrateTask) {
+        if (state.celebrateTask) haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+    }
+
+    StepScaffold(
+        chrome = stepChrome(state, onAction),
+        onBack = { onAction(OnboardingAction.Back) },
         modifier = modifier,
-        transitionSpec = {
-            val forward = targetState.ordinal >= initialState.ordinal
-            val direction = if (forward) 1 else -1
-            (slideInHorizontally(tween(320)) { width -> direction * width / 5 } + fadeIn(tween(320))) togetherWith
-                (slideOutHorizontally(tween(220)) { width -> -direction * width / 5 } + fadeOut(tween(220)))
-        },
-    ) { step ->
-        when (step) {
-            OnboardingStep.Welcome -> WelcomeStep(onAction)
-            OnboardingStep.Name -> NameStep(state, onAction)
-            OnboardingStep.DayBounds -> DayBoundsStep(state, onAction)
-            OnboardingStep.Zones -> ZonesStep(state, onAction)
-            OnboardingStep.TaskLength -> TaskLengthStep(state, onAction)
-            OnboardingStep.FirstTask -> FirstTaskStep(state, onAction)
-            OnboardingStep.Notifications -> NotificationsStep(state, onAction)
+    ) {
+        AnimatedContent(
+            targetState = state.step,
+            label = "onboardingStep",
+            transitionSpec = {
+                fadeIn(tween(exitMillis)) togetherWith
+                    fadeOut(tween(exitMillis)) + slideOutVertically(tween(exitMillis)) { it / 12 }
+            },
+        ) { step ->
+            when (step) {
+                OnboardingStep.Welcome -> WelcomeStepBody()
+                OnboardingStep.Name -> NameStepBody(state, onAction)
+                OnboardingStep.DayBounds -> DayBoundsStepBody(state, onAction)
+                OnboardingStep.Zones -> ZonesStepBody(state, onAction)
+                OnboardingStep.TaskLength -> TaskLengthStepBody(state, onAction)
+                OnboardingStep.FirstTask -> FirstTaskStepBody(state, onAction)
+                OnboardingStep.Notifications -> NotificationsStepBody(state, onAction)
+            }
         }
     }
 }

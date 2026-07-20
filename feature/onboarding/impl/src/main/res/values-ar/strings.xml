@@ -49,6 +49,13 @@
     <string name="onboarding_bounds_same_time_error">لا يمكن أن يكون وقت الاستيقاظ والنوم متطابقين.</string>
     <string name="onboarding_bounds_short_day_warning">هذا يوم استيقاظ قصير — متأكّد؟</string>
 
+    <string name="onboarding_clock_format">%1$d:%2$02d %3$s</string>
+    <string name="onboarding_clock_am">ص</string>
+    <string name="onboarding_clock_pm">م</string>
+
+    <string name="onboarding_tick_minutes">%1$d د</string>
+    <string name="onboarding_tick_hours">%1$d س</string>
+
     <string name="onboarding_day_preview_label">يومك</string>
     <string name="onboarding_day_preview_open_sky">%1$d ساعة من السماء المفتوحة</string>
     <string name="onboarding_day_preview_starred_task">★ %1$s</string>
@@ -61,6 +68,11 @@
     <string name="onboarding_zone_starts">يبدأ</string>
     <string name="onboarding_zone_ends">ينتهي</string>
     <string name="onboarding_zone_overlap">يتداخل مع منطقة أخرى</string>
+    <string name="onboarding_zone_drag_handle">إعادة ترتيب %1$s</string>
+    <string name="onboarding_zone_move_up">تحريك لأعلى</string>
+    <string name="onboarding_zone_move_down">تحريك لأسفل</string>
+    <string name="onboarding_zone_edit_hours">تحديد الساعات</string>
+    <string name="onboarding_zone_sheet_title">ساعات %1$s</string>
 
     <string name="onboarding_task_length_title">كم تحبّ أن تركّز في الجلسة الواحدة؟</string>
     <string name="onboarding_task_length_caption">مدة التركيز المفضّلة</string>

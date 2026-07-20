@@ -13,6 +13,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 
@@ -22,10 +24,12 @@ fun AwanIconButton(
     onClick: () -> Unit,
     contentDescription: String?,
     modifier: Modifier = Modifier,
+    haptic: HapticFeedbackType? = awanButtonHaptic(AwanButtonVariant.Secondary),
     icon: @Composable () -> Unit,
 ) {
     val colors = AwanTheme.colors
     val shape = RoundedCornerShape(12.dp)
+    val hapticFeedback = LocalHapticFeedback.current
     Box(
         modifier = modifier
             .size(38.dp)
@@ -33,7 +37,10 @@ fun AwanIconButton(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 role = Role.Button,
-                onClick = onClick,
+                onClick = {
+                    haptic?.let(hapticFeedback::performHapticFeedback)
+                    onClick()
+                },
             ),
     ) {
         Box(Modifier.matchParentSize().clip(shape).background(colors.line))

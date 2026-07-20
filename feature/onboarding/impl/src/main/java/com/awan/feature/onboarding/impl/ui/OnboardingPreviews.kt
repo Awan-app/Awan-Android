@@ -28,6 +28,14 @@ private fun PreviewStep(step: OnboardingStep, state: OnboardingState = previewSt
 
 @Preview(name = "Zones") @Composable private fun ZonesPreview() = PreviewStep(OnboardingStep.Zones)
 
+@Preview(name = "Zones · RTL", locale = "ar")
+@Composable
+private fun ZonesRtlPreview() = PreviewStep(OnboardingStep.Zones)
+
+@Preview(name = "Day bounds · RTL", locale = "ar")
+@Composable
+private fun DayBoundsRtlPreview() = PreviewStep(OnboardingStep.DayBounds)
+
 @Preview(name = "Task length") @Composable private fun TaskLengthPreview() = PreviewStep(OnboardingStep.TaskLength)
 
 @Preview(name = "First task · celebrating")

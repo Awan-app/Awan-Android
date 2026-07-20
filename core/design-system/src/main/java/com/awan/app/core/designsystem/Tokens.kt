@@ -1,5 +1,8 @@
 package com.awan.app.core.designsystem
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.CornerBasedShape
@@ -194,6 +197,21 @@ internal val AwanTypographyTokens = AwanTypography(
     ),
 )
 
+/**
+ * A fully resolved text appearance: a typography token plus the colour it renders in. An
+ * [Color.Unspecified] colour means "inherit whatever `LocalContentColor` provides", which is how a
+ * button's label picks up its animated content colour.
+ *
+ * Text appearance deliberately does **not** go through the Styles API. `Modifier.styleable` delivers
+ * typography to text by *inheritance*, and in foundation 1.11.4 the inherited-style cache
+ * (`StyleOuterNode.ancestorNodes`) is appended to on every resolve and never cleared — so a text
+ * node that moves or is reused merges in the styles of nodes that are no longer its ancestors and
+ * silently renders in the wrong family, weight or size. Handing `BasicText` a concrete [TextStyle]
+ * is priority 1 in the Styles precedence table and cannot be corrupted by that cache.
+ */
+@Immutable
+data class AwanTextStyle(val textStyle: TextStyle, val color: Color = Color.Unspecified)
+
 @Immutable
 data class AwanShapes(
     val chip: CornerBasedShape,
@@ -221,3 +239,22 @@ data class AwanSpacing(
 )
 
 internal val AwanSpacingTokens = AwanSpacing()
+
+/** Spring parameters rather than a built spec, so one token serves Float, Dp, IntOffset and IntSize call sites. */
+@Immutable
+data class AwanSpring(val dampingRatio: Float, val stiffness: Float) {
+    fun <T> spec(): SpringSpec<T> = spring(dampingRatio = dampingRatio, stiffness = stiffness)
+}
+
+@Immutable
+data class AwanMotion(
+    val settle: AwanSpring = AwanSpring(0.85f, Spring.StiffnessMediumLow),
+    val bouncy: AwanSpring = AwanSpring(0.55f, Spring.StiffnessLow),
+    val playful: AwanSpring = AwanSpring(0.42f, Spring.StiffnessMediumLow),
+    val fastMillis: Int = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
+    val standardMillis: Int = 220,
+    val emphasizedMillis: Int = 320,
+    val staggerMillis: Int = 55,
+)
+
+internal val AwanMotionTokens = AwanMotion()

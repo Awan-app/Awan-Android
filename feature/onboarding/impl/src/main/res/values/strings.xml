@@ -41,6 +41,13 @@
     <string name="onboarding_bounds_same_time_error">Wake and sleep times can\'t be the same.</string>
     <string name="onboarding_bounds_short_day_warning">That\'s a short waking day — sure?</string>
 
+    <string name="onboarding_clock_format">%1$d:%2$02d %3$s</string>
+    <string name="onboarding_clock_am">AM</string>
+    <string name="onboarding_clock_pm">PM</string>
+
+    <string name="onboarding_tick_minutes">%1$dm</string>
+    <string name="onboarding_tick_hours">%1$dh</string>
+
     <string name="onboarding_day_preview_label">YOUR DAY</string>
     <string name="onboarding_day_preview_open_sky">%1$d h of open sky</string>
     <string name="onboarding_day_preview_starred_task">★ %1$s</string>
@@ -53,6 +60,11 @@
     <string name="onboarding_zone_starts">Starts</string>
     <string name="onboarding_zone_ends">Ends</string>
     <string name="onboarding_zone_overlap">Overlaps another zone</string>
+    <string name="onboarding_zone_drag_handle">Reorder %1$s</string>
+    <string name="onboarding_zone_move_up">Move up</string>
+    <string name="onboarding_zone_move_down">Move down</string>
+    <string name="onboarding_zone_edit_hours">Set hours</string>
+    <string name="onboarding_zone_sheet_title">%1$s hours</string>
 
     <string name="onboarding_task_length_title">How long do you like to focus in one go?</string>
     <string name="onboarding_task_length_caption">preferred focus block</string>
