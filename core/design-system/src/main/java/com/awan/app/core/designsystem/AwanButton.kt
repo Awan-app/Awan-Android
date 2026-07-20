@@ -5,6 +5,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -94,7 +95,7 @@ fun AwanButton(
     ).value
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -106,8 +107,16 @@ fun AwanButton(
                 },
             )
             .focusable(enabled = enabled, interactionSource = interactionSource)
-            .styleable(styleState, AwanTheme.styles.buttonFocus),
+            .styleable(styleState, AwanTheme.styles.buttonFocus)
+            // Touch-target floor as a real min, not the style's minWidth — the Styles API's
+            // minWidth overrides the incoming constraint, which would clobber a caller's
+            // fillMaxWidth back to 48dp before propagateMinConstraints reaches the face.
+            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
         contentAlignment = Alignment.TopCenter,
+        // The caller's modifier sizes this Box, but the face Row is what the rim matches. Passing
+        // the min constraints down makes a caller's fillMaxWidth reach the face too, while a
+        // wrap-content caller still lets the face size itself.
+        propagateMinConstraints = true,
     ) {
         Box(
             modifier = Modifier
@@ -120,7 +129,7 @@ fun AwanButton(
             LocalAwanTextStyle provides AwanTheme.styles.buttonLabel,
         ) {
             Row(
-                modifier = modifier
+                modifier = Modifier
                     .padding(bottom = rimDepth, start = rimSide)
                     .styleable(styleState, faceStyle, style),
                 horizontalArrangement = Arrangement.Center,

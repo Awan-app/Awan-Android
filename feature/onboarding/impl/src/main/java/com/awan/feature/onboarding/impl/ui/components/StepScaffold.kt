@@ -1,15 +1,10 @@
 package com.awan.feature.onboarding.impl.ui.components
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateBounds
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -42,9 +37,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -73,62 +68,72 @@ fun StepScaffold(
 ) {
     val skip by rememberUpdatedState(chrome.onSkip)
     val motion = AwanTheme.motion
-    // Critically damped: the mascot's bounds shrink to zero when hidden, and an overshooting
-    // spring would interpolate through a negative size, which Constraints rejects.
-    val mascotBounds = remember(motion) {
-        BoundsTransform { _, _ ->
-            spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = motion.settle.stiffness)
-        }
-    }
     Column(
         modifier = modifier
             .fillMaxSize()
             .styleable(null, AwanTheme.styles.screen)
-            .padding(horizontal = AwanTheme.spacing.xl)
             .padding(top = AwanTheme.spacing.sm, bottom = AwanTheme.spacing.md),
     ) {
+        // Both buttons stay composed on every step. Welcome is the only step with neither, and
+        // AnimatedVisibility would drop them once their fade ended — collapsing the row to zero
+        // height a beat after the transition looked finished, which reads as a late shift.
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AwanTheme.spacing.xl),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BackSlot(visible = chrome.showBack, onBack = onBack)
             Spacer(Modifier.weight(1f))
-            AnimatedVisibility(visible = chrome.onSkip != null, enter = fadeIn(), exit = fadeOut()) {
-                AwanButton(onClick = { skip?.invoke() }, variant = AwanButtonVariant.Quiet) {
-                    AwanText(stringResource(R.string.onboarding_skip), style = AwanTheme.styles.skipLink)
-                }
+            val skipVisible = chrome.onSkip != null
+            AwanButton(
+                onClick = { skip?.invoke() },
+                enabled = skipVisible,
+                variant = AwanButtonVariant.Quiet,
+                modifier = Modifier.fadeSlot(skipVisible),
+            ) {
+                AwanText(stringResource(R.string.onboarding_skip), style = AwanTheme.styles.skipLink)
             }
         }
         Spacer(Modifier.size(AwanTheme.spacing.sm))
 
-        StepProgress(current = chrome.progressCurrent)
+        StepProgress(
+            current = chrome.progressCurrent,
+            modifier = Modifier.padding(horizontal = AwanTheme.spacing.xl),
+        )
 
-        LookaheadScope {
-            // The body slot's measurement rules must not change between steps. AnimatedContent
-            // keeps the outgoing body composed for the whole transition, and a body that lost its
-            // height bound mid-flight would report its full scroll height and blow up the region.
-            val lead by animateDpAsState(
-                targetValue = chrome.leadingSpace,
-                animationSpec = motion.settle.spec(),
-                label = "leadingSpace",
+        // The body slot's measurement rules must not change between steps. AnimatedContent
+        // keeps the outgoing body composed for the whole transition, and a body that lost its
+        // height bound mid-flight would report its full scroll height and blow up the region.
+        val lead by animateDpAsState(
+            targetValue = chrome.leadingSpace,
+            animationSpec = motion.settle.spec(),
+            label = "leadingSpace",
+        )
+        // The mascot's own width animates, so the column reflows it continuously and the drawn
+        // image tracks its slot exactly. Animating the layout bounds instead (animateBounds) left
+        // the image snapping to its new size while the slot sprang toward it — that was the jump.
+        val mascotWidth by animateDpAsState(
+            targetValue = chrome.mascotWidth,
+            animationSpec = motion.settle.spec(),
+            label = "mascotWidth",
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = AwanTheme.spacing.xl)
+                .clipToBounds(),
+        ) {
+            Spacer(Modifier.height(lead))
+            Mascot(
+                expression = chrome.mascot,
+                width = mascotWidth,
+                visible = chrome.mascotWidth > 0.dp,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
             )
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .clipToBounds(),
-            ) {
-                Spacer(Modifier.height(lead))
-                Mascot(
-                    expression = chrome.mascot,
-                    width = chrome.mascotWidth,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .animateBounds(this@LookaheadScope, boundsTransform = mascotBounds),
-                )
-                Box(Modifier.weight(1f).fillMaxWidth()) {
-                    body()
-                }
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                body()
             }
         }
 
@@ -162,7 +167,7 @@ fun StepBody(
  * the whole flow rather than restarting when the bar first appears.
  */
 @Composable
-private fun StepProgress(current: Int) {
+private fun StepProgress(current: Int, modifier: Modifier = Modifier) {
     val visible = current > 0
     val alpha by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
@@ -177,19 +182,25 @@ private fun StepProgress(current: Int) {
     AwanStepProgress(
         current = current,
         count = OnboardingStep.DOT_COUNT,
-        modifier = Modifier.graphicsLayer { this.alpha = alpha },
+        modifier = modifier.graphicsLayer { this.alpha = alpha },
     )
     Spacer(Modifier.size(height))
 }
 
 /**
  * Sizing the mascot to zero rather than removing it keeps the single instance alive across every
- * step, so its float never restarts and animateBounds can carry it between the Welcome and Name
- * layouts as one travelling object.
+ * step, so its float never restarts and it glides between the Welcome and Name layouts.
+ *
+ * [visible] tracks the *target* width, not the animated one, so the fade runs alongside the resize
+ * instead of only at the frame it reaches zero.
  */
 @Composable
-private fun Mascot(expression: MascotExpression?, width: Dp, modifier: Modifier = Modifier) {
-    val visible = width > 0.dp
+private fun Mascot(
+    expression: MascotExpression?,
+    width: Dp,
+    visible: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val alpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
         animationSpec = AwanTheme.motion.settle.spec(),
@@ -197,7 +208,8 @@ private fun Mascot(expression: MascotExpression?, width: Dp, modifier: Modifier 
     )
     Box(modifier.graphicsLayer { this.alpha = alpha }) {
         Crossfade(targetState = expression ?: MascotExpression.Idle, label = "mascotExpression") {
-            AwanMascot(expression = it, width = width)
+            // settle is a bouncy spring; a negative width would reach Constraints and crash.
+            AwanMascot(expression = it, width = width.coerceAtLeast(0.dp))
         }
     }
 }
@@ -226,6 +238,7 @@ private fun StepFooter(chrome: StepChrome) {
             enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = AwanTheme.spacing.xl)
                 .graphicsLayer {
                     scaleX = pop.value
                     scaleY = pop.value
@@ -283,21 +296,39 @@ fun CenteredHeadline(title: String, subtitle: String? = null, modifier: Modifier
     }
 }
 
-/** Fixed-width so the chevron can fade without shifting the skip link beside it. */
+/**
+ * Fades in place so the chevron never shifts the skip link beside it, nor the content below when
+ * Welcome leaves the row with nothing in it.
+ */
 @Composable
 private fun BackSlot(visible: Boolean, onBack: () -> Unit) {
     val label = stringResource(R.string.onboarding_back)
-    Box {
-        AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
-            AwanButton(
-                onClick = onBack,
-                variant = AwanButtonVariant.Secondary,
-                modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = label },
-            ) {
-                BackChevron()
-            }
-        }
+    AwanButton(
+        onClick = onBack,
+        enabled = visible,
+        variant = AwanButtonVariant.Secondary,
+        modifier = Modifier
+            .fadeSlot(visible)
+            .semantics(mergeDescendants = true) { contentDescription = label },
+    ) {
+        BackChevron()
     }
+}
+
+/**
+ * Fades a control without letting it leave the layout. [hideFromAccessibility] plus the caller's
+ * `enabled = false` keeps a faded-out control off TalkBack and out of the click path, which
+ * removing it from composition used to do for free.
+ */
+@Composable
+private fun Modifier.fadeSlot(visible: Boolean): Modifier {
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = AwanTheme.motion.settle.spec(),
+        label = "fadeSlot",
+    )
+    return graphicsLayer { this.alpha = alpha }
+        .then(if (visible) Modifier else Modifier.semantics { hideFromAccessibility() })
 }
 
 @Composable

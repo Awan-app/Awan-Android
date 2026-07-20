@@ -96,8 +96,6 @@ object AwanStyles {
         shape(androidx.compose.foundation.shape.RoundedCornerShape(23.dp))
         border(3.dp, Color.Transparent)
         contentPadding(2.dp)
-        minWidth(48.dp)
-        minHeight(48.dp)
         focused { borderColor(colors.sky) }
     }
 
