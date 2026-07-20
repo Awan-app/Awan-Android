@@ -66,8 +66,9 @@ fun AwanApp(
                     onNavigateToNext = { navigator.navigate(com.awan.feature.auth.api.LoginRoute) }
                 )
                 authEntry(
-                    onNavigateToOtp = { navigator.navigate(com.awan.feature.auth.api.OtpRoute) },
-                    onNavigateToNext = { navigator.replaceAll(com.awan.feature.profile_setup.api.ProfileSetupRoute) }
+                    onNavigateToOtp = { email -> navigator.navigate(com.awan.feature.auth.api.OtpRoute(email)) },
+                    onNavigateToNext = { navigator.replaceAll(com.awan.feature.profile_setup.api.ProfileSetupRoute) },
+                    onPopBackStack = { navigator.goBack() }
                 )
                 profileSetupEntry(
                     onNavigateToHome = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) }
