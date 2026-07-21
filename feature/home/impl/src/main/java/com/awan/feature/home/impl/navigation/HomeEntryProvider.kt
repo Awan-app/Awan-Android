@@ -5,8 +5,10 @@ import com.awan.core.navigation.Route
 import com.awan.feature.home.api.HomeRoute
 import com.awan.feature.home.impl.ui.HomeScreen
 
-fun EntryProviderScope<Route>.homeEntry() {
+fun EntryProviderScope<Route>.homeEntry(
+    onLogout: () -> Unit,
+) {
     entry<HomeRoute> {
-        HomeScreen()
+        HomeScreen(onLogout = onLogout)
     }
 }

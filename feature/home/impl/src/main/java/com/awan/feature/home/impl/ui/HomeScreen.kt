@@ -5,7 +5,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,19 +14,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,10 +36,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.awan.app.core.domain.auth.model.User
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
+    onLogout: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -75,8 +74,20 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(0.9f)
             ) {
                 Text(
-                    if (uiState.isDataVisible) "Hide DataStore Info" else "🧪 Test: Inspect DataStore Auth Data"
+                    if (uiState.isDataVisible) "Hide User Info" else "🧪 Test: Inspect User Domain Object"
                 )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = { viewModel.logout(onLogout) },
+                modifier = Modifier.fillMaxWidth(0.9f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("🧪 Test: Logout / Clear Session")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -90,21 +101,32 @@ fun HomeScreen(
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
-                uiState.savedAuthData?.let { data ->
-                    AuthDataInspectionCard(
-                        data = data,
-                        onRefresh = { viewModel.loadSavedAuthData() }
+                uiState.user?.let { user ->
+                    UserDataInspectionCard(
+                        user = user,
+                        onRefreshLocal = { viewModel.loadSavedAuthData() },
+                        onRefreshRemote = { viewModel.refreshUserData() },
                     )
                 }
+            }
+
+            uiState.errorMessage?.let { error ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun AuthDataInspectionCard(
-    data: SavedAuthData,
-    onRefresh: () -> Unit,
+private fun UserDataInspectionCard(
+    user: User,
+    onRefreshLocal: () -> Unit,
+    onRefreshRemote: () -> Unit,
 ) {
     Card(
         modifier = Modifier
@@ -126,31 +148,36 @@ private fun AuthDataInspectionCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "🔒 DataStore Inspection",
+                    text = "🔒 User Domain Object",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                OutlinedButton(onClick = onRefresh) {
-                    Text("Refresh")
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    OutlinedButton(onClick = onRefreshLocal) {
+                        Text("Get")
+                    }
+                    Button(onClick = onRefreshRemote) {
+                        Text("Refresh API")
+                    }
                 }
             }
 
             HorizontalDivider()
 
-            DataRow(label = "Email", value = data.email ?: "Not Saved")
-            DataRow(label = "User ID", value = data.userId ?: "Not Saved")
+            DataRow(label = "Email", value = user.email ?: "Not Saved")
+            DataRow(label = "User ID", value = user.id ?: "Not Saved")
 
             HorizontalDivider()
 
             DataRow(
                 label = "Access Token",
-                value = data.accessToken ?: "Not Saved",
+                value = user.accessToken ?: "Not Saved",
                 isMonospace = true
             )
             DataRow(
                 label = "Refresh Token",
-                value = data.refreshToken ?: "Not Saved",
+                value = user.refreshToken ?: "Not Saved",
                 isMonospace = true
             )
         }
