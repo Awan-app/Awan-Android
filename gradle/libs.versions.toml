@@ -115,9 +115,6 @@ room-ktx      = { group = "androidx.room", name = "room-ktx",      version.ref =
 room-compiler = { group = "androidx.room", name = "room-compiler",  version.ref = "room" }
 room-testing  = { group = "androidx.room", name = "room-testing",   version.ref = "room" }
 
-# Testing — coroutines
-kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
-
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
