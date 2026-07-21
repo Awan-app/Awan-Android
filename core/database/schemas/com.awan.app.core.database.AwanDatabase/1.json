@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "2afc1de44f51974b32fd913894cf68c5",
+    "identityHash": "8c1f1cbcd136dd4ff94da8e9446b0d61",
     "entities": [
       {
         "tableName": "users",
@@ -375,17 +375,17 @@
       },
       {
         "tableName": "template_days_of_week",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`templateId` TEXT NOT NULL, `dayOfWeek` TEXT NOT NULL, PRIMARY KEY(`templateId`, `dayOfWeek`), FOREIGN KEY(`templateId`) REFERENCES `templates`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`dayOfWeek` TEXT NOT NULL, `templateId` TEXT NOT NULL, PRIMARY KEY(`dayOfWeek`), FOREIGN KEY(`templateId`) REFERENCES `templates`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
-            "fieldPath": "templateId",
-            "columnName": "templateId",
+            "fieldPath": "dayOfWeek",
+            "columnName": "dayOfWeek",
             "affinity": "TEXT",
             "notNull": true
           },
           {
-            "fieldPath": "dayOfWeek",
-            "columnName": "dayOfWeek",
+            "fieldPath": "templateId",
+            "columnName": "templateId",
             "affinity": "TEXT",
             "notNull": true
           }
@@ -393,7 +393,6 @@
         "primaryKey": {
           "autoGenerate": false,
           "columnNames": [
-            "templateId",
             "dayOfWeek"
           ]
         },
@@ -406,15 +405,6 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_template_days_of_week_templateId` ON `${TABLE_NAME}` (`templateId`)"
-          },
-          {
-            "name": "index_template_days_of_week_dayOfWeek",
-            "unique": false,
-            "columnNames": [
-              "dayOfWeek"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_template_days_of_week_dayOfWeek` ON `${TABLE_NAME}` (`dayOfWeek`)"
           }
         ],
         "foreignKeys": [
@@ -558,7 +548,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2afc1de44f51974b32fd913894cf68c5')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8c1f1cbcd136dd4ff94da8e9446b0d61')"
     ]
   }
 }
