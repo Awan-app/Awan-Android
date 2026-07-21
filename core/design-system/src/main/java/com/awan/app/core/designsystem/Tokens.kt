@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-internal const val AWAN_BUTTON_ANIMATION_DURATION_MILLIS = 120
+internal const val AWAN_BUTTON_ANIMATION_DURATION_MILLIS = 40
 internal val AwanButtonRimDepth = 4.dp
 internal val AwanButtonRimSide = 2.dp
 
@@ -167,7 +167,7 @@ internal val AwanTypographyTokens = AwanTypography(
         lineHeight = 22.sp,
     ),
     body = TextStyle(
-        fontFamily = Nunito,
+        fontFamily = Baloo2,
         fontWeight = FontWeight.ExtraBold,
         fontSize = 14.5.sp,
         lineHeight = 21.sp,
@@ -187,7 +187,7 @@ internal val AwanTypographyTokens = AwanTypography(
         letterSpacing = 0.5.sp,
     ),
     caption = TextStyle(
-        fontFamily = Nunito,
+        fontFamily = Baloo2,
         fontWeight = FontWeight.Bold,
         fontSize = 11.5.sp,
         lineHeight = 17.sp,
@@ -240,4 +240,3 @@ val MascotSize = 200.dp
 const val OTP_SHAKE_DURATION_MILLIS = 400
 
 const val AUTH_ENTER_DURATION_MILLIS = 300
-

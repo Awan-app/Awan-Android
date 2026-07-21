@@ -84,6 +84,11 @@ object AwanStyles {
         fontFamily(typography.body.fontFamily!!)
         contentColor(colors.textSecondary)
     }
+    val errorText = Style {
+        textStyle(typography.caption)
+        fontFamily(typography.caption.fontFamily!!)
+        contentColor(colors.destructive)
+    }
 
 
     val buttonFocus = Style {

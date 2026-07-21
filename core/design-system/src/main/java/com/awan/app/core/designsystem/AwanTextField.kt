@@ -1,6 +1,10 @@
 package com.awan.app.core.designsystem
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.style.Style
 import androidx.compose.foundation.style.rememberUpdatedStyleState
 import androidx.compose.foundation.style.styleable
@@ -15,10 +19,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -47,8 +47,6 @@ fun AwanTextField(
         Modifier
     }
 
-    // The styleable modifier accepts (state, baseStyle, overlayStyle).
-    // Chain two styleable calls: first applies base + error overlay, second applies caller style.
     val baseModifier = if (isError) {
         Modifier.styleable(styleState, AwanTheme.styles.textField, AwanTheme.styles.textFieldError)
     } else {
@@ -63,6 +61,7 @@ fun AwanTextField(
             .then(baseModifier)
             .styleable(styleState, style),
         enabled = enabled,
+        textStyle = AwanTheme.typography.body.copy(color = AwanTheme.colors.textPrimary),
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         visualTransformation = visualTransformation,
