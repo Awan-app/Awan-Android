@@ -116,4 +116,20 @@ class OnboardingViewModelTest {
         assertEquals(moved.durationMinutes, after.first().durationMinutes)
         assertTrue(viewModel.state.value.overlappingZoneIds.isEmpty())
     }
+
+    @Test
+    fun `skipping from Welcome completes onboarding with all defaults`() = runTest(testDispatcher.scheduler) {
+        val events = mutableListOf<OnboardingEvent>()
+        backgroundScope.launch(testDispatcher) {
+            viewModel.events.collect { events += it }
+        }
+
+        assertEquals(OnboardingStep.Welcome, viewModel.state.value.step)
+        viewModel.onAction(OnboardingAction.SkipSetup)
+
+        assertEquals(DayBounds.Default, viewModel.state.value.bounds)
+        assertEquals(OnboardingData.DEFAULT_TASK_LENGTH_MINUTES, viewModel.state.value.preferredTaskLengthMinutes)
+        assertTrue(events.contains(OnboardingEvent.NavigateHome))
+        assertTrue(repository.draft.first().completed)
+    }
 }

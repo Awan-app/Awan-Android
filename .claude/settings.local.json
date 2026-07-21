@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Atlassian_Rovo__createJiraIssue",
+      "Bash(cd *)",
+      "Bash(gh api *)"
+    ]
+  },
+  "skillOverrides": {}
+}

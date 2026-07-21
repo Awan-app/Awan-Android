@@ -23,8 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanText
@@ -49,6 +51,22 @@ fun DayTimeline(
     showZones: Boolean = true,
 ) {
     val colors = AwanTheme.colors
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val gradient = if (isRtl) {
+        Brush.horizontalGradient(
+            0f to colors.skyDusk,
+            0.38f to colors.skyMidday,
+            0.72f to colors.skyMorning,
+            1f to colors.skyDawn
+        )
+    } else {
+        Brush.horizontalGradient(
+            0f to colors.skyDawn,
+            0.28f to colors.skyMorning,
+            0.62f to colors.skyMidday,
+            1f to colors.skyDusk
+        )
+    }
     AwanCard(modifier = modifier.fillMaxWidth()) {
         AwanText(stringResource(R.string.onboarding_day_preview_label), style = AwanTheme.styles.metaText)
         Spacer(Modifier.height(AwanTheme.spacing.xs))
@@ -58,12 +76,7 @@ fun DayTimeline(
                 .height(TrackHeight)
                 .clip(AwanTheme.shapes.chip)
                 .background(
-                    Brush.horizontalGradient(
-                        0f to colors.skyDawn,
-                        0.28f to colors.skyMorning,
-                        0.62f to colors.skyMidday,
-                        1f to colors.skyDusk,
-                    ),
+                    gradient,
                 )
                 // Vertical shade over the sky ramp so the 44dp band reads as a lit surface
                 // rather than a flat swatch.

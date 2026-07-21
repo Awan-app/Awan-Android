@@ -21,10 +21,14 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -34,7 +38,9 @@ import com.awan.feature.onboarding.impl.presentation.OnboardingEvent
 import com.awan.feature.onboarding.impl.presentation.OnboardingState
 import com.awan.feature.onboarding.impl.presentation.OnboardingStep
 import com.awan.feature.onboarding.impl.presentation.OnboardingViewModel
+import com.awan.app.core.designsystem.AwanActionSheet
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.ui.components.StepScaffold
 import com.awan.feature.onboarding.impl.ui.steps.DayBoundsStepBody
 import com.awan.feature.onboarding.impl.ui.steps.FirstTaskStepBody
@@ -95,8 +101,20 @@ fun OnboardingScreen(
         if (state.celebrateTask) haptics.performHapticFeedback(HapticFeedbackType.Confirm)
     }
 
+    var showSkipConfirm by remember { mutableStateOf(false) }
+
+    // The Welcome step's secondary "Skip setup" button opens a confirmation sheet instead of
+    // skipping immediately. Other steps pass Skip through to the ViewModel unchanged.
+    val wrappedAction: (OnboardingAction) -> Unit = { action ->
+        if (action == OnboardingAction.Skip && state.step == OnboardingStep.Welcome) {
+            showSkipConfirm = true
+        } else {
+            onAction(action)
+        }
+    }
+
     StepScaffold(
-        chrome = stepChrome(state, onAction),
+        chrome = stepChrome(state, wrappedAction),
         onBack = { onAction(OnboardingAction.Back) },
         modifier = modifier,
     ) {
@@ -122,6 +140,22 @@ fun OnboardingScreen(
                 OnboardingStep.Notifications -> NotificationsStepBody(state, onAction)
             }
         }
+    }
+
+    if (showSkipConfirm) {
+        AwanActionSheet(
+            title = stringResource(R.string.onboarding_skip_confirm_title),
+            body = stringResource(R.string.onboarding_skip_confirm_body),
+            icon = { AwanMascot(expression = com.awan.app.core.designsystem.MascotExpression.Curious) },
+            primaryLabel = stringResource(R.string.onboarding_skip_confirm_cancel),
+            onPrimary = { showSkipConfirm = false },
+            secondaryLabel = stringResource(R.string.onboarding_skip_confirm_action),
+            onSecondary = {
+                showSkipConfirm = false
+                onAction(OnboardingAction.SkipSetup)
+            },
+            onDismiss = { showSkipConfirm = false },
+        )
     }
 }
 

@@ -77,6 +77,7 @@ class OnboardingViewModel @Inject constructor(
 
             OnboardingAction.Next -> onNext()
             OnboardingAction.Skip -> onSkip()
+            OnboardingAction.SkipSetup -> complete()
             OnboardingAction.Back -> onBack()
         }
     }

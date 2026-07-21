@@ -37,6 +37,11 @@
     <string name="onboarding_welcome_greeting">مرحباً، أنا أوان.\nالسماء لك اليوم.</string>
     <string name="onboarding_welcome_subtitle">أخبرني قليلاً عن يومك وسأبني جدولاً يعالج نفسه بهدوء عندما تتغيّر الظروف.</string>
 
+    <string name="onboarding_skip_confirm_title">متأكد من التخطي؟</string>
+    <string name="onboarding_skip_confirm_body">إذا تخطيت، سأضطر لتخمين جدولك باستخدام الإعدادات القياسية (7 ص – 11 م). لن يستغرق إعداد يومك الحقيقي سوى دقيقة واحدة!</string>
+    <string name="onboarding_skip_confirm_cancel">متابعة الإعداد</string>
+    <string name="onboarding_skip_confirm_action">تخطي على أي حال</string>
+
     <string name="onboarding_name_title">بماذا أناديك؟</string>
     <string name="onboarding_name_subtitle">حتى أحيّيك كما يليق كل صباح.</string>
     <string name="onboarding_name_first_placeholder">الاسم الأول</string>

@@ -17,5 +17,6 @@ sealed interface OnboardingAction {
     data object NotificationsPermanentlyDenied : OnboardingAction
     data object Next : OnboardingAction
     data object Skip : OnboardingAction
+    data object SkipSetup : OnboardingAction
     data object Back : OnboardingAction
 }

@@ -29,6 +29,11 @@
     <string name="onboarding_welcome_greeting">Hi, I\'m Awan.\nThe sky is yours today.</string>
     <string name="onboarding_welcome_subtitle">Tell me a little about your day and I\'ll build a schedule that quietly heals itself when life happens.</string>
 
+    <string name="onboarding_skip_confirm_title">Sure you want to skip?</string>
+    <string name="onboarding_skip_confirm_body">If we skip, I\'ll have to guess your schedule using standard defaults (7 AM – 11 PM). It only takes a minute to set up your real day!</string>
+    <string name="onboarding_skip_confirm_cancel">Continue setup</string>
+    <string name="onboarding_skip_confirm_action">Skip anyway</string>
+
     <string name="onboarding_name_title">What should I call you?</string>
     <string name="onboarding_name_subtitle">So I can greet you properly each morning.</string>
     <string name="onboarding_name_first_placeholder">First name</string>

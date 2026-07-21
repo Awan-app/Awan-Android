@@ -16,7 +16,7 @@ fun <T> ObserveAsEvents(events: Flow<T>, onEvent: (T) -> Unit) {
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(events, lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            events.collectLatest(currentOnEvent)
+            events.collect(currentOnEvent)
         }
     }
 }
