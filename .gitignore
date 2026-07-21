@@ -13,4 +13,5 @@
 *.jks
 *.keystore
 keystore.properties
-.agents/.claude/
+.agents/
+.claude/

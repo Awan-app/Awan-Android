@@ -8,6 +8,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 /**
@@ -44,6 +45,7 @@ fun AwanActionSheet(
                 .padding(horizontal = AwanTheme.spacing.xl)
                 .padding(bottom = AwanTheme.spacing.xxl),
             verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (icon != null) {
                 icon()
@@ -57,9 +59,9 @@ fun AwanActionSheet(
             ) {
                 AwanText(primaryLabel)
             }
-            if (secondaryLabel != null && onSecondary != null) {
+            if (secondaryLabel != null) {
                 AwanButton(
-                    onClick = onSecondary,
+                    onClick = onSecondary ?: {},
                     variant = AwanButtonVariant.Quiet,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
