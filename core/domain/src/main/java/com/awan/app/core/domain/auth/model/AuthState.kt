@@ -1,4 +1,4 @@
-package com.awan.feature.auth.impl.domain.model
+package com.awan.app.core.domain.auth.model
 
 sealed interface AuthState {
     data object Unauthenticated : AuthState

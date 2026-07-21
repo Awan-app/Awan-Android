@@ -1,14 +1,16 @@
-package com.awan.feature.auth.impl.data.repository
+package com.awan.app.core.data.auth.repository
 
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.data.auth.remote.AuthRemoteDataSource
 import com.awan.app.core.datastore.auth.AuthTokenProvider
+import com.awan.app.core.domain.auth.model.AuthSession
+import com.awan.app.core.domain.auth.model.User
+import com.awan.app.core.domain.auth.repository.AuthRepository
 import com.awan.app.core.network.device.DeviceIdProvider
 import com.awan.app.core.network.dto.LogoutRequest
+import com.awan.app.core.network.dto.RefreshTokenRequest
 import com.awan.app.core.network.dto.RequestOtpRequest
 import com.awan.app.core.network.dto.VerifyOtpRequest
-import com.awan.feature.auth.impl.data.remote.AuthRemoteDataSource
-import com.awan.feature.auth.impl.domain.model.AuthSession
-import com.awan.feature.auth.impl.domain.model.User
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -55,6 +57,8 @@ class AuthRepositoryImpl @Inject constructor(
                             id = userDto.id,
                             email = userDto.email,
                             isNew = userDto.isNew ?: false,
+                            accessToken = result.data.accessToken,
+                            refreshToken = result.data.refreshToken,
                         )
                     },
                 )
@@ -81,4 +85,52 @@ class AuthRepositoryImpl @Inject constructor(
 
     override fun observeIsLoggedIn(): Flow<Boolean> =
         authTokenProvider.observeIsLoggedIn()
+
+    override suspend fun getUser(): User? {
+        val email = authTokenProvider.getUserEmail()
+        val userId = authTokenProvider.getUserId()
+        val accessToken = authTokenProvider.getAccessToken()
+        val refreshToken = authTokenProvider.getRefreshToken()
+
+        if (email == null && userId == null && accessToken == null && refreshToken == null) {
+            return null
+        }
+
+        return User(
+            id = userId,
+            email = email,
+            accessToken = accessToken,
+            refreshToken = refreshToken,
+        )
+    }
+
+    override suspend fun refreshUserData(): Result<User> {
+        val refreshToken = authTokenProvider.getRefreshToken()
+            ?: return Result.Error(com.awan.app.core.common.error.AppError.Unauthorized)
+
+        val result = remoteDataSource.refreshToken(
+            RefreshTokenRequest(
+                refreshToken = refreshToken,
+                deviceId = deviceIdProvider.getDeviceId(),
+            )
+        )
+
+        return when (result) {
+            is Result.Success -> {
+                authTokenProvider.saveTokens(
+                    accessToken = result.data.accessToken,
+                    refreshToken = result.data.refreshToken,
+                )
+                val user = getUser() ?: User(
+                    id = authTokenProvider.getUserId(),
+                    email = authTokenProvider.getUserEmail(),
+                    accessToken = result.data.accessToken,
+                    refreshToken = result.data.refreshToken,
+                )
+                Result.Success(user)
+            }
+            is Result.Error -> Result.Error(result.error)
+            Result.Loading -> Result.Loading
+        }
+    }
 }

@@ -9,11 +9,11 @@ android {
 
 dependencies {
     implementation(project(":feature:auth:api"))
+    implementation(project(":core:domain"))
+    implementation(project(":core:data"))
     implementation(project(":core:design-system"))
     implementation(project(":core:navigation"))
-    implementation(project(":core:network"))
-    implementation(project(":core:datastore"))
+
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.lottie.compose)
-    implementation(libs.kotlinx.serialization.json)
 }

@@ -1,9 +1,11 @@
-package com.awan.feature.auth.impl.domain.model
+package com.awan.app.core.domain.auth.model
 
 data class User(
     val id: String?,
     val email: String?,
-    val isNew: Boolean,
+    val isNew: Boolean = false,
+    val accessToken: String? = null,
+    val refreshToken: String? = null,
 )
 
 data class AuthSession(

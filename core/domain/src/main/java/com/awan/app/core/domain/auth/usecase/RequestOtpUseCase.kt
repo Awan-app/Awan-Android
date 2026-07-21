@@ -1,7 +1,7 @@
-package com.awan.feature.auth.impl.domain.usecase
+package com.awan.app.core.domain.auth.usecase
 
 import com.awan.app.core.common.result.Result
-import com.awan.feature.auth.impl.data.repository.AuthRepository
+import com.awan.app.core.domain.auth.repository.AuthRepository
 import javax.inject.Inject
 
 class RequestOtpUseCase @Inject constructor(

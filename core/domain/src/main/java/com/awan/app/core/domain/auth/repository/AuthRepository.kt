@@ -1,7 +1,8 @@
-package com.awan.feature.auth.impl.data.repository
+package com.awan.app.core.domain.auth.repository
 
 import com.awan.app.core.common.result.Result
-import com.awan.feature.auth.impl.domain.model.AuthSession
+import com.awan.app.core.domain.auth.model.AuthSession
+import com.awan.app.core.domain.auth.model.User
 import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
@@ -13,4 +14,8 @@ interface AuthRepository {
     suspend fun logout(): Result<Unit>
 
     fun observeIsLoggedIn(): Flow<Boolean>
+
+    suspend fun getUser(): User?
+
+    suspend fun refreshUserData(): Result<User>
 }

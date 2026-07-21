@@ -1,19 +1,18 @@
-package com.awan.feature.auth.impl.di
+package com.awan.app.core.data.auth.di
 
-import com.awan.feature.auth.impl.data.remote.AuthRemoteDataSource
-import com.awan.feature.auth.impl.data.remote.AuthRemoteDataSourceImpl
-import com.awan.feature.auth.impl.data.repository.AuthRepository
-import com.awan.feature.auth.impl.data.repository.AuthRepositoryImpl
+import com.awan.app.core.data.auth.remote.AuthRemoteDataSource
+import com.awan.app.core.data.auth.remote.AuthRemoteDataSourceImpl
+import com.awan.app.core.data.auth.repository.AuthRepositoryImpl
+import com.awan.app.core.domain.auth.repository.AuthRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class AuthModule {
+abstract class AuthDataModule {
 
     @Binds
     @Singleton
