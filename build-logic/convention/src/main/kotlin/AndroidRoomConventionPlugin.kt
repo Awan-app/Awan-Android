@@ -24,9 +24,9 @@ import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.getByType
 
 /**
- * Convention plugin that wires Room runtime, KTX, and KSP compiler into any
- * Android library module. Apply `awan.android.hilt` first so that KSP is
- * already on the classpath.
+ * Convention plugin that wires Room runtime, KTX, KSP compiler, and test
+ * helpers into any Android library module. Apply `awan.android.hilt` first so
+ * that KSP is already on the classpath.
  *
  * Usage in a module:
  *   plugins {
@@ -44,6 +44,9 @@ abstract class AndroidRoomConventionPlugin : Plugin<Project> {
                 add("implementation", libs.findLibrary("room-runtime").get())
                 add("implementation", libs.findLibrary("room-ktx").get())
                 add("ksp", libs.findLibrary("room-compiler").get())
+                add("androidTestImplementation", libs.findLibrary("room-testing").get())
+                add("androidTestImplementation", libs.findLibrary("kotlinx-coroutines-test").get())
+                add("androidTestImplementation", libs.findLibrary("androidx-junit").get())
             }
         }
     }
