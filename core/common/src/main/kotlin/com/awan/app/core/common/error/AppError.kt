@@ -9,6 +9,7 @@ sealed class AppError {
         val code: Int,
         val body: String?,
         val remainingAttempts: Int? = null,
+        val retryAfterSeconds: Int? = null,
         val errorCode: String? = null,
     ) : AppError()
     data object Serialization : AppError()
