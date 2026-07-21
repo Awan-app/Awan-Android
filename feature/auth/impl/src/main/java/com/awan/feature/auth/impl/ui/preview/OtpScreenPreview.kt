@@ -3,6 +3,7 @@ package com.awan.feature.auth.impl.ui.preview
 import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.awan.app.core.common.text.UiText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.auth.impl.ui.otp.OtpScreen
 import com.awan.feature.auth.impl.ui.otp.OtpStatus
@@ -28,6 +29,7 @@ private fun OtpDefaultPreview() {
             onDigitsChanged = {},
             onBack = {},
             onResend = {},
+            onResendTimerExpired = {},
             onUseDifferentEmail = {},
         )
     }
@@ -46,6 +48,7 @@ private fun OtpVerifyingPreview() {
             onDigitsChanged = {},
             onBack = {},
             onResend = {},
+            onResendTimerExpired = {},
             onUseDifferentEmail = {},
         )
     }
@@ -60,11 +63,12 @@ private fun OtpWrongPreview() {
                 email = "sam@cloud.com",
                 digits = fullDigits,
                 status = OtpStatus.Wrong,
-                errorMessage = "That code isn't right. Check and try again.",
+                errorMessage = UiText.DynamicString("That code isn't right. Check and try again."),
             ),
             onDigitsChanged = {},
             onBack = {},
             onResend = {},
+            onResendTimerExpired = {},
             onUseDifferentEmail = {},
         )
     }
@@ -79,11 +83,12 @@ private fun OtpExpiredPreview() {
                 email = "sam@cloud.com",
                 digits = emptyDigits,
                 status = OtpStatus.Expired,
-                errorMessage = "This code has expired. Request a new one.",
+                errorMessage = UiText.DynamicString("This code has expired. Request a new one."),
             ),
             onDigitsChanged = {},
             onBack = {},
             onResend = {},
+            onResendTimerExpired = {},
             onUseDifferentEmail = {},
         )
     }
@@ -98,11 +103,12 @@ private fun OtpLockedPreview() {
                 email = "sam@cloud.com",
                 digits = emptyDigits,
                 status = OtpStatus.Locked,
-                errorMessage = "Too many attempts. Request a new code.",
+                errorMessage = UiText.DynamicString("Too many attempts. Request a new code."),
             ),
             onDigitsChanged = {},
             onBack = {},
             onResend = {},
+            onResendTimerExpired = {},
             onUseDifferentEmail = {},
         )
     }
@@ -126,6 +132,7 @@ private fun OtpDarkPreview() {
             onDigitsChanged = {},
             onBack = {},
             onResend = {},
+            onResendTimerExpired = {},
             onUseDifferentEmail = {},
         )
     }
@@ -145,6 +152,7 @@ private fun OtpLargeFontPreview() {
             onDigitsChanged = {},
             onBack = {},
             onResend = {},
+            onResendTimerExpired = {},
             onUseDifferentEmail = {},
         )
     }

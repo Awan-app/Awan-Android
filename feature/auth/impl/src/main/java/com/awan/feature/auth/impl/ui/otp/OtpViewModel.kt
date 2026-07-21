@@ -4,9 +4,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.error.AppError
+import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
-import com.awan.feature.auth.impl.domain.usecase.RequestOtpUseCase
-import com.awan.feature.auth.impl.domain.usecase.VerifyOtpUseCase
+import com.awan.app.core.common.text.UiText
+import com.awan.app.core.domain.auth.usecase.RequestOtpUseCase
+import com.awan.app.core.domain.auth.usecase.VerifyOtpUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,9 +37,16 @@ class OtpViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     fun setEmail(email: String) {
-        if (email.isNotBlank() && this.email != email) {
+        if (email.isNotBlank()) {
             this.email = email
-            _uiState.update { it.copy(email = email) }
+            _uiState.value = OtpUiState(
+                email = email,
+                digits = List(OTP_LENGTH) { "" },
+                status = OtpStatus.Idle,
+                errorMessage = null,
+                isResendEnabled = false,
+                resendSecondsRemaining = RESEND_COOLDOWN_SECONDS,
+            )
         }
     }
 
@@ -81,7 +90,6 @@ class OtpViewModel @Inject constructor(
         _uiState.update { it.copy(isResendEnabled = true, resendSecondsRemaining = 0) }
     }
 
-
     private fun verifyCode(code: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(status = OtpStatus.Verifying) }
@@ -89,7 +97,12 @@ class OtpViewModel @Inject constructor(
             when (val result = verifyOtpUseCase(email = email, code = code)) {
                 is Result.Success -> {
                     _uiState.update { it.copy(status = OtpStatus.Idle) }
-                    _events.send(OtpEvent.NavigateToHome)
+                    val isNewUser = result.data.user?.isNew == true
+                    if (isNewUser) {
+                        _events.send(OtpEvent.NavigateToOnboarding)
+                    } else {
+                        _events.send(OtpEvent.NavigateToHome)
+                    }
                 }
                 is Result.Error -> {
                     val (newStatus, message) = result.error.toOtpStatusAndMessage()
@@ -110,36 +123,23 @@ class OtpViewModel @Inject constructor(
         }
     }
 
-    private fun AppError.toOtpStatusAndMessage(): Pair<OtpStatus, String?> = when (this) {
-        AppError.Network -> OtpStatus.Idle to "No internet connection. Check and try again."
-        AppError.Timeout -> OtpStatus.Idle to "Request timed out. Please try again."
-        AppError.Unauthorized -> OtpStatus.Expired to "Your code has expired. Request a new one."
-        is AppError.Server -> OtpStatus.Idle to "Server error. Please try again later."
+    private fun AppError.toOtpStatusAndMessage(): Pair<OtpStatus, UiText?> = when (this) {
+        AppError.Network -> OtpStatus.Idle to toUiText()
+        AppError.Timeout -> OtpStatus.Idle to toUiText()
+        AppError.Unauthorized -> OtpStatus.Expired to toUiText()
+        is AppError.Server -> OtpStatus.Idle to toUiText()
         is AppError.Api -> {
-            val attemptsSuffix = remainingAttempts?.let { attempts ->
-                if (attempts > 0) {
-                    " ($attempts attempt${if (attempts > 1) "s" else ""} remaining)"
-                } else {
-                    " (No attempts remaining)"
-                }
-            } ?: ""
-
             val status = when {
-                errorCode == "OTP_INVALID_CODE" || code == HTTP_BAD_REQUEST || code == HTTP_UNPROCESSABLE -> {
-                    if (remainingAttempts == 0) OtpStatus.Locked else OtpStatus.Wrong
-                }
+                errorCode == "OTP_LOCKED" || code == HTTP_TOO_MANY_REQUESTS || remainingAttempts == 0 -> OtpStatus.Locked
+                errorCode == "OTP_INVALID_CODE" || code == HTTP_BAD_REQUEST || code == HTTP_UNPROCESSABLE -> OtpStatus.Wrong
                 code == HTTP_GONE -> OtpStatus.Expired
-                code == HTTP_TOO_MANY_REQUESTS -> OtpStatus.Locked
                 else -> OtpStatus.Idle
             }
 
-            val baseMsg = body?.takeIf { it.isNotBlank() } ?: "Invalid OTP code."
-            val fullMsg = "$baseMsg$attemptsSuffix"
-
-            status to fullMsg
+            status to toUiText()
         }
-        AppError.Serialization -> OtpStatus.Idle to "Unexpected server response."
-        is AppError.Unknown -> OtpStatus.Idle to "Something went wrong."
+        AppError.Serialization -> OtpStatus.Idle to toUiText()
+        is AppError.Unknown -> OtpStatus.Idle to toUiText()
     }
 
     private companion object {
@@ -155,4 +155,5 @@ class OtpViewModel @Inject constructor(
 
 sealed interface OtpEvent {
     data object NavigateToHome : OtpEvent
+    data object NavigateToOnboarding : OtpEvent
 }

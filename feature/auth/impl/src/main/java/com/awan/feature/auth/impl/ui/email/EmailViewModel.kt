@@ -3,8 +3,10 @@ package com.awan.feature.auth.impl.ui.email
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.error.AppError
+import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
-import com.awan.feature.auth.impl.domain.usecase.RequestOtpUseCase
+import com.awan.app.core.common.text.UiText
+import com.awan.app.core.domain.auth.usecase.RequestOtpUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,12 +28,22 @@ class EmailViewModel @Inject constructor(
     private val _events = Channel<EmailEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
+    private var rateLimitedEmail: String? = null
+
     fun onEmailChanged(email: String) {
-        _uiState.update {
-            it.copy(
+        _uiState.update { current ->
+            val isValid = EMAIL_REGEX.matches(email)
+            val isRateLimited = if (rateLimitedEmail != null && email == rateLimitedEmail) {
+                current.isRateLimited
+            } else {
+                false
+            }
+
+            current.copy(
                 email = email,
-                isEmailValid = EMAIL_REGEX.matches(email),
-                errorMessage = null, // clear inline error on new input
+                isEmailValid = isValid,
+                isRateLimited = isRateLimited,
+                errorMessage = if (isRateLimited) current.errorMessage else null,
             )
         }
     }
@@ -45,20 +57,27 @@ class EmailViewModel @Inject constructor(
 
             when (val result = requestOtpUseCase(state.email)) {
                 is Result.Success -> {
-                    _uiState.update { it.copy(isLoading = false) }
+                    rateLimitedEmail = null
+                    _uiState.update { it.copy(isLoading = false, isRateLimited = false) }
                     _events.send(EmailEvent.NavigateToOtp(state.email))
                 }
                 is Result.Error -> {
                     val error = result.error
+                    val isRateLimited = error is AppError.Api &&
+                        (error.code == HTTP_TOO_MANY_REQUESTS || error.errorCode == "OTP_RATE_LIMIT_EXCEEDED")
+                    val retrySeconds = if (isRateLimited) {
+                        error.retryAfterSeconds ?: RATE_LIMIT_COOLDOWN_SECONDS
+                    } else 0
+
+                    if (isRateLimited) {
+                        rateLimitedEmail = state.email
+                    }
+
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            isRateLimited = error is AppError.Api &&
-                                error.code == HTTP_TOO_MANY_REQUESTS,
-                            rateLimitSecondsRemaining = if (
-                                error is AppError.Api &&
-                                error.code == HTTP_TOO_MANY_REQUESTS
-                            ) RATE_LIMIT_COOLDOWN_SECONDS else 0,
+                            isRateLimited = isRateLimited,
+                            rateLimitSecondsRemaining = retrySeconds,
                             isOffline = error is AppError.Network,
                             errorMessage = error.toUserMessage(),
                         )
@@ -69,23 +88,28 @@ class EmailViewModel @Inject constructor(
         }
     }
 
-    private fun AppError.toUserMessage(): String? = when (this) {
-        AppError.Network -> null // shown via isOffline banner
-        AppError.Timeout -> "Request timed out. Check your connection."
-        AppError.Unauthorized -> "Request not authorized. Please contact support."
-        is AppError.Server -> "Server error. Please try again later."
-        is AppError.Api -> when (code) {
-            HTTP_TOO_MANY_REQUESTS -> null // shown via isRateLimited banner
-            HTTP_NOT_FOUND -> "This email isn't registered."
-            else -> body ?: "Something went wrong."
+    fun onRateLimitExpired() {
+        rateLimitedEmail = null
+        _uiState.update {
+            it.copy(
+                isRateLimited = false,
+                rateLimitSecondsRemaining = 0,
+                errorMessage = null,
+            )
         }
-        AppError.Serialization -> "Unexpected response from server."
-        is AppError.Unknown -> "Something went wrong."
+    }
+
+    private fun AppError.toUserMessage(): UiText? = when (this) {
+        AppError.Network -> null // shown via isOffline banner
+        is AppError.Api -> when {
+            code == HTTP_TOO_MANY_REQUESTS || errorCode == "OTP_RATE_LIMIT_EXCEEDED" -> null // shown via isRateLimited banner
+            else -> toUiText()
+        }
+        else -> toUiText()
     }
 
     private companion object {
         const val HTTP_TOO_MANY_REQUESTS = 429
-        const val HTTP_NOT_FOUND = 404
         const val RATE_LIMIT_COOLDOWN_SECONDS = 60
 
         val EMAIL_REGEX = Regex(

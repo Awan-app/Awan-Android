@@ -8,11 +8,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.auth.impl.R
 
 @Composable
 fun AuthFooter(
@@ -32,14 +34,15 @@ fun EmailDisplay(
     email: String,
     modifier: Modifier = Modifier,
 ) {
+    val descriptionText = stringResource(R.string.auth_code_sent_to_desc, email)
     Column(
         modifier = modifier.semantics(mergeDescendants = true) {
-            contentDescription = "Code sent to $email."
+            contentDescription = descriptionText
         },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         AwanText(
-            text = "We floated a 6-digit code to",
+            text = stringResource(R.string.auth_code_sent_to),
             style = AwanTheme.styles.bodyText,
         )
         Spacer(modifier = Modifier.size(4.dp))

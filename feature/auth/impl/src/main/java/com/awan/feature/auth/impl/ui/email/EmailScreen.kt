@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -23,6 +24,7 @@ import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.MascotState
 import com.awan.app.core.designsystem.R as DesignR
+import com.awan.feature.auth.impl.R
 import com.awan.feature.auth.impl.ui.components.AuthButton
 import com.awan.feature.auth.impl.ui.components.AuthDivider
 import com.awan.feature.auth.impl.ui.components.AuthEmailField
@@ -49,6 +51,7 @@ fun EmailRouteScreen(
         state = state,
         onEmailChanged = viewModel::onEmailChanged,
         onContinue = viewModel::onSendCode,
+        onRateLimitExpired = viewModel::onRateLimitExpired,
         onSignInWithGoogle = { /* TODO: Google sign-in */ },
     )
 }
@@ -62,6 +65,7 @@ fun EmailScreen(
     onContinue: () -> Unit,
     onSignInWithGoogle: () -> Unit,
     modifier: Modifier = Modifier,
+    onRateLimitExpired: () -> Unit = {},
 ) {
     val mascotState = when {
         state.isLoading -> MascotState.Loading
@@ -72,6 +76,8 @@ fun EmailScreen(
 
     val rateLimitTimer = rememberCountdownTimerState(
         initialSeconds = state.rateLimitSecondsRemaining,
+        key = state.isRateLimited,
+        onExpired = onRateLimitExpired,
     )
 
     val bannerState = when {
@@ -82,12 +88,12 @@ fun EmailScreen(
 
     AuthScreenLayout(
         modifier = modifier,
-        title = "Awan",
-        subtitle = "Turn your goals into a day that plans itself",
+        title = stringResource(R.string.auth_title),
+        subtitle = stringResource(R.string.auth_subtitle),
         mascotState = mascotState,
-        formContent = {
+        content = {
             AwanText(
-                text = "EMAIL",
+                text = stringResource(R.string.auth_email_label),
                 style = AwanTheme.styles.captionText,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -118,11 +124,13 @@ fun EmailScreen(
                     EmailErrorBanner.RateLimited -> {
                         Column {
                             AwanText(
-                                text = "Too many attempts. Try again in ${rateLimitTimer.formattedTime}.",
-                                style = AwanTheme.styles.captionText,
+                                text = stringResource(R.string.auth_rate_limited_banner, rateLimitTimer.formattedTime),
+                                style = AwanTheme.styles.errorText,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .semantics { contentDescription = "Rate limited. Wait ${rateLimitTimer.formattedTime}" },
+                                    .semantics {
+                                        contentDescription = "Rate limited. Wait ${rateLimitTimer.formattedTime}"
+                                    },
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
@@ -130,7 +138,7 @@ fun EmailScreen(
                     EmailErrorBanner.Offline -> {
                         Column {
                             AwanText(
-                                text = "You're offline — we'll send the code when you reconnect.",
+                                text = stringResource(R.string.auth_offline_banner),
                                 style = AwanTheme.styles.captionText,
                                 modifier = Modifier.fillMaxWidth(),
                             )
@@ -140,12 +148,14 @@ fun EmailScreen(
                 }
             }
 
+            val buttonText = if (state.isRateLimited) {
+                stringResource(R.string.auth_send_code_timer, rateLimitTimer.formattedTime)
+            } else {
+                stringResource(R.string.auth_send_code)
+            }
+
             AuthButton(
-                text = if (state.isRateLimited) {
-                    "SEND CODE · ${rateLimitTimer.formattedTime}"
-                } else {
-                    "SEND CODE"
-                },
+                text = buttonText,
                 onClick = onContinue,
                 enabled = state.canSubmit,
                 isLoading = state.isLoading,
@@ -157,11 +167,11 @@ fun EmailScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             SocialButton(
-                text = "Continue with Google",
+                text = stringResource(R.string.auth_continue_with_google),
                 onClick = onSignInWithGoogle,
                 painter = painterResource(DesignR.drawable.ic_google),
                 socialType = AwanButtonVariant.Google,
-                contentDescription = "Continue with Google",
+                contentDescription = stringResource(R.string.auth_continue_with_google),
             )
         }
     )

@@ -37,7 +37,7 @@ fun AuthScreenLayout(
     modifier: Modifier = Modifier,
     topActionContent: (@Composable () -> Unit)? = null,
     bottomContent: (@Composable () -> Unit)? = null,
-    formContent: @Composable ColumnScope.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val isImeVisible = WindowInsets.isImeVisible
     val mascotHeight by animateDpAsState(
@@ -108,7 +108,7 @@ fun AuthScreenLayout(
                 )
             }
 
-            formContent()
+            content()
 
             if (bottomContent != null) {
                 Spacer(modifier = Modifier.height(24.dp))

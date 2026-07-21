@@ -9,7 +9,8 @@ import com.awan.feature.auth.impl.ui.otp.OtpRouteScreen
 
 fun EntryProviderScope<Route>.authEntry(
     onNavigateToOtp: (email: String) -> Unit,
-    onNavigateToNext: () -> Unit,
+    onNavigateToHome: () -> Unit,
+    onNavigateToOnboarding: () -> Unit,
     onPopBackStack: () -> Unit,
 ) {
     entry<LoginRoute> {
@@ -21,7 +22,8 @@ fun EntryProviderScope<Route>.authEntry(
     entry<OtpRoute> { entry ->
         OtpRouteScreen(
             email = entry.email,
-            onNext = onNavigateToNext,
+            onNavigateToHome = onNavigateToHome,
+            onNavigateToOnboarding = onNavigateToOnboarding,
             onBack = onPopBackStack,
             onUseDifferentEmail = onPopBackStack,
         )

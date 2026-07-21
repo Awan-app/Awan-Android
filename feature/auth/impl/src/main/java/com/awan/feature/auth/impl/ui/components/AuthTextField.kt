@@ -8,12 +8,15 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.awan.app.core.common.text.UiText
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.auth.impl.R
 
 @Composable
 fun AuthEmailField(
@@ -21,7 +24,7 @@ fun AuthEmailField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     isError: Boolean = false,
-    errorMessage: String? = null,
+    errorMessage: UiText? = null,
     enabled: Boolean = true,
     onDone: () -> Unit = {},
 ) {
@@ -32,10 +35,10 @@ fun AuthEmailField(
             modifier = Modifier.fillMaxWidth(),
             isError = isError,
             enabled = enabled,
-            contentDescriptionText = "Email address input",
+            contentDescriptionText = stringResource(R.string.auth_email_input_description),
             placeholder = {
                 AwanText(
-                    text = "you@email.com",
+                    text = stringResource(R.string.auth_email_placeholder),
                     style = AwanTheme.styles.placeholderText,
                 )
             },

@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -23,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -33,8 +33,8 @@ import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.MascotState
+import com.awan.feature.auth.impl.R
 import com.awan.feature.auth.impl.ui.components.AuthButton
-import com.awan.feature.auth.impl.ui.components.AuthFooter
 import com.awan.feature.auth.impl.ui.components.AuthScreenLayout
 import com.awan.feature.auth.impl.ui.components.CountdownTimer
 import com.awan.feature.auth.impl.ui.components.EmailDisplay
@@ -45,7 +45,8 @@ import com.awan.feature.auth.impl.ui.components.rememberCountdownTimerState
 @Composable
 fun OtpRouteScreen(
     email: String = "",
-    onNext: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {},
+    onNavigateToOnboarding: () -> Unit = {},
     onBack: () -> Unit = {},
     onUseDifferentEmail: () -> Unit = {},
     viewModel: OtpViewModel = hiltViewModel(),
@@ -56,11 +57,11 @@ fun OtpRouteScreen(
         viewModel.setEmail(email)
     }
 
-    // Consume one-time navigation events.
     LaunchedEffect(viewModel.events) {
         viewModel.events.collect { event ->
             when (event) {
-                is OtpEvent.NavigateToHome -> onNext()
+                OtpEvent.NavigateToHome -> onNavigateToHome()
+                OtpEvent.NavigateToOnboarding -> onNavigateToOnboarding()
             }
         }
     }
@@ -70,6 +71,7 @@ fun OtpRouteScreen(
         onDigitsChanged = viewModel::onDigitsChanged,
         onBack = onBack,
         onResend = viewModel::onResendCode,
+        onResendTimerExpired = viewModel::onResendTimerExpired,
         onUseDifferentEmail = onUseDifferentEmail,
     )
 }
@@ -80,24 +82,26 @@ fun OtpScreen(
     onDigitsChanged: (List<String>) -> Unit,
     onBack: () -> Unit,
     onResend: () -> Unit,
+    onResendTimerExpired: () -> Unit,
     onUseDifferentEmail: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val mascotState = when (state.status) {
-        OtpStatus.Idle -> MascotState.Thinking
         OtpStatus.Verifying -> MascotState.Loading
         OtpStatus.Wrong -> MascotState.Sad
-        OtpStatus.Expired -> MascotState.Error
-        OtpStatus.Locked -> MascotState.Error
+        OtpStatus.Locked -> MascotState.Sad
+        else -> MascotState.Idle
     }
 
     val resendTimer = rememberCountdownTimerState(
         initialSeconds = state.resendSecondsRemaining,
+        key = state.resendSecondsRemaining,
+        onExpired = onResendTimerExpired,
     )
 
     AuthScreenLayout(
         modifier = modifier,
-        title = "Check your inbox!",
+        title = stringResource(R.string.auth_otp_title),
         subtitle = "",
         mascotState = mascotState,
         topActionContent = {
@@ -119,7 +123,7 @@ fun OtpScreen(
                 }
             }
         },
-        formContent = {
+        content = {
             EmailDisplay(
                 email = state.email,
                 modifier = Modifier.fillMaxWidth(),
@@ -143,7 +147,9 @@ fun OtpScreen(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.semantics { contentDescription = "Verifying your code" },
+                    modifier = Modifier.semantics {
+                        contentDescription = "Verifying your code"
+                    },
                 ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
@@ -152,7 +158,7 @@ fun OtpScreen(
                     )
                     Spacer(modifier = Modifier.size(8.dp))
                     AwanText(
-                        text = "Verifying you in...",
+                        text = stringResource(R.string.auth_verifying_text),
                         style = AwanTheme.styles.captionText,
                     )
                 }
@@ -179,8 +185,8 @@ fun OtpScreen(
                     when (status) {
                         OtpStatus.Locked -> {
                             AuthButton(
-                                text = "REQUEST A NEW CODE",
-                                onClick = onResend,
+                                text = stringResource(R.string.auth_request_new_code),
+                                onClick = onUseDifferentEmail,
                             )
                         }
                         OtpStatus.Expired -> {
@@ -188,7 +194,7 @@ fun OtpScreen(
                                 onClick = onResend,
                                 variant = AwanButtonVariant.Quiet,
                             ) {
-                                AwanText("RESEND CODE")
+                                AwanText(stringResource(R.string.auth_resend_code))
                             }
                         }
                         else -> {
@@ -211,7 +217,7 @@ fun OtpScreen(
                     contentDescription = "Use a different email address"
                 },
             ) {
-                AwanText("Use a different email")
+                AwanText(stringResource(R.string.auth_use_different_email))
             }
         },
     )

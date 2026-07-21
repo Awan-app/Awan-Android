@@ -1,6 +1,7 @@
 package com.awan.feature.auth.impl.ui.otp
 
 import androidx.compose.runtime.Immutable
+import com.awan.app.core.common.text.UiText
 
 enum class OtpStatus {
     Idle,
@@ -19,7 +20,7 @@ data class OtpUiState(
     val email: String = "",
     val digits: List<String> = List(6) { "" },
     val status: OtpStatus = OtpStatus.Idle,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     val isResendEnabled: Boolean = false,
     val resendSecondsRemaining: Int = 0,
 )

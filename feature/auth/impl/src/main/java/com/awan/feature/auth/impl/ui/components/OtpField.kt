@@ -19,8 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.OTP_SHAKE_DURATION_MILLIS
+import com.awan.feature.auth.impl.R
 import com.awan.feature.auth.impl.ui.otp.OtpStatus
 import kotlin.math.roundToInt
 
@@ -66,11 +68,13 @@ fun OtpField(
         }
     }
 
+    val digitsDesc = stringResource(R.string.auth_otp_digits_description)
+
     Box(
         modifier = modifier
             .offset { IntOffset(shakeOffset.value.roundToInt(), 0) }
             .semantics(mergeDescendants = true) {
-                contentDescription = "6-digit verification code input"
+                contentDescription = digitsDesc
             },
         contentAlignment = Alignment.Center,
     ) {
@@ -96,7 +100,7 @@ fun OtpField(
                 imeAction = ImeAction.Done,
             ),
             keyboardActions = KeyboardActions(
-                onDone = {  }
+                onDone = { }
             ),
         )
 

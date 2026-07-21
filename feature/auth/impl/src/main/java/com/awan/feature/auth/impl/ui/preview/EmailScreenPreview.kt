@@ -3,6 +3,7 @@ package com.awan.feature.auth.impl.ui.preview
 import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.awan.app.core.common.text.UiText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.auth.impl.ui.email.EmailScreen
 import com.awan.feature.auth.impl.ui.email.EmailUiState
@@ -43,7 +44,7 @@ private fun EmailErrorPreview() {
             state = EmailUiState(
                 email = "sam@cloud",
                 isEmailValid = false,
-                errorMessage = "Enter a valid email address",
+                errorMessage = UiText.DynamicString("Enter a valid email address"),
             ),
             onEmailChanged = {},
             onContinue = {},

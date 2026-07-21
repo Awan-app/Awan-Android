@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -35,6 +36,7 @@ import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.OtpCellSize
 import com.awan.app.core.designsystem.OtpCellWidth
+import com.awan.feature.auth.impl.R
 
 @Composable
 fun OtpDigitCell(
@@ -75,6 +77,9 @@ fun OtpDigitCell(
     )
 
     val shape = RoundedCornerShape(12.dp)
+    val digitEmpty = stringResource(R.string.auth_otp_digit_cell_empty)
+    val digitFilledPattern = stringResource(R.string.auth_otp_digit_cell_filled)
+    val digitCellPattern = stringResource(R.string.auth_otp_digit_cell_desc)
 
     Box(
         modifier = modifier
@@ -97,7 +102,12 @@ fun OtpDigitCell(
                 onClick = onClick
             )
             .semantics {
-                contentDescription = "Digit ${index + 1} of 6${if (digit.isNotEmpty()) ", $digit" else ", empty"}"
+                val detail = if (digit.isNotEmpty()) {
+                    digitFilledPattern.format(digit)
+                } else {
+                    digitEmpty
+                }
+                contentDescription = digitCellPattern.format(index + 1, detail)
             },
         contentAlignment = Alignment.Center,
     ) {
