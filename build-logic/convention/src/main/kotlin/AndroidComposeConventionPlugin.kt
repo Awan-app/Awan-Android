@@ -18,6 +18,7 @@ abstract class AndroidComposeConventionPlugin : Plugin<Project> {
                 compilerOptions {
                     optIn.add("androidx.compose.foundation.style.ExperimentalFoundationStyleApi")
                     optIn.add("androidx.compose.foundation.ExperimentalFoundationApi")
+                    optIn.add("androidx.compose.animation.ExperimentalSharedTransitionApi")
                 }
             }
 

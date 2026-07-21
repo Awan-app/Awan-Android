@@ -38,6 +38,11 @@ gradlePlugin {
             id = "awan.android.library"
             implementationClass = "AndroidLibraryConventionPlugin"
         }
+        // Pure-Kotlin JVM library (no Android) — for :core:model, :core:domain.
+        register("jvmLibrary") {
+            id = "awan.jvm.library"
+            implementationClass = "JvmLibraryConventionPlugin"
+        }
         // Adds Jetpack Compose configuration (BOM + compiler plugin).
         register("androidCompose") {
             id = "awan.android.compose"
