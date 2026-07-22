@@ -10,6 +10,7 @@ android {
 dependencies {
     implementation(project(":feature:schedule:api"))
 
+    implementation(project(":core:scheduling"))
     implementation(project(":core:navigation"))
     implementation(project(":core:model"))
 }
