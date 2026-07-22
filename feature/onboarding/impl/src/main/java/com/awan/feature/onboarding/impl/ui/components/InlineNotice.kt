@@ -31,7 +31,7 @@ fun InlineNotice(text: String, tone: NoticeTone, modifier: Modifier = Modifier) 
         horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
     ) {
         Box(Modifier.size(16.dp).clip(CircleShape).background(color), contentAlignment = Alignment.Center) {
-            androidx.compose.foundation.text.BasicText(
+            AwanText(
                 text = "!",
                 style = AwanTheme.typography.caption.copy(color = Color.White, fontWeight = FontWeight.ExtraBold),
             )

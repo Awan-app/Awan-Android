@@ -14,4 +14,5 @@
 *.keystore
 keystore.properties
 .agents/
+.gemini/
 .claude/

@@ -36,7 +36,7 @@ fun NameStepBody(state: OnboardingState, onAction: (OnboardingAction) -> Unit) {
                     timeOfDayGreeting(),
                     state.trimmedFirstName.ifEmpty { stringResource(R.string.onboarding_name_default_friend) },
                 ),
-                style = AwanTheme.styles.displayText,
+                style = AwanTheme.styles.titleText,
             )
         }
         CascadeItem(2, Modifier.fillMaxWidth()) {

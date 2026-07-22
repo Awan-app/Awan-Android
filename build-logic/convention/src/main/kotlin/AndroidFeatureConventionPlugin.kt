@@ -27,6 +27,10 @@ abstract class AndroidFeatureConventionPlugin : Plugin<Project> {
                 add("implementation", project(":core:common"))
                 add("implementation", libs.findLibrary("androidx-activity-compose").get())
                 add("implementation", libs.findLibrary("androidx-compose-material3").get())
+                // Hilt ViewModel integration for Compose screens.
+                add("implementation", libs.findLibrary("hilt-navigation-compose").get())
+                // collectAsStateWithLifecycle() extension.
+                add("implementation", libs.findLibrary("lifecycle-compose").get())
 
                 // Test dependencies
                 add("testImplementation", libs.findLibrary("junit").get())

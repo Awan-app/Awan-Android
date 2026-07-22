@@ -9,4 +9,6 @@ android {
 
 dependencies {
     implementation(project(":feature:home:api"))
+    implementation(project(":core:domain"))
+    implementation(project(":core:design-system"))
 }

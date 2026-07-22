@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.awan.android.library)
+    alias(libs.plugins.awan.android.compose)
     alias(libs.plugins.awan.android.hilt)
 }
 
@@ -8,6 +9,6 @@ android {
 }
 
 dependencies {
-    // kotlinx-coroutines for Flow operators used in asResult().
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.androidx.compose.ui)
 }
