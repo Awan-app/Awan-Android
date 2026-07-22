@@ -14,5 +14,7 @@
 *.keystore
 keystore.properties
 .agents/
+skills-lock.json
+.obsidian
 .gemini/
 .claude/

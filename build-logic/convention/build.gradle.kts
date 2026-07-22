@@ -58,5 +58,10 @@ gradlePlugin {
             id = "awan.android.feature"
             implementationClass = "AndroidFeatureConventionPlugin"
         }
+        // Wires Room runtime, KTX, and KSP compiler into any Android library module.
+        register("androidRoom") {
+            id = "awan.android.room"
+            implementationClass = "AndroidRoomConventionPlugin"
+        }
     }
 }
