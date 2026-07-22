@@ -17,10 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
+/** Skyward rim text field with Compose Styles API integration. */
 @Composable
 fun AwanTextField(
     value: String,
@@ -31,6 +34,7 @@ fun AwanTextField(
     trailingContent: (@Composable () -> Unit)? = null,
     isError: Boolean = false,
     enabled: Boolean = true,
+    singleLine: Boolean = true,
     contentDescriptionText: String? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
@@ -66,7 +70,7 @@ fun AwanTextField(
         keyboardActions = keyboardActions,
         visualTransformation = visualTransformation,
         interactionSource = interactionSource,
-        singleLine = true,
+        singleLine = singleLine,
         decorationBox = { innerTextField ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -84,6 +88,52 @@ fun AwanTextField(
                 }
             }
         },
+    )
+}
+
+/** Convenience overload for String placeholder and simple keyboard options. */
+@Composable
+fun AwanTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    style: Style = Style,
+    trailingContent: (@Composable () -> Unit)? = null,
+    isError: Boolean = false,
+    enabled: Boolean = true,
+    singleLine: Boolean = true,
+    contentDescriptionText: String? = null,
+    imeAction: ImeAction = ImeAction.Default,
+    capitalization: KeyboardCapitalization = KeyboardCapitalization.None,
+    keyboardOptions: KeyboardOptions = KeyboardOptions(
+        capitalization = capitalization,
+        imeAction = imeAction,
+    ),
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+) {
+    AwanTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier,
+        style = style,
+        placeholder = {
+            AwanText(
+                text = placeholder,
+                style = AwanTheme.styles.placeholderText,
+            )
+        },
+        trailingContent = trailingContent,
+        isError = isError,
+        enabled = enabled,
+        singleLine = singleLine,
+        contentDescriptionText = contentDescriptionText,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        visualTransformation = visualTransformation,
+        interactionSource = interactionSource,
     )
 }
 

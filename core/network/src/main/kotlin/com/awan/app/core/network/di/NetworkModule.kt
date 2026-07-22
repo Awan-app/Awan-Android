@@ -3,6 +3,7 @@ package com.awan.app.core.network.di
 import android.content.Context
 import com.awan.app.core.network.BuildConfig
 import com.awan.app.core.network.api.AuthApiService
+import com.awan.app.core.network.api.OnboardingApiService
 import com.awan.app.core.network.device.AndroidDeviceIdProvider
 import com.awan.app.core.network.device.DeviceIdProvider
 import com.awan.app.core.network.interceptor.AuthInterceptor
@@ -109,6 +110,11 @@ object NetworkModule {
     @Singleton
     fun providesAuthApiService(@NoAuthRetrofit retrofit: Retrofit): AuthApiService =
         retrofit.create(AuthApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesOnboardingApiService(retrofit: Retrofit): OnboardingApiService =
+        retrofit.create(OnboardingApiService::class.java)
 
     @Provides
     @Singleton

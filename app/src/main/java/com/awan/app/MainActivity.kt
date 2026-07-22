@@ -18,7 +18,11 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        ComposeFoundationFlags.isInheritedTextStyleEnabled = true
+        // Deliberately off. foundation 1.11.4's inherited-style cache (StyleOuterNode.ancestorNodes)
+        // is appended to on every resolve and never cleared, so text that moves or is reused merges
+        // in styles from nodes that are no longer its ancestors. AwanText passes a concrete
+        // TextStyle to BasicText instead, so nothing here needs the inherited path.
+        ComposeFoundationFlags.isInheritedTextStyleEnabled = false
         enableEdgeToEdge()
         setContent {
             val appState = rememberAwanAppState(

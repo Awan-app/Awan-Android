@@ -1,5 +1,8 @@
 package com.awan.app.core.designsystem
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.CornerBasedShape
@@ -49,6 +52,10 @@ data class AwanColors(
     val onDestructive: Color,
     val disabledSurface: Color,
     val disabledContent: Color,
+    val skyDawn: Color,
+    val skyMorning: Color,
+    val skyMidday: Color,
+    val skyDusk: Color,
     val zoneCoral: Color,
     val zoneViolet: Color,
     val zoneSky: Color,
@@ -83,6 +90,10 @@ internal val LightAwanColors = AwanColors(
     onDestructive = Color.White,
     disabledSurface = Color(0xFFE8F1F8),
     disabledContent = Color(0xFFA9C4D6),
+    skyDawn = Color(0xFFFFD9A8),
+    skyMorning = Color(0xFFCFE8FF),
+    skyMidday = Color(0xFFA6D2FA),
+    skyDusk = Color(0xFF6E7FB8),
     zoneCoral = Color(0xFFFF6F91),
     zoneViolet = Color(0xFF7A64FF),
     zoneSky = Color(0xFF2EAAFF),
@@ -122,6 +133,10 @@ internal val DarkAwanColors = AwanColors(
     onDestructive = Color(0xFF0F2536),
     disabledSurface = Color(0xFF17364C),
     disabledContent = Color(0xFF6F93AA),
+    skyDawn = Color(0xFF6B4A2E),
+    skyMorning = Color(0xFF24455F),
+    skyMidday = Color(0xFF1B3A55),
+    skyDusk = Color(0xFF2A2F52),
     zoneCoral = Color(0xFFFF86A4),
     zoneViolet = Color(0xFF9683FF),
     zoneSky = Color(0xFF4DBAFF),
@@ -194,6 +209,21 @@ internal val AwanTypographyTokens = AwanTypography(
     ),
 )
 
+/**
+ * A fully resolved text appearance: a typography token plus the colour it renders in. An
+ * [Color.Unspecified] colour means "inherit whatever `LocalContentColor` provides", which is how a
+ * button's label picks up its animated content colour.
+ *
+ * Text appearance deliberately does **not** go through the Styles API. `Modifier.styleable` delivers
+ * typography to text by *inheritance*, and in foundation 1.11.4 the inherited-style cache
+ * (`StyleOuterNode.ancestorNodes`) is appended to on every resolve and never cleared — so a text
+ * node that moves or is reused merges in the styles of nodes that are no longer its ancestors and
+ * silently renders in the wrong family, weight or size. Handing `BasicText` a concrete [TextStyle]
+ * is priority 1 in the Styles precedence table and cannot be corrupted by that cache.
+ */
+@Immutable
+data class AwanTextStyle(val textStyle: TextStyle, val color: Color = Color.Unspecified)
+
 @Immutable
 data class AwanShapes(
     val chip: CornerBasedShape,
@@ -222,7 +252,6 @@ data class AwanSpacing(
 
 internal val AwanSpacingTokens = AwanSpacing()
 
-
 val AuthInputHeight = 56.dp
 
 val OtpCellSize = 56.dp
@@ -240,3 +269,22 @@ val MascotSize = 200.dp
 const val OTP_SHAKE_DURATION_MILLIS = 400
 
 const val AUTH_ENTER_DURATION_MILLIS = 300
+
+/** Spring parameters rather than a built spec, so one token serves Float, Dp, IntOffset and IntSize call sites. */
+@Immutable
+data class AwanSpring(val dampingRatio: Float, val stiffness: Float) {
+    fun <T> spec(): SpringSpec<T> = spring(dampingRatio = dampingRatio, stiffness = stiffness)
+}
+
+@Immutable
+data class AwanMotion(
+    val settle: AwanSpring = AwanSpring(0.85f, Spring.StiffnessMediumLow),
+    val bouncy: AwanSpring = AwanSpring(0.55f, Spring.StiffnessLow),
+    val playful: AwanSpring = AwanSpring(0.42f, Spring.StiffnessMediumLow),
+    val fastMillis: Int = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
+    val standardMillis: Int = 220,
+    val emphasizedMillis: Int = 320,
+    val staggerMillis: Int = 55,
+)
+
+internal val AwanMotionTokens = AwanMotion()

@@ -2,6 +2,8 @@ package com.awan.feature.auth.impl.ui.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -21,6 +23,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -43,6 +46,7 @@ fun OtpField(
     require(digits.size == 6) { "OtpField requires exactly 6 digits, got ${digits.size}" }
 
     val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
     var isFocused by remember { mutableStateOf(false) }
 
     val isError = status == OtpStatus.Wrong
@@ -65,6 +69,7 @@ fun OtpField(
     LaunchedEffect(Unit) {
         if (!isDisabled) {
             focusRequester.requestFocus()
+            keyboardController?.show()
         }
     }
 
@@ -73,6 +78,16 @@ fun OtpField(
     Box(
         modifier = modifier
             .offset { IntOffset(shakeOffset.value.roundToInt(), 0) }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                enabled = !isDisabled,
+            ) {
+                if (!isDisabled) {
+                    focusRequester.requestFocus()
+                    keyboardController?.show()
+                }
+            }
             .semantics(mergeDescendants = true) {
                 contentDescription = digitsDesc
             },
@@ -120,6 +135,7 @@ fun OtpField(
                     onClick = {
                         if (!isDisabled) {
                             focusRequester.requestFocus()
+                            keyboardController?.show()
                         }
                     },
                 )

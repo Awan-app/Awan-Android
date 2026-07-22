@@ -8,6 +8,8 @@ import androidx.compose.foundation.style.disabled
 import androidx.compose.foundation.style.focused
 import androidx.compose.foundation.style.pressed
 import androidx.compose.foundation.style.selected
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -40,6 +42,8 @@ private fun StyleScope.buttonPressedTransform() {
     }
 }
 
+private fun text(textStyle: androidx.compose.ui.text.TextStyle, color: Color) = AwanTextStyle(textStyle, color)
+
 object AwanStyles {
     val screen = Style {
         background(Brush.verticalGradient(listOf(colors.backgroundStart, colors.background)))
@@ -54,56 +58,54 @@ object AwanStyles {
         contentPadding(horizontal = 13.dp, vertical = 11.dp)
     }
 
-    val displayText = Style {
-        textStyle(typography.display)
-        fontFamily(typography.display.fontFamily!!)
-        contentColor(colors.textPrimary)
-    }
-    val titleText = Style {
-        textStyle(typography.title)
-        fontFamily(typography.title.fontFamily!!)
-        contentColor(colors.textPrimary)
-    }
-    val headingText = Style {
-        textStyle(typography.heading)
-        fontFamily(typography.heading.fontFamily!!)
-        contentColor(colors.textPrimary)
-    }
-    val bodyText = Style {
-        textStyle(typography.body)
-        fontFamily(typography.body.fontFamily!!)
-        contentColor(colors.textPrimary)
-    }
-    val captionText = Style {
-        textStyle(typography.caption)
-        fontFamily(typography.caption.fontFamily!!)
-        contentColor(colors.textSecondary)
-    }
-    val placeholderText = Style {
-        textStyle(typography.body)
-        fontFamily(typography.body.fontFamily!!)
-        contentColor(colors.textSecondary)
-    }
-    val errorText = Style {
-        textStyle(typography.caption)
-        fontFamily(typography.caption.fontFamily!!)
-        contentColor(colors.destructive)
-    }
+    val displayText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.display, AwanTheme.colors.textPrimary)
+    val titleText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.title, AwanTheme.colors.textPrimary)
+    val headingText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.heading, AwanTheme.colors.textPrimary)
+    val bodyText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.body, AwanTheme.colors.textPrimary)
+    val captionText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.caption, AwanTheme.colors.textSecondary)
+    val placeholderText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.body, AwanTheme.colors.textSecondary)
+    val errorText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.caption, AwanTheme.colors.destructive)
 
+    /** Clock readouts. Same face as [headingText]; a distinct name so times can never drift from it. */
+    val clockText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.heading, AwanTheme.colors.textPrimary)
+
+    val bodySecondaryText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.body, AwanTheme.colors.textSecondary)
+    val metaText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.caption, AwanTheme.colors.meta)
+    val fieldPlaceholder: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.body, AwanTheme.colors.meta)
+    val skipLink: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.buttonCompact, AwanTheme.colors.skyPressed)
+    val buttonCompactText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.buttonCompact, AwanTheme.colors.skyPressed)
+    val zoneBandLabel: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.caption, Color.White)
+
+    val buttonLabel: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.button, Color.Unspecified)
 
     val buttonFocus = Style {
         shape(androidx.compose.foundation.shape.RoundedCornerShape(23.dp))
         border(3.dp, Color.Transparent)
         contentPadding(2.dp)
-        minWidth(48.dp)
-        minHeight(48.dp)
         focused { borderColor(colors.sky) }
     }
 
     val primaryButtonRim = Style {
         background(colors.filledControlPressed)
         shape(shapes.button)
-        disabled { background(colors.line) }
+        disabled {
+            animate(tween(AwanMotionTokens.standardMillis)) { background(colors.line) }
+        }
     }
 
     val primaryButtonFace = Style {
@@ -116,8 +118,10 @@ object AwanStyles {
         fontFamily(typography.button.fontFamily!!)
         buttonPressedTransform()
         disabled {
-            background(colors.disabledSurface)
-            contentColor(colors.disabledContent)
+            animate(tween(AwanMotionTokens.standardMillis)) {
+                background(colors.disabledSurface)
+                contentColor(colors.disabledContent)
+            }
         }
     }
 

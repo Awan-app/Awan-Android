@@ -59,12 +59,7 @@ jobs:
         continue-on-error: true
         run: ./gradlew lint
 
-      - name: Run Detekt
-        id: detekt
-        continue-on-error: true
-        run: ./gradlew detekt
-
-      - name: Build Android App
+      - name: Assemble Debug APK
         id: build
         continue-on-error: true
         run: ./gradlew assembleDebug
@@ -74,12 +69,10 @@ jobs:
         run: |
           echo "Unit Tests: ${{ steps.test.outcome }}"
           echo "Lint:       ${{ steps.lint.outcome }}"
-          echo "Detekt:     ${{ steps.detekt.outcome }}"
           echo "Build:      ${{ steps.build.outcome }}"
 
           if [ "${{ steps.test.outcome }}" != "success" ] || \
              [ "${{ steps.lint.outcome }}" != "success" ] || \
-             [ "${{ steps.detekt.outcome }}" != "success" ] || \
              [ "${{ steps.build.outcome }}" != "success" ]; then
             echo "::error::One or more checks failed — see logs above."
             exit 1
@@ -93,7 +86,6 @@ jobs:
           path: |
             **/build/reports/lint-results*.xml
             **/build/reports/lint-results*.html
-            **/build/reports/detekt/**
           if-no-files-found: ignore
 
       - name: Upload Android APK

@@ -64,18 +64,19 @@ fun AwanApp(
                         if (isLoggedIn) {
                             navigator.replaceAll(com.awan.feature.home.api.HomeRoute)
                         } else {
-                            navigator.replaceAll(com.awan.feature.onboarding.api.OnboardingRoute)
+                            navigator.replaceAll(com.awan.feature.auth.api.LoginRoute)
                         }
                     }
-                )
-                onboardingEntry(
-                    onNavigateToNext = { navigator.navigate(com.awan.feature.auth.api.LoginRoute) }
                 )
                 authEntry(
                     onNavigateToOtp = { email -> navigator.navigate(com.awan.feature.auth.api.OtpRoute(email)) },
                     onNavigateToHome = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) },
-                    onNavigateToOnboarding = { navigator.replaceAll(com.awan.feature.profile_setup.api.ProfileSetupRoute) },
+                    onNavigateToOnboarding = { navigator.replaceAll(com.awan.feature.onboarding.api.OnboardingRoute) },
                     onPopBackStack = { navigator.goBack() }
+                )
+                onboardingEntry(
+                    onComplete = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) },
+                    onExit = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
                 )
                 profileSetupEntry(
                     onNavigateToHome = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) }
