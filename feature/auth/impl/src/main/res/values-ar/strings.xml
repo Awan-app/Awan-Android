@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Email Screen -->
+    <string name="auth_title">أوان</string>
+    <string name="auth_subtitle">حول أهدافك إلى يوم يخطط لنفسه</string>
+    <string name="auth_email_label">البريد الإلكتروني</string>
+    <string name="auth_email_placeholder">you@email.com</string>
+    <string name="auth_email_input_description">حقل إدخال البريد الإلكتروني</string>
+    <string name="auth_send_code">إرسال الرمز</string>
+    <string name="auth_send_code_timer">إرسال الرمز · %1$s</string>
+    <string name="auth_continue_with_google">متابعة باستخدام Google</string>
+    <string name="auth_rate_limited_banner">محاولات كثيرة جدًا. أعد المحاولة بعد %1$s.</string>
+    <string name="auth_offline_banner">أنت غير متصل بالإنترنت — سنرسل الرمز عند إعادة الاتصال.</string>
+
+    <!-- OTP Screen -->
+    <string name="auth_otp_title">تحقق من بريدك!</string>
+    <string name="auth_navigate_back">الرجوع للخلف</string>
+    <string name="auth_verifying_code_description">جاري التحقق من الرمز الخاص بك</string>
+    <string name="auth_verifying_text">جاري التحقق من هويتك…</string>
+    <string name="auth_request_new_code">طلب رمز جديد</string>
+    <string name="auth_resend_code">إعادة إرسال الرمز</string>
+    <string name="auth_resend_code_timer">إعادة إرسال الرمز · %1$s</string>
+    <string name="auth_resend_code_button_desc">زر إعادة إرسال الرمز</string>
+    <string name="auth_resend_code_timer_desc">إعادة إرسال الرمز خلال %1$s</string>
+    <string name="auth_use_different_email">استخدام بريد إلكتروني آخر</string>
+    <string name="auth_use_different_email_desc">استخدام عنوان بريد إلكتروني مختلف</string>
+    <string name="auth_otp_digits_description">حقل إدخال رمز التحقق المكون من 6 أرقام</string>
+    <string name="auth_otp_digit_cell_desc">الرقم %1$d من 6%2$s</string>
+    <string name="auth_otp_digit_cell_empty">، فارغ</string>
+    <string name="auth_otp_digit_cell_filled">، %1$s</string>
+    <string name="auth_code_sent_to">لقد أرسلنا رمزًا مكونًا من 6 أرقام إلى</string>
+    <string name="auth_code_sent_to_desc">تم إرسال الرمز إلى %1$s.</string>
+</resources>

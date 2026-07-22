@@ -42,6 +42,7 @@ enum class AwanButtonVariant {
     Secondary,
     Destructive,
     Quiet,
+    Google,
 }
 
 @Composable
@@ -63,12 +64,14 @@ fun AwanButton(
         AwanButtonVariant.Secondary -> AwanTheme.styles.secondaryButtonRim
         AwanButtonVariant.Destructive -> AwanTheme.styles.destructiveButtonRim
         AwanButtonVariant.Quiet -> AwanTheme.styles.quietButtonRim
+        AwanButtonVariant.Google -> AwanTheme.styles.socialButtonGoogleRim
     }
     val faceStyle = when (variant) {
         AwanButtonVariant.Primary -> AwanTheme.styles.primaryButtonFace
         AwanButtonVariant.Secondary -> AwanTheme.styles.secondaryButtonFace
         AwanButtonVariant.Destructive -> AwanTheme.styles.destructiveButtonFace
         AwanButtonVariant.Quiet -> AwanTheme.styles.quietButtonFace
+        AwanButtonVariant.Google -> AwanTheme.styles.socialButtonGoogleFace
     }
     val contentColor by animateColorAsState(
         targetValue = buttonContentColor(variant = variant, enabled = enabled),
@@ -187,6 +190,7 @@ private fun buttonContentColor(variant: AwanButtonVariant, enabled: Boolean): Co
         AwanButtonVariant.Primary -> colors.onFilledControl
         AwanButtonVariant.Secondary, AwanButtonVariant.Quiet -> colors.skyPressed
         AwanButtonVariant.Destructive -> colors.onDestructive
+        AwanButtonVariant.Google -> colors.textPrimary
     }
 }
 

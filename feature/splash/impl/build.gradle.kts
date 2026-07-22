@@ -9,4 +9,6 @@ android {
 
 dependencies {
     implementation(project(":feature:splash:api"))
+    implementation(project(":core:domain"))
+    implementation(project(":core:common"))
 }

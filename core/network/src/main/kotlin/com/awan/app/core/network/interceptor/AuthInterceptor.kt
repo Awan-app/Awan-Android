@@ -13,7 +13,6 @@ class AuthInterceptor @Inject constructor(
         val request = chain.request()
         val path = request.url.encodedPath
 
-        // Skip token injection for public auth endpoints.
         if (AUTH_PATHS.any { path.contains(it) }) {
             return chain.proceed(request)
         }
@@ -32,6 +31,10 @@ class AuthInterceptor @Inject constructor(
     }
 
     private companion object {
-        val AUTH_PATHS = setOf("/auth/login", "/auth/register", "/auth/refresh")
+        val AUTH_PATHS = setOf(
+            "/v1/auth/otp/request",
+            "/v1/auth/otp/verify",
+            "/v1/auth/refresh",
+        )
     }
 }

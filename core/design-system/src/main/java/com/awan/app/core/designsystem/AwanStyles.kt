@@ -58,25 +58,27 @@ object AwanStyles {
         contentPadding(horizontal = 13.dp, vertical = 11.dp)
     }
 
-    // Text appearances are AwanTextStyle, not Style — see the AwanTextStyle doc for why they must
-    // not travel through the Styles API's inherited-text-style path.
     val displayText: AwanTextStyle
         @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.display, AwanTheme.colors.textPrimary)
     val titleText: AwanTextStyle
         @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.title, AwanTheme.colors.textPrimary)
     val headingText: AwanTextStyle
         @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.heading, AwanTheme.colors.textPrimary)
+    val bodyText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.body, AwanTheme.colors.textPrimary)
+    val captionText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.caption, AwanTheme.colors.textSecondary)
+    val placeholderText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.body, AwanTheme.colors.textSecondary)
+    val errorText: AwanTextStyle
+        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.caption, AwanTheme.colors.destructive)
 
     /** Clock readouts. Same face as [headingText]; a distinct name so times can never drift from it. */
     val clockText: AwanTextStyle
         @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.heading, AwanTheme.colors.textPrimary)
 
-    val bodyText: AwanTextStyle
-        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.body, AwanTheme.colors.textPrimary)
     val bodySecondaryText: AwanTextStyle
         @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.body, AwanTheme.colors.textSecondary)
-    val captionText: AwanTextStyle
-        @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.caption, AwanTheme.colors.textSecondary)
     val metaText: AwanTextStyle
         @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.caption, AwanTheme.colors.meta)
     val fieldPlaceholder: AwanTextStyle
@@ -88,7 +90,6 @@ object AwanStyles {
     val zoneBandLabel: AwanTextStyle
         @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.caption, Color.White)
 
-    /** Button labels take their colour from the button's animated `LocalContentColor`. */
     val buttonLabel: AwanTextStyle
         @Composable @ReadOnlyComposable get() = text(AwanTheme.typography.button, Color.Unspecified)
 
@@ -113,6 +114,8 @@ object AwanStyles {
         minHeight(48.dp)
         contentPadding(horizontal = 13.dp, vertical = 13.dp)
         contentColor(colors.onFilledControl)
+        textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
         buttonPressedTransform()
         disabled {
             animate(tween(AwanMotionTokens.standardMillis)) {
@@ -134,6 +137,8 @@ object AwanStyles {
         minHeight(48.dp)
         contentPadding(horizontal = 12.dp, vertical = 12.dp)
         contentColor(colors.skyPressed)
+        textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
         buttonPressedTransform()
         disabled {
             background(colors.disabledSurface)
@@ -154,6 +159,8 @@ object AwanStyles {
         minHeight(48.dp)
         contentPadding(horizontal = 13.dp, vertical = 13.dp)
         contentColor(colors.onDestructive)
+        textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
         buttonPressedTransform()
         disabled {
             background(colors.disabledSurface)
@@ -172,6 +179,8 @@ object AwanStyles {
         minHeight(48.dp)
         contentPadding(horizontal = 4.dp, vertical = 4.dp)
         contentColor(colors.skyPressed)
+        textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
         disabled { contentColor(colors.disabledContent) }
     }
 
@@ -188,6 +197,8 @@ object AwanStyles {
         minHeight(48.dp)
         contentPadding(4.dp)
         contentColor(colors.meta)
+        textStyle(typography.caption)
+        fontFamily(typography.caption.fontFamily!!)
         selected { contentColor(colors.sky) }
         pressed {
             animate(tween(durationMillis = 120, easing = LinearOutSlowInEasing)) {
@@ -195,4 +206,77 @@ object AwanStyles {
             }
         }
     }
+
+    val textField = Style {
+        background(colors.surface)
+        border(InputStrokeWidth, colors.line)
+        shape(shapes.button)
+        minHeight(AuthInputHeight)
+        contentPadding(horizontal = 16.dp, vertical = 14.dp)
+        contentColor(colors.textPrimary)
+        textStyle(typography.body)
+        fontFamily(typography.body.fontFamily!!)
+        focused {
+            border(InputStrokeWidthActive, colors.sky)
+        }
+        disabled {
+            background(colors.disabledSurface)
+            contentColor(colors.disabledContent)
+        }
+    }
+
+    val textFieldError = Style {
+        border(InputStrokeWidthActive, colors.destructive)
+    }
+
+    val otpCell = Style {
+        background(colors.surface)
+        border(InputStrokeWidth, colors.line)
+        shape(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+        minWidth(OtpCellWidth)
+        minHeight(OtpCellSize)
+        contentColor(colors.textPrimary)
+        textStyle(typography.title)
+        fontFamily(typography.title.fontFamily!!)
+    }
+
+    val otpCellActive = Style {
+        border(InputStrokeWidthActive, colors.sky)
+    }
+
+    val otpCellError = Style {
+        background(colors.destructive.copy(alpha = 0.08f))
+        border(InputStrokeWidthActive, colors.destructive)
+        contentColor(colors.destructive)
+    }
+
+    val otpCellDisabled = Style {
+        background(colors.disabledSurface)
+        border(InputStrokeWidth, colors.line)
+        contentColor(colors.disabledContent)
+    }
+
+    val authDivider = Style {
+        background(colors.line)
+        minHeight(1.dp)
+    }
+
+
+    val socialButtonGoogleRim = Style {
+        background(colors.line)
+        shape(shapes.button)
+    }
+
+    val socialButtonGoogleFace = Style {
+        background(colors.surface)
+        border(InputStrokeWidth, colors.line)
+        shape(shapes.button)
+        minHeight(48.dp)
+        contentPadding(horizontal = 16.dp, vertical = 12.dp)
+        contentColor(colors.textPrimary)
+        textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
+        buttonPressedTransform()
+    }
 }
+

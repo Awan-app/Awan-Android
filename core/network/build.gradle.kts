@@ -1,8 +1,21 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.awan.android.library)
     alias(libs.plugins.awan.android.hilt)
     alias(libs.plugins.jetbrains.kotlin.serialization)
 }
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+
+val awanBaseUrl = localProperties.getProperty("awan.base.url") 
+    ?: "https://backend-production-dec8.up.railway.app/api/"
+val awanBaseUrlFormatted = "\"$awanBaseUrl\""
 
 android {
     namespace = "com.awan.app.core.network"
@@ -13,15 +26,14 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "AWAN_BASE_URL", "\"https://api.awan.app/\"")
+            buildConfigField("String", "AWAN_BASE_URL", awanBaseUrlFormatted)
             buildConfigField("String", "ENVIRONMENT", "\"debug\"")
         }
         release {
-            buildConfigField("String", "AWAN_BASE_URL", "\"https://api.awan.app/\"")
+            buildConfigField("String", "AWAN_BASE_URL", awanBaseUrlFormatted)
             buildConfigField("String", "ENVIRONMENT", "\"release\"")
         }
     }
-
 }
 
 dependencies {

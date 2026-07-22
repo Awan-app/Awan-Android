@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_network">No internet connection. Check your connection and try again.</string>
+    <string name="error_timeout">Request timed out. Please try again.</string>
+    <string name="error_unauthorized">Session expired or unauthorized. Please log in again.</string>
+    <string name="error_server">Server error. Please try again later.</string>
+    <string name="error_serialization">Unexpected response from server.</string>
+    <string name="error_unknown">Something went wrong. Please try again.</string>
+    <string name="error_email_not_found">This email isn\'t registered.</string>
+    <string name="error_invalid_otp">Invalid OTP code.</string>
+    <string name="error_invalid_otp_with_attempts">Invalid OTP code. %1$d attempts remaining.</string>
+    <string name="error_otp_attempts_exceeded">Too many attempts. Request a new code.</string>
+    <string name="error_otp_expired">Your code has expired. Request a new one.</string>
+    <string name="error_too_many_requests">Too many requests. Please try again later.</string>
+</resources>

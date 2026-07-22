@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-internal const val AWAN_BUTTON_ANIMATION_DURATION_MILLIS = 120
+internal const val AWAN_BUTTON_ANIMATION_DURATION_MILLIS = 40
 internal val AwanButtonRimDepth = 4.dp
 internal val AwanButtonRimSide = 2.dp
 
@@ -166,7 +166,7 @@ internal val AwanTypographyTokens = AwanTypography(
     display = TextStyle(
         fontFamily = Baloo2,
         fontWeight = FontWeight.ExtraBold,
-        fontSize = 28.sp,
+        fontSize = 44.sp,
         lineHeight = 31.sp,
     ),
     title = TextStyle(
@@ -182,7 +182,7 @@ internal val AwanTypographyTokens = AwanTypography(
         lineHeight = 22.sp,
     ),
     body = TextStyle(
-        fontFamily = Nunito,
+        fontFamily = Baloo2,
         fontWeight = FontWeight.ExtraBold,
         fontSize = 14.5.sp,
         lineHeight = 21.sp,
@@ -202,7 +202,7 @@ internal val AwanTypographyTokens = AwanTypography(
         letterSpacing = 0.5.sp,
     ),
     caption = TextStyle(
-        fontFamily = Nunito,
+        fontFamily = Baloo2,
         fontWeight = FontWeight.Bold,
         fontSize = 11.5.sp,
         lineHeight = 17.sp,
@@ -251,6 +251,24 @@ data class AwanSpacing(
 )
 
 internal val AwanSpacingTokens = AwanSpacing()
+
+val AuthInputHeight = 56.dp
+
+val OtpCellSize = 56.dp
+
+val OtpCellWidth = 44.dp
+
+val OtpCellSpacing = 8.dp
+
+val InputStrokeWidth = 1.5.dp
+
+val InputStrokeWidthActive = 2.dp
+
+val MascotSize = 200.dp
+
+const val OTP_SHAKE_DURATION_MILLIS = 400
+
+const val AUTH_ENTER_DURATION_MILLIS = 300
 
 /** Spring parameters rather than a built spec, so one token serves Float, Dp, IntOffset and IntSize call sites. */
 @Immutable
