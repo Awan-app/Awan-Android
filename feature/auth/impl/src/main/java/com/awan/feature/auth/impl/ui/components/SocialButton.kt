@@ -18,12 +18,16 @@ fun SocialButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    isLoading: Boolean = false,
     painter: Painter? = null,
     socialType: AwanButtonVariant = AwanButtonVariant.Google,
     contentDescription: String = text,
 ) {
     AwanButton(
         onClick = onClick,
+        enabled = enabled,
+        isLoading = isLoading,
         modifier = modifier
             .fillMaxWidth()
             .semantics { this.contentDescription = contentDescription },
@@ -33,12 +37,12 @@ fun SocialButton(
                 Image(
                     painter = painter,
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
             }
         } else {
             null
-        }
+        },
     ) {
         AwanText(text = text)
     }
