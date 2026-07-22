@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "8c1f1cbcd136dd4ff94da8e9446b0d61",
+    "identityHash": "d440401b61a0d30397ab3c1a7463125e",
     "entities": [
       {
         "tableName": "users",
@@ -448,7 +448,18 @@
           "columnNames": [
             "id"
           ]
-        }
+        },
+        "indices": [
+          {
+            "name": "index_template_overrides_dateOfDay",
+            "unique": true,
+            "columnNames": [
+              "dateOfDay"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_template_overrides_dateOfDay` ON `${TABLE_NAME}` (`dateOfDay`)"
+          }
+        ]
       },
       {
         "tableName": "zones",
@@ -548,7 +559,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8c1f1cbcd136dd4ff94da8e9446b0d61')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd440401b61a0d30397ab3c1a7463125e')"
     ]
   }
 }

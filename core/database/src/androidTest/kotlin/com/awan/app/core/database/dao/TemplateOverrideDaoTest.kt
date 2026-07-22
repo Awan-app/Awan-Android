@@ -1,5 +1,6 @@
 package com.awan.app.core.database.dao
 
+import android.database.sqlite.SQLiteConstraintException
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.awan.app.core.database.AwanDatabase
 import com.awan.app.core.database.buildInMemoryDb
@@ -10,6 +11,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -55,6 +57,17 @@ class TemplateOverrideDaoTest {
         dao.upsertOverride(override(name = "Old"))
         dao.upsertOverride(override(name = "New"))
         assertEquals("New", dao.getOverride("ov1")!!.name)
+    }
+
+    @Test
+    fun rejectsDuplicateDate() = runTest {
+        dao.upsertOverride(override(id = "ov1", dateOfDay = "2026-07-21"))
+
+        try {
+            dao.upsertOverride(override(id = "ov2", dateOfDay = "2026-07-21"))
+            fail("Expected a duplicate date to violate the unique index")
+        } catch (_: SQLiteConstraintException) {
+        }
     }
 
     @Test

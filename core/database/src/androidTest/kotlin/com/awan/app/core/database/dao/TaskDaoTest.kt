@@ -12,6 +12,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -203,6 +204,56 @@ class TaskDaoTest {
 
         assertNull(dao.getTask("tA"))
         assertEquals("tB", dao.getTask("tB")!!.id)
+    }
+
+    @Test
+    fun replaceTasksForGoal_rejectsTasksFromAnotherGoal() = runTest {
+        insertGoal("g1")
+        insertGoal("g2")
+        dao.upsertTask(task("existing", goalId = "g1"))
+
+        try {
+            dao.replaceTasksForGoal("g1", listOf(task("g2-task", goalId = "g2")), emptyList())
+            fail("Expected replacement to reject tasks from another goal")
+        } catch (_: IllegalArgumentException) {
+        }
+
+        assertEquals("existing", dao.getTask("existing")!!.id)
+        assertNull(dao.getTask("g2-task"))
+    }
+
+    @Test
+    fun replaceTasksForGoal_rejectsDependenciesOutsideReplacementBatch() = runTest {
+        insertGoal("g1")
+        insertGoal("g2")
+        dao.upsertTask(task("existing-g1-task", goalId = "g1"))
+        dao.upsertTask(task("g2-task", goalId = "g2"))
+
+        try {
+            dao.replaceTasksForGoal("g1", listOf(task("g1-task", goalId = "g1")), listOf(dep("g1-task", "g2-task")))
+            fail("Expected replacement to reject cross-goal dependencies")
+        } catch (_: IllegalArgumentException) {
+        }
+
+        assertEquals("existing-g1-task", dao.getTask("existing-g1-task")!!.id)
+        assertNull(dao.getTask("g1-task"))
+        assertTrue(dao.observeDependentIds("g2-task").first().isEmpty())
+    }
+
+    @Test
+    fun replaceTasksForGoal_rejectsDependencyWithDependentOutsideReplacementBatch() = runTest {
+        insertGoal()
+        dao.upsertTask(task("existing"))
+
+        try {
+            dao.replaceTasksForGoal("goal1", listOf(task("replacement")), listOf(dep("existing", "replacement")))
+            fail("Expected replacement to reject dependencies with a dependent outside the replacement batch")
+        } catch (_: IllegalArgumentException) {
+        }
+
+        assertEquals("existing", dao.getTask("existing")!!.id)
+        assertNull(dao.getTask("replacement"))
+        assertTrue(dao.observeDependsOnIds("existing").first().isEmpty())
     }
 
     @Test

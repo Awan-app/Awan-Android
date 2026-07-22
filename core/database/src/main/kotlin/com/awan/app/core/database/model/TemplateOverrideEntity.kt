@@ -1,6 +1,7 @@
 package com.awan.app.core.database.model
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -12,7 +13,10 @@ import androidx.room.PrimaryKey
  * Zones for this override are stored in [ZoneEntity] with
  * [ZoneEntity.templateOverrideId] set.
  */
-@Entity(tableName = "template_overrides")
+@Entity(
+    tableName = "template_overrides",
+    indices = [Index(value = ["dateOfDay"], unique = true)],
+)
 data class TemplateOverrideEntity(
     @PrimaryKey val id: String,
     /** Optional display name for the override (e.g. "Holiday Schedule"). */

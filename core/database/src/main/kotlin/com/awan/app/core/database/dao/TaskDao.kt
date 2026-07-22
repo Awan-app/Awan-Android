@@ -68,6 +68,13 @@ interface TaskDao {
         tasks: List<TaskEntity>,
         dependencies: List<TaskDependencyEntity>,
     ) {
+        require(tasks.all { it.goalId == goalId }) {
+            "All replacement tasks must belong to goal $goalId."
+        }
+        val taskIds = tasks.mapTo(HashSet()) { it.id }
+        require(dependencies.all { it.taskId in taskIds && it.dependsOnTaskId in taskIds }) {
+            "All replacement dependencies must belong to replacement tasks for goal $goalId."
+        }
         deleteTasksByGoal(goalId)
         upsertTasks(tasks)
         upsertDependencies(dependencies)

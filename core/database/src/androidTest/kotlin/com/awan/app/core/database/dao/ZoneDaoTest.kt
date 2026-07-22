@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -71,6 +72,37 @@ class ZoneDaoTest {
         templateId = null,
         templateOverrideId = overrideId,
     )
+
+    @Test
+    fun rejectsZoneWithoutParent() {
+        assertThrows(IllegalArgumentException::class.java) {
+            ZoneEntity(
+                id = "orphan",
+                name = "Study",
+                startTime = "09:00:00",
+                endTime = "12:00:00",
+                color = null,
+                templateId = null,
+                templateOverrideId = null,
+            )
+        }
+    }
+
+    @Test
+    fun rejectsZoneWithBothParents() {
+        assertThrows(IllegalArgumentException::class.java) {
+            ZoneEntity(
+                id = "ambiguous",
+                name = "Study",
+                startTime = "09:00:00",
+                endTime = "12:00:00",
+                color = null,
+                templateId = "tmpl1",
+                templateOverrideId = "ov1",
+            )
+        }
+    }
+
 
     // ── upsertZone / getZone ──────────────────────────────────────────────────
 

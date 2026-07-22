@@ -10,8 +10,7 @@ import androidx.room.Index
  * Each row encodes "[taskId] depends on [dependsOnTaskId]", i.e.
  * [dependsOnTaskId] must be completed before [taskId] can start.
  *
- * Both tasks must belong to the same goal (enforced by the server;
- * the client mirrors the constraint via repository-level validation).
+ * Full-goal replacement verifies both IDs are in the supplied task batch.
  *
  * The server returns the dependency list as `dependsOnTaskIds: UUID[]` inside
  * [TaskInfoResponse] — that flat list is expanded into individual rows here.

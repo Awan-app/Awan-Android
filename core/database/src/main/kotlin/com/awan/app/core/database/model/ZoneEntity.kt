@@ -53,4 +53,10 @@ data class ZoneEntity(
      * Null when this zone belongs to a [TemplateEntity].
      */
     val templateOverrideId: String?,
-)
+) {
+    init {
+        require((templateId == null) != (templateOverrideId == null)) {
+            "Zone $id must have exactly one parent (templateId or templateOverrideId)."
+        }
+    }
+}
