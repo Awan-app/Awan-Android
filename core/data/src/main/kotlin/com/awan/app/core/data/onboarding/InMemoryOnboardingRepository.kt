@@ -21,6 +21,16 @@ class InMemoryOnboardingRepository @Inject constructor(
     private val onboardingApiService: OnboardingApiService,
 ) : OnboardingRepository {
 
+    constructor() : this(
+        onboardingApiService = object : OnboardingApiService {
+            override suspend fun completeOnboarding(
+                request: com.awan.app.core.network.dto.CompleteOnboardingRequest
+            ): com.awan.app.core.network.dto.CompleteOnboardingResponse {
+                return com.awan.app.core.network.dto.CompleteOnboardingResponse(id = "test-id")
+            }
+        }
+    )
+
     private val state = MutableStateFlow(OnboardingData())
 
     override val draft: Flow<OnboardingData> = state.asStateFlow()

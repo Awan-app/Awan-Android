@@ -7,6 +7,9 @@ import com.awan.app.core.domain.onboarding.DayBoundsValidation
 import com.awan.app.core.domain.onboarding.ScheduleFirstTaskUseCase
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
+import com.awan.app.core.network.api.OnboardingApiService
+import com.awan.app.core.network.dto.CompleteOnboardingRequest
+import com.awan.app.core.network.dto.CompleteOnboardingResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -30,18 +33,10 @@ class OnboardingViewModelTest {
     private lateinit var repository: InMemoryOnboardingRepository
     private lateinit var viewModel: OnboardingViewModel
 
-    private val fakeApiService = object : com.awan.app.core.network.api.OnboardingApiService {
-        override suspend fun completeOnboarding(
-            request: com.awan.app.core.network.dto.CompleteOnboardingRequest
-        ): com.awan.app.core.network.dto.CompleteOnboardingResponse {
-            return com.awan.app.core.network.dto.CompleteOnboardingResponse(id = "fake-id")
-        }
-    }
-
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        repository = InMemoryOnboardingRepository(onboardingApiService = fakeApiService)
+        repository = InMemoryOnboardingRepository()
         viewModel = OnboardingViewModel(
             repository = repository,
             suggestZoneSchedule = SuggestZoneScheduleUseCase(),
