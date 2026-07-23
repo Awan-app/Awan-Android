@@ -1,28 +1,42 @@
 package com.awan.feature.addtask.ui
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.awan.app.core.designsystem.AwanButton
+import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.CascadeItem
+import com.awan.app.core.designsystem.CloudDrift
 import com.awan.app.core.designsystem.ObserveAsEvents
+import com.awan.app.core.designsystem.SparkleBurst
+import com.awan.app.core.designsystem.reducedMotion
 import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskAction
 import com.awan.feature.addtask.presentation.AddTaskEvent
@@ -33,6 +47,11 @@ import com.awan.feature.addtask.ui.components.AddTaskModeSelector
 import com.awan.feature.addtask.ui.components.GoalPlaceholder
 import com.awan.feature.addtask.ui.components.TaskAttributeChips
 import com.awan.feature.addtask.ui.components.rememberTokenHighlight
+
+private val MascotWidth = 108.dp
+private val SkyHeight = 116.dp
+private val DragHandleWidth = 36.dp
+private val DragHandleHeight = 4.dp
 
 /**
  * Quick capture. Opened from the `+` in the bottom bar; it is deliberately not a navigation
@@ -63,16 +82,15 @@ fun AddTaskSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        containerColor = AwanTheme.colors.background,
+        contentColor = AwanTheme.colors.textPrimary,
+        dragHandle = null,
         modifier = modifier,
     ) {
         AddTaskSheetContent(
             state = state,
             onAction = viewModel::onAction,
-            modifier = Modifier
-                .fillMaxWidth()
-                .imePadding()
-                .padding(horizontal = AwanTheme.spacing.lg)
-                .padding(bottom = AwanTheme.spacing.xl),
+            modifier = Modifier.fillMaxWidth().imePadding(),
         )
     }
 }
@@ -83,19 +101,61 @@ private fun AddTaskSheetContent(
     onAction: (AddTaskAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
-    ) {
-        AddTaskModeSelector(
-            selected = state.mode,
-            onSelect = { onAction(AddTaskAction.ModeChanged(it)) },
-            modifier = Modifier.fillMaxWidth(),
+    Column(modifier = modifier) {
+        SkyHeader(state = state)
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AwanTheme.spacing.lg)
+                .padding(top = AwanTheme.spacing.md, bottom = AwanTheme.spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
+        ) {
+            CascadeItem(0, Modifier.fillMaxWidth()) {
+                AddTaskModeSelector(
+                    selected = state.mode,
+                    onSelect = { onAction(AddTaskAction.ModeChanged(it)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            Crossfade(targetState = state.mode, label = "addTaskMode") { mode ->
+                when (mode) {
+                    AddTaskMode.TASK -> TaskForm(state = state, onAction = onAction)
+                    AddTaskMode.GOAL -> GoalPlaceholder()
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The band of drifting cloud the mascot sits on. This is the first thing that moves when the sheet
+ * opens, so the sheet reads as sky arriving rather than a panel appearing.
+ */
+@Composable
+private fun SkyHeader(state: AddTaskState) {
+    CloudDrift(height = SkyHeight) {
+        // The sheet has no Material drag handle — the sky is the header — so this stands in for it.
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = AwanTheme.spacing.sm)
+                .size(width = DragHandleWidth, height = DragHandleHeight)
+                .clip(AwanTheme.shapes.pill)
+                .background(AwanTheme.colors.surface.copy(alpha = 0.75f)),
         )
 
-        when (state.mode) {
-            AddTaskMode.TASK -> TaskForm(state = state, onAction = onAction)
-            AddTaskMode.GOAL -> GoalPlaceholder()
+        Box(
+            modifier = Modifier.padding(bottom = AwanTheme.spacing.xxs),
+            contentAlignment = Alignment.Center,
+        ) {
+            Crossfade(targetState = state.mascot, label = "addTaskMascot") { expression ->
+                AwanMascot(expression = expression, width = MascotWidth)
+            }
+            Box(Modifier.size(MascotWidth)) {
+                SparkleBurst(celebrate = state.isCelebrating)
+            }
         }
     }
 }
@@ -105,52 +165,80 @@ private fun TaskForm(
     state: AddTaskState,
     onAction: (AddTaskAction) -> Unit,
 ) {
-    AwanTextField(
-        value = state.input,
-        onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
-        placeholder = stringResource(R.string.add_task_title_placeholder),
-        contentDescriptionText = stringResource(R.string.add_task_title_content_description),
-        visualTransformation = rememberTokenHighlight(state.parsed.tokens),
-        capitalization = KeyboardCapitalization.Sentences,
-        imeAction = ImeAction.Next,
-        modifier = Modifier.fillMaxWidth(),
-    )
+    Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
+        CascadeItem(1, Modifier.fillMaxWidth()) {
+            AwanTextField(
+                value = state.input,
+                onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
+                placeholder = stringResource(R.string.add_task_title_placeholder),
+                contentDescriptionText = stringResource(R.string.add_task_title_content_description),
+                visualTransformation = rememberTokenHighlight(state.parsed.tokens),
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Next,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
-    AwanTextField(
-        value = state.description,
-        onValueChange = { onAction(AddTaskAction.DescriptionChanged(it)) },
-        placeholder = stringResource(R.string.add_task_description_placeholder),
-        contentDescriptionText = stringResource(R.string.add_task_description_content_description),
-        capitalization = KeyboardCapitalization.Sentences,
-        imeAction = ImeAction.Done,
-        modifier = Modifier.fillMaxWidth(),
-    )
+        CascadeItem(2, Modifier.fillMaxWidth()) {
+            AwanTextField(
+                value = state.description,
+                onValueChange = { onAction(AddTaskAction.DescriptionChanged(it)) },
+                placeholder = stringResource(R.string.add_task_description_placeholder),
+                contentDescriptionText = stringResource(R.string.add_task_description_content_description),
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Done,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
-    AwanText(stringResource(R.string.add_task_hint), style = AwanTheme.styles.metaText)
+        CascadeItem(3) {
+            AwanText(stringResource(R.string.add_task_hint), style = AwanTheme.styles.metaText)
+        }
 
-    TaskAttributeChips(
-        state = state,
-        today = state.today,
-        onToggleMandatory = { onAction(AddTaskAction.MandatoryToggled) },
-        modifier = Modifier.fillMaxWidth(),
-    )
+        CascadeItem(4, Modifier.fillMaxWidth()) {
+            TaskAttributeChips(
+                state = state,
+                today = state.today,
+                onToggleMandatory = { onAction(AddTaskAction.MandatoryToggled) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
-    state.errorMessage?.let {
-        AwanText(stringResource(it), style = AwanTheme.styles.errorText)
+        state.errorMessage?.let {
+            AwanText(stringResource(it), style = AwanTheme.styles.errorText)
+        }
+
+        CascadeItem(5, Modifier.fillMaxWidth()) {
+            SubmitButton(state = state, onSubmit = { onAction(AddTaskAction.Submit) })
+        }
+    }
+}
+
+/** Pops the moment the sentence becomes submittable — the same beat the onboarding footer uses. */
+@Composable
+private fun SubmitButton(state: AddTaskState, onSubmit: () -> Unit) {
+    val reduced = reducedMotion()
+    val pop = remember { Animatable(1f) }
+    val spec = AwanTheme.motion.playful.spec<Float>()
+
+    LaunchedEffect(state.canSubmit) {
+        if (state.canSubmit && !reduced) {
+            pop.animateTo(1.06f, spec)
+            pop.animateTo(1f, spec)
+        }
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.End,
-        verticalAlignment = Alignment.CenterVertically,
+    AwanButton(
+        onClick = onSubmit,
+        enabled = state.canSubmit,
+        isLoading = state.isSubmitting,
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = pop.value
+                scaleY = pop.value
+            },
     ) {
-        AwanButton(
-            onClick = { onAction(AddTaskAction.Submit) },
-            enabled = state.canSubmit,
-            isLoading = state.isSubmitting,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            AwanText(stringResource(R.string.add_task_submit))
-        }
+        AwanText(stringResource(R.string.add_task_submit))
     }
 }

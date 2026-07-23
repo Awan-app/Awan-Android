@@ -1,6 +1,7 @@
 package com.awan.feature.addtask.presentation
 
 import androidx.annotation.StringRes
+import com.awan.app.core.designsystem.MascotExpression
 import com.awan.app.core.domain.task.parser.ParsedTaskInput
 import com.awan.app.core.model.DayZone
 import com.awan.app.core.model.TaskDraft
@@ -19,10 +20,25 @@ data class AddTaskState(
     val resolvedZone: DayZone? = null,
     val isResolvingZone: Boolean = false,
     val isSubmitting: Boolean = false,
+    /** True for one beat after a successful create, so the mascot can cheer before the sheet goes. */
+    val isCelebrating: Boolean = false,
     @StringRes val errorMessage: Int? = null,
 ) {
     val canSubmit: Boolean
         get() = mode == AddTaskMode.TASK && parsed.title.isNotBlank() && !isSubmitting
+
+    /**
+     * Awan watches what you type: curious once the sentence carries something schedulable, greeting
+     * you while it's still just a title, cheering when the task lands.
+     */
+    val mascot: MascotExpression
+        get() = when {
+            isCelebrating -> MascotExpression.Celebrate
+            mode == AddTaskMode.GOAL -> MascotExpression.Curious
+            parsed.startAt != null || parsed.zoneToken != null -> MascotExpression.Curious
+            input.isNotBlank() -> MascotExpression.Greet
+            else -> MascotExpression.Idle
+        }
 
     /** The zone token matched a real zone, so its id can go on the session. */
     val hasUnknownZone: Boolean

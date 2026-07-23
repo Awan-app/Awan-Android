@@ -10,6 +10,7 @@ import com.awan.app.core.model.DayZone
 import com.awan.feature.addtask.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,6 +37,11 @@ class AddTaskViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     private var zoneLookup: Job? = null
+
+    private companion object {
+        /** Roughly the length of SparkleBurst plus one mascot cheer cycle. */
+        const val CELEBRATE_MILLIS = 900L
+    }
 
     fun onAction(action: AddTaskAction) {
         when (action) {
@@ -85,7 +91,10 @@ class AddTaskViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isSubmitting = true, errorMessage = null) }
             when (createTask(current.toDraft())) {
+                // Hold the sheet open just long enough for Awan to cheer and the sparkles to fire.
                 is Result.Success -> {
+                    _state.update { it.copy(isSubmitting = false, isCelebrating = true) }
+                    delay(CELEBRATE_MILLIS)
                     _state.value = AddTaskState(today = LocalDate.now(clock))
                     _events.send(AddTaskEvent.TaskCreated(current.parsed.title))
                 }

@@ -2,6 +2,7 @@ package com.awan.feature.addtask.presentation
 
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.designsystem.MascotExpression
 import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
 import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
 import com.awan.app.core.domain.zone.repository.ZoneRepository
@@ -222,6 +223,35 @@ class AddTaskViewModelTest {
         assertEquals(AddTaskEvent.TaskCreated("Buy groceries"), events.single())
         assertEquals("", viewModel.state.value.input)
         assertFalse(viewModel.state.value.isSubmitting)
+    }
+
+    @Test
+    fun `the mascot reacts to what has been typed`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+        assertEquals(MascotExpression.Idle, viewModel.state.value.mascot)
+
+        viewModel.onAction(AddTaskAction.InputChanged("Buy groceries"))
+        assertEquals(MascotExpression.Greet, viewModel.state.value.mascot)
+
+        viewModel.onAction(AddTaskAction.InputChanged("Buy groceries tomorrow 6pm"))
+        assertEquals(MascotExpression.Curious, viewModel.state.value.mascot)
+    }
+
+    @Test
+    fun `a successful create celebrates before the sheet is dismissed`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.InputChanged("Buy groceries"))
+        viewModel.onAction(AddTaskAction.Submit)
+
+        // The create has returned but the event has not fired yet — this is the cheer beat.
+        val celebrating = viewModel.state.value
+        assertTrue(celebrating.isCelebrating)
+        assertFalse(celebrating.isSubmitting)
+        assertEquals(MascotExpression.Celebrate, celebrating.mascot)
+
+        assertEquals(AddTaskEvent.TaskCreated("Buy groceries"), viewModel.events.first())
+        assertFalse(viewModel.state.value.isCelebrating)
     }
 
     @Test
