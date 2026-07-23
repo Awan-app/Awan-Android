@@ -27,29 +27,42 @@ If the issue ID isn't already known from context, search the `AWAN` Jira project
 
 ## Architecture
 
-The app follows **Now in Android (NiA) architecture**; the multi-module skeleton is in place — extend it, don't create parallel structures.
+The app follows **Now in Android (NiA) architecture** with **Clean Architecture layering**; the multi-module skeleton is in place — extend it, don't create parallel structures.
+
+### Clean Architecture — non-negotiable
+
+Dependency direction is always `presentation → domain ← data`. Domain depends on nothing but `:core:model` and `:core:common`.
+
+- **ViewModels never touch a repository.** A ViewModel depends only on use cases from `:core:domain`. If a screen needs data, add or reuse a use case — never inject a repository, DAO, DataSource, Retrofit service, or DataStore into presentation code.
+- **Repository contracts live in `:core:domain`**, in `<feature>/repository/`. `:core:data` only holds `…RepositoryImpl`, data sources, DTOs, mappers, and the Hilt `@Binds` module wiring impl → contract. A repository interface in `:core:data` is a bug.
+- **Use cases live in `:core:domain`**, in `<feature>/usecase/`. One public `operator fun invoke` per use case; keep them thin — they orchestrate repositories and domain rules, they don't hold UI state. A use case in `:core:data` or in a feature module is a bug.
+- **Domain models live in `:core:model`** (or `:core:domain/<feature>/model/` when feature-scoped). Domain types never expose Room entities, DTOs, or Retrofit/Proto types; mapping happens in `:core:data`.
+- `:core:domain` stays Android-free in spirit — no Compose, no Android framework types in signatures.
+- Reference vertical to copy: `core/domain/auth/` (contract + models + use cases) paired with `core/data/auth/` (impl + remote data source).
+
+Known violations to fix when touching them, not to imitate: `TaskRepository`, `OnboardingRepository`, and `CreateTaskUseCase` currently sit in `:core:data`.
 
 ### Mandatory skills — invoke before writing code
 
 - `nowinandroid-architecture` — modularization, convention plugins, Hilt, offline-first data layer, feature modules. Use for any structural/scaffolding/module work.
 - `navigation-3` — all navigation (NavKey/EntryProvider/Navigator, scenes, conditional nav). This project uses Navigation 3, not navigation-compose.
 - `styles` — all styling/theming uses the Jetpack Compose Styles API (component themes, `Modifier.styleable`), not hardcoded parameters.
-- `android-presentation-mvi` — ViewModels, screen State/Action/Event, Root/Screen composable split.
-- `android-data-layer` — repositories, data sources, DTOs/mappers, Room, offline-first.
+- `android-presentation-mvi` — ViewModels, screen State/Action/Event, Root/Screen composable split. ViewModels consume use cases only.
+- `android-data-layer` — repository impls, data sources, DTOs/mappers, Room, offline-first. Contracts stay in `:core:domain`.
 - `android-compose-ui` — composables, recomposition, previews, design-system components.
 
 ### Current structure
 
 - `build-logic/` convention plugins own shared Gradle config: `awan.android.application`, `awan.android.library`, `awan.android.compose`, `awan.android.hilt`, `awan.android.feature`. Module build files stay declarative — apply these instead of repeating config.
-- `:core:*` modules: `common` (dispatchers, `Result`, `AppError`), `datastore` + `datastore-proto` (Proto DataStore prefs, encrypted token storage), `network` (Retrofit/OkHttp, auth interceptor + token authenticator), `design-system` (Awan components, Styles API themes, tokens), `navigation` (`Navigator`, `NavigationState`, `Route`).
+- `:core:*` modules: `model` (domain models), `domain` (repository contracts + use cases), `data` (repository impls, data sources, DTOs/mappers), `database` (Room), `common` (dispatchers, `Result`, `AppError`), `datastore` + `datastore-proto` (Proto DataStore prefs, encrypted token storage), `network` (Retrofit/OkHttp, auth interceptor + token authenticator), `design-system` (Awan components, Styles API themes, tokens), `navigation` (`Navigator`, `NavigationState`, `Route`).
 - `:feature:*` modules with **api/impl split** (api = routes only, impl = EntryProvider + screens): splash, onboarding, auth, home, calendar, chat, goals, profile, profile-setup. Features depend on core and other features' `api` modules, never on their `impl`.
 - `:app` hosts the Navigation 3 shell: `AwanApp`, `AwanAppState`, `TopLevelDestination`, `MainActivity`.
 - Hilt DI throughout; UDF ViewModels exposing `StateFlow` of sealed UI state.
 - Packages: `com.awan.app` (app), `com.awan.app.core.*` (core), `com.awan.feature.*` (features).
 
-### Still to build (target NiA modules not yet present)
+### Still to build
 
-- `:core:model`, `:core:database` (Room), `:core:data` (repositories), `:core:ui`.
+- `:core:ui` (shared stateless UI + UI models).
 - Offline-first: Room is the single source of truth, UI observes it reactively, sync (Last-Write-Wins with server timestamps) runs in background via WorkManager.
 - Local Conflict Engine module (see constraints below).
 
