@@ -10,8 +10,8 @@
 
     <string name="add_task_hint">Try “Gym session tomorrow 6pm @play”</string>
 
-    <string name="add_task_chip_mandatory">Mandatory</string>
-    <string name="add_task_chip_optional">Optional</string>
+    <string name="add_task_chip_mandatory">Must do</string>
+    <string name="add_task_chip_optional">Can skip</string>
     <string name="add_task_chip_today_no_time">Today</string>
     <string name="add_task_chip_no_duration">Any length</string>
     <string name="add_task_chip_zone_unknown">Zone “%1$s” not found</string>
@@ -25,8 +25,8 @@
     <string name="add_task_day_tomorrow">Tomorrow</string>
     <string name="add_task_day_at_time">%1$s at %2$s</string>
 
-    <string name="add_task_duration_title">How long?</string>
     <string name="add_task_picker_set">Set</string>
+    <string name="add_task_picker_next">Next</string>
     <string name="add_task_picker_cancel">Cancel</string>
 
     <string name="add_task_submit">Add task</string>

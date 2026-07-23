@@ -1,5 +1,7 @@
 package com.awan.feature.addtask.presentation
 
+import java.time.LocalDate
+
 sealed interface AddTaskAction {
     data class ModeChanged(val mode: AddTaskMode) : AddTaskAction
     data class InputChanged(val input: String) : AddTaskAction
@@ -9,7 +11,10 @@ sealed interface AddTaskAction {
     data class PickerOpened(val picker: AddTaskPicker) : AddTaskAction
     data object PickerDismissed : AddTaskAction
 
-    /** Minutes from midnight, on the day the sentence already names (today if it names none). */
+    /** Step one of scheduling: parks the day and advances to the clock. */
+    data class DatePicked(val date: LocalDate) : AddTaskAction
+
+    /** Minutes from midnight, on the day just picked — or the one the sentence already names. */
     data class TimePicked(val minutesFromMidnight: Int) : AddTaskAction
     data class DurationPicked(val minutes: Int) : AddTaskAction
 

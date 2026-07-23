@@ -10,8 +10,8 @@
 
     <string name="add_task_hint">جرّب ‏“Gym session tomorrow 6pm @play”</string>
 
-    <string name="add_task_chip_mandatory">إلزامية</string>
-    <string name="add_task_chip_optional">اختيارية</string>
+    <string name="add_task_chip_mandatory">لا بد منها</string>
+    <string name="add_task_chip_optional">يمكن تخطيها</string>
     <string name="add_task_chip_today_no_time">اليوم</string>
     <string name="add_task_chip_no_duration">أي مدة</string>
     <string name="add_task_chip_zone_unknown">النطاق ‏“%1$s” غير موجود</string>
@@ -25,8 +25,8 @@
     <string name="add_task_day_tomorrow">غدًا</string>
     <string name="add_task_day_at_time">%1$s في %2$s</string>
 
-    <string name="add_task_duration_title">كم تستغرق؟</string>
     <string name="add_task_picker_set">تعيين</string>
+    <string name="add_task_picker_next">التالي</string>
     <string name="add_task_picker_cancel">إلغاء</string>
 
     <string name="add_task_submit">أضف المهمة</string>

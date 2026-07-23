@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.awan.app.core.designsystem.AwanButton
+import com.awan.app.core.designsystem.AwanDatePickerDialog
 import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
@@ -50,7 +51,6 @@ import com.awan.feature.addtask.presentation.AddTaskPicker
 import com.awan.feature.addtask.presentation.AddTaskState
 import com.awan.feature.addtask.presentation.AddTaskViewModel
 import com.awan.feature.addtask.ui.components.AddTaskModeSelector
-import com.awan.feature.addtask.ui.components.DurationPickerDialog
 import com.awan.feature.addtask.ui.components.GoalPlaceholder
 import com.awan.feature.addtask.ui.components.TaskAttributeChips
 import com.awan.feature.addtask.ui.components.rememberTokenHighlight
@@ -104,10 +104,24 @@ fun AddTaskSheet(
     AttributePickers(state = state, onAction = viewModel::onAction)
 }
 
-/** Both pickers write their choice back into the sentence; neither holds a value of its own. */
+/**
+ * Every picker writes its choice back into the sentence; none holds a value of its own.
+ *
+ * Scheduling is two steps in the order the question is asked: which day, then what time on it.
+ * Confirming the day therefore says "Next", and backing out of the clock still keeps the day.
+ */
 @Composable
 private fun AttributePickers(state: AddTaskState, onAction: (AddTaskAction) -> Unit) {
     when (state.openPicker) {
+        AddTaskPicker.DATE -> AwanDatePickerDialog(
+            initialDate = state.pickerInitialDate,
+            earliestDate = state.today,
+            confirmLabel = stringResource(R.string.add_task_picker_next),
+            cancelLabel = stringResource(R.string.add_task_picker_cancel),
+            onDismiss = { onAction(AddTaskAction.PickerDismissed) },
+            onConfirm = { onAction(AddTaskAction.DatePicked(it)) },
+        )
+
         AddTaskPicker.TIME -> AwanTimePickerDialog(
             initialMinutes = state.pickerInitialMinutes,
             confirmLabel = stringResource(R.string.add_task_picker_set),
@@ -116,13 +130,8 @@ private fun AttributePickers(state: AddTaskState, onAction: (AddTaskAction) -> U
             onConfirm = { onAction(AddTaskAction.TimePicked(it)) },
         )
 
-        AddTaskPicker.DURATION -> DurationPickerDialog(
-            selectedMinutes = state.parsed.durationMinutes,
-            onDismiss = { onAction(AddTaskAction.PickerDismissed) },
-            onConfirm = { onAction(AddTaskAction.DurationPicked(it)) },
-        )
-
-        null -> Unit
+        // Length is a menu hanging off its own chip, so it lives in TaskAttributeChips.
+        AddTaskPicker.DURATION, null -> Unit
     }
 }
 
@@ -229,8 +238,10 @@ private fun TaskForm(
             TaskAttributeChips(
                 state = state,
                 today = state.today,
-                onEditTime = { onAction(AddTaskAction.PickerOpened(AddTaskPicker.TIME)) },
+                onEditWhen = { onAction(AddTaskAction.PickerOpened(AddTaskPicker.DATE)) },
                 onEditDuration = { onAction(AddTaskAction.PickerOpened(AddTaskPicker.DURATION)) },
+                onDurationPicked = { onAction(AddTaskAction.DurationPicked(it)) },
+                onDurationMenuDismissed = { onAction(AddTaskAction.PickerDismissed) },
                 onToggleMandatory = { onAction(AddTaskAction.MandatoryToggled) },
                 modifier = Modifier.fillMaxWidth(),
             )

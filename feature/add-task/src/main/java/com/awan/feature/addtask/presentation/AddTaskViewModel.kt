@@ -54,7 +54,10 @@ class AddTaskViewModel @Inject constructor(
             is AddTaskAction.DescriptionChanged -> _state.update { it.copy(description = action.description) }
             AddTaskAction.MandatoryToggled -> _state.update { it.copy(mandatory = !it.mandatory) }
             is AddTaskAction.PickerOpened -> _state.update { it.copy(openPicker = action.picker) }
-            AddTaskAction.PickerDismissed -> _state.update { it.copy(openPicker = null) }
+            AddTaskAction.PickerDismissed -> dismissPicker()
+            is AddTaskAction.DatePicked ->
+                _state.update { it.copy(pendingDate = action.date, openPicker = AddTaskPicker.TIME) }
+
             is AddTaskAction.TimePicked -> applyPickedTime(action.minutesFromMidnight)
             is AddTaskAction.DurationPicked -> applyAttribute(TaskAttribute.Lasting(action.minutes))
             AddTaskAction.Submit -> submit()
@@ -63,13 +66,24 @@ class AddTaskViewModel @Inject constructor(
     }
 
     /**
-     * Keeps the day the sentence already names and only moves the clock, so picking a time on
-     * "Gym tomorrow" gives tomorrow at that time rather than silently dragging it to today.
+     * Backing out of the clock step keeps the day already chosen rather than throwing the whole
+     * edit away — the user answered one of the two questions and that answer still stands.
+     */
+    private fun dismissPicker() {
+        val pending = _state.value.pendingDate
+        _state.update { it.copy(openPicker = null, pendingDate = null) }
+        if (pending != null) applyAttribute(TaskAttribute.On(pending))
+    }
+
+    /**
+     * Falls back to the day the sentence already names, so picking a time on "Gym tomorrow" gives
+     * tomorrow at that time rather than silently dragging it to today.
      */
     private fun applyPickedTime(minutesFromMidnight: Int) {
         val current = _state.value
-        val day = current.parsed.startAt?.toLocalDate() ?: LocalDate.now(clock)
+        val day = current.pendingDate ?: current.parsed.startAt?.toLocalDate() ?: LocalDate.now(clock)
         val moment = day.atTime(minutesFromMidnight / MINUTES_PER_HOUR, minutesFromMidnight % MINUTES_PER_HOUR)
+        _state.update { it.copy(pendingDate = null) }
         applyAttribute(TaskAttribute.At(moment))
     }
 

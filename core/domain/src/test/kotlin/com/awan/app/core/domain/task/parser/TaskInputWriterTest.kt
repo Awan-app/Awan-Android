@@ -19,6 +19,9 @@ class TaskInputWriterTest {
     private fun withDuration(input: String, minutes: Int) =
         TaskInputWriter.withDuration(input, parse(input), minutes)
 
+    private fun withDate(input: String, date: LocalDate) =
+        TaskInputWriter.withDate(input, parse(input), date, today)
+
     @Test
     fun `a time is appended when the sentence had none`() {
         assertEquals(
@@ -78,6 +81,34 @@ class TaskInputWriterTest {
     fun `midnight and noon survive the clock phrasing`() {
         assertEquals("today at 12am", TaskInputWriter.timePhrase(today.atTime(0, 0), today))
         assertEquals("today at 12pm", TaskInputWriter.timePhrase(today.atTime(12, 0), today))
+    }
+
+    // ── Dates written without a time ─────────────────────────────────────────
+
+    @Test
+    fun `a day is appended when the sentence had none`() {
+        assertEquals("Go Swimming tomorrow", withDate("Go Swimming", today.plusDays(1)))
+    }
+
+    @Test
+    fun `moving the day keeps a time the sentence already stated`() {
+        assertEquals("Gym saturday at 6pm", withDate("Gym tomorrow at 6pm", today.plusDays(3)))
+    }
+
+    @Test
+    fun `moving the day does not invent a time the sentence never stated`() {
+        assertEquals("Gym saturday", withDate("Gym tomorrow", today.plusDays(3)))
+    }
+
+    @Test
+    fun `every written day phrase parses back to the same day`() {
+        listOf(0L, 1L, 3L, 6L, 7L, 30L).forEach { offset ->
+            val date = today.plusDays(offset)
+            val text = withDate("Go Swimming", date)
+            val reparsed = parse(text)
+            assertEquals("round trip of '$text'", date, reparsed.startAt?.toLocalDate())
+            assertEquals("title survived '$text'", "Go Swimming", reparsed.title)
+        }
     }
 
     // ── The contract that makes the sentence the source of truth ─────────────

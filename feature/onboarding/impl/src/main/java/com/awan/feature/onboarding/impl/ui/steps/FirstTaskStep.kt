@@ -22,7 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanChip
-import com.awan.app.core.designsystem.AwanChipTone
+import com.awan.app.core.designsystem.AwanBadge
+import com.awan.app.core.designsystem.AwanBadgeTone
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
@@ -112,7 +113,7 @@ private fun LandedTaskCard(task: FirstTask, zone: Zone) {
                     style = AwanTheme.styles.metaText,
                 )
             }
-            AwanChip(text = stringResource(R.string.onboarding_first_task_new_badge), tone = AwanChipTone.Violet)
+            AwanBadge(text = stringResource(R.string.onboarding_first_task_new_badge), tone = AwanBadgeTone.Violet)
         }
     }
 }

@@ -12,7 +12,7 @@ private const val MINUTES_PER_HOUR = 60
 
 enum class AddTaskMode { TASK, GOAL }
 
-enum class AddTaskPicker { TIME, DURATION }
+enum class AddTaskPicker { DATE, TIME, DURATION }
 
 data class AddTaskState(
     /** Anchors the "Today"/"Tomorrow" chip labels; supplied by the ViewModel's clock. */
@@ -25,6 +25,8 @@ data class AddTaskState(
     val resolvedZone: DayZone? = null,
     val isResolvingZone: Boolean = false,
     val openPicker: AddTaskPicker? = null,
+    /** Chosen on the date step, held until the clock step commits both into the sentence. */
+    val pendingDate: LocalDate? = null,
     val isSubmitting: Boolean = false,
     /** True for one beat after a successful create, so the mascot can cheer before the sheet goes. */
     val isCelebrating: Boolean = false,
@@ -32,6 +34,10 @@ data class AddTaskState(
 ) {
     val canSubmit: Boolean
         get() = mode == AddTaskMode.TASK && parsed.title.isNotBlank() && !isSubmitting
+
+    /** Opens the calendar on whatever day the sentence already says, or on today. */
+    val pickerInitialDate: LocalDate
+        get() = parsed.startAt?.toLocalDate() ?: today
 
     /** Opens the clock on whatever the sentence already says, or on the parser's default hour. */
     val pickerInitialMinutes: Int

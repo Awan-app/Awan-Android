@@ -23,6 +23,19 @@ object TaskInputWriter {
     fun withTime(input: String, parsed: ParsedTaskInput, moment: LocalDateTime, today: LocalDate): String =
         input.replacing(parsed.tokensOf(TaskTokenKind.DATE_TIME), timePhrase(moment, today))
 
+    /**
+     * Moves the day and keeps whatever clock time the sentence already stated. A date/time is spread
+     * across several tokens, so replacing them all with a bare day would quietly drop a time that was
+     * already there — `Gym tomorrow at 6pm` moved to Friday is `Gym friday at 6pm`, not `Gym friday`.
+     */
+    fun withDate(input: String, parsed: ParsedTaskInput, date: LocalDate, today: LocalDate): String {
+        val time = parsed.startAt?.toLocalTime()?.takeIf { parsed.hasExplicitTime }
+        return when (time) {
+            null -> input.replacing(parsed.tokensOf(TaskTokenKind.DATE_TIME), datePhrase(date, today))
+            else -> withTime(input, parsed, date.atTime(time), today)
+        }
+    }
+
     /** Replaces whatever length phrase the sentence already had, or appends one if it had none. */
     fun withDuration(input: String, parsed: ParsedTaskInput, minutes: Int): String =
         input.replacing(parsed.tokensOf(TaskTokenKind.DURATION), durationPhrase(minutes))

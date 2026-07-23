@@ -35,6 +35,9 @@ object TaskInputParser {
     private const val HOURS_PER_HALF_DAY = 12
     private const val DAYS_PER_WEEK = 7L
 
+    /** A bare hour up to this reads as afternoon: `at 3` is 3pm, the way people say it out loud. */
+    private const val BARE_PM_MAX_HOUR = 7
+
     private val WEEKDAYS: Map<String, DayOfWeek> = mapOf(
         "mon" to DayOfWeek.MONDAY, "monday" to DayOfWeek.MONDAY,
         "tue" to DayOfWeek.TUESDAY, "tues" to DayOfWeek.TUESDAY, "tuesday" to DayOfWeek.TUESDAY,
@@ -67,6 +70,8 @@ object TaskInputParser {
         RegexOption.IGNORE_CASE,
     )
     private val TIME_MERIDIEM = Regex("""\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b""", RegexOption.IGNORE_CASE)
+    /** The `at` is the whole guard: without it `Read chapter 3` would become a time. */
+    private val TIME_AT = Regex("""\bat\s+(\d{1,2})(?::(\d{2}))?\b""", RegexOption.IGNORE_CASE)
     private val TIME_24H = Regex("""\b(?:at\s+)?(\d{1,2}):(\d{2})\b""")
     private val NOON = Regex("""\bnoon\b""", RegexOption.IGNORE_CASE)
     private val MIDNIGHT = Regex("""\bmidnight\b""", RegexOption.IGNORE_CASE)
@@ -206,8 +211,13 @@ object TaskInputParser {
         return minutes
     }
 
+    /**
+     * Meridiem first so `at 3pm` is never shifted twice, and the bare `at …` rule before the plain
+     * 24-hour one so `at 3` and `at 3:30` cannot disagree about which half of the day they mean.
+     */
     private fun matchTime(input: String, claimed: MutableList<TaskToken>): LocalTime? =
         matchMeridiemTime(input, claimed)
+            ?: matchBareClockTime(input, claimed)
             ?: match24HourTime(input, claimed)
             ?: matchLiteralTime(input, claimed)
 
@@ -217,6 +227,17 @@ object TaskInputParser {
             ?: return null
         claimed.claim(match.range, TaskTokenKind.DATE_TIME)
         return time
+    }
+
+    /**
+     * `at 3`, `at 3:30`, `at 20`. Saying `at` is the user committing the number to being a clock,
+     * so the only thing left to guess is which half of the day — see [BARE_PM_MAX_HOUR].
+     */
+    private fun matchBareClockTime(input: String, claimed: MutableList<TaskToken>): LocalTime? {
+        val match = TIME_AT.findAll(input).firstOrNull { claimed.isFree(it.range) } ?: return null
+        val time = clockTime(match.groupValues[1], match.groupValues[2], meridiem = null) ?: return null
+        claimed.claim(match.range, TaskTokenKind.DATE_TIME)
+        return if (time.hour in 1..BARE_PM_MAX_HOUR) time.plusHours(HOURS_PER_HALF_DAY.toLong()) else time
     }
 
     private fun match24HourTime(input: String, claimed: MutableList<TaskToken>): LocalTime? {

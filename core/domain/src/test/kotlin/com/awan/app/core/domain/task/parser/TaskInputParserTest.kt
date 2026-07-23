@@ -87,6 +87,40 @@ class TaskInputParserTest {
     }
 
     @Test
+    fun `a bare hour after at is read as the hour people mean`() {
+        val result = parse("Go to gym at 3")
+
+        assertEquals("Go to gym", result.title)
+        assertEquals(LocalDateTime.of(2026, 7, 22, 15, 0), result.startAt)
+        assertTrue(result.hasExplicitTime)
+    }
+
+    @Test
+    fun `a bare hour past the afternoon window is taken as written`() {
+        assertEquals(LocalDateTime.of(2026, 7, 23, 8, 0), parse("Gym at 8").startAt)
+        assertEquals(LocalDateTime.of(2026, 7, 22, 20, 0), parse("Gym at 20").startAt)
+    }
+
+    @Test
+    fun `a bare hour with minutes agrees with the bare hour alone`() {
+        assertEquals(LocalDateTime.of(2026, 7, 22, 15, 30), parse("Gym at 3:30").startAt)
+    }
+
+    @Test
+    fun `a stated meridiem is never shifted a second time`() {
+        assertEquals(LocalDateTime.of(2026, 7, 23, 3, 0), parse("Gym at 3am").startAt)
+        assertEquals(LocalDateTime.of(2026, 7, 22, 15, 0), parse("Gym at 3pm").startAt)
+    }
+
+    @Test
+    fun `a number without at stays in the title`() {
+        val result = parse("Read chapter 3")
+
+        assertEquals("Read chapter 3", result.title)
+        assertNull(result.startAt)
+    }
+
+    @Test
     fun `a time already past today rolls to tomorrow`() {
         val result = parse("Water plants 8am")
 

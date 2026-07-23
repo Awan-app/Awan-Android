@@ -258,6 +258,68 @@ class AddTaskViewModelTest {
     }
 
     @Test
+    fun `the when chip asks for a day first and the clock second`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.InputChanged("Go Swimming"))
+        viewModel.onAction(AddTaskAction.PickerOpened(AddTaskPicker.DATE))
+        viewModel.onAction(AddTaskAction.DatePicked(LocalDate.of(2026, 7, 25)))
+
+        // The day is parked, not written — the sentence only changes once the clock is answered.
+        assertEquals(AddTaskPicker.TIME, viewModel.state.value.openPicker)
+        assertEquals("Go Swimming", viewModel.state.value.input)
+
+        viewModel.onAction(AddTaskAction.TimePicked(15 * 60))
+
+        val state = viewModel.state.value
+        assertEquals("Go Swimming saturday at 3pm", state.input)
+        assertEquals(LocalDateTime.of(2026, 7, 25, 15, 0), state.parsed.startAt)
+        assertNull(state.openPicker)
+        assertNull(state.pendingDate)
+    }
+
+    @Test
+    fun `backing out of the clock keeps the day already chosen`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.InputChanged("Go Swimming"))
+        viewModel.onAction(AddTaskAction.PickerOpened(AddTaskPicker.DATE))
+        viewModel.onAction(AddTaskAction.DatePicked(LocalDate.of(2026, 7, 25)))
+        viewModel.onAction(AddTaskAction.PickerDismissed)
+
+        val state = viewModel.state.value
+        assertEquals("Go Swimming saturday", state.input)
+        assertEquals(LocalDate.of(2026, 7, 25), state.parsed.startAt?.toLocalDate())
+        assertFalse(state.parsed.hasExplicitTime)
+        assertNull(state.pendingDate)
+    }
+
+    @Test
+    fun `moving the day alone keeps a time already in the sentence`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.InputChanged("Gym tomorrow at 6pm"))
+        viewModel.onAction(AddTaskAction.DatePicked(LocalDate.of(2026, 7, 25)))
+        viewModel.onAction(AddTaskAction.PickerDismissed)
+
+        val state = viewModel.state.value
+        assertEquals("Gym saturday at 6pm", state.input)
+        assertEquals(LocalDateTime.of(2026, 7, 25, 18, 0), state.parsed.startAt)
+    }
+
+    @Test
+    fun `backing out of the day picker changes nothing`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.InputChanged("Go Swimming"))
+        viewModel.onAction(AddTaskAction.PickerOpened(AddTaskPicker.DATE))
+        viewModel.onAction(AddTaskAction.PickerDismissed)
+
+        assertEquals("Go Swimming", viewModel.state.value.input)
+        assertNull(viewModel.state.value.openPicker)
+    }
+
+    @Test
     fun `picking a duration writes it into the task name`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 

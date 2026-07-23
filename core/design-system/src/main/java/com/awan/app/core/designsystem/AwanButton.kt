@@ -44,13 +44,22 @@ enum class AwanButtonVariant {
     Destructive,
     Quiet,
     Google,
+
+    /** Compact pill for a row of attributes. Tint it per instance through `style` + `rimStyle`. */
+    Chip,
 }
 
+/**
+ * [style] and [rimStyle] are applied last onto the variant's face and rim, so a caller can retint a
+ * variant without redefining its geometry — which is how one [AwanButtonVariant.Chip] serves a whole
+ * row of differently-toned attribute chips.
+ */
 @Composable
 fun AwanButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     style: Style = Style,
+    rimStyle: Style = Style,
     variant: AwanButtonVariant = AwanButtonVariant.Primary,
     enabled: Boolean = true,
     isLoading: Boolean = false,
@@ -62,12 +71,13 @@ fun AwanButton(
     val hapticFeedback = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val styleState = rememberUpdatedStyleState(interactionSource) { it.isEnabled = effectiveEnabled }
-    val rimStyle = when (variant) {
+    val variantRim = when (variant) {
         AwanButtonVariant.Primary -> AwanTheme.styles.primaryButtonRim
         AwanButtonVariant.Secondary -> AwanTheme.styles.secondaryButtonRim
         AwanButtonVariant.Destructive -> AwanTheme.styles.destructiveButtonRim
         AwanButtonVariant.Quiet -> AwanTheme.styles.quietButtonRim
         AwanButtonVariant.Google -> AwanTheme.styles.socialButtonGoogleRim
+        AwanButtonVariant.Chip -> AwanTheme.styles.chipButtonRim
     }
     val faceStyle = when (variant) {
         AwanButtonVariant.Primary -> AwanTheme.styles.primaryButtonFace
@@ -75,6 +85,7 @@ fun AwanButton(
         AwanButtonVariant.Destructive -> AwanTheme.styles.destructiveButtonFace
         AwanButtonVariant.Quiet -> AwanTheme.styles.quietButtonFace
         AwanButtonVariant.Google -> AwanTheme.styles.socialButtonGoogleFace
+        AwanButtonVariant.Chip -> AwanTheme.styles.chipButtonFace
     }
     val contentColor by animateColorAsState(
         targetValue = buttonContentColor(variant = variant, enabled = enabled),
@@ -83,6 +94,8 @@ fun AwanButton(
     )
     val rimDepth = if (variant == AwanButtonVariant.Quiet) 0.dp else AwanButtonRimDepth
     val rimSide = if (variant == AwanButtonVariant.Quiet) 0.dp else AwanButtonRimSide
+    // A chip's target is exactly the pill: face plus rim, with no dead margin around it.
+    val minTouchSize = if (variant == AwanButtonVariant.Chip) AwanChipFaceHeight + AwanButtonRimDepth else 48.dp
     val rimTopInset = animateDpAsState(
         targetValue = if (styleState.isPressed) AwanButtonRimDepth else 0.dp,
         animationSpec = tween(
@@ -114,7 +127,7 @@ fun AwanButton(
             )
             .focusable(enabled = effectiveEnabled, interactionSource = interactionSource)
             .styleable(styleState, AwanTheme.styles.buttonFocus)
-            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
+            .defaultMinSize(minWidth = minTouchSize, minHeight = minTouchSize),
         contentAlignment = Alignment.TopCenter,
         propagateMinConstraints = true,
     ) {
@@ -122,7 +135,7 @@ fun AwanButton(
             modifier = Modifier
                 .matchParentSize()
                 .padding(top = rimTopInset, end = rimStartInset)
-                .styleable(styleState, rimStyle)
+                .styleable(styleState, variantRim, rimStyle)
         )
         CompositionLocalProvider(
             LocalContentColor provides contentColor,
@@ -162,6 +175,7 @@ fun AwanButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     style: Style = Style,
+    rimStyle: Style = Style,
     variant: AwanButtonVariant = AwanButtonVariant.Primary,
     enabled: Boolean = true,
     isLoading: Boolean = false,
@@ -173,6 +187,7 @@ fun AwanButton(
         onClick = onClick,
         modifier = modifier,
         style = style,
+        rimStyle = rimStyle,
         variant = variant,
         enabled = enabled,
         isLoading = isLoading,
@@ -195,6 +210,7 @@ private fun buttonContentColor(variant: AwanButtonVariant, enabled: Boolean): Co
     return when (variant) {
         AwanButtonVariant.Primary -> colors.onFilledControl
         AwanButtonVariant.Secondary, AwanButtonVariant.Quiet -> colors.skyPressed
+        AwanButtonVariant.Chip -> colors.textSecondary
         AwanButtonVariant.Destructive -> colors.onDestructive
         AwanButtonVariant.Google -> colors.textPrimary
     }
