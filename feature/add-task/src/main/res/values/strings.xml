@@ -12,7 +12,8 @@
 
     <string name="add_task_chip_mandatory">Mandatory</string>
     <string name="add_task_chip_optional">Optional</string>
-    <string name="add_task_chip_unscheduled">No time yet</string>
+    <string name="add_task_chip_today_no_time">Today</string>
+    <string name="add_task_chip_no_duration">Any length</string>
     <string name="add_task_chip_zone_unknown">Zone “%1$s” not found</string>
     <string name="add_task_chip_zone_resolving">Finding zone…</string>
 
@@ -20,9 +21,13 @@
     <string name="add_task_duration_hours">%1$d h</string>
     <string name="add_task_duration_hours_minutes">%1$d h %2$d min</string>
 
-    <string name="add_task_when_today">Today %1$s</string>
-    <string name="add_task_when_tomorrow">Tomorrow %1$s</string>
-    <string name="add_task_when_dated">%1$s %2$s</string>
+    <string name="add_task_day_today">Today</string>
+    <string name="add_task_day_tomorrow">Tomorrow</string>
+    <string name="add_task_day_at_time">%1$s at %2$s</string>
+
+    <string name="add_task_duration_title">How long?</string>
+    <string name="add_task_picker_set">Set</string>
+    <string name="add_task_picker_cancel">Cancel</string>
 
     <string name="add_task_submit">Add task</string>
     <string name="add_task_close">Close</string>

@@ -6,10 +6,13 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 
 /**
- * Lifts scheduling hints out of a typed sentence: `Gym session tomorrow 6pm @play` becomes the
- * title `Gym session` plus a start time and a zone token. Whatever isn't recognised stays in the
+ * Lifts scheduling hints out of a typed sentence: `Go Swimming from 3pm to 5pm` becomes the title
+ * `Go Swimming` plus a start time and a two-hour length. Whatever isn't recognised stays in the
  * title, so the parser can only ever be *less* helpful — never wrong about what the user meant to
  * write down.
+ *
+ * The typed sentence is the single source of truth for a draft. [TaskInputWriter] is the other half
+ * of that contract: it writes attributes *back* into the sentence in a form this parser re-reads.
  *
  * Pure and deterministic: [parse] takes `now` rather than reading the clock.
  *
@@ -18,12 +21,17 @@ import java.time.LocalTime
  */
 object TaskInputParser {
 
-    private const val DEFAULT_HOUR = 9
+    const val DEFAULT_HOUR = 9
+
     private const val TONIGHT_HOUR = 20
+    private const val MORNING_HOUR = 9
+    private const val AFTERNOON_HOUR = 14
+    private const val EVENING_HOUR = 19
     private const val NOON_HOUR = 12
     private const val MAX_HOUR = 23
     private const val MAX_MINUTE = 59
     private const val MINUTES_PER_HOUR = 60
+    private const val MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR
     private const val HOURS_PER_HALF_DAY = 12
     private const val DAYS_PER_WEEK = 7L
 
@@ -38,17 +46,33 @@ object TaskInputParser {
         "sun" to DayOfWeek.SUNDAY, "sunday" to DayOfWeek.SUNDAY,
     )
 
+    private const val CLOCK = """(\d{1,2})(?::(\d{2}))?\s*(am|pm)?"""
+    private const val UNIT_HOURS = """h|hr|hrs|hour|hours"""
+    private const val UNIT_MINUTES = """m|min|mins|minute|minutes"""
+
     private val ZONE = Regex("""@([\p{L}\p{N}_-]+)""")
+
+    /** `from 3pm to 5pm`, `3pm-5pm`, `3-5pm`, `15:00 until 17:00`. */
+    private val TIME_RANGE = Regex(
+        """\b(?:from\s+)?$CLOCK\s*(?:-|–|—|to|until|till)\s*$CLOCK\b""",
+        RegexOption.IGNORE_CASE,
+    )
+    private val RELATIVE_IN = Regex(
+        """\bin\s+(\d+)\s*($UNIT_MINUTES|$UNIT_HOURS|d|day|days|w|week|weeks)\b""",
+        RegexOption.IGNORE_CASE,
+    )
     private val DURATION = Regex(
-        """\b(?:for\s+)?(?:(\d+)\s*(?:h|hr|hrs|hour|hours)(?:\s*(\d{1,2})\s*(?:m|min|mins|minute|minutes)?)?""" +
-            """|(\d+)\s*(?:m|min|mins|minute|minutes))\b""",
+        """\b(?:for\s+)?(?:(\d+)\s*(?:$UNIT_HOURS)(?:\s*(\d{1,2})\s*(?:$UNIT_MINUTES)?)?""" +
+            """|(\d+)\s*(?:$UNIT_MINUTES))\b""",
         RegexOption.IGNORE_CASE,
     )
     private val TIME_MERIDIEM = Regex("""\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b""", RegexOption.IGNORE_CASE)
     private val TIME_24H = Regex("""\b(?:at\s+)?(\d{1,2}):(\d{2})\b""")
     private val NOON = Regex("""\bnoon\b""", RegexOption.IGNORE_CASE)
     private val MIDNIGHT = Regex("""\bmidnight\b""", RegexOption.IGNORE_CASE)
+    private val DAY_PART = Regex("""\bthis\s+(morning|afternoon|evening)\b""", RegexOption.IGNORE_CASE)
     private val RELATIVE_DAY = Regex("""\b(today|tonight|tomorrow)\b""", RegexOption.IGNORE_CASE)
+    private val NEXT_WEEK = Regex("""\bnext\s+week\b""", RegexOption.IGNORE_CASE)
     private val WEEKDAY = Regex(
         """\b(?:next\s+|by\s+|on\s+)?(${WEEKDAYS.keys.joinToString("|")})\b""",
         RegexOption.IGNORE_CASE,
@@ -60,10 +84,20 @@ object TaskInputParser {
         if (input.isBlank()) return ParsedTaskInput.Empty
 
         val claimed = mutableListOf<TaskToken>()
+        // Every matcher runs so it consumes its phrase out of the title, even when a
+        // higher-priority match already supplied the value.
         val zone = matchZone(input, claimed)
-        val duration = matchDuration(input, claimed)
-        val time = matchTime(input, claimed)
-        val date = matchDate(input, claimed, now.toLocalDate())
+        val range = matchTimeRange(input, claimed)
+        val relative = matchRelativeIn(input, claimed, now)
+        val dayPart = matchDayPart(input, claimed, now.toLocalDate())
+        val explicitDuration = matchDuration(input, claimed)
+        val explicitTime = matchTime(input, claimed)
+        val explicitDate = matchDate(input, claimed, now.toLocalDate())
+
+        val anchored = relative ?: dayPart
+        val duration = range?.durationMinutes ?: explicitDuration
+        val time = range?.start ?: anchored?.toLocalTime() ?: explicitTime
+        val date = anchored?.toLocalDate()?.let(::MatchedDate) ?: explicitDate
 
         return ParsedTaskInput(
             title = titleFrom(input, claimed),
@@ -71,6 +105,7 @@ object TaskInputParser {
             durationMinutes = duration,
             zoneToken = zone,
             tokens = claimed.sortedBy { it.range.first },
+            hasExplicitTime = time != null,
         )
     }
 
@@ -81,9 +116,87 @@ object TaskInputParser {
             ?.also { claimed.claim(it.range, TaskTokenKind.ZONE) }
             ?.groupValues?.get(1)
 
+    private data class MatchedRange(val start: LocalTime, val durationMinutes: Int)
+
+    /**
+     * Requires at least one side to carry `am`/`pm` or a colon, so `chapter 3 to 5` stays a title.
+     * A bare left side borrows the right side's meridiem, which is what makes `3-5pm` work.
+     */
+    private fun matchTimeRange(input: String, claimed: MutableList<TaskToken>): MatchedRange? {
+        val match = TIME_RANGE.findAll(input).firstOrNull { claimed.isFree(it.range) } ?: return null
+        val g = match.groupValues
+        val leftMeridiem = g[3].lowercase().ifEmpty { null }
+        val rightMeridiem = g[6].lowercase().ifEmpty { null }
+        val hasMinutes = g[2].isNotEmpty() || g[5].isNotEmpty()
+        if (leftMeridiem == null && rightMeridiem == null && !hasMinutes) return null
+
+        val start = clockTime(g[1], g[2], leftMeridiem ?: rightMeridiem) ?: return null
+        val end = clockTime(g[4], g[5], rightMeridiem ?: leftMeridiem) ?: return null
+
+        // 10pm to 1am is a real span that crosses midnight, not a mistake.
+        val span = ((end.toSecondOfDay() - start.toSecondOfDay()) / 60).let {
+            if (it <= 0) it + MINUTES_PER_DAY else it
+        }
+        claimed.add(
+            TaskToken(
+                range = match.range,
+                kind = TaskTokenKind.DATE_TIME,
+                // Tint the two clocks, leave `from` and `to` plain.
+                highlights = listOfNotNull(match.clockHighlight(1), match.clockHighlight(4)),
+            ),
+        )
+        return MatchedRange(start, span)
+    }
+
+    /** One clock spanning its hour, optional minutes and optional meridiem, as one piece. */
+    private fun MatchResult.clockHighlight(hourGroup: Int): IntRange? {
+        val first = groups[hourGroup]?.range?.first ?: return null
+        val last = groups[hourGroup + 2]?.range?.last
+            ?: groups[hourGroup + 1]?.range?.last
+            ?: groups[hourGroup]?.range?.last
+            ?: return null
+        return first..last
+    }
+
+    private fun clockTime(hourText: String, minuteText: String, meridiem: String?): LocalTime? {
+        val rawHour = hourText.toIntOrNull() ?: return null
+        val minute = minuteText.toIntOrNull() ?: 0
+        if (minute > MAX_MINUTE) return null
+        val hour = when {
+            meridiem == null -> rawHour
+            rawHour !in 1..HOURS_PER_HALF_DAY -> return null
+            meridiem == "pm" && rawHour < HOURS_PER_HALF_DAY -> rawHour + HOURS_PER_HALF_DAY
+            meridiem == "am" && rawHour == HOURS_PER_HALF_DAY -> 0
+            else -> rawHour
+        }
+        if (hour > MAX_HOUR) return null
+        return LocalTime.of(hour, minute)
+    }
+
+    /** `in 20 minutes`, `in 2 hours`, `in 3 days` — resolved against `now`, so it carries a date too. */
+    private fun matchRelativeIn(
+        input: String,
+        claimed: MutableList<TaskToken>,
+        now: LocalDateTime,
+    ): LocalDateTime? {
+        val match = RELATIVE_IN.findAll(input).firstOrNull { claimed.isFree(it.range) } ?: return null
+        val amount = match.groupValues[1].toLongOrNull()?.takeIf { it > 0 } ?: return null
+        val unit = match.groupValues[2].lowercase()
+        val moment = when {
+            unit.startsWith("w") -> now.plusWeeks(amount)
+            unit.startsWith("d") -> now.plusDays(amount)
+            unit.startsWith("h") -> now.plusHours(amount)
+            else -> now.plusMinutes(amount)
+        }
+        claimed.claim(match.range, TaskTokenKind.DATE_TIME)
+        return moment
+    }
+
     private fun matchDuration(input: String, claimed: MutableList<TaskToken>): Int? {
         val match = DURATION.findAll(input).firstOrNull { claimed.isFree(it.range) } ?: return null
-        val (hours, hourMinutes, plainMinutes) = match.destructureGroups()
+        val hours = match.groupValues[1].toIntOrNull()
+        val hourMinutes = match.groupValues[2].toIntOrNull()
+        val plainMinutes = match.groupValues[3].toIntOrNull()
         val minutes = when {
             hours != null -> hours * MINUTES_PER_HOUR + (hourMinutes ?: 0)
             else -> plainMinutes ?: return null
@@ -93,12 +206,6 @@ object TaskInputParser {
         return minutes
     }
 
-    private fun MatchResult.destructureGroups(): Triple<Int?, Int?, Int?> = Triple(
-        groupValues[1].toIntOrNull(),
-        groupValues[2].toIntOrNull(),
-        groupValues[3].toIntOrNull(),
-    )
-
     private fun matchTime(input: String, claimed: MutableList<TaskToken>): LocalTime? =
         matchMeridiemTime(input, claimed)
             ?: match24HourTime(input, claimed)
@@ -106,27 +213,36 @@ object TaskInputParser {
 
     private fun matchMeridiemTime(input: String, claimed: MutableList<TaskToken>): LocalTime? {
         val match = TIME_MERIDIEM.findAll(input).firstOrNull { claimed.isFree(it.range) } ?: return null
-        val rawHour = match.groupValues[1].toIntOrNull() ?: return null
-        if (rawHour !in 1..HOURS_PER_HALF_DAY) return null
-        val minute = match.groupValues[2].toIntOrNull() ?: 0
-        if (minute > MAX_MINUTE) return null
-        val isPm = match.groupValues[3].lowercase() == "pm"
-        val hour = when {
-            isPm && rawHour < HOURS_PER_HALF_DAY -> rawHour + HOURS_PER_HALF_DAY
-            !isPm && rawHour == HOURS_PER_HALF_DAY -> 0
-            else -> rawHour
-        }
+        val time = clockTime(match.groupValues[1], match.groupValues[2], match.groupValues[3].lowercase())
+            ?: return null
         claimed.claim(match.range, TaskTokenKind.DATE_TIME)
-        return LocalTime.of(hour, minute)
+        return time
     }
 
     private fun match24HourTime(input: String, claimed: MutableList<TaskToken>): LocalTime? {
         val match = TIME_24H.findAll(input).firstOrNull { claimed.isFree(it.range) } ?: return null
-        val hour = match.groupValues[1].toIntOrNull() ?: return null
-        val minute = match.groupValues[2].toIntOrNull() ?: return null
-        if (hour > MAX_HOUR || minute > MAX_MINUTE) return null
+        val time = clockTime(match.groupValues[1], match.groupValues[2], meridiem = null) ?: return null
         claimed.claim(match.range, TaskTokenKind.DATE_TIME)
-        return LocalTime.of(hour, minute)
+        return time
+    }
+
+    /**
+     * `this morning` names a day as well as an hour, so it returns both — otherwise the
+     * time-only rule would roll a morning task to tomorrow whenever it was typed after 9am.
+     */
+    private fun matchDayPart(
+        input: String,
+        claimed: MutableList<TaskToken>,
+        today: LocalDate,
+    ): LocalDateTime? {
+        val match = DAY_PART.find(input)?.takeIf { claimed.isFree(it.range) } ?: return null
+        claimed.claim(match.range, TaskTokenKind.DATE_TIME)
+        val hour = when (match.groupValues[1].lowercase()) {
+            "morning" -> MORNING_HOUR
+            "afternoon" -> AFTERNOON_HOUR
+            else -> EVENING_HOUR
+        }
+        return today.atTime(hour, 0)
     }
 
     private fun matchLiteralTime(input: String, claimed: MutableList<TaskToken>): LocalTime? {
@@ -143,6 +259,7 @@ object TaskInputParser {
 
     private fun matchDate(input: String, claimed: MutableList<TaskToken>, today: LocalDate): MatchedDate? =
         matchRelativeDay(input, claimed, today)
+            ?: matchNextWeek(input, claimed, today)
             ?: matchWeekday(input, claimed, today)
             ?: matchNumericDate(input, claimed, today)
 
@@ -154,6 +271,12 @@ object TaskInputParser {
             "tonight" -> MatchedDate(today, defaultHour = TONIGHT_HOUR)
             else -> MatchedDate(today)
         }
+    }
+
+    private fun matchNextWeek(input: String, claimed: MutableList<TaskToken>, today: LocalDate): MatchedDate? {
+        val match = NEXT_WEEK.find(input)?.takeIf { claimed.isFree(it.range) } ?: return null
+        claimed.claim(match.range, TaskTokenKind.DATE_TIME)
+        return MatchedDate(today.plusWeeks(1))
     }
 
     /** `next fri`, `by fri` and a bare `fri` all mean the next Friday that isn't today. */

@@ -1,6 +1,7 @@
 package com.awan.app.core.domain.task.parser
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -181,6 +182,109 @@ class TaskInputParserTest {
         sorted.zipWithNext { left, right ->
             assertTrue("$left overlaps $right", left.range.last < right.range.first)
         }
+    }
+
+    // ── Time ranges ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `from X to Y sets both the start and the length`() {
+        val result = parse("Go Swimming from 3pm to 5pm")
+
+        assertEquals("Go Swimming", result.title)
+        assertEquals(LocalDateTime.of(2026, 7, 22, 15, 0), result.startAt)
+        assertEquals(120, result.durationMinutes)
+    }
+
+    @Test
+    fun `a range tints only the two clocks, not the joining words`() {
+        val input = "Go Swimming from 3pm to 5pm"
+        val token = TaskInputParser.parse(input, now).tokens.single { it.kind == TaskTokenKind.DATE_TIME }
+
+        assertEquals("from 3pm to 5pm", input.substring(token.range.first, token.range.last + 1))
+        assertEquals(
+            listOf("3pm", "5pm"),
+            token.highlights.map { input.substring(it.first, it.last + 1) },
+        )
+    }
+
+    @Test
+    fun `range separators and formats`() {
+        assertEquals(120, parse("Swim 3pm-5pm").durationMinutes)
+        assertEquals(120, parse("Swim 3 to 5pm").durationMinutes)
+        assertEquals(120, parse("Swim from 15:00 to 17:00").durationMinutes)
+        assertEquals(90, parse("Swim 3pm until 4:30pm").durationMinutes)
+        assertEquals(60, parse("Swim 3pm till 4pm").durationMinutes)
+    }
+
+    @Test
+    fun `a bare left side borrows the right side's meridiem`() {
+        val result = parse("Swim 3-5pm")
+
+        assertEquals(LocalDateTime.of(2026, 7, 22, 15, 0), result.startAt)
+        assertEquals(120, result.durationMinutes)
+    }
+
+    @Test
+    fun `a range crossing midnight is a real span, not a negative one`() {
+        assertEquals(180, parse("Shift 10pm to 1am").durationMinutes)
+    }
+
+    @Test
+    fun `an ambiguous numeric range is left in the title`() {
+        val result = parse("Read chapter 3 to 5")
+
+        assertEquals("Read chapter 3 to 5", result.title)
+        assertNull(result.startAt)
+    }
+
+    @Test
+    fun `a range combines with a separately named day`() {
+        val result = parse("Go Swimming from 3pm to 5pm tomorrow")
+
+        assertEquals("Go Swimming", result.title)
+        assertEquals(LocalDateTime.of(2026, 7, 23, 15, 0), result.startAt)
+        assertEquals(120, result.durationMinutes)
+    }
+
+    // ── Other relative patterns ──────────────────────────────────────────────
+
+    @Test
+    fun `in N units is measured from now`() {
+        assertEquals(LocalDateTime.of(2026, 7, 22, 10, 30), parse("Call back in 30 minutes").startAt)
+        assertEquals(LocalDateTime.of(2026, 7, 22, 12, 0), parse("Call back in 2 hours").startAt)
+        assertEquals(LocalDateTime.of(2026, 7, 25, 10, 0), parse("Call back in 3 days").startAt)
+        assertEquals("Call back", parse("Call back in 2 hours").title)
+    }
+
+    @Test
+    fun `in N hours is not read as a duration`() {
+        val result = parse("Call back in 2 hours")
+
+        assertEquals(LocalDateTime.of(2026, 7, 22, 12, 0), result.startAt)
+        assertNull(result.durationMinutes)
+    }
+
+    @Test
+    fun `parts of this day resolve to their usual hour`() {
+        assertEquals(LocalDateTime.of(2026, 7, 22, 9, 0), parse("Run this morning").startAt)
+        assertEquals(LocalDateTime.of(2026, 7, 22, 14, 0), parse("Run this afternoon").startAt)
+        assertEquals(LocalDateTime.of(2026, 7, 22, 19, 0), parse("Run this evening").startAt)
+        assertEquals("Run", parse("Run this evening").title)
+    }
+
+    @Test
+    fun `next week lands a week out`() {
+        val result = parse("Plan the sprint next week")
+
+        assertEquals("Plan the sprint", result.title)
+        assertEquals(LocalDateTime.of(2026, 7, 29, 9, 0), result.startAt)
+    }
+
+    @Test
+    fun `a bare day has no explicit time, a clock time does`() {
+        assertFalse(parse("Call the dentist tomorrow").hasExplicitTime)
+        assertTrue(parse("Call the dentist tomorrow 3pm").hasExplicitTime)
+        assertTrue(parse("Swim from 3pm to 5pm").hasExplicitTime)
     }
 
     @Test

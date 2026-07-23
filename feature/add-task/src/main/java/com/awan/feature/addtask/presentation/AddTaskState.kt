@@ -3,11 +3,16 @@ package com.awan.feature.addtask.presentation
 import androidx.annotation.StringRes
 import com.awan.app.core.designsystem.MascotExpression
 import com.awan.app.core.domain.task.parser.ParsedTaskInput
+import com.awan.app.core.domain.task.parser.TaskInputParser
 import com.awan.app.core.model.DayZone
 import com.awan.app.core.model.TaskDraft
 import java.time.LocalDate
 
+private const val MINUTES_PER_HOUR = 60
+
 enum class AddTaskMode { TASK, GOAL }
+
+enum class AddTaskPicker { TIME, DURATION }
 
 data class AddTaskState(
     /** Anchors the "Today"/"Tomorrow" chip labels; supplied by the ViewModel's clock. */
@@ -19,6 +24,7 @@ data class AddTaskState(
     val mandatory: Boolean = true,
     val resolvedZone: DayZone? = null,
     val isResolvingZone: Boolean = false,
+    val openPicker: AddTaskPicker? = null,
     val isSubmitting: Boolean = false,
     /** True for one beat after a successful create, so the mascot can cheer before the sheet goes. */
     val isCelebrating: Boolean = false,
@@ -26,6 +32,15 @@ data class AddTaskState(
 ) {
     val canSubmit: Boolean
         get() = mode == AddTaskMode.TASK && parsed.title.isNotBlank() && !isSubmitting
+
+    /** Opens the clock on whatever the sentence already says, or on the parser's default hour. */
+    val pickerInitialMinutes: Int
+        get() = parsed.startAt
+            ?.takeIf { hasPickableTime }
+            ?.let { it.hour * MINUTES_PER_HOUR + it.minute }
+            ?: (TaskInputParser.DEFAULT_HOUR * MINUTES_PER_HOUR)
+
+    private val hasPickableTime: Boolean get() = parsed.hasExplicitTime
 
     /**
      * Awan watches what you type: curious once the sentence carries something schedulable, greeting

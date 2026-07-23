@@ -26,13 +26,14 @@ import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.AwanTimePickerDialog
 import com.awan.app.core.model.Zone
 import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.ui.formatClock
 
 private enum class Editing { None, Start, End }
 
-/** Hours for one zone, reusing the shared [TimePickerDialog] for the actual picking. */
+/** Hours for one zone, reusing the shared [AwanTimePickerDialog] for the actual picking. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ZoneSheet(
@@ -83,7 +84,9 @@ fun ZoneSheet(
     }
 
     when (editing) {
-        Editing.Start -> TimePickerDialog(
+        Editing.Start -> AwanTimePickerDialog(
+            confirmLabel = stringResource(R.string.onboarding_time_picker_set),
+            cancelLabel = stringResource(R.string.onboarding_time_picker_cancel),
             initialMinutes = zone.startMinutes,
             onDismiss = { editing = Editing.None },
             onConfirm = {
@@ -92,7 +95,9 @@ fun ZoneSheet(
             },
         )
 
-        Editing.End -> TimePickerDialog(
+        Editing.End -> AwanTimePickerDialog(
+            confirmLabel = stringResource(R.string.onboarding_time_picker_set),
+            cancelLabel = stringResource(R.string.onboarding_time_picker_cancel),
             initialMinutes = zone.endMinutes,
             onDismiss = { editing = Editing.None },
             onConfirm = {

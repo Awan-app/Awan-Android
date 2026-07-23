@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -20,8 +21,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -32,6 +36,7 @@ import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.AwanTimePickerDialog
 import com.awan.app.core.designsystem.CascadeItem
 import com.awan.app.core.designsystem.CloudDrift
 import com.awan.app.core.designsystem.ObserveAsEvents
@@ -41,9 +46,11 @@ import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskAction
 import com.awan.feature.addtask.presentation.AddTaskEvent
 import com.awan.feature.addtask.presentation.AddTaskMode
+import com.awan.feature.addtask.presentation.AddTaskPicker
 import com.awan.feature.addtask.presentation.AddTaskState
 import com.awan.feature.addtask.presentation.AddTaskViewModel
 import com.awan.feature.addtask.ui.components.AddTaskModeSelector
+import com.awan.feature.addtask.ui.components.DurationPickerDialog
 import com.awan.feature.addtask.ui.components.GoalPlaceholder
 import com.awan.feature.addtask.ui.components.TaskAttributeChips
 import com.awan.feature.addtask.ui.components.rememberTokenHighlight
@@ -92,6 +99,30 @@ fun AddTaskSheet(
             onAction = viewModel::onAction,
             modifier = Modifier.fillMaxWidth().imePadding(),
         )
+    }
+
+    AttributePickers(state = state, onAction = viewModel::onAction)
+}
+
+/** Both pickers write their choice back into the sentence; neither holds a value of its own. */
+@Composable
+private fun AttributePickers(state: AddTaskState, onAction: (AddTaskAction) -> Unit) {
+    when (state.openPicker) {
+        AddTaskPicker.TIME -> AwanTimePickerDialog(
+            initialMinutes = state.pickerInitialMinutes,
+            confirmLabel = stringResource(R.string.add_task_picker_set),
+            cancelLabel = stringResource(R.string.add_task_picker_cancel),
+            onDismiss = { onAction(AddTaskAction.PickerDismissed) },
+            onConfirm = { onAction(AddTaskAction.TimePicked(it)) },
+        )
+
+        AddTaskPicker.DURATION -> DurationPickerDialog(
+            selectedMinutes = state.parsed.durationMinutes,
+            onDismiss = { onAction(AddTaskAction.PickerDismissed) },
+            onConfirm = { onAction(AddTaskAction.DurationPicked(it)) },
+        )
+
+        null -> Unit
     }
 }
 
@@ -166,12 +197,16 @@ private fun TaskForm(
     onAction: (AddTaskAction) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
+        // The task name is the draft. It gets the heading scale and the bordered field; the note
+        // below it is deliberately quieter so the two never compete for the eye.
         CascadeItem(1, Modifier.fillMaxWidth()) {
             AwanTextField(
                 value = state.input,
                 onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
                 placeholder = stringResource(R.string.add_task_title_placeholder),
                 contentDescriptionText = stringResource(R.string.add_task_title_content_description),
+                textStyle = AwanTheme.styles.headingText,
+                placeholderStyle = AwanTheme.styles.headingText.copy(color = AwanTheme.colors.meta),
                 visualTransformation = rememberTokenHighlight(state.parsed.tokens),
                 capitalization = KeyboardCapitalization.Sentences,
                 imeAction = ImeAction.Next,
@@ -180,14 +215,9 @@ private fun TaskForm(
         }
 
         CascadeItem(2, Modifier.fillMaxWidth()) {
-            AwanTextField(
+            NoteField(
                 value = state.description,
                 onValueChange = { onAction(AddTaskAction.DescriptionChanged(it)) },
-                placeholder = stringResource(R.string.add_task_description_placeholder),
-                contentDescriptionText = stringResource(R.string.add_task_description_content_description),
-                capitalization = KeyboardCapitalization.Sentences,
-                imeAction = ImeAction.Done,
-                modifier = Modifier.fillMaxWidth(),
             )
         }
 
@@ -199,6 +229,8 @@ private fun TaskForm(
             TaskAttributeChips(
                 state = state,
                 today = state.today,
+                onEditTime = { onAction(AddTaskAction.PickerOpened(AddTaskPicker.TIME)) },
+                onEditDuration = { onAction(AddTaskAction.PickerOpened(AddTaskPicker.DURATION)) },
                 onToggleMandatory = { onAction(AddTaskAction.MandatoryToggled) },
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -212,6 +244,38 @@ private fun TaskForm(
             SubmitButton(state = state, onSubmit = { onAction(AddTaskAction.Submit) })
         }
     }
+}
+
+/**
+ * The description. No rim, no border, body scale, secondary ink — it reads as an annotation hanging
+ * off the task name rather than a second field of equal weight.
+ */
+@Composable
+private fun NoteField(value: String, onValueChange: (String) -> Unit) {
+    val label = stringResource(R.string.add_task_description_content_description)
+    val placeholder = stringResource(R.string.add_task_description_placeholder)
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        textStyle = AwanTheme.typography.body.copy(color = AwanTheme.colors.textSecondary),
+        cursorBrush = SolidColor(AwanTheme.colors.sky),
+        singleLine = false,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AwanTheme.spacing.xxs)
+            .semantics { contentDescription = label },
+        decorationBox = { field ->
+            Box {
+                if (value.isEmpty()) {
+                    AwanText(
+                        text = placeholder,
+                        style = AwanTheme.styles.bodySecondaryText.copy(color = AwanTheme.colors.meta),
+                    )
+                }
+                field()
+            }
+        },
+    )
 }
 
 /** Pops the moment the sentence becomes submittable — the same beat the onboarding footer uses. */

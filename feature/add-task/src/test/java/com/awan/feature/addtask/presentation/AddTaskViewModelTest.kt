@@ -3,6 +3,8 @@ package com.awan.feature.addtask.presentation
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.designsystem.MascotExpression
+import com.awan.app.core.domain.task.parser.TaskInputParser
+import com.awan.app.core.domain.task.usecase.ApplyTaskAttributeUseCase
 import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
 import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
 import com.awan.app.core.domain.zone.repository.ZoneRepository
@@ -93,6 +95,7 @@ class AddTaskViewModelTest {
 
     private fun viewModel(): AddTaskViewModel = AddTaskViewModel(
         parseTaskInput = ParseTaskInputUseCase(clock),
+        applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
         getZonesForDate = GetZonesForDateUseCase(zoneRepository),
         createTask = CreateTaskUseCase(taskRepository),
         clock = clock,
@@ -223,6 +226,88 @@ class AddTaskViewModelTest {
         assertEquals(AddTaskEvent.TaskCreated("Buy groceries"), events.single())
         assertEquals("", viewModel.state.value.input)
         assertFalse(viewModel.state.value.isSubmitting)
+    }
+
+    // ── Chips write back into the sentence ───────────────────────────────────
+
+    @Test
+    fun `picking a time writes it into the task name`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.InputChanged("Go Swimming"))
+        viewModel.onAction(AddTaskAction.PickerOpened(AddTaskPicker.TIME))
+        viewModel.onAction(AddTaskAction.TimePicked(15 * 60))
+
+        val state = viewModel.state.value
+        assertEquals("Go Swimming today at 3pm", state.input)
+        assertEquals("Go Swimming", state.parsed.title)
+        assertEquals(LocalDateTime.of(2026, 7, 22, 15, 0), state.parsed.startAt)
+        assertNull(state.openPicker)
+    }
+
+    @Test
+    fun `picking a time keeps the day the sentence already named`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.InputChanged("Go Swimming tomorrow"))
+        viewModel.onAction(AddTaskAction.TimePicked(17 * 60 + 30))
+
+        val state = viewModel.state.value
+        assertEquals("Go Swimming tomorrow at 5:30pm", state.input)
+        assertEquals(LocalDateTime.of(2026, 7, 23, 17, 30), state.parsed.startAt)
+    }
+
+    @Test
+    fun `picking a duration writes it into the task name`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.InputChanged("Go Swimming"))
+        viewModel.onAction(AddTaskAction.DurationPicked(180))
+
+        val state = viewModel.state.value
+        assertEquals("Go Swimming for 3 hours", state.input)
+        assertEquals("Go Swimming", state.parsed.title)
+        assertEquals(180, state.parsed.durationMinutes)
+    }
+
+    @Test
+    fun `re-picking replaces rather than appends`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.InputChanged("Go Swimming"))
+        viewModel.onAction(AddTaskAction.TimePicked(15 * 60))
+        viewModel.onAction(AddTaskAction.TimePicked(9 * 60))
+        viewModel.onAction(AddTaskAction.DurationPicked(60))
+        viewModel.onAction(AddTaskAction.DurationPicked(30))
+
+        val state = viewModel.state.value
+        assertEquals("Go Swimming today at 9am for 30 min", state.input)
+        assertEquals("Go Swimming", state.parsed.title)
+        assertEquals(30, state.parsed.durationMinutes)
+    }
+
+    @Test
+    fun `picking a time over a typed range replaces the whole range`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.InputChanged("Go Swimming from 3pm to 5pm"))
+        assertEquals(120, viewModel.state.value.parsed.durationMinutes)
+
+        viewModel.onAction(AddTaskAction.TimePicked(8 * 60))
+
+        assertEquals("Go Swimming today at 8am", viewModel.state.value.input)
+    }
+
+    @Test
+    fun `with nothing stated the task is simply for today with no time`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.InputChanged("Go Swimming"))
+
+        val state = viewModel.state.value
+        assertNull(state.parsed.startAt)
+        assertFalse(state.parsed.hasExplicitTime)
+        assertEquals(TaskInputParser.DEFAULT_HOUR * 60, state.pickerInitialMinutes)
     }
 
     @Test

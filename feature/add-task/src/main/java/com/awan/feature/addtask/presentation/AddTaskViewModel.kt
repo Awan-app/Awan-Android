@@ -3,8 +3,10 @@ package com.awan.feature.addtask.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.domain.task.usecase.ApplyTaskAttributeUseCase
 import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
 import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
+import com.awan.app.core.domain.task.usecase.TaskAttribute
 import com.awan.app.core.domain.zone.usecase.GetZonesForDateUseCase
 import com.awan.app.core.model.DayZone
 import com.awan.feature.addtask.R
@@ -25,6 +27,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AddTaskViewModel @Inject constructor(
     private val parseTaskInput: ParseTaskInputUseCase,
+    private val applyTaskAttribute: ApplyTaskAttributeUseCase,
     private val getZonesForDate: GetZonesForDateUseCase,
     private val createTask: CreateTaskUseCase,
     private val clock: Clock,
@@ -41,6 +44,7 @@ class AddTaskViewModel @Inject constructor(
     private companion object {
         /** Roughly the length of SparkleBurst plus one mascot cheer cycle. */
         const val CELEBRATE_MILLIS = 900L
+        const val MINUTES_PER_HOUR = 60
     }
 
     fun onAction(action: AddTaskAction) {
@@ -49,9 +53,32 @@ class AddTaskViewModel @Inject constructor(
             is AddTaskAction.InputChanged -> onInputChanged(action.input)
             is AddTaskAction.DescriptionChanged -> _state.update { it.copy(description = action.description) }
             AddTaskAction.MandatoryToggled -> _state.update { it.copy(mandatory = !it.mandatory) }
+            is AddTaskAction.PickerOpened -> _state.update { it.copy(openPicker = action.picker) }
+            AddTaskAction.PickerDismissed -> _state.update { it.copy(openPicker = null) }
+            is AddTaskAction.TimePicked -> applyPickedTime(action.minutesFromMidnight)
+            is AddTaskAction.DurationPicked -> applyAttribute(TaskAttribute.Lasting(action.minutes))
             AddTaskAction.Submit -> submit()
             AddTaskAction.Dismiss -> viewModelScope.launch { _events.send(AddTaskEvent.Dismissed) }
         }
+    }
+
+    /**
+     * Keeps the day the sentence already names and only moves the clock, so picking a time on
+     * "Gym tomorrow" gives tomorrow at that time rather than silently dragging it to today.
+     */
+    private fun applyPickedTime(minutesFromMidnight: Int) {
+        val current = _state.value
+        val day = current.parsed.startAt?.toLocalDate() ?: LocalDate.now(clock)
+        val moment = day.atTime(minutesFromMidnight / MINUTES_PER_HOUR, minutesFromMidnight % MINUTES_PER_HOUR)
+        applyAttribute(TaskAttribute.At(moment))
+    }
+
+    /** Rewrites the sentence, then re-parses it exactly as if it had been typed. */
+    private fun applyAttribute(attribute: TaskAttribute) {
+        val current = _state.value
+        val rewritten = applyTaskAttribute(current.input, current.parsed, attribute)
+        _state.update { it.copy(openPicker = null) }
+        onInputChanged(rewritten)
     }
 
     private fun onInputChanged(input: String) {
