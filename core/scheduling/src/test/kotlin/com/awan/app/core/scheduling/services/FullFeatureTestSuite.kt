@@ -1,6 +1,7 @@
 package com.awan.app.core.scheduling.services
 
 import com.awan.app.core.scheduling.entities.AwanTask
+import com.awan.app.core.scheduling.entities.Session
 import com.awan.app.core.scheduling.entities.Zone
 import com.awan.app.core.scheduling.errors.SchedulingException
 import com.awan.app.core.scheduling.valueobjects.*
@@ -104,6 +105,7 @@ class FullFeatureTestSuite {
         
         val result = engine.makePlan(SchedulingSnapshot(
             planningDay = planningDay,
+            now = planningDay,
             timeZone = timeZone,
             zones = listOf(workZone),
             goals = emptyList(),
@@ -143,6 +145,7 @@ class FullFeatureTestSuite {
         
         val result = engine.makePlan(SchedulingSnapshot(
             planningDay = planningDay,
+            now = planningDay,
             timeZone = timeZone,
             zones = listOf(workZone),
             goals = emptyList(),
@@ -180,6 +183,7 @@ class FullFeatureTestSuite {
         
         val result = engine.makePlan(SchedulingSnapshot(
             planningDay = planningDay,
+            now = planningDay,
             timeZone = timeZone,
             zones = listOf(workZone),
             goals = emptyList(),
@@ -195,5 +199,58 @@ class FullFeatureTestSuite {
 
         assertNotNull(splitCandidate)
         assertEquals(2, splitCandidate?.sessionDrafts?.size)
+    }
+
+    @Test
+    fun `feature 7 - sub-minimum remainder absorption`() {
+        println("\n--- 🧽 FEATURE 7: REMAINDER ABSORPTION ---")
+        val engine = DefaultScheduleEngine()
+        val workZone = Zone(
+            id = UUID.randomUUID(),
+            startTime = LocalTime(9, 0),
+            endTime = LocalTime(17, 0),
+            name = "Work",
+            color = ZoneColor("#0000FF")
+        )
+        
+        // Task 90m, one existing 87m session. Remainder = 3m.
+        val task = AwanTask(
+            id = UUID.randomUUID(),
+            zoneID = workZone.id,
+            duration = TaskDuration(90),
+            isSplittable = true
+        )
+        
+        val existingSession = Session(
+            id = UUID.randomUUID(),
+            taskID = task.id,
+            zoneID = workZone.id,
+            timeRange = TimeRange(
+                Instant.parse("2026-07-22T09:00:00Z"),
+                Instant.parse("2026-07-22T10:27:00Z") // 87 mins
+            ),
+            blocking = true,
+            status = Session.Status.PLANNED
+        )
+        
+        val result = engine.makePlan(SchedulingSnapshot(
+            planningDay = planningDay,
+            now = planningDay,
+            timeZone = timeZone,
+            zones = listOf(workZone),
+            goals = emptyList(),
+            tasks = listOf(task),
+            sessions = listOf(existingSession),
+            configuration = SchedulingConfiguration(minimumSessionMinutes = 15, futureSearchDayLimit = 14)
+        ))
+        
+        println("Remainder: 3 mins. Existing: 87 mins.")
+        println("Planned Drafts: ${result.todaySessionDrafts.size}")
+        println("Planned Updates: ${result.sessionUpdates.size}")
+        
+        assertTrue("Should not create a new session for 3 mins", result.todaySessionDrafts.isEmpty())
+        assertEquals(1, result.sessionUpdates.size)
+        assertEquals(90, result.sessionUpdates.first().timeRange.durationMinutes)
+        println("✅ Absorbed 3m remainder into session: ${result.sessionUpdates.first().id}")
     }
 }

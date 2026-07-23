@@ -56,6 +56,7 @@ class EngineDemoTest {
         // 3. Create Snapshot
         val snapshot = SchedulingSnapshot(
             planningDay = planningDay,
+            now = planningDay,
             timeZone = timeZone,
             zones = listOf(workZone),
             goals = emptyList(),
