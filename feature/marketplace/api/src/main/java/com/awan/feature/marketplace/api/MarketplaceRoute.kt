@@ -1,7 +1,7 @@
-package com.awan.feature.profile_setup.api
+package com.awan.feature.marketplace.api
 
 import com.awan.core.navigation.Route
 import kotlinx.serialization.Serializable
 
 @Serializable
-object ProfileSetupRoute : Route
+data object MarketplaceRoute : Route

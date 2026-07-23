@@ -1,47 +1,58 @@
 package com.awan.app
 
-import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Storefront
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.EmojiEvents
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.awan.core.navigation.Route
-import com.awan.feature.calendar.api.CalendarRoute
 import com.awan.feature.goals.api.GoalsRoute
 import com.awan.feature.home.api.HomeRoute
+import com.awan.feature.marketplace.api.MarketplaceRoute
 import com.awan.feature.profile.api.ProfileRoute
 
-/**
- * The bar's items in order. `AwanBottomBar` splits this list down the middle and drops the add-task
- * button between the halves, so keeping an even count keeps the button centred.
- *
- * Chat is deliberately absent: it is still a registered route, it just has no bar item yet.
- */
 enum class TopLevelDestination(
-    val route: Route,
-    val icon: ImageVector,
-    @StringRes val labelRes: Int,
+    val route: Route?,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
+    val label: String,
+    val isFab: Boolean = false,
 ) {
     HOME(
         route = HomeRoute,
-        icon = Icons.Default.Home,
-        labelRes = R.string.navigation_home,
-    ),
-    CALENDAR(
-        route = CalendarRoute,
-        icon = Icons.Default.DateRange,
-        labelRes = R.string.navigation_calendar,
+        selectedIcon = Icons.Rounded.Home,
+        unselectedIcon = Icons.Outlined.Home,
+        label = "Home",
     ),
     GOALS(
         route = GoalsRoute,
-        icon = Icons.Default.ThumbUp,
-        labelRes = R.string.navigation_goals,
+        selectedIcon = Icons.Rounded.EmojiEvents,
+        unselectedIcon = Icons.Outlined.EmojiEvents,
+        label = "Goals",
+    ),
+    AI_ACTION(
+        route = null,
+        selectedIcon = Icons.Rounded.AutoAwesome,
+        unselectedIcon = Icons.Rounded.AutoAwesome,
+        label = "AI Action",
+        isFab = true,
+    ),
+    MARKETPLACE(
+        route = MarketplaceRoute,
+        selectedIcon = Icons.Rounded.Storefront,
+        unselectedIcon = Icons.Outlined.Storefront,
+        label = "Market",
     ),
     PROFILE(
         route = ProfileRoute,
-        icon = Icons.Default.Person,
-        labelRes = R.string.navigation_profile,
+        selectedIcon = Icons.Rounded.Person,
+        unselectedIcon = Icons.Outlined.Person,
+        label = "Profile",
     ),
 }
