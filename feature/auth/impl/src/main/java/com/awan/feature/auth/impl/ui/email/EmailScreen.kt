@@ -169,6 +169,7 @@ fun EmailScreen(
             SocialButton(
                 text = stringResource(R.string.auth_continue_with_google),
                 onClick = onSignInWithGoogle,
+                enabled = !state.isLoading,
                 painter = painterResource(DesignR.drawable.ic_google),
                 socialType = AwanButtonVariant.Google,
                 contentDescription = stringResource(R.string.auth_continue_with_google),
