@@ -7,11 +7,15 @@ import com.awan.app.core.data.onboarding.OnboardingRepository
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSourceImpl
-import com.awan.app.core.data.task.TaskRepository
 import com.awan.app.core.data.task.TaskRepositoryImpl
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.data.task.remote.TaskRemoteDataSourceImpl
+import com.awan.app.core.data.zone.ZoneRepositoryImpl
+import com.awan.app.core.data.zone.remote.ZoneRemoteDataSource
+import com.awan.app.core.data.zone.remote.ZoneRemoteDataSourceImpl
 import com.awan.app.core.domain.auth.repository.AuthRepository
+import com.awan.app.core.domain.task.repository.TaskRepository
+import com.awan.app.core.domain.zone.repository.ZoneRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -45,6 +49,18 @@ internal abstract class DataModule {
     abstract fun bindTaskRepository(
         impl: TaskRepositoryImpl,
     ): TaskRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindZoneRemoteDataSource(
+        impl: ZoneRemoteDataSourceImpl,
+    ): ZoneRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindZoneRepository(
+        impl: ZoneRepositoryImpl,
+    ): ZoneRepository
 
     @Binds
     @Singleton

@@ -2,14 +2,17 @@ package com.awan.feature.onboarding.impl.presentation
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.OnboardingData
-import com.awan.app.core.data.task.TaskRepository
 import com.awan.app.core.domain.onboarding.DayBoundsValidation
 import com.awan.app.core.domain.onboarding.ScheduleFirstTaskUseCase
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
-import com.awan.app.core.data.task.CreateTaskUseCase
+import com.awan.app.core.domain.task.repository.TaskRepository
+import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
 import com.awan.app.core.model.DayBounds
-import com.awan.app.core.network.dto.TaskInfoResponse
+import com.awan.app.core.model.SessionDraft
+import com.awan.app.core.model.Task
+import com.awan.app.core.model.TaskDraft
+import com.awan.app.core.model.TaskWithSessions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -36,24 +39,21 @@ class OnboardingViewModelTest {
     private class FakeTaskRepository : TaskRepository {
         var createdTaskTitle: String? = null
 
-        override suspend fun createTask(
-            title: String,
-            description: String?,
-            estimatedDurationMinutes: Int?,
-            mandatory: Boolean?,
-            estimatedPoints: Int?,
-            allowTaskSplitting: Boolean?,
-            goalId: String?,
-        ): Result<TaskInfoResponse> {
-            createdTaskTitle = title
+        override suspend fun createTask(draft: TaskDraft): Result<Task> {
+            createdTaskTitle = draft.title
             return Result.Success(
-                TaskInfoResponse(
+                Task(
                     id = "task-123",
-                    title = title,
-                    estimatedDuration = estimatedDurationMinutes,
+                    title = draft.title,
+                    estimatedDurationMinutes = draft.durationMinutes,
                 )
             )
         }
+
+        override suspend fun createTaskWithSessions(
+            draft: TaskDraft,
+            sessions: List<SessionDraft>,
+        ): Result<TaskWithSessions> = error("onboarding never schedules its first task")
     }
 
     @Before
