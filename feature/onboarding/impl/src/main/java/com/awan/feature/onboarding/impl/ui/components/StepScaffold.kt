@@ -236,6 +236,7 @@ private fun StepFooter(chrome: StepChrome) {
         AwanButton(
             onClick = { chrome.primary.onClick() },
             enabled = enabled,
+            isLoading = chrome.primaryLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = AwanTheme.spacing.xl)
@@ -277,7 +278,7 @@ fun CenteredHeadline(title: String, subtitle: String? = null, modifier: Modifier
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
     ) {
-        androidx.compose.foundation.text.BasicText(
+        AwanText(
             text = title,
             style = AwanTheme.typography.display.copy(
                 color = AwanTheme.colors.textPrimary,
@@ -285,7 +286,7 @@ fun CenteredHeadline(title: String, subtitle: String? = null, modifier: Modifier
             ),
         )
         if (subtitle != null) {
-            androidx.compose.foundation.text.BasicText(
+            AwanText(
                 text = subtitle,
                 style = AwanTheme.typography.body.copy(
                     color = AwanTheme.colors.textSecondary,

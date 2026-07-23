@@ -1,15 +1,17 @@
 package com.awan.feature.onboarding.impl.presentation
 
-import com.awan.app.core.data.onboarding.InMemoryOnboardingRepository
+import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.OnboardingData
-import com.awan.app.core.model.DayBounds
+import com.awan.app.core.data.task.TaskRepository
 import com.awan.app.core.domain.onboarding.DayBoundsValidation
 import com.awan.app.core.domain.onboarding.ScheduleFirstTaskUseCase
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.awan.app.core.data.task.CreateTaskUseCase
+import com.awan.app.core.model.DayBounds
+import com.awan.app.core.network.dto.TaskInfoResponse
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -27,18 +29,44 @@ import org.junit.Test
 class OnboardingViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
-    private lateinit var repository: InMemoryOnboardingRepository
+    private lateinit var repository: FakeOnboardingRepository
+    private lateinit var fakeTaskRepository: FakeTaskRepository
     private lateinit var viewModel: OnboardingViewModel
+
+    private class FakeTaskRepository : TaskRepository {
+        var createdTaskTitle: String? = null
+
+        override suspend fun createTask(
+            title: String,
+            description: String?,
+            estimatedDurationMinutes: Int?,
+            mandatory: Boolean?,
+            estimatedPoints: Int?,
+            allowTaskSplitting: Boolean?,
+            goalId: String?,
+        ): Result<TaskInfoResponse> {
+            createdTaskTitle = title
+            return Result.Success(
+                TaskInfoResponse(
+                    id = "task-123",
+                    title = title,
+                    estimatedDuration = estimatedDurationMinutes,
+                )
+            )
+        }
+    }
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        repository = InMemoryOnboardingRepository()
+        repository = FakeOnboardingRepository()
+        fakeTaskRepository = FakeTaskRepository()
         viewModel = OnboardingViewModel(
             repository = repository,
             suggestZoneSchedule = SuggestZoneScheduleUseCase(),
             scheduleFirstTask = ScheduleFirstTaskUseCase(),
             validateDayBounds = ValidateDayBounds(),
+            createTaskUseCase = CreateTaskUseCase(fakeTaskRepository),
         )
     }
 
@@ -46,7 +74,7 @@ class OnboardingViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     @Test
-    fun `starts on Welcome with four suggested zones`() = runTest(testDispatcher.scheduler) {
+    fun `starts on Welcome with four suggested zones`() = runTest(testDispatcher) {
         val state = viewModel.state.value
         assertEquals(OnboardingStep.Welcome, state.step)
         assertEquals(4, state.zones.size)
@@ -54,14 +82,14 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `continue on the name step is gated on a non-blank first name`() = runTest(testDispatcher.scheduler) {
+    fun `continue on the name step is gated on a non-blank first name`() = runTest(testDispatcher) {
         assertFalse(viewModel.state.value.canContinueName)
         viewModel.onAction(OnboardingAction.NameChanged("Sam", ""))
         assertTrue(viewModel.state.value.canContinueName)
     }
 
     @Test
-    fun `same wake and sleep blocks continuing on bounds`() = runTest(testDispatcher.scheduler) {
+    fun `same wake and sleep blocks continuing on bounds`() = runTest(testDispatcher) {
         viewModel.onAction(OnboardingAction.WakeChanged(23 * 60))
         viewModel.onAction(OnboardingAction.SleepChanged(23 * 60))
         assertEquals(DayBoundsValidation.SameTime, viewModel.state.value.boundsValidation)
@@ -69,14 +97,29 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `changing bounds re-suggests zones while not user-edited`() = runTest(testDispatcher.scheduler) {
+    fun `changing bounds re-suggests zones while not user-edited`() = runTest(testDispatcher) {
         viewModel.onAction(OnboardingAction.WakeChanged(8 * 60))
         val expected = SuggestZoneScheduleUseCase()(viewModel.state.value.bounds).first().startMinutes
         assertEquals(expected, viewModel.state.value.zones.first().startMinutes)
     }
 
     @Test
-    fun `skipping every step applies defaults and completes onboarding`() = runTest(testDispatcher.scheduler) {
+    fun `skipping TaskLength triggers completeOnboarding before entering FirstTask step`() = runTest(testDispatcher) {
+        viewModel.onAction(OnboardingAction.Next) // Welcome -> Name
+        viewModel.onAction(OnboardingAction.NameChanged("Sam", ""))
+        viewModel.onAction(OnboardingAction.Next) // Name -> DayBounds
+        viewModel.onAction(OnboardingAction.Next) // DayBounds -> Zones
+        viewModel.onAction(OnboardingAction.Next) // Zones -> TaskLength
+
+        assertFalse(repository.isCompleted)
+        viewModel.onAction(OnboardingAction.Next) // TaskLength -> FirstTask
+
+        assertTrue(repository.isCompleted)
+        assertEquals(OnboardingStep.FirstTask, viewModel.state.value.step)
+    }
+
+    @Test
+    fun `skipping every step applies defaults and completes onboarding`() = runTest(testDispatcher) {
         val events = mutableListOf<OnboardingEvent>()
         backgroundScope.launch(testDispatcher) {
             viewModel.events.collect { events += it }
@@ -88,11 +131,11 @@ class OnboardingViewModelTest {
         assertEquals(DayBounds.Default, viewModel.state.value.bounds)
         assertEquals(OnboardingData.DEFAULT_TASK_LENGTH_MINUTES, viewModel.state.value.preferredTaskLengthMinutes)
         assertTrue(events.contains(OnboardingEvent.NavigateHome))
-        assertTrue(repository.draft.first().completed)
+        assertTrue(repository.isCompleted)
     }
 
     @Test
-    fun `submitting a first task schedules it, celebrates, and persists`() = runTest(testDispatcher.scheduler) {
+    fun `submitting a first task creates task via CreateTaskUseCase, celebrates, and persists`() = runTest(testDispatcher) {
         viewModel.onAction(OnboardingAction.FirstTaskTitleChanged("Write brief"))
         viewModel.onAction(OnboardingAction.SubmitFirstTask)
 
@@ -100,7 +143,8 @@ class OnboardingViewModelTest {
         assertNotNull(state.firstTask)
         assertTrue(state.celebrateTask)
         assertFalse(state.isSubmittingTask)
-        assertEquals("Write brief", repository.draft.first().firstTask?.title)
+        assertEquals("Write brief", state.firstTask?.title)
+        assertEquals("Write brief", fakeTaskRepository.createdTaskTitle)
     }
 
     @Test
@@ -118,7 +162,7 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `skipping from Welcome completes onboarding with all defaults`() = runTest(testDispatcher.scheduler) {
+    fun `skipping from Welcome completes onboarding with all defaults`() = runTest(testDispatcher) {
         val events = mutableListOf<OnboardingEvent>()
         backgroundScope.launch(testDispatcher) {
             viewModel.events.collect { events += it }
@@ -130,6 +174,6 @@ class OnboardingViewModelTest {
         assertEquals(DayBounds.Default, viewModel.state.value.bounds)
         assertEquals(OnboardingData.DEFAULT_TASK_LENGTH_MINUTES, viewModel.state.value.preferredTaskLengthMinutes)
         assertTrue(events.contains(OnboardingEvent.NavigateHome))
-        assertTrue(repository.draft.first().completed)
+        assertTrue(repository.isCompleted)
     }
 }

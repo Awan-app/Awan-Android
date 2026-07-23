@@ -22,20 +22,37 @@ fun Throwable.toAppError(json: Json? = null): AppError = when (this) {
             401 -> AppError.Unauthorized
             in 500..599 -> AppError.Server(code)
             else -> {
-                val bodyMessage = response()?.errorBody()?.string()?.let { rawBody ->
+                val rawBody = response()?.errorBody()?.string()
+                var bodyMessage: String? = rawBody
+                var remainingAttempts: Int? = null
+                var retryAfterSeconds: Int? = null
+                var errorCode: String? = null
+
+                if (!rawBody.isNullOrBlank() && json != null) {
                     try {
-                        json?.decodeFromString<ApiErrorResponse>(rawBody)?.message ?: rawBody
+                        val parsed = json.decodeFromString<ApiErrorResponse>(rawBody)
+                        bodyMessage = parsed.message ?: rawBody
+                        remainingAttempts = parsed.info?.remainingAttempts
+                        retryAfterSeconds = parsed.info?.retryAfterSeconds
+                        errorCode = parsed.errorCode ?: parsed.code
                     } catch (_: Exception) {
-                        rawBody
                     }
                 }
-                AppError.Api(code, bodyMessage)
+
+                AppError.Api(
+                    code = code,
+                    body = bodyMessage,
+                    remainingAttempts = remainingAttempts,
+                    retryAfterSeconds = retryAfterSeconds,
+                    errorCode = errorCode,
+                )
             }
         }
     }
     is SerializationException -> AppError.Serialization
     else -> AppError.Unknown(this)
 }
+
 suspend fun <T> safeApiCall(
     dispatcher: CoroutineDispatcher? = null,
     json: Json? = null,
@@ -57,4 +74,3 @@ suspend fun <T> safeApiCall(
         execute()
     }
 }
-
