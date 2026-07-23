@@ -38,6 +38,9 @@ appcompat = "1.7.1"
 material = "1.14.0"
 javaxInject = "1"
 
+# New — Database
+room = "2.7.2"
+
 # New — Lottie
 lottie = "6.6.2"
 
@@ -110,6 +113,12 @@ ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "symbol-processin
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
+# Room
+room-runtime  = { group = "androidx.room", name = "room-runtime",  version.ref = "room" }
+room-ktx      = { group = "androidx.room", name = "room-ktx",      version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler",  version.ref = "room" }
+room-testing  = { group = "androidx.room", name = "room-testing",   version.ref = "room" }
+
 # Lottie
 lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", version.ref = "lottie" }
 
@@ -138,3 +147,5 @@ awan-android-hilt = { id = "awan.android.hilt" }
 awan-android-feature = { id = "awan.android.feature" }
 awan-jvm-library = { id = "awan.jvm.library" }
 awan-feature = { id = "awan.feature" }
+awan-android-room = { id = "awan.android.room" }
+

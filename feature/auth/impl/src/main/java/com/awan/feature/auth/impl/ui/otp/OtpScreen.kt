@@ -111,6 +111,7 @@ fun OtpScreen(
             ) {
                 IconButton(
                     onClick = onBack,
+                    enabled = state.status != OtpStatus.Verifying,
                     modifier = Modifier.semantics {
                         contentDescription = "Navigate back"
                     },
@@ -118,7 +119,7 @@ fun OtpScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = null,
-                        tint = AwanTheme.colors.textPrimary,
+                        tint = if (state.status == OtpStatus.Verifying) AwanTheme.colors.disabledContent else AwanTheme.colors.textPrimary,
                     )
                 }
             }
@@ -187,11 +188,13 @@ fun OtpScreen(
                             AuthButton(
                                 text = stringResource(R.string.auth_request_new_code),
                                 onClick = onUseDifferentEmail,
+                                enabled = status != OtpStatus.Verifying,
                             )
                         }
                         OtpStatus.Expired -> {
                             AwanButton(
                                 onClick = onResend,
+                                enabled = status != OtpStatus.Verifying,
                                 variant = AwanButtonVariant.Quiet,
                             ) {
                                 AwanText(stringResource(R.string.auth_resend_code))
@@ -201,7 +204,7 @@ fun OtpScreen(
                             CountdownTimer(
                                 state = resendTimer,
                                 onResend = onResend,
-                                isResendEnabled = state.isResendEnabled,
+                                isResendEnabled = state.isResendEnabled && status != OtpStatus.Verifying,
                             )
                         }
                     }
@@ -212,6 +215,7 @@ fun OtpScreen(
 
             AwanButton(
                 onClick = onUseDifferentEmail,
+                enabled = state.status != OtpStatus.Verifying,
                 variant = AwanButtonVariant.Quiet,
                 modifier = Modifier.semantics {
                     contentDescription = "Use a different email address"

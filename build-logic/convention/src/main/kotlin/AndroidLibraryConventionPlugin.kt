@@ -12,6 +12,7 @@ abstract class AndroidLibraryConventionPlugin : Plugin<Project> {
             extensions.configure<LibraryExtension> {
                 configureKotlinAndroid(this)
                 defaultConfig {
+                    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
                     // Consumer proguard files
                     if (file("consumer-rules.pro").exists()) {
                         consumerProguardFiles("consumer-rules.pro")
