@@ -15,6 +15,7 @@ data class TaskReconciliationRequest(
     val taskID: UUID,
     val pendingZoneChange: TaskZoneChange?,
     val selectedDay: Instant,
+    val now: Instant,
     val timeZone: ZoneId,
     val ignoresFixedOverAllocation: Boolean = false,
     val ignoresFixedZoneMismatch: Boolean = false
@@ -125,6 +126,7 @@ class DefaultTaskScheduleReconciler(
         val result = engine.makePlan(
             SchedulingSnapshot(
                 planningDay = request.selectedDay,
+                now = request.now,
                 timeZone = request.timeZone,
                 zones = workspace.zones,
                 goals = workspace.goals,
@@ -135,6 +137,10 @@ class DefaultTaskScheduleReconciler(
 
         for (draft in result.todaySessionDrafts.filter { it.taskID == request.taskID }) {
             sessionRepository.addSession(makeSession(draft))
+        }
+
+        for (updated in result.sessionUpdates.filter { it.taskID == request.taskID }) {
+            sessionRepository.updateSession(updated)
         }
 
         val updatedWorkspace = workspaceProvider.load()
