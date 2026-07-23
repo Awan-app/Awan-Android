@@ -1,4 +1,4 @@
-package com.awan.app.core.network.dto.request
+package com.awan.app.core.network.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

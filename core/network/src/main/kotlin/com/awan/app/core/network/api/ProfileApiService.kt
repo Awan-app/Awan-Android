@@ -1,15 +1,15 @@
 package com.awan.app.core.network.api
 
 import com.awan.app.core.network.dto.ProfileResponse
-import com.awan.app.core.network.dto.request.AwardPointsRequest
-import com.awan.app.core.network.dto.request.DeductPointsRequest
-import com.awan.app.core.network.dto.request.UpdateBirthDateRequest
-import com.awan.app.core.network.dto.request.UpdateNameRequest
-import com.awan.app.core.network.dto.request.UpdateProfilePartialRequest
-import com.awan.app.core.network.dto.request.UpdateSchedulingTypeRequest
-import com.awan.app.core.network.dto.request.UpdateSessionSettingsRequest
-import com.awan.app.core.network.dto.request.UpdateSleepScheduleRequest
-import com.awan.app.core.network.dto.request.UpdateTimezoneRequest
+import com.awan.app.core.network.dto.AwardPointsRequest
+import com.awan.app.core.network.dto.DeductPointsRequest
+import com.awan.app.core.network.dto.UpdateBirthDateRequest
+import com.awan.app.core.network.dto.UpdateNameRequest
+import com.awan.app.core.network.dto.UpdateProfilePartialRequest
+import com.awan.app.core.network.dto.UpdateSchedulingTypeRequest
+import com.awan.app.core.network.dto.UpdateSessionSettingsRequest
+import com.awan.app.core.network.dto.UpdateSleepScheduleRequest
+import com.awan.app.core.network.dto.UpdateTimezoneRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.PATCH

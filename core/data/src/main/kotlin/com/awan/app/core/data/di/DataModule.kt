@@ -5,6 +5,8 @@ import com.awan.app.core.data.auth.remote.AuthRemoteDataSourceImpl
 import com.awan.app.core.data.auth.repository.AuthRepositoryImpl
 import com.awan.app.core.data.onboarding.InMemoryOnboardingRepository
 import com.awan.app.core.data.onboarding.OnboardingRepository
+import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
+import com.awan.app.core.data.profile.remote.ProfileRemoteDataSourceImpl
 import com.awan.app.core.data.profile.repository.ProfileRepositoryImpl
 import com.awan.app.core.domain.auth.repository.AuthRepository
 import com.awan.app.core.domain.profile.repository.ProfileRepository
@@ -32,6 +34,12 @@ internal abstract class DataModule {
     abstract fun bindAuthRepository(
         impl: AuthRepositoryImpl,
     ): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindProfileRemoteDataSource(
+        impl: ProfileRemoteDataSourceImpl,
+    ): ProfileRemoteDataSource
 
     @Binds
     @Singleton

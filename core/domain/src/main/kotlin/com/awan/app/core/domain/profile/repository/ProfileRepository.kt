@@ -2,17 +2,14 @@ package com.awan.app.core.domain.profile.repository
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.profile.model.Profile
+import kotlinx.coroutines.flow.Flow
 
 interface ProfileRepository {
-
-    // ---------- Profile ----------
+    fun observeProfile(): Flow<Profile?>
 
     suspend fun getProfile(): Result<Profile>
-
     suspend fun updateName(firstName: String, lastName: String): Result<Profile>
-
     suspend fun updateBirthDate(birthDate: String): Result<Profile>
-
     suspend fun updateProfilePartial(
         firstName: String? = null,
         lastName: String? = null,
@@ -24,8 +21,6 @@ interface ProfileRepository {
         schedulingType: String? = null
     ): Result<Profile>
 
-    // ---------- Preferences ----------
-
     suspend fun updateTimezone(timezone: String): Result<Profile>
 
     suspend fun updateSessionSettings(preferredSessionDuration: Int, bufferBetweenSessions: Int): Result<Profile>
@@ -33,8 +28,6 @@ interface ProfileRepository {
     suspend fun updateSleepSchedule(wakeupTime: String, sleepTime: String): Result<Profile>
 
     suspend fun updateSchedulingType(schedulingType: String): Result<Profile>
-
-    // ---------- Gamification ----------
 
     suspend fun incrementStreak(): Result<Profile>
 

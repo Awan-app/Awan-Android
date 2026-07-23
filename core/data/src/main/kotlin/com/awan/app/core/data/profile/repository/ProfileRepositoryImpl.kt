@@ -1,46 +1,55 @@
 package com.awan.app.core.data.profile.repository
 
-import com.awan.app.core.common.dispatcher.AwanDispatchers
-import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.data.mapper.toDomain
+import com.awan.app.core.common.result.map
+import com.awan.app.core.common.result.onSuccess
+import com.awan.app.core.data.profile.mapper.toDomain
+import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.repository.ProfileRepository
-import com.awan.app.core.network.api.ProfileApiService
-import com.awan.app.core.network.dto.request.AwardPointsRequest
-import com.awan.app.core.network.dto.request.DeductPointsRequest
-import com.awan.app.core.network.dto.request.UpdateBirthDateRequest
-import com.awan.app.core.network.dto.request.UpdateNameRequest
-import com.awan.app.core.network.dto.request.UpdateProfilePartialRequest
-import com.awan.app.core.network.dto.request.UpdateSchedulingTypeRequest
-import com.awan.app.core.network.dto.request.UpdateSessionSettingsRequest
-import com.awan.app.core.network.dto.request.UpdateSleepScheduleRequest
-import com.awan.app.core.network.dto.request.UpdateTimezoneRequest
-import com.awan.app.core.network.error.safeApiCall
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.serialization.json.Json
+import com.awan.app.core.network.dto.AwardPointsRequest
+import com.awan.app.core.network.dto.DeductPointsRequest
+import com.awan.app.core.network.dto.UpdateBirthDateRequest
+import com.awan.app.core.network.dto.UpdateNameRequest
+import com.awan.app.core.network.dto.UpdateProfilePartialRequest
+import com.awan.app.core.network.dto.UpdateSchedulingTypeRequest
+import com.awan.app.core.network.dto.UpdateSessionSettingsRequest
+import com.awan.app.core.network.dto.UpdateSleepScheduleRequest
+import com.awan.app.core.network.dto.UpdateTimezoneRequest
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 class ProfileRepositoryImpl @Inject constructor(
-    private val apiService: ProfileApiService,
-    private val json: Json,
-    @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
+    private val profileRemoteDataSource: ProfileRemoteDataSource,
 ) : ProfileRepository {
 
-    override suspend fun getProfile(): Result<Profile> =
-        safeApiCall(ioDispatcher, json) {
-            apiService.getProfileInfo().toDomain()
-        }
+    private val _profile = MutableStateFlow<Profile?>(null)
 
-    override suspend fun updateName(firstName: String, lastName: String): Result<Profile> =
-        safeApiCall(ioDispatcher, json) {
-            apiService.updateProfileName(UpdateNameRequest(firstName, lastName)).toDomain()
-        }
+    override fun observeProfile(): Flow<Profile?> = _profile.asStateFlow()
+
+    private fun updateCache(profile: Profile) {
+        _profile.value = profile
+    }
+
+    override suspend fun getProfile(): Result<Profile> =
+        profileRemoteDataSource.getProfileInfo()
+            .map { it.toDomain() }
+            .onSuccess(::updateCache)
+
+    override suspend fun updateName(
+        firstName: String,
+        lastName: String,
+    ): Result<Profile> =
+        profileRemoteDataSource.updateProfileName(
+            UpdateNameRequest(firstName = firstName, lastName = lastName),
+        ).map { it.toDomain() }.onSuccess(::updateCache)
 
     override suspend fun updateBirthDate(birthDate: String): Result<Profile> =
-        safeApiCall(ioDispatcher, json) {
-            apiService.updateProfileBirthDate(UpdateBirthDateRequest(birthDate)).toDomain()
-        }
+        profileRemoteDataSource.updateProfileBirthDate(
+            UpdateBirthDateRequest(birthDate = birthDate),
+        ).map { it.toDomain() }.onSuccess(::updateCache)
 
     override suspend fun updateProfilePartial(
         firstName: String?,
@@ -50,9 +59,9 @@ class ProfileRepositoryImpl @Inject constructor(
         bufferBetweenSessions: Int?,
         wakeupTime: String?,
         sleepTime: String?,
-        schedulingType: String?
-    ): Result<Profile> = safeApiCall(ioDispatcher, json) {
-        apiService.updateProfilePartial(
+        schedulingType: String?,
+    ): Result<Profile> =
+        profileRemoteDataSource.updateProfilePartial(
             UpdateProfilePartialRequest(
                 firstName = firstName,
                 lastName = lastName,
@@ -61,52 +70,59 @@ class ProfileRepositoryImpl @Inject constructor(
                 bufferBetweenSessions = bufferBetweenSessions,
                 wakeupTime = wakeupTime,
                 sleepTime = sleepTime,
-                schedulingType = schedulingType
-            )
-        ).toDomain()
-    }
+                schedulingType = schedulingType,
+            ),
+        ).map { it.toDomain() }.onSuccess(::updateCache)
 
     override suspend fun updateTimezone(timezone: String): Result<Profile> =
-        safeApiCall(ioDispatcher, json) {
-            apiService.updateTimezone(UpdateTimezoneRequest(timezone)).toDomain()
-        }
+        profileRemoteDataSource.updateTimezone(
+            UpdateTimezoneRequest(timezone = timezone),
+        ).map { it.toDomain() }.onSuccess(::updateCache)
 
     override suspend fun updateSessionSettings(
         preferredSessionDuration: Int,
-        bufferBetweenSessions: Int
-    ): Result<Profile> = safeApiCall(ioDispatcher, json) {
-        apiService.updateSessionSettings(
-            UpdateSessionSettingsRequest(preferredSessionDuration, bufferBetweenSessions)
-        ).toDomain()
-    }
+        bufferBetweenSessions: Int,
+    ): Result<Profile> =
+        profileRemoteDataSource.updateSessionSettings(
+            UpdateSessionSettingsRequest(
+                preferredSessionDuration = preferredSessionDuration,
+                bufferBetweenSessions = bufferBetweenSessions,
+            ),
+        ).map { it.toDomain() }.onSuccess(::updateCache)
 
-    override suspend fun updateSleepSchedule(wakeupTime: String, sleepTime: String): Result<Profile> =
-        safeApiCall(ioDispatcher, json) {
-            apiService.updateSleepSchedule(UpdateSleepScheduleRequest(wakeupTime, sleepTime)).toDomain()
-        }
+    override suspend fun updateSleepSchedule(
+        wakeupTime: String,
+        sleepTime: String,
+    ): Result<Profile> =
+        profileRemoteDataSource.updateSleepSchedule(
+            UpdateSleepScheduleRequest(
+                wakeupTime = wakeupTime,
+                sleepTime = sleepTime,
+            ),
+        ).map { it.toDomain() }.onSuccess(::updateCache)
 
     override suspend fun updateSchedulingType(schedulingType: String): Result<Profile> =
-        safeApiCall(ioDispatcher, json) {
-            apiService.updateSchedulingType(UpdateSchedulingTypeRequest(schedulingType)).toDomain()
-        }
+        profileRemoteDataSource.updateSchedulingType(
+            UpdateSchedulingTypeRequest(schedulingType = schedulingType),
+        ).map { it.toDomain() }.onSuccess(::updateCache)
 
     override suspend fun incrementStreak(): Result<Profile> =
-        safeApiCall(ioDispatcher, json) {
-            apiService.incrementStreak().toDomain()
-        }
+        profileRemoteDataSource.incrementStreak()
+            .map { it.toDomain() }
+            .onSuccess(::updateCache)
 
     override suspend fun resetStreak(): Result<Profile> =
-        safeApiCall(ioDispatcher, json) {
-            apiService.resetStreak().toDomain()
-        }
+        profileRemoteDataSource.resetStreak()
+            .map { it.toDomain() }
+            .onSuccess(::updateCache)
 
     override suspend fun awardPoints(points: Int): Result<Profile> =
-        safeApiCall(ioDispatcher, json) {
-            apiService.awardPoints(AwardPointsRequest(points)).toDomain()
-        }
+        profileRemoteDataSource.awardPoints(
+            AwardPointsRequest(points = points),
+        ).map { it.toDomain() }.onSuccess(::updateCache)
 
     override suspend fun deductPoints(points: Int): Result<Profile> =
-        safeApiCall(ioDispatcher, json) {
-            apiService.deductPoints(DeductPointsRequest(points)).toDomain()
-        }
+        profileRemoteDataSource.deductPoints(
+            DeductPointsRequest(points = points),
+        ).map { it.toDomain() }.onSuccess(::updateCache)
 }
