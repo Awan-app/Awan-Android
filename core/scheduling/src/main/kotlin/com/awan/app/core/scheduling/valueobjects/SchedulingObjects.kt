@@ -117,11 +117,13 @@ data class SchedulingIssue(
 
 data class SchedulingResult(
     val todaySessionDrafts: List<SessionDraft>,
+    val sessionUpdates: List<Session> = emptyList(),
     val issues: List<SchedulingIssue>
 )
 
 data class SchedulingSnapshot(
     val planningDay: Instant,
+    val now: Instant,
     val timeZone: ZoneId,
     val zones: List<Zone>,
     val goals: List<Goal>,
