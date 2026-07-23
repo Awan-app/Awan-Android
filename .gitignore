@@ -17,3 +17,5 @@ keystore.properties
 docs/.obsidian/workspace*.json
 docs/.obsidian/cache/
 docs/.trash/
+.gemini
+skills-lock.json
