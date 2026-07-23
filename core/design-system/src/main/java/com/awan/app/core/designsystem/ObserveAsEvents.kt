@@ -1,4 +1,4 @@
-package com.awan.feature.onboarding.impl.ui
+package com.awan.app.core.designsystem
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

@@ -9,8 +9,9 @@ import com.awan.app.core.domain.onboarding.ScheduleFirstTaskUseCase
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
 import com.awan.app.core.domain.onboarding.ZoneEditRules
-import com.awan.app.core.data.task.CreateTaskUseCase
+import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
 import com.awan.app.core.model.DayBounds
+import com.awan.app.core.model.TaskDraft
 import com.awan.app.core.model.UserProfile
 import com.awan.app.core.model.Zone
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -184,8 +185,10 @@ class OnboardingViewModel @Inject constructor(
 
             // Send task creation request to backend
             createTaskUseCase(
-                title = task.title,
-                estimatedDurationMinutes = task.durationMinutes,
+                TaskDraft(
+                    title = task.title,
+                    durationMinutes = task.durationMinutes,
+                )
             )
 
             _state.update { it.copy(isSubmittingTask = false, firstTask = task, celebrateTask = true) }

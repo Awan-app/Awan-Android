@@ -41,6 +41,7 @@ import com.awan.feature.onboarding.impl.presentation.OnboardingViewModel
 import com.awan.app.core.designsystem.AwanActionSheet
 import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.ObserveAsEvents
 import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.ui.components.StepScaffold
 import com.awan.feature.onboarding.impl.ui.steps.DayBoundsStepBody

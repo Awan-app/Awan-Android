@@ -12,6 +12,13 @@ sealed interface Result<out T> {
     data object Loading : Result<Nothing>
 }
 
+/** Maps a success payload, leaving [Result.Error] and [Result.Loading] untouched. */
+inline fun <T, R> Result<T>.map(transform: (T) -> R): Result<R> = when (this) {
+    is Result.Success -> Result.Success(transform(data))
+    is Result.Error -> this
+    Result.Loading -> Result.Loading
+}
+
 fun <T> Flow<T>.asResult(): Flow<Result<T>> = this
     .map<T, Result<T>> { Result.Success(it) }
     .onStart { emit(Result.Loading) }

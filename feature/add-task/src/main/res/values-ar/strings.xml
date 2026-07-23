@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_task_mode_task">مهمة</string>
+    <string name="add_task_mode_goal">هدف</string>
+
+    <string name="add_task_title_placeholder">ما الذي تريد إنجازه؟</string>
+    <string name="add_task_description_placeholder">أضف ملاحظة</string>
+    <string name="add_task_title_content_description">عنوان المهمة ووقتها ونطاقها</string>
+    <string name="add_task_description_content_description">ملاحظة المهمة</string>
+
+    <string name="add_task_hint">جرّب ‏“Gym session tomorrow 6pm @play”</string>
+
+    <string name="add_task_chip_mandatory">إلزامية</string>
+    <string name="add_task_chip_optional">اختيارية</string>
+    <string name="add_task_chip_unscheduled">بلا وقت بعد</string>
+    <string name="add_task_chip_zone_unknown">النطاق ‏“%1$s” غير موجود</string>
+    <string name="add_task_chip_zone_resolving">جارٍ البحث عن النطاق…</string>
+
+    <string name="add_task_duration_minutes">%1$d دقيقة</string>
+    <string name="add_task_duration_hours">%1$d ساعة</string>
+    <string name="add_task_duration_hours_minutes">%1$d ساعة و%2$d دقيقة</string>
+
+    <string name="add_task_when_today">اليوم %1$s</string>
+    <string name="add_task_when_tomorrow">غدًا %1$s</string>
+    <string name="add_task_when_dated">%1$s %2$s</string>
+
+    <string name="add_task_submit">أضف المهمة</string>
+    <string name="add_task_close">إغلاق</string>
+
+    <string name="add_task_goal_title">الأهداف قادمة</string>
+    <string name="add_task_goal_body">قريبًا ستتمكن من إعطاء أوان هدفًا فيعيد لك خطة كاملة. أما الآن فأضف المهام واحدة تلو الأخرى.</string>
+
+    <string name="add_task_error_create_failed">تعذّرت إضافة المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
+</resources>

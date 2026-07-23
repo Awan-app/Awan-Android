@@ -44,6 +44,9 @@ room = "2.7.2"
 # New — Lottie
 lottie = "6.6.2"
 
+# New — java.time on minSdk 24
+desugarJdkLibs = "2.1.5"
+
 [libraries]
 androidx-compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -121,6 +124,9 @@ room-testing  = { group = "androidx.room", name = "room-testing",   version.ref 
 
 # Lottie
 lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", version.ref = "lottie" }
+
+# Core library desugaring — java.time below API 26
+android-desugarJdkLibs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
