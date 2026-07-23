@@ -34,13 +34,13 @@ class DefaultScheduleEngine(
 
         val occupiedRanges = (activeSessions.map { it.timeRange } + snapshot.unavailableTime).toMutableList()
         val todayDrafts = mutableListOf<SessionDraft>()
+        val sessionUpdates = mutableListOf<Session>()
         val issues = mutableListOf<SchedulingIssue>()
         val completionByTaskID = existingCompletionTimes(orderedTasks, workSessions).toMutableMap()
 
         orderedTasksLoop@for (task in orderedTasks) {
-            val existingMinutes = workSessions
-                .filter { it.taskID == task.id }
-                .sumOf { it.timeRange.durationMinutes }
+            val taskSessions = workSessions.filter { it.taskID == task.id }
+            val existingMinutes = taskSessions.sumOf { it.timeRange.durationMinutes }
             val remainingMinutes = maxOf(0, task.duration.minutes - existingMinutes)
 
             if (remainingMinutes <= 0) continue
@@ -77,12 +77,37 @@ class DefaultScheduleEngine(
             val zone = zonesByID[zoneID]
                 ?: throw SchedulingException.MissingZone(task.id, zoneID)
 
-            val earliestAllowedStart = task.dependencyIDs
+            val earliestDependencyEnd = task.dependencyIDs
                 .mapNotNull { completionByTaskID[it] }
                 .maxOrNull() ?: snapshot.planningDay
+            val earliestAllowedStart = if (earliestDependencyEnd.isAfter(snapshot.now)) earliestDependencyEnd else snapshot.now
 
             val todayWindow = zoneWindowResolver.window(zone, snapshot.planningDay, snapshot.timeZone)
             val freeRanges = availabilityCalculator.freeRanges(todayWindow, occupiedRanges, earliestAllowedStart)
+
+            val minimum = snapshot.configuration.minimumSessionMinutes
+
+            // Intended rule: A sub-minimum remainder is never its own session — it is absorbed into 
+            // one of the task's PLANNED sessions by extending that session's end.
+            if (remainingMinutes < minimum && existingMinutes > 0) {
+                val extendable = taskSessions.firstOrNull { it.status == Session.Status.PLANNED }
+                if (extendable != null) {
+                    val extendedEnd = extendable.timeRange.end.plusSeconds(remainingMinutes * 60L)
+                    val proposedRange = TimeRange(extendable.timeRange.start, extendedEnd)
+                    val extraSlice = TimeRange(extendable.timeRange.end, extendedEnd)
+                    
+                    val isSliceFree = occupiedRanges.none { it.overlaps(extraSlice) }
+                    val isInsideWindow = !extendedEnd.isAfter(todayWindow.end)
+
+                    if (isSliceFree && isInsideWindow) {
+                        val updated = extendable.replacing(timeRange = proposedRange)
+                        sessionUpdates.add(updated)
+                        occupiedRanges.add(extraSlice)
+                        completionByTaskID[task.id] = latestCompletion(task.id, workSessions, todayDrafts, sessionUpdates)!!
+                        continue
+                    }
+                }
+            }
 
             // Happy path: task fits into a free range
             val fitRange = freeRanges.firstOrNull { it.durationMinutes >= remainingMinutes }
@@ -93,7 +118,7 @@ class DefaultScheduleEngine(
                 occupiedRanges.add(draft.timeRange)
                 // Fix: latestCompletion returns Instant? but map expects Instant. 
                 // Since we just added a draft, it won't be null.
-                completionByTaskID[task.id] = latestCompletion(task.id, workSessions, todayDrafts)!!
+                completionByTaskID[task.id] = latestCompletion(task.id, workSessions, todayDrafts, sessionUpdates)!!
                 continue
             }
 
@@ -120,7 +145,11 @@ class DefaultScheduleEngine(
             )
         }
 
-        return SchedulingResult(todaySessionDrafts = todayDrafts, issues = issues)
+        return SchedulingResult(
+            todaySessionDrafts = todayDrafts,
+            sessionUpdates = sessionUpdates,
+            issues = issues
+        )
     }
 
     private fun validateZoneReferences(tasks: List<AwanTask>, zonesByID: Map<UUID, Zone>) {
@@ -152,10 +181,12 @@ class DefaultScheduleEngine(
     private fun latestCompletion(
         taskID: UUID,
         sessions: List<Session>,
-        drafts: List<SessionDraft>
+        drafts: List<SessionDraft>,
+        updates: List<Session>
     ): Instant? {
         val sessionEnds = sessions.filter { it.taskID == taskID }.map { it.timeRange.end }
         val draftEnds = drafts.filter { it.taskID == taskID }.map { it.timeRange.end }
-        return (sessionEnds + draftEnds).maxOrNull()
+        val updateEnds = updates.filter { it.taskID == taskID }.map { it.timeRange.end }
+        return (sessionEnds + draftEnds + updateEnds).maxOrNull()
     }
 }
