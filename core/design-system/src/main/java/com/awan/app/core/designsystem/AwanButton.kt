@@ -1,14 +1,18 @@
 package com.awan.app.core.designsystem
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -17,12 +21,9 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.style.Style
 import androidx.compose.foundation.style.rememberUpdatedStyleState
 import androidx.compose.foundation.style.styleable
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -52,13 +53,15 @@ fun AwanButton(
     style: Style = Style,
     variant: AwanButtonVariant = AwanButtonVariant.Primary,
     enabled: Boolean = true,
+    isLoading: Boolean = false,
     haptic: HapticFeedbackType? = awanButtonHaptic(variant),
     icon: (@Composable () -> Unit)? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
+    val effectiveEnabled = enabled && !isLoading
     val hapticFeedback = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
-    val styleState = rememberUpdatedStyleState(interactionSource) { it.isEnabled = enabled }
+    val styleState = rememberUpdatedStyleState(interactionSource) { it.isEnabled = effectiveEnabled }
     val rimStyle = when (variant) {
         AwanButtonVariant.Primary -> AwanTheme.styles.primaryButtonRim
         AwanButtonVariant.Secondary -> AwanTheme.styles.secondaryButtonRim
@@ -102,23 +105,17 @@ fun AwanButton(
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
-                enabled = enabled,
+                enabled = effectiveEnabled,
                 role = Role.Button,
                 onClick = {
                     haptic?.let(hapticFeedback::performHapticFeedback)
                     onClick()
                 },
             )
-            .focusable(enabled = enabled, interactionSource = interactionSource)
+            .focusable(enabled = effectiveEnabled, interactionSource = interactionSource)
             .styleable(styleState, AwanTheme.styles.buttonFocus)
-            // Touch-target floor as a real min, not the style's minWidth — the Styles API's
-            // minWidth overrides the incoming constraint, which would clobber a caller's
-            // fillMaxWidth back to 48dp before propagateMinConstraints reaches the face.
             .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
         contentAlignment = Alignment.TopCenter,
-        // The caller's modifier sizes this Box, but the face Row is what the rim matches. Passing
-        // the min constraints down makes a caller's fillMaxWidth reach the face too, while a
-        // wrap-content caller still lets the face size itself.
         propagateMinConstraints = true,
     ) {
         Box(
@@ -138,7 +135,14 @@ fun AwanButton(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (icon != null) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(AwanTheme.spacing.md),
+                        color = LocalContentColor.current,
+                        strokeWidth = 2.dp,
+                    )
+                    Spacer(modifier = Modifier.width(AwanTheme.spacing.xs))
+                } else if (icon != null) {
                     Box(
                         modifier = Modifier.size(AwanTheme.spacing.xl),
                         contentAlignment = Alignment.Center,
@@ -160,6 +164,7 @@ fun AwanButton(
     style: Style = Style,
     variant: AwanButtonVariant = AwanButtonVariant.Primary,
     enabled: Boolean = true,
+    isLoading: Boolean = false,
     haptic: HapticFeedbackType? = awanButtonHaptic(variant),
     icon: ImageVector,
     content: @Composable RowScope.() -> Unit,
@@ -170,6 +175,7 @@ fun AwanButton(
         style = style,
         variant = variant,
         enabled = enabled,
+        isLoading = isLoading,
         haptic = haptic,
         icon = {
             Icon(

@@ -2,15 +2,17 @@ package com.awan.feature.onboarding.impl.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.OnboardingData
 import com.awan.app.core.data.onboarding.OnboardingRepository
-import com.awan.app.core.model.DayBounds
-import com.awan.app.core.model.UserProfile
-import com.awan.app.core.model.Zone
 import com.awan.app.core.domain.onboarding.ScheduleFirstTaskUseCase
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
 import com.awan.app.core.domain.onboarding.ZoneEditRules
+import com.awan.app.core.data.task.CreateTaskUseCase
+import com.awan.app.core.model.DayBounds
+import com.awan.app.core.model.UserProfile
+import com.awan.app.core.model.Zone
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,9 +29,11 @@ class OnboardingViewModel @Inject constructor(
     private val suggestZoneSchedule: SuggestZoneScheduleUseCase,
     private val scheduleFirstTask: ScheduleFirstTaskUseCase,
     private val validateDayBounds: ValidateDayBounds,
+    private val createTaskUseCase: CreateTaskUseCase,
 ) : ViewModel() {
 
     private var zonesUserEdited = false
+    private var isBackendOnboarded = false
 
     private val _state = MutableStateFlow(
         OnboardingState(zones = suggestZoneSchedule(DayBounds.Default))
@@ -71,32 +75,95 @@ class OnboardingViewModel @Inject constructor(
 
             OnboardingAction.EnableNotifications ->
                 viewModelScope.launch { _events.send(OnboardingEvent.RequestNotificationPermission) }
-            is OnboardingAction.NotificationPermissionResult -> if (action.granted) complete()
+            is OnboardingAction.NotificationPermissionResult -> if (action.granted) finishOnboarding() else Unit
             OnboardingAction.NotificationsPermanentlyDenied ->
                 _state.update { it.copy(notificationsPermanentlyDenied = true) }
 
             OnboardingAction.Next -> onNext()
             OnboardingAction.Skip -> onSkip()
-            OnboardingAction.SkipSetup -> complete()
+            OnboardingAction.SkipSetup -> skipSetup()
             OnboardingAction.Back -> onBack()
         }
     }
 
     private fun onNext() {
         val step = _state.value.step
-        if (step == OnboardingStep.Notifications) complete() else goToStep(nextStep(step))
+        when (step) {
+            OnboardingStep.TaskLength -> completeOnboardingBeforeTask { goToStep(OnboardingStep.FirstTask) }
+            OnboardingStep.Notifications -> finishOnboarding()
+            else -> goToStep(nextStep(step))
+        }
     }
 
     private fun onSkip() {
         when (_state.value.step) {
             OnboardingStep.DayBounds -> { zonesUserEdited = false; updateBounds(DayBounds.Default) }
             OnboardingStep.Zones -> applySuggestedZones()
-            OnboardingStep.TaskLength ->
+            OnboardingStep.TaskLength -> {
                 _state.update { it.copy(preferredTaskLengthMinutes = OnboardingData.DEFAULT_TASK_LENGTH_MINUTES) }
-            OnboardingStep.Notifications -> { complete(); return }
+                completeOnboardingBeforeTask { goToStep(OnboardingStep.FirstTask) }
+                return
+            }
+            OnboardingStep.Notifications -> { finishOnboarding(); return }
             else -> Unit
         }
         goToStep(nextStep(_state.value.step))
+    }
+
+    private fun completeOnboardingBeforeTask(onComplete: () -> Unit) {
+        if (isBackendOnboarded) {
+            onComplete()
+            return
+        }
+        val s = _state.value
+        viewModelScope.launch {
+            _state.update { it.copy(isSubmittingTask = true) }
+            val data = OnboardingData(
+                profile = UserProfile(s.trimmedFirstName, s.lastName.trim()),
+                bounds = s.bounds,
+                zones = s.zones,
+                preferredTaskLengthMinutes = s.preferredTaskLengthMinutes,
+                firstTask = s.firstTask,
+            )
+            repository.completeOnboarding(data)
+            isBackendOnboarded = true
+            _state.update { it.copy(isSubmittingTask = false) }
+            onComplete()
+        }
+    }
+
+    private fun skipSetup() {
+        val s = _state.value
+        viewModelScope.launch {
+            val data = OnboardingData(
+                profile = UserProfile(s.trimmedFirstName, s.lastName.trim()),
+                bounds = s.bounds,
+                zones = s.zones,
+                preferredTaskLengthMinutes = s.preferredTaskLengthMinutes,
+                firstTask = s.firstTask,
+            )
+            repository.completeOnboarding(data)
+            isBackendOnboarded = true
+            _events.send(OnboardingEvent.NavigateHome)
+        }
+    }
+
+    private fun finishOnboarding() {
+        viewModelScope.launch {
+            if (!isBackendOnboarded) {
+                val s = _state.value
+                val data = OnboardingData(
+                    profile = UserProfile(s.trimmedFirstName, s.lastName.trim()),
+                    bounds = s.bounds,
+                    zones = s.zones,
+                    preferredTaskLengthMinutes = s.preferredTaskLengthMinutes,
+                    firstTask = s.firstTask,
+                )
+                repository.completeOnboarding(data)
+                isBackendOnboarded = true
+            }
+            _events.send(OnboardingEvent.NavigateHome)
+        }
     }
 
     private fun onBack() {
@@ -114,21 +181,14 @@ class OnboardingViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isSubmittingTask = true) }
             val task = scheduleFirstTask(current.firstTaskTitle, current.zones, current.preferredTaskLengthMinutes)
-            // ponytail: InMemory always succeeds; the local task IS the offline fallback until real capture lands.
-            repository.saveFirstTask(task)
-            _state.update { it.copy(isSubmittingTask = false, firstTask = task, celebrateTask = true) }
-        }
-    }
 
-    private fun complete() {
-        val s = _state.value
-        viewModelScope.launch {
-            repository.saveProfile(UserProfile(s.trimmedFirstName, s.lastName.trim()))
-            repository.saveDayBounds(s.bounds)
-            repository.saveZones(s.zones)
-            repository.savePreferredTaskLength(s.preferredTaskLengthMinutes)
-            repository.completeOnboarding()
-            _events.send(OnboardingEvent.NavigateHome)
+            // Send task creation request to backend
+            createTaskUseCase(
+                title = task.title,
+                estimatedDurationMinutes = task.durationMinutes,
+            )
+
+            _state.update { it.copy(isSubmittingTask = false, firstTask = task, celebrateTask = true) }
         }
     }
 

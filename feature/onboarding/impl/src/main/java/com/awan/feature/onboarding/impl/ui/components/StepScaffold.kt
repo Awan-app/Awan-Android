@@ -236,6 +236,7 @@ private fun StepFooter(chrome: StepChrome) {
         AwanButton(
             onClick = { chrome.primary.onClick() },
             enabled = enabled,
+            isLoading = chrome.primaryLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = AwanTheme.spacing.xl)
