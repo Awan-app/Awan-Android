@@ -82,7 +82,8 @@ fun AwanApp(
                     onNavigateToHome = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) }
                 )
                 homeEntry(
-                    onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
+                    onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) },
+                    onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute) },
                 )
                 calendarEntry()
                 chatEntry()

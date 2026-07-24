@@ -1,10 +1,5 @@
 package com.awan.feature.home.impl.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,9 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.awan.app.core.designsystem.AwanHeaderBar
@@ -29,6 +27,7 @@ import com.awan.app.core.designsystem.AwanScheduleTimeline
 fun HomeScreen(
     modifier: Modifier = Modifier,
     onLogout: () -> Unit = {},
+    onNavigateToCalendar: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -46,49 +45,62 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 1. Sticky Header Bar (Stays pinned at top on all timeline scrolls)
             AwanHeaderBar(
                 userName = uiState.userName,
                 streakCount = uiState.streakCount,
+                pointsCount = uiState.pointsCount,
+                mascotExpression = uiState.mascotExpression,
                 subtitleText = uiState.subtitleText,
                 selectedDateText = uiState.selectedDateText,
                 onPreviousDayClick = viewModel::previousDay,
                 onNextDayClick = viewModel::nextDay,
+                onDatePillClick = {
+                    if (uiState.isToday) {
+                        onNavigateToCalendar()
+                    } else {
+                        viewModel.selectToday()
+                    }
+                },
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 2. Alert / Conflict Banner (if active)
-            AnimatedVisibility(
-                visible = uiState.hasConflict,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { -it }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { -it }),
+            AwanScheduleTimeline(
+                zones = uiState.zones,
+                sessions = uiState.sessions,
+                currentTimeFormatted = uiState.currentTimeFormatted,
+                currentTimeMinutes = uiState.currentTimeMinutes,
+                isToday = uiState.isToday,
+                isPastDate = uiState.isPastDate,
+                onToggleZoneCollapse = viewModel::toggleZoneCollapse,
+                onAddSessionToZone = viewModel::addSessionToZone,
+                onSessionStatusToggle = viewModel::toggleSessionStatus,
+                onSessionMoved = viewModel::moveSession,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            )
+        }
+
+        if (uiState.hasConflict) {
+            Dialog(
+                onDismissRequest = viewModel::dismissConflict,
+                properties = DialogProperties(usePlatformDefaultWidth = false),
             ) {
-                Column {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.35f))
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
                     AwanScheduleAlertCard(
                         message = uiState.conflictMessage,
                         onFixItClick = viewModel::fixConflict,
                         onLaterClick = viewModel::dismissConflict,
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
-
-            // 3. Vertically Scrollable Timeline (Takes remaining height & scrolls timeline internally)
-            AwanScheduleTimeline(
-                zones = uiState.zones,
-                tasks = uiState.tasks,
-                currentTimeFormatted = uiState.currentTimeFormatted,
-                currentTimeMinutes = uiState.currentTimeMinutes,
-                onToggleZoneCollapse = viewModel::toggleZoneCollapse,
-                onTaskStatusToggle = viewModel::toggleTaskStatus,
-                onTaskMoved = viewModel::moveTask,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
