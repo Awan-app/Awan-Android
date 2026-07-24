@@ -12,6 +12,19 @@ sealed interface Result<out T> {
     data object Loading : Result<Nothing>
 }
 
+fun <T, R> Result<T>.map(transform: (T) -> R): Result<R> {
+    return when (this) {
+        is Result.Success -> Result.Success(transform(data))
+        is Result.Error -> Result.Error(error)
+        Result.Loading -> Result.Loading
+    }
+}
+
+fun <T> Result<T>.onSuccess(action: (T) -> Unit): Result<T> {
+    if (this is Result.Success) action(data)
+    return this
+}
+
 fun <T> Flow<T>.asResult(): Flow<Result<T>> = this
     .map<T, Result<T>> { Result.Success(it) }
     .onStart { emit(Result.Loading) }

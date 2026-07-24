@@ -87,7 +87,10 @@ fun AwanApp(
                 calendarEntry()
                 chatEntry()
                 goalsEntry()
-                profileEntry()
+                profileEntry(
+                    onNavigateToEditProfile = { navigator.navigate(com.awan.feature.profile.api.EditProfileRoute) },
+                    onBack = { navigator.goBack() }
+                )
             }
 
             BackHandler(

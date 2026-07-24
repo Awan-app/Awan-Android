@@ -42,16 +42,17 @@ object AwanTheme {
 
     @Composable
     operator fun invoke(
-        darkTheme: Boolean = isSystemInDarkTheme(),
-        highContrast: Boolean = false,
+        dark: Boolean = false,
+        light: Boolean = false,
         content: @Composable () -> Unit,
     ) {
-        val colors = when {
-            darkTheme -> DarkAwanColors
-            highContrast -> LightHighContrastAwanColors
-            else -> LightAwanColors
+        val isDark = when {
+            dark -> true
+            light -> false
+            else -> isSystemInDarkTheme()
         }
-        val colorScheme = if (darkTheme) {
+        val colors = if (isDark) DarkAwanColors else LightAwanColors
+        val colorScheme = if (isDark) {
             darkColorScheme(
                 primary = colors.filledControl,
                 onPrimary = colors.onFilledControl,

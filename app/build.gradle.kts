@@ -62,6 +62,7 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
+    implementation(project(":core:model"))
     implementation(project(":core:datastore"))
     implementation(project(":core:network"))
     implementation(project(":core:design-system"))
@@ -80,6 +81,7 @@ dependencies {
     // Lifecycle
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.appcompat)
 
     // Navigation 3
     implementation(libs.androidx.navigation3.ui)

@@ -11,8 +11,11 @@ dependencies {
     implementation(project(":feature:profile:api"))
     implementation(project(":core:domain"))
     implementation(project(":core:common"))
+    implementation(project(":core:datastore"))
+    implementation(project(":core:model"))
     implementation(project(":core:design-system"))
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(project(":core:navigation"))
+    implementation(libs.androidx.appcompat)
 }

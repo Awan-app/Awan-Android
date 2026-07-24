@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_title">الملف الشخصي</string>
+    <string name="profile_edit">تعديل</string>
+    <string name="profile_streak">الالتزام</string>
+    <string name="profile_max_streak">أقصى التزام</string>
+    <string name="profile_total_points">إجمالي النقاط</string>
+    <string name="profile_days">%1$s يوم</string>
+
+    <string name="profile_section_preferences">التفضيلات</string>
+    <string name="profile_daily_zones">المناطق اليومية</string>
+    <string name="profile_daily_zones_subtitle">حدد إيقاع كل يوم</string>
+    <string name="profile_scheduling">الجدولة</string>
+    <string name="profile_session_time">وقت الجلسة</string>
+    <string name="profile_session_time_value">%1$d دقيقة</string>
+    <string name="profile_time_zone">المنطقة الزمنية</string>
+    <string name="profile_sleep_schedule">جدول النوم</string>
+    <string name="profile_wakeup_time">وقت الاستيقاظ</string>
+    <string name="profile_sleep_time">وقت النوم</string>
+    <string name="profile_save">حفظ</string>
+    <string name="profile_cancel">إلغاء</string>
+
+    <string name="profile_section_appearance">اللغة والمظهر</string>
+    <string name="profile_language">اللغة</string>
+    <string name="profile_theme">المظهر</string>
+    <string name="profile_theme_light">فاتح</string>
+    <string name="profile_theme_system">النظام</string>
+    <string name="profile_theme_dark">داكن</string>
+
+    <string name="profile_section_settings">الإعدادات</string>
+    <string name="profile_notifications">الإشعارات</string>
+    <string name="profile_help_center">مركز المساعدة</string>
+    <string name="profile_how_to_earn_points">كيفية كسب النقاط</string>
+    <string name="profile_rate_awan">تقييم أوان</string>
+    <string name="profile_edit_title">تعديل الملف الشخصي</string>
+    <string name="profile_save_changes">حفظ التغييرات</string>
+    <string name="profile_first_name">الاسم الأول</string>
+    <string name="profile_last_name">اسم العائلة</string>
+    <string name="profile_birth_date">تاريخ الميلاد</string>
+    <string name="profile_section_personal">المعلومات الشخصية</string>
+    <string name="profile_section_daily_schedule">الجدول اليومي</string>
+    <string name="profile_timezone">المنطقة الزمنية</string>
+    <string name="profile_session_duration">مدة الجلسة</string>
+    <string name="profile_scheduling_type">نوع الجدولة</string>
+    <string name="profile_scheduling_type_smart">ذكي</string>
+    <string name="profile_scheduling_type_manual">يدوي</string>
+    <string name="profile_scheduling_type_fixed">ثابت</string>
+    <string name="profile_retry">إعادة المحاولة</string>
+</resources>

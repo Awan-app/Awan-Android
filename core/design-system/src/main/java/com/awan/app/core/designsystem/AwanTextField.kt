@@ -142,18 +142,18 @@ fun AwanTextField(
 @Preview(name = "AwanTextField · Light", showBackground = true)
 @Composable
 private fun LightTextFieldPreview() {
-    TextFieldPreview(darkTheme = false)
+    TextFieldPreview(dark = false)
 }
 
 @Preview(name = "AwanTextField · Dark", showBackground = true)
 @Composable
 private fun DarkTextFieldPreview() {
-    TextFieldPreview(darkTheme = true)
+    TextFieldPreview(dark = true)
 }
 
 @Composable
-private fun TextFieldPreview(darkTheme: Boolean) {
-    AwanTheme(darkTheme = darkTheme) {
+private fun TextFieldPreview(dark: Boolean) {
+    AwanTheme(dark = dark) {
         androidx.compose.foundation.layout.Column(
             modifier = Modifier
                 .fillMaxWidth()
