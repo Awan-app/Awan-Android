@@ -1,5 +1,13 @@
 package com.awan.app.core.designsystem
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -40,6 +49,7 @@ fun AwanScheduleTaskCard(
     category: TaskCategory,
     status: TaskStatus,
     points: Int? = null,
+    isDragging: Boolean = false,
     onStatusToggle: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -48,14 +58,13 @@ fun AwanScheduleTaskCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = 3.dp,
-                shape = shape,
-                spotColor = category.color.copy(alpha = 0.3f),
-            )
             .clip(shape)
             .background(category.containerColor)
-            .border(1.5.dp, category.borderColor, shape)
+            .border(
+                width = if (isDragging) 2.dp else 1.5.dp,
+                color = if (isDragging) category.color else category.borderColor,
+                shape = shape,
+            )
             .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
         Row(
@@ -80,18 +89,59 @@ fun AwanScheduleTaskCard(
                             color = Color(0xFF1E293B),
                         ),
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    AwanText(
-                        text = timeRange,
-                        style = AwanTheme.typography.caption.copy(
-                            fontSize = 12.sp,
-                            color = Color(0xFF64748B),
-                        ),
-                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        AwanText(
+                            text = timeRange,
+                            style = AwanTheme.typography.caption.copy(
+                                fontSize = 12.sp,
+                                color = Color(0xFF64748B),
+                            ),
+                        )
+
+                        // Compact Animated celebration points pill when completed
+                        AnimatedVisibility(
+                            visible = status is TaskStatus.Completed && points != null,
+                            enter = fadeIn(animationSpec = tween(300)) + scaleIn(
+                                initialScale = 0.6f,
+                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                            ),
+                            exit = fadeOut(animationSpec = tween(200)) + scaleOut(targetScale = 0.6f),
+                        ) {
+                            val ptsShape = RoundedCornerShape(99.dp)
+                            Box(
+                                modifier = Modifier
+                                    .clip(ptsShape)
+                                    .background(Color(0xFFFEF9C3))
+                                    .border(1.dp, Color(0xFFFDE047), ptsShape)
+                                    .padding(horizontal = 6.dp, vertical = 1.5.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    AwanText(
+                                        text = "🪙",
+                                        style = AwanTheme.typography.caption.copy(fontSize = 9.5.sp),
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    AwanText(
+                                        text = "+$points pts",
+                                        style = AwanTheme.typography.caption.copy(
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color(0xFF854D0E),
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
-            // Right side: Points tag or Fixed badge + Action checkmark / Lock
+            // Right side: Fixed badge + Action checkmark / Lock
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -113,14 +163,6 @@ fun AwanScheduleTaskCard(
                             ),
                         )
                     }
-                } else if (points != null) {
-                    AwanText(
-                        text = "+$points pts",
-                        style = AwanTheme.typography.heading.copy(
-                            fontSize = 13.5.sp,
-                            color = category.color,
-                        ),
-                    )
                 }
 
                 // Completion status icon
@@ -174,21 +216,21 @@ private fun StatusActionIcon(
 
     when (status) {
         TaskStatus.Completed -> {
-            // 3D Green checkmark circle
             Box(
                 modifier = modifier
                     .then(clickModifier)
-                    .size(32.dp)
-                    .shadow(4.dp, CircleShape, spotColor = Color(0xFF22C55E))
+                    .size(30.dp)
+                    .shadow(2.dp, CircleShape, spotColor = categoryColor.copy(alpha = 0.3f))
                     .clip(CircleShape)
-                    .background(Color(0xFF22C55E))
-                    .border(2.dp, Color(0xFF86EFAC), CircleShape),
+                    .background(categoryColor)
+                    .border(1.5.dp, categoryColor, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 AwanText(
                     text = "✓",
                     style = AwanTheme.typography.heading.copy(
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
                     ),
                 )
@@ -208,12 +250,11 @@ private fun StatusActionIcon(
         }
 
         TaskStatus.Fixed -> {
-            // Purple 3D lock icon
+            // Flat Purple lock icon
             Box(
                 modifier = modifier
                     .then(clickModifier)
                     .size(32.dp)
-                    .shadow(4.dp, CircleShape, spotColor = Color(0xFF8B5CF6))
                     .clip(CircleShape)
                     .background(Color(0xFF8B5CF6))
                     .border(2.dp, Color(0xFFC084FC), CircleShape),

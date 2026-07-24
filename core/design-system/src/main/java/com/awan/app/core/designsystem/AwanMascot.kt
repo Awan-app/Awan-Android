@@ -28,7 +28,7 @@ private const val MASCOT_ASPECT = 60f / 82f
 fun AwanMascot(
     expression: MascotExpression,
     modifier: Modifier = Modifier,
-    width: Dp = 120.dp,
+    width: Dp = 20.dp,
 ) {
     val drawable = when (expression) {
         MascotExpression.Greet -> R.drawable.awan_mascot_greet

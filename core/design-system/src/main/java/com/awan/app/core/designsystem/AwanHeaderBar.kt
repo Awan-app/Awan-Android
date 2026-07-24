@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -29,9 +30,11 @@ import androidx.compose.ui.unit.sp
 fun AwanHeaderBar(
     userName: String,
     streakCount: Int,
+    pointsCount: Int = 0,
+    mascotExpression: MascotExpression = MascotExpression.Greet,
     subtitleText: String = "Clear skies — 6 things floating today",
-    greetingPrefix: String = "Good morning",
-    selectedDateText: String = "Today · Wed, Jul 15 📅",
+    greetingPrefix: String = "Good afternoon",
+    selectedDateText: String = "Today · Wed, Jul 15",
     onPreviousDayClick: () -> Unit = {},
     onNextDayClick: () -> Unit = {},
     onDatePillClick: () -> Unit = {},
@@ -40,74 +43,106 @@ fun AwanHeaderBar(
     Column(
         modifier = modifier.fillMaxWidth(),
     ) {
-        // Top Row: Cloud + Greeting + Subtitle (Left) | Streak Badge (Right)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        // Top Section: Light Modern Card Container wrapping Greeting, Badges & Compact Mascot
+        val cardShape = RoundedCornerShape(18.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(2.dp, cardShape, spotColor = Color(0xFF0EA5E9).copy(alpha = 0.15f))
+                .clip(cardShape)
+                .background(Color(0xFFF8FAFC))
+                .border(1.dp, Color(0xFFE2E8F0), cardShape)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
         ) {
             Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f),
             ) {
-                // Cloud Mascot Icon
-                AwanText(
-                    text = "☁️",
-                    style = AwanTheme.typography.title.copy(fontSize = 32.sp),
-                )
+                // Left Column: Greeting, Name, Dual Badges (Streak + Coins)
+                Column(
+                    modifier = Modifier.weight(1f),
+                ) {
+                    AwanText(
+                        text = "$greetingPrefix,",
+                        style = AwanTheme.typography.title
+                    )
+                    Spacer(modifier = Modifier.height(1.dp))
+                    AwanText(
+                        text = userName,
+                        style = AwanTheme.typography.title,
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Dual Badges Row (Streak 🔥 | Coins 🪙)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        val badgeShape = RoundedCornerShape(12.dp)
+
+                        // Compact Translucent Streak Pill Badge (🔥)
+                        Box(
+                            modifier = Modifier
+                                .clip(badgeShape)
+                                .background(Color(0xFFEA580C).copy(alpha = 0.08f))
+                                .border(1.dp, Color(0xFFEA580C).copy(alpha = 0.25f), badgeShape)
+                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                AwanText(
+                                    text = "🔥",
+                                    style = AwanTheme.typography.body.copy(fontSize = 13.sp),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                AwanText(
+                                    text = streakCount.toString(),
+                                    style = AwanTheme.typography.heading.copy(
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color(0xFFEA580C),
+                                    ),
+                                )
+                            }
+                        }
+
+                        // Compact Translucent Coins Pill Badge (🪙)
+                        Box(
+                            modifier = Modifier
+                                .clip(badgeShape)
+                                .background(Color(0xFFEAB308).copy(alpha = 0.08f))
+                                .border(1.dp, Color(0xFFEAB308).copy(alpha = 0.25f), badgeShape)
+                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                AwanText(
+                                    text = "🪙",
+                                    style = AwanTheme.typography.body.copy(fontSize = 13.sp),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                AwanText(
+                                    text = pointsCount.toString(),
+                                    style = AwanTheme.typography.heading.copy(
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color(0xFFCA8A04),
+                                    ),
+                                )
+                            }
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.width(10.dp))
 
-                Column {
-                    AwanText(
-                        text = "$greetingPrefix, $userName",
-                        style = AwanTheme.typography.title.copy(
-                            fontSize = 20.sp,
-                            color = Color(0xFF1E293B),
-                        ),
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    AwanText(
-                        text = subtitleText,
-                        style = AwanTheme.typography.caption.copy(
-                            fontSize = 12.5.sp,
-                            color = Color(0xFF64748B),
-                        ),
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Modern 3D Streak Pill Badge (Right)
-            val streakShape = RoundedCornerShape(99.dp)
-            Box(
-                modifier = Modifier
-                    .shadow(
-                        elevation = 4.dp,
-                        shape = streakShape,
-                        spotColor = Color(0xFFFF9838),
-                    )
-                    .clip(streakShape)
-                    .background(Color(0xFFF1F5F9))
-                    .border(1.5.dp, Color(0xFFE2E8F0), streakShape)
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    AwanText(
-                        text = "🔥",
-                        style = AwanTheme.typography.body.copy(fontSize = 15.sp),
-                    )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    AwanText(
-                        text = streakCount.toString(),
-                        style = AwanTheme.typography.heading.copy(
-                            fontSize = 15.sp,
-                            color = Color(0xFFD97706),
-                        ),
-                    )
-                }
+                // Right: Large Animated Awan Cloud Mascot
+                AwanMascot(
+                    expression = mascotExpression,
+                    width = 80.dp,
+                )
             }
         }
 
