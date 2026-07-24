@@ -89,6 +89,7 @@ fun AwanApp(
                 goalsEntry()
                 profileEntry(
                     onNavigateToEditProfile = { navigator.navigate(com.awan.feature.profile.api.EditProfileRoute) },
+                    onNavigateToDailyZones = { navigator.navigate(com.awan.feature.profile.api.DailyZonesRoute) },
                     onBack = { navigator.goBack() }
                 )
             }

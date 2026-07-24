@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.*
@@ -368,6 +369,7 @@ fun DailyZonesItem(
     title: String,
     subtitle: String,
     onClick: () -> Unit,
+    zoneCount: Int = 0,
     showDivider: Boolean = false
 ) {
     Surface(
@@ -398,12 +400,33 @@ fun DailyZonesItem(
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    AwanText(
-                        text = title,
-                        style = AwanTheme.styles.titleText.copy(
-                            textStyle = AwanTheme.typography.title.copy(fontSize = 18.sp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AwanText(
+                            text = title,
+                            style = AwanTheme.styles.titleText.copy(
+                                textStyle = AwanTheme.typography.title.copy(fontSize = 18.sp)
+                            )
                         )
-                    )
+                        if (zoneCount > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(AwanTheme.colors.sky.copy(alpha = 0.1f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                AwanText(
+                                    text = "$zoneCount",
+                                    style = AwanTheme.styles.captionText.copy(
+                                        color = AwanTheme.colors.sky,
+                                        textStyle = AwanTheme.typography.caption.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                )
+                            }
+                        }
+                    }
                     AwanText(
                         text = subtitle,
                         style = AwanTheme.styles.bodySecondaryText
