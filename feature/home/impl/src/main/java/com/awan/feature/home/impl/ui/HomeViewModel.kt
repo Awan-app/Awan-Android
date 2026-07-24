@@ -114,6 +114,7 @@ class HomeViewModel @Inject constructor() : ViewModel() {
                 ScheduleZone("z1_today", "cat_study", TaskCategory.Study, startHour = 8, endHour = 10, isCollapsed = false),
                 ScheduleZone("z2_today", "cat_work", TaskCategory.Work, startHour = 13, endHour = 15, isCollapsed = false),
                 ScheduleZone("z3_today", "cat_study", TaskCategory.Study, startHour = 18, endHour = 19, isCollapsed = false),
+                ScheduleZone("z4_today", "cat_personal", TaskCategory.Personal, startHour = 22, endHour = 24, isCollapsed = false),
             ),
             sessions = listOf(
                 ScheduleSession("s1", "z1_today", "task_1", "Read Chapter 5", startMinutes = 8 * 60, durationMinutes = 30, TaskCategory.Study, TaskStatus.Completed, points = 25),
@@ -124,6 +125,9 @@ class HomeViewModel @Inject constructor() : ViewModel() {
                 ScheduleSession("s6", "z2_today", "task_3", "Prepare Presentation", startMinutes = 14 * 60, durationMinutes = 60, TaskCategory.Work, TaskStatus.Pending, points = 40),
                 ScheduleSession("s7", "z3_today", "task_1", "Read Chapter 5", startMinutes = 18 * 60, durationMinutes = 30, TaskCategory.Study, TaskStatus.Pending, points = 25),
                 ScheduleSession("s8", "z3_today", "task_2", "Solve Algorithms", startMinutes = 18 * 60 + 30, durationMinutes = 30, TaskCategory.Study, TaskStatus.Pending, points = 30),
+                ScheduleSession("s9", "z4_today", "task_4", "Night Wind-down & Journaling", startMinutes = 22 * 60, durationMinutes = 40, TaskCategory.Personal, TaskStatus.Pending, points = 25),
+                ScheduleSession("s10", "z4_today", "task_5", "Review Tomorrow's Goals", startMinutes = 22 * 60 + 40, durationMinutes = 40, TaskCategory.Personal, TaskStatus.Pending, points = 25),
+                ScheduleSession("s11", "z4_today", "task_6", "Relaxation & Sleep Prep", startMinutes = 23 * 60 + 20, durationMinutes = 39, TaskCategory.Personal, TaskStatus.Pending, points = 20),
             ),
             hasConflict = true,
             conflictMessage = "1:00 PM - 2:00 PM overlaps with Prepare Presentation",

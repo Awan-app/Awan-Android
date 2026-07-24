@@ -19,11 +19,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -47,8 +50,11 @@ fun AwanScheduleTimeline(
     modifier: Modifier = Modifier,
 ) {
     val totalHours = (endHour - startHour).coerceAtLeast(1)
+    val density = LocalDensity.current
 
-    val hourSlotHeights = remember(zones, sessions, startHour, endHour, hourHeightDp) {
+    val measuredZoneHeights = remember(zones, sessions) { mutableStateMapOf<String, Dp>() }
+
+    val hourSlotHeights = remember(zones, sessions, startHour, endHour, hourHeightDp, measuredZoneHeights.toMap()) {
         val heights = mutableMapOf<Int, Dp>()
         for (h in startHour until endHour) {
             val overlappingZone = zones.find { h >= it.startHour && h < it.endHour }
@@ -56,12 +62,18 @@ fun AwanScheduleTimeline(
                 if (overlappingZone.isCollapsed) {
                     heights[h] = if (h == overlappingZone.startHour) 48.dp else 0.dp
                 } else {
-                    val zoneSessions = sessions.filter { it.zoneId == overlappingZone.id }
-                    val taskCount = zoneSessions.size
-                    val requiredDp = if (taskCount == 0) 64.dp else (64 + taskCount * 68).dp
+                    val measuredHeight = measuredZoneHeights[overlappingZone.id]
                     val zoneDuration = (overlappingZone.endHour - overlappingZone.startHour).coerceAtLeast(1)
-                    val requiredPerHour = requiredDp / zoneDuration
-                    heights[h] = if (requiredPerHour > hourHeightDp.dp) requiredPerHour else hourHeightDp.dp
+                    if (measuredHeight != null) {
+                        val requiredPerHour = measuredHeight / zoneDuration
+                        heights[h] = if (requiredPerHour > hourHeightDp.dp) requiredPerHour else hourHeightDp.dp
+                    } else {
+                        val zoneSessions = sessions.filter { it.zoneId == overlappingZone.id }
+                        val taskCount = zoneSessions.size
+                        val requiredDp = if (taskCount == 0) 80.dp else (96 + taskCount * 84).dp
+                        val requiredPerHour = requiredDp / zoneDuration
+                        heights[h] = if (requiredPerHour > hourHeightDp.dp) requiredPerHour else hourHeightDp.dp
+                    }
                 }
             } else {
                 heights[h] = hourHeightDp.dp
@@ -142,13 +154,15 @@ fun AwanScheduleTimeline(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(totalTimelineHeight + 16.dp),
+                    .height(totalTimelineHeight + 35.dp),
             ) {
                 TimelineHourAxis(
                     startHour = startHour,
                     endHour = endHour,
                     hourYOffsets = hourYOffsets,
+                    hourSlotHeights = hourSlotHeights,
                     zones = zones,
+                    sessions = sessions,
                     currentPointerY = currentPointerY,
                 )
 
@@ -157,7 +171,9 @@ fun AwanScheduleTimeline(
                     endHour = endHour,
                     hourHeightDp = hourHeightDp,
                     hourYOffsets = hourYOffsets,
+                    hourSlotHeights = hourSlotHeights,
                     zones = zones,
+                    sessions = sessions,
                     currentPointerY = currentPointerY,
                     isToday = isToday,
                     isPastDate = isPastDate,
@@ -190,7 +206,14 @@ fun AwanScheduleTimeline(
                                 onToggleCollapse = { onToggleZoneCollapse(zone.id) },
                                 onSessionStatusToggle = onSessionStatusToggle,
                                 onSessionMoved = onSessionMoved,
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onSizeChanged { size ->
+                                        val measured = with(density) { size.height.toDp() }
+                                        if (measured > (measuredZoneHeights[zone.id] ?: 0.dp)) {
+                                            measuredZoneHeights[zone.id] = measured
+                                        }
+                                    },
                             )
                         }
                     }
@@ -203,11 +226,15 @@ fun AwanScheduleTimeline(
                         activePointerColor = activePointerColor,
                         pulseScale = pulseScale,
                         pulseAlpha = pulseAlpha,
-                        modifier = Modifier.zIndex(50f),
                     )
                 }
+
+                AwanCloudsHorizon(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = totalTimelineHeight - 28.dp),
+                )
             }
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

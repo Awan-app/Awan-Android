@@ -115,7 +115,6 @@ fun ZoneContainer(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .weight(1f)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
@@ -136,34 +135,7 @@ fun ZoneContainer(
                                 color = zone.category.color,
                             ),
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        val badgeShape = RoundedCornerShape(99.dp)
-                        val badgeBg = if (isAllCompleted) Color(0xFFDCFCE7) else Color(0xFFF1F5F9)
-                        val badgeBorder = if (isAllCompleted) Color(0xFF86EFAC) else Color(0xFFE2E8F0)
-                        val badgeText = if (isAllCompleted) "$completedCount/$totalCount done" else "$completedCount/$totalCount tasks"
-                        val badgeColor = if (isAllCompleted) Color(0xFF15803D) else Color(0xFF64748B)
-
-                        Box(
-                            modifier = Modifier
-                                .clip(badgeShape)
-                                .background(badgeBg)
-                                .border(1.dp, badgeBorder, badgeShape)
-                                .padding(horizontal = 8.dp, vertical = 3.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            AwanText(
-                                text = badgeText,
-                                style = AwanTheme.typography.caption.copy(
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = badgeColor,
-                                ),
-                            )
-                        }
                     }
-
-                    Spacer(modifier = Modifier.width(8.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         val intervalShape = RoundedCornerShape(12.dp)
@@ -194,17 +166,45 @@ fun ZoneContainer(
                                     indication = null,
                                     onClick = onToggleCollapse,
                                 )
-                                .padding(4.dp)
+                                .padding(4.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
                             AwanText(
                                 text = if (zone.isCollapsed) "▼" else "▲",
                                 style = AwanTheme.typography.caption.copy(
-                                    fontSize = 11.5.sp,
+                                    fontSize = 11.sp,
                                     color = zone.category.color,
                                 ),
                             )
                         }
                     }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                val badgeShape = RoundedCornerShape(99.dp)
+                val badgeBg = if (isAllCompleted) Color(0xFFDCFCE7) else Color(0xFFF1F5F9)
+                val badgeBorder = if (isAllCompleted) Color(0xFF86EFAC) else Color(0xFFE2E8F0)
+                val badgeText = if (isAllCompleted) "$completedCount/$totalCount done" else "$completedCount/$totalCount tasks"
+                val badgeColor = if (isAllCompleted) Color(0xFF15803D) else Color(0xFF64748B)
+
+                Box(
+                    modifier = Modifier
+                        .padding(start = 18.dp)
+                        .clip(badgeShape)
+                        .background(badgeBg)
+                        .border(1.dp, badgeBorder, badgeShape)
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AwanText(
+                        text = badgeText,
+                        style = AwanTheme.typography.caption.copy(
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = badgeColor,
+                        ),
+                    )
                 }
 
                 AnimatedVisibility(
