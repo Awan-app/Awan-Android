@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.*
+import com.awan.feature.profile.impl.helpers.ProfileHelper
 import com.awan.feature.profile.impl.R as ProfileR
 import com.awan.feature.profile.impl.presentation.EditProfileUiState
 import com.awan.feature.profile.impl.ui.components.*
@@ -123,12 +124,12 @@ fun EditProfileScreen(
                         ExpandableTimePickerItem(
                             icon = Icons.Default.WbSunny,
                             title = stringResource(ProfileR.string.profile_wakeup_time),
-                            hour = parseHour(uiState.wakeupTime),
-                            minute = parseMinute(uiState.wakeupTime),
+                            hour = ProfileHelper.parseHour(uiState.wakeupTime),
+                            minute = ProfileHelper.parseMinute(uiState.wakeupTime),
                             isExpanded = expandedItem == "wakeup",
                             onExpandClick = { expandedItem = if (expandedItem == "wakeup") null else "wakeup" },
                             onSaveClick = { h, m ->
-                                onUpdateSleepSchedule(formatToApiTime(h, m), uiState.sleepTime)
+                                onUpdateSleepSchedule(ProfileHelper.formatToApiTime(h, m), uiState.sleepTime)
                                 expandedItem = null
                             },
                             onCancelClick = { expandedItem = null },
@@ -139,12 +140,12 @@ fun EditProfileScreen(
                         ExpandableTimePickerItem(
                             icon = Icons.Default.NightsStay,
                             title = stringResource(ProfileR.string.profile_sleep_time),
-                            hour = parseHour(uiState.sleepTime),
-                            minute = parseMinute(uiState.sleepTime),
+                            hour = ProfileHelper.parseHour(uiState.sleepTime),
+                            minute = ProfileHelper.parseMinute(uiState.sleepTime),
                             isExpanded = expandedItem == "sleep",
                             onExpandClick = { expandedItem = if (expandedItem == "sleep") null else "sleep" },
                             onSaveClick = { h, m ->
-                                onUpdateSleepSchedule(uiState.wakeupTime, formatToApiTime(h, m))
+                                onUpdateSleepSchedule(uiState.wakeupTime, ProfileHelper.formatToApiTime(h, m))
                                 expandedItem = null
                             },
                             onCancelClick = { expandedItem = null },
@@ -347,18 +348,4 @@ private fun SchedulingOption(
             )
         }
     }
-}
-
-private fun parseHour(time: String?): Int {
-    if (time == null) return 7
-    return try { time.split(":")[0].toInt() } catch (_: Exception) { 7 }
-}
-
-private fun parseMinute(time: String?): Int {
-    if (time == null) return 30
-    return try { time.split(":")[1].toInt() } catch (_: Exception) { 30 }
-}
-
-private fun formatToApiTime(hour: Int, minute: Int): String {
-    return String.format(Locale.US, "%02d:%02d:00", hour, minute)
 }

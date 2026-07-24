@@ -46,4 +46,5 @@
     <string name="profile_scheduling_type_manual">Manual</string>
     <string name="profile_scheduling_type_fixed">Fixed</string>
     <string name="profile_retry">Retry</string>
+    <string name="profile_logout">Log out</string>
 </resources>

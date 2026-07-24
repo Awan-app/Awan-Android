@@ -22,11 +22,13 @@ import com.awan.feature.profile.impl.ui.components.TimezoneSelectionDialog
 
 fun EntryProviderScope<Route>.profileEntry(
     onNavigateToEditProfile: () -> Unit,
+    onLogout: () -> Unit,
     onBack: () -> Unit,
 ) {
     entry<ProfileRoute> {
         ProfileRouteScreen(
-            onEditClick = onNavigateToEditProfile
+            onEditClick = onNavigateToEditProfile,
+            onLogout = onLogout
         )
     }
 
@@ -40,7 +42,8 @@ fun EntryProviderScope<Route>.profileEntry(
 @Composable
 fun ProfileRouteScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    onLogout: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -48,7 +51,6 @@ fun ProfileRouteScreen(
         uiState = uiState,
         onEditClick = onEditClick,
         onDailyZonesClick = { },
-        onPreferenceClick = { _ -> },
         onSettingsClick = { _ -> },
         onThemeClick = viewModel::setTheme,
         onLanguageClick = { languageCode ->
@@ -61,6 +63,7 @@ fun ProfileRouteScreen(
         },
         onUpdateSessionDuration = viewModel::updateSessionDuration,
         onUpdateTimezone = viewModel::updateTimezone,
+        onLogout = { viewModel.logout(onLogout) },
         onRetry = viewModel::refresh
     )
 }

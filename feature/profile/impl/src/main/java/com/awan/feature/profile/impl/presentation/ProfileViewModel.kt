@@ -6,6 +6,7 @@ import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.datastore.UserPreferencesDataSource
+import com.awan.app.core.domain.auth.usecase.LogoutUseCase
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,6 +35,7 @@ class ProfileViewModel @Inject constructor(
     private val updateSleepScheduleUseCase: UpdateSleepScheduleUseCase,
     private val updateSessionSettingsUseCase: UpdateSessionSettingsUseCase,
     private val updateTimezoneUseCase: UpdateTimezoneUseCase,
+    private val logoutUseCase: LogoutUseCase,
     private val userDataRepository: UserPreferencesDataSource,
 ) : ViewModel() {
 
@@ -96,6 +98,24 @@ class ProfileViewModel @Inject constructor(
 
     fun updateTimezone(timezone: String) {
         executeFieldUpdate { updateTimezoneUseCase(timezone) }
+    }
+
+    fun logout(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            when (logoutUseCase()) {
+                is Result.Success -> onSuccess()
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = UiText.DynamicString("Failed to logout")
+                        )
+                    }
+                }
+                Result.Loading -> Unit
+            }
+        }
     }
 
     private fun executeFieldUpdate(block: suspend () -> Result<Profile>) {
