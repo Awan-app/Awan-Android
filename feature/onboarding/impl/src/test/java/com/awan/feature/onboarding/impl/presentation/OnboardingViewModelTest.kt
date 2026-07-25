@@ -1,5 +1,6 @@
 package com.awan.feature.onboarding.impl.presentation
 
+import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.OnboardingData
 import com.awan.app.core.data.task.TaskRepository
@@ -7,6 +8,7 @@ import com.awan.app.core.domain.onboarding.DayBoundsValidation
 import com.awan.app.core.domain.onboarding.ScheduleFirstTaskUseCase
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
+import com.awan.app.core.domain.template.usecase.CreateWeeklyTemplateUseCase
 import com.awan.app.core.data.task.CreateTaskUseCase
 import com.awan.app.core.model.DayBounds
 import com.awan.app.core.network.dto.TaskInfoResponse
@@ -21,6 +23,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -31,6 +34,7 @@ class OnboardingViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: FakeOnboardingRepository
     private lateinit var fakeTaskRepository: FakeTaskRepository
+    private lateinit var fakeTemplateRepository: FakeTemplateRepository
     private lateinit var viewModel: OnboardingViewModel
 
     private class FakeTaskRepository : TaskRepository {
@@ -61,12 +65,14 @@ class OnboardingViewModelTest {
         Dispatchers.setMain(testDispatcher)
         repository = FakeOnboardingRepository()
         fakeTaskRepository = FakeTaskRepository()
+        fakeTemplateRepository = FakeTemplateRepository()
         viewModel = OnboardingViewModel(
             repository = repository,
             suggestZoneSchedule = SuggestZoneScheduleUseCase(),
             scheduleFirstTask = ScheduleFirstTaskUseCase(),
             validateDayBounds = ValidateDayBounds(),
             createTaskUseCase = CreateTaskUseCase(fakeTaskRepository),
+            createWeeklyTemplate = CreateWeeklyTemplateUseCase(fakeTemplateRepository),
         )
     }
 
@@ -116,6 +122,27 @@ class OnboardingViewModelTest {
 
         assertTrue(repository.isCompleted)
         assertEquals(OnboardingStep.FirstTask, viewModel.state.value.step)
+    }
+
+    @Test
+    fun `leaving TaskLength sends the configured zones as the weekly template`() = runTest(testDispatcher) {
+        viewModel.onAction(OnboardingAction.Next) // Welcome -> Name
+        viewModel.onAction(OnboardingAction.NameChanged("Sam", ""))
+        repeat(3) { viewModel.onAction(OnboardingAction.Next) } // -> TaskLength
+
+        viewModel.onAction(OnboardingAction.Next) // TaskLength -> FirstTask
+
+        assertEquals(viewModel.state.value.zones, fakeTemplateRepository.createdZones)
+    }
+
+    @Test
+    fun `the weekly template is not sent when completing onboarding fails`() = runTest(testDispatcher) {
+        repository.failWith = AppError.Network
+
+        viewModel.onAction(OnboardingAction.SkipSetup)
+
+        assertTrue(repository.isCompleted)
+        assertNull(fakeTemplateRepository.createdZones)
     }
 
     @Test

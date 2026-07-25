@@ -9,6 +9,7 @@ import com.awan.app.core.domain.onboarding.ScheduleFirstTaskUseCase
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
 import com.awan.app.core.domain.onboarding.ZoneEditRules
+import com.awan.app.core.domain.template.usecase.CreateWeeklyTemplateUseCase
 import com.awan.app.core.data.task.CreateTaskUseCase
 import com.awan.app.core.model.DayBounds
 import com.awan.app.core.model.UserProfile
@@ -30,6 +31,7 @@ class OnboardingViewModel @Inject constructor(
     private val scheduleFirstTask: ScheduleFirstTaskUseCase,
     private val validateDayBounds: ValidateDayBounds,
     private val createTaskUseCase: CreateTaskUseCase,
+    private val createWeeklyTemplate: CreateWeeklyTemplateUseCase,
 ) : ViewModel() {
 
     private var zonesUserEdited = false
@@ -115,55 +117,46 @@ class OnboardingViewModel @Inject constructor(
             onComplete()
             return
         }
-        val s = _state.value
         viewModelScope.launch {
             _state.update { it.copy(isSubmittingTask = true) }
-            val data = OnboardingData(
-                profile = UserProfile(s.trimmedFirstName, s.lastName.trim()),
-                bounds = s.bounds,
-                zones = s.zones,
-                preferredTaskLengthMinutes = s.preferredTaskLengthMinutes,
-                firstTask = s.firstTask,
-            )
-            repository.completeOnboarding(data)
-            isBackendOnboarded = true
+            submitOnboarding()
             _state.update { it.copy(isSubmittingTask = false) }
             onComplete()
         }
     }
 
     private fun skipSetup() {
-        val s = _state.value
         viewModelScope.launch {
-            val data = OnboardingData(
-                profile = UserProfile(s.trimmedFirstName, s.lastName.trim()),
-                bounds = s.bounds,
-                zones = s.zones,
-                preferredTaskLengthMinutes = s.preferredTaskLengthMinutes,
-                firstTask = s.firstTask,
-            )
-            repository.completeOnboarding(data)
-            isBackendOnboarded = true
+            submitOnboarding()
             _events.send(OnboardingEvent.NavigateHome)
         }
     }
 
     private fun finishOnboarding() {
         viewModelScope.launch {
-            if (!isBackendOnboarded) {
-                val s = _state.value
-                val data = OnboardingData(
-                    profile = UserProfile(s.trimmedFirstName, s.lastName.trim()),
-                    bounds = s.bounds,
-                    zones = s.zones,
-                    preferredTaskLengthMinutes = s.preferredTaskLengthMinutes,
-                    firstTask = s.firstTask,
-                )
-                repository.completeOnboarding(data)
-                isBackendOnboarded = true
-            }
+            if (!isBackendOnboarded) submitOnboarding()
             _events.send(OnboardingEvent.NavigateHome)
         }
+    }
+
+    /**
+     * The one backend hand-off for the whole flow: the profile/day/session settings, then the
+     * zone windows as the user's weekly template. The template is gated on onboarding succeeding
+     * so an expired session does not fail twice.
+     */
+    private suspend fun submitOnboarding() {
+        val s = _state.value
+        val data = OnboardingData(
+            profile = UserProfile(s.trimmedFirstName, s.lastName.trim()),
+            bounds = s.bounds,
+            zones = s.zones,
+            preferredTaskLengthMinutes = s.preferredTaskLengthMinutes,
+            firstTask = s.firstTask,
+        )
+        if (repository.completeOnboarding(data) is Result.Success) {
+            createWeeklyTemplate(s.zones)
+        }
+        isBackendOnboarded = true
     }
 
     private fun onBack() {
