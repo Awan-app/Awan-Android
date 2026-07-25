@@ -1,7 +1,7 @@
 package com.awan.app.core.network.api
 
-import com.awan.app.core.network.dto.CompleteOnboardingRequest
-import com.awan.app.core.network.dto.CompleteOnboardingResponse
+import com.awan.app.core.network.dto.onboarding.CompleteOnboardingRequest
+import com.awan.app.core.network.dto.onboarding.CompleteOnboardingResponse
 import retrofit2.http.Body
 import retrofit2.http.POST
 

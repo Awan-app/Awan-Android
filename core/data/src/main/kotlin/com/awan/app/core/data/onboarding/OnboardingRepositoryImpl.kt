@@ -5,8 +5,11 @@ import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.datastore.UserPreferencesDataSource
-import com.awan.app.core.model.DayBounds
-import com.awan.app.core.network.dto.CompleteOnboardingRequest
+import com.awan.app.core.domain.zones.repository.ZonesRepository
+import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.domain.zones.model.DailyZone
+import com.awan.app.core.domain.zones.model.DayOfWeek
+import com.awan.app.core.network.dto.onboarding.CompleteOnboardingRequest
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -17,6 +20,7 @@ import javax.inject.Singleton
 @Singleton
 class OnboardingRepositoryImpl @Inject constructor(
     private val remoteDataSource: OnboardingRemoteDataSource,
+    private val zonesRepository: ZonesRepository,
     private val userPreferencesDataSource: UserPreferencesDataSource,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : OnboardingRepository {
@@ -39,6 +43,32 @@ class OnboardingRepositoryImpl @Inject constructor(
 
         when (val result = remoteDataSource.completeOnboarding(request)) {
             is Result.Success -> {
+                // Create or update the default template with onboarding zones
+                val dailyZones = data.zones.filter { it.isEnabled }.map { zone ->
+                    DailyZone(
+                        id = null,
+                        name = zone.name,
+                        startTime = formatMinutesToTimeShort(zone.startMinutes),
+                        endTime = formatMinutesToTimeShort(zone.endMinutes),
+                        color = String.format("#%06X", 0xFFFFFF and zone.colorArgb)
+                    )
+                }
+
+                val templatesResult = zonesRepository.getTemplates()
+                val existingDefault = if (templatesResult is Result.Success) {
+                    templatesResult.data.find { it.name.equals("Default", ignoreCase = true) }
+                } else null
+
+                if (existingDefault != null) {
+                    zonesRepository.updateTemplateZones(existingDefault.id, dailyZones)
+                } else {
+                    zonesRepository.createTemplate(
+                        name = "Default",
+                        daysOfWeek = DayOfWeek.entries,
+                        zones = dailyZones
+                    )
+                }
+
                 userPreferencesDataSource.setOnboardingCompleted(true)
                 Result.Success(Unit)
             }
@@ -52,5 +82,12 @@ class OnboardingRepositoryImpl @Inject constructor(
         val hours = totalMinutes / 60
         val mins = totalMinutes % 60
         return String.format(Locale.US, "%02d:%02d:00", hours, mins)
+    }
+
+    private fun formatMinutesToTimeShort(minutes: Int): String {
+        val totalMinutes = minutes.mod(DayBounds.MINUTES_PER_DAY)
+        val hours = totalMinutes / 60
+        val mins = totalMinutes % 60
+        return String.format(Locale.US, "%02d:%02d", hours, mins)
     }
 }

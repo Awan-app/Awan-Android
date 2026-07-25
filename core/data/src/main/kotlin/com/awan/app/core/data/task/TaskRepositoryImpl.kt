@@ -4,8 +4,8 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
-import com.awan.app.core.network.dto.CreateTaskRequest
-import com.awan.app.core.network.dto.TaskInfoResponse
+import com.awan.app.core.network.dto.task.CreateTaskRequest
+import com.awan.app.core.network.dto.task.TaskInfoResponse
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject

@@ -6,13 +6,18 @@ import com.awan.app.core.data.zones.mapper.toDomain
 import com.awan.app.core.data.zones.mapper.toDto
 import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
 import com.awan.app.core.domain.zones.repository.ZonesRepository
-import com.awan.app.core.model.DailyZone
-import com.awan.app.core.model.DayOfWeek
-import com.awan.app.core.model.TemplateOverride
-import com.awan.app.core.model.WeeklyTemplate
-import com.awan.app.core.network.dto.CreateOverrideRequest
-import com.awan.app.core.network.dto.CreateTemplateRequest
-import com.awan.app.core.network.dto.UpdateZonesRequest
+import com.awan.app.core.domain.zones.model.DailyZone
+import com.awan.app.core.domain.zones.model.DayOfWeek
+import com.awan.app.core.domain.zones.model.Session
+import com.awan.app.core.domain.zones.model.TemplateOverride
+import com.awan.app.core.domain.zones.model.WeeklyTemplate
+import com.awan.app.core.network.dto.zone.CreateOverrideRequest
+import com.awan.app.core.network.dto.zone.CreateTemplateRequest
+import com.awan.app.core.network.dto.zone.CreateZoneRequest
+import com.awan.app.core.network.dto.zone.UpdateOverrideRequest
+import com.awan.app.core.network.dto.zone.UpdateTemplateRequest
+import com.awan.app.core.network.dto.zone.UpdateZoneRequest
+import com.awan.app.core.network.dto.zone.UpdateZonesRequest
 import javax.inject.Inject
 
 class ZonesRepositoryImpl @Inject constructor(
@@ -37,6 +42,44 @@ class ZonesRepositoryImpl @Inject constructor(
             )
         ).map { it.toDomain() }
 
+    override suspend fun getTemplate(templateId: String): Result<WeeklyTemplate> =
+        zonesRemoteDataSource.getTemplate(templateId).map { it.toDomain() }
+
+    override suspend fun updateTemplate(
+        templateId: String,
+        name: String,
+        daysOfWeek: List<DayOfWeek>
+    ): Result<WeeklyTemplate> =
+        zonesRemoteDataSource.updateTemplate(
+            templateId,
+            UpdateTemplateRequest(
+                name = name,
+                daysOfWeek = daysOfWeek.map { it.name }
+            )
+        ).map { it.toDomain() }
+
+    override suspend fun deleteTemplate(templateId: String): Result<Unit> =
+        zonesRemoteDataSource.deleteTemplate(templateId)
+
+    override suspend fun addZoneToTemplate(
+        templateId: String,
+        zone: DailyZone
+    ): Result<DailyZone> =
+        zonesRemoteDataSource.addZoneToTemplate(
+            templateId,
+            CreateZoneRequest(
+                name = zone.name,
+                startTime = zone.startTime,
+                endTime = zone.endTime,
+                color = zone.color
+            )
+        ).map { it.toDomain() }
+
+    override suspend fun getTemplateZones(templateId: String): Result<List<DailyZone>> =
+        zonesRemoteDataSource.getTemplateZones(templateId).map { list ->
+            list.map { it.toDomain() }
+        }
+
     override suspend fun updateTemplateZones(
         templateId: String,
         zones: List<DailyZone>
@@ -45,14 +88,6 @@ class ZonesRepositoryImpl @Inject constructor(
             templateId,
             UpdateZonesRequest(zones = zones.map { it.toDto() })
         ).map { list -> list.map { it.toDomain() } }
-
-    override suspend fun deleteTemplate(templateId: String): Result<Unit> =
-        zonesRemoteDataSource.deleteTemplate(templateId)
-
-    override suspend fun getEffectiveZones(date: String): Result<List<DailyZone>> =
-        zonesRemoteDataSource.getEffectiveZones(date).map { list ->
-            list.map { it.toDomain() }
-        }
 
     override suspend fun createOverride(
         date: String,
@@ -65,6 +100,49 @@ class ZonesRepositoryImpl @Inject constructor(
             )
         ).map { it.toDomain() }
 
+    override suspend fun getOverrides(): Result<List<TemplateOverride>> =
+        zonesRemoteDataSource.getOverrides().map { list ->
+            list.map { it.toDomain() }
+        }
+
+    override suspend fun getOverride(overrideId: String): Result<TemplateOverride> =
+        zonesRemoteDataSource.getOverride(overrideId).map { it.toDomain() }
+
+    override suspend fun updateOverride(
+        overrideId: String,
+        name: String?,
+        date: String
+    ): Result<TemplateOverride> =
+        zonesRemoteDataSource.updateOverride(
+            overrideId,
+            UpdateOverrideRequest(
+                name = name,
+                dateOfDay = date
+            )
+        ).map { it.toDomain() }
+
+    override suspend fun deleteOverride(overrideId: String): Result<Unit> =
+        zonesRemoteDataSource.deleteOverride(overrideId)
+
+    override suspend fun addZoneToOverride(
+        overrideId: String,
+        zone: DailyZone
+    ): Result<DailyZone> =
+        zonesRemoteDataSource.addZoneToOverride(
+            overrideId,
+            CreateZoneRequest(
+                name = zone.name,
+                startTime = zone.startTime,
+                endTime = zone.endTime,
+                color = zone.color
+            )
+        ).map { it.toDomain() }
+
+    override suspend fun getOverrideZones(overrideId: String): Result<List<DailyZone>> =
+        zonesRemoteDataSource.getOverrideZones(overrideId).map { list ->
+            list.map { it.toDomain() }
+        }
+
     override suspend fun updateOverrideZones(
         overrideId: String,
         zones: List<DailyZone>
@@ -74,6 +152,33 @@ class ZonesRepositoryImpl @Inject constructor(
             UpdateZonesRequest(zones = zones.map { it.toDto() })
         ).map { list -> list.map { it.toDomain() } }
 
-    override suspend fun deleteOverride(overrideId: String): Result<Unit> =
-        zonesRemoteDataSource.deleteOverride(overrideId)
+    override suspend fun getZone(zoneId: String): Result<DailyZone> =
+        zonesRemoteDataSource.getZone(zoneId).map { it.toDomain() }
+
+    override suspend fun getZoneSessions(zoneId: String): Result<List<Session>> =
+        zonesRemoteDataSource.getZoneSessions(zoneId).map { list ->
+            list.map { it.toDomain() }
+        }
+
+    override suspend fun getEffectiveZones(date: String): Result<List<DailyZone>> =
+        zonesRemoteDataSource.getEffectiveZones(date).map { list ->
+            list.map { it.toDomain() }
+        }
+
+    override suspend fun updateZone(
+        zoneId: String,
+        zone: DailyZone
+    ): Result<DailyZone> =
+        zonesRemoteDataSource.updateZone(
+            zoneId,
+            UpdateZoneRequest(
+                name = zone.name,
+                startTime = zone.startTime,
+                endTime = zone.endTime,
+                color = zone.color
+            )
+        ).map { it.toDomain() }
+
+    override suspend fun deleteZone(zoneId: String): Result<Unit> =
+        zonesRemoteDataSource.deleteZone(zoneId)
 }

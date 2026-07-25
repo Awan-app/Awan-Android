@@ -2,9 +2,9 @@ package com.awan.app.core.data.onboarding.remote
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.OnboardingApiService
-import com.awan.app.core.network.dto.CompleteOnboardingRequest
-import com.awan.app.core.network.dto.CompleteOnboardingResponse
-import com.awan.app.core.network.dto.OnboardingPreferencesDto
+import com.awan.app.core.network.dto.onboarding.CompleteOnboardingRequest
+import com.awan.app.core.network.dto.onboarding.CompleteOnboardingResponse
+import com.awan.app.core.network.dto.onboarding.OnboardingPreferencesDto
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json

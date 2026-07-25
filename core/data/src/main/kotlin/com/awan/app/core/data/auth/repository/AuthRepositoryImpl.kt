@@ -8,10 +8,10 @@ import com.awan.app.core.domain.auth.model.AuthSession
 import com.awan.app.core.domain.auth.model.User
 import com.awan.app.core.domain.auth.repository.AuthRepository
 import com.awan.app.core.network.device.DeviceIdProvider
-import com.awan.app.core.network.dto.LogoutRequest
-import com.awan.app.core.network.dto.RefreshTokenRequest
-import com.awan.app.core.network.dto.RequestOtpRequest
-import com.awan.app.core.network.dto.VerifyOtpRequest
+import com.awan.app.core.network.dto.auth.LogoutRequest
+import com.awan.app.core.network.dto.auth.RefreshTokenRequest
+import com.awan.app.core.network.dto.auth.RequestOtpRequest
+import com.awan.app.core.network.dto.auth.VerifyOtpRequest
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

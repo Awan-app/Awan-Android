@@ -4,8 +4,8 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.OnboardingApiService
-import com.awan.app.core.network.dto.CompleteOnboardingRequest
-import com.awan.app.core.network.dto.CompleteOnboardingResponse
+import com.awan.app.core.network.dto.onboarding.CompleteOnboardingRequest
+import com.awan.app.core.network.dto.onboarding.CompleteOnboardingResponse
 import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json

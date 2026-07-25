@@ -10,9 +10,9 @@ import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
 import com.awan.app.core.domain.onboarding.ZoneEditRules
 import com.awan.app.core.data.task.CreateTaskUseCase
-import com.awan.app.core.model.DayBounds
-import com.awan.app.core.model.UserProfile
-import com.awan.app.core.model.Zone
+import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.domain.profile.model.UserProfile
+import com.awan.app.core.domain.zones.model.Zone
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
