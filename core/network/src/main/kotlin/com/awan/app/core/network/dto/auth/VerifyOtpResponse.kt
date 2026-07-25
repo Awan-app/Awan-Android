@@ -1,5 +1,6 @@
-package com.awan.app.core.network.dto
+package com.awan.app.core.network.dto.auth
 
+import com.awan.app.core.network.dto.user.UserDto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
