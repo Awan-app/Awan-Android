@@ -73,4 +73,16 @@ internal abstract class DataModule {
     abstract fun bindAuthRepository(
         impl: AuthRepositoryImpl,
     ): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGoalRemoteDataSource(
+        impl: com.awan.app.core.data.goal.remote.GoalRemoteDataSourceImpl,
+    ): com.awan.app.core.data.goal.remote.GoalRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindGoalRepository(
+        impl: com.awan.app.core.data.goal.GoalRepositoryImpl,
+    ): com.awan.app.core.domain.goal.repository.GoalRepository
 }
