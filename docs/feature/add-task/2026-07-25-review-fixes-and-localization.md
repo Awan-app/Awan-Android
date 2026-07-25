@@ -283,3 +283,33 @@ Compose opt-in markers.
 Three of the five PR comments were already fixed by `bb9e824` before this work started
 (category threaded end-to-end, categories loaded once in `init`). Only the day-part precedence and
 the Arabic writer needed code. See the triage table above.
+
+### Runtime (found only on device — the JVM suite passed throughout)
+
+- **`(?U)` crashed the app on the first keystroke.** Unit tests compile regexes with
+  `java.util.regex`; Android compiles them with ICU, which has no `(?U)` inline flag. All 91 parser
+  tests were green while `TaskInputParser.<clinit>` threw `PatternSyntaxException` on device. Root
+  cause: `\b` is ASCII-only on the JVM and Unicode-aware in ICU, and `(?U)` — the flag that
+  reconciles them — exists only on the JVM. Fixed in `9183aa5` by dropping `\b` for explicit
+  lookarounds (`TaskInputParser.WORD`), which mean the same thing on both engines. `\d` diverges the
+  same way (ASCII on the JVM, all of `Nd` in ICU); the digit-folding pass makes that moot.
+- **Added `TaskInputParserRegexEngineTest`** in `core/domain/src/androidTest`, because nothing in the
+  JVM suite can speak for the engine that ships. `core/domain` needed `androidTestImplementation` of
+  both `androidx.junit` and `androidx.espresso.core` — the former alone does not pull in
+  `AndroidJUnitRunner`, and the run fails with `ClassNotFoundException` before any test starts.
+- **Verified on an emulator, not just in tests**: English typing highlights `tomorrow` / `6pm` /
+  `for 45 min` correctly and creates no crash; the sheet opens and renders in Arabic.
+
+### Pre-existing bug surfaced by this work (not fixed here)
+
+With the app in Arabic, typing in the add-task sheet crashes in the Compose measure pass:
+`IllegalArgumentException: maxWidth must be >= than minWidth` at
+`StyleOuterNode.measure(StyleModifier.kt:369)` ← `PaddingNode.measure`. **This reproduces on
+`bb9e824`**, the commit before any of this work, so it is not a regression from the localization —
+but it does block the Arabic path the localization exists to serve.
+
+Narrowed to the attribute chips: hiding them via the "Let Awan fill it in" switch stops the crash.
+The suspect is `AwanButton`'s two `Modifier.padding(…).styleable(…)` layers (`AwanButton.kt:158-171`)
+inside `TaskAttributeChips`' `FlowRow` — a wrapping chip can be offered a `maxWidth` narrower than
+the min width the style asserts, and the Styles API does not coerce the way `defaultMinSize` does.
+Longer Arabic labels are what make the row wrap tightly enough to hit it. Needs its own ticket.
