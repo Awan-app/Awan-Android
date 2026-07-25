@@ -38,8 +38,18 @@ object TaskInputParser {
     /** A bare hour up to this reads as afternoon: `at 3` is 3pm, the way people say it out loud. */
     private const val BARE_PM_MAX_HOUR = 7
 
+    /**
+     * `\b` is not usable here. Unit tests run on the JVM, where it is ASCII-only and so never fires
+     * on Arabic, and the app runs on Android's ICU engine, where it is Unicode-aware — and which
+     * rejects the `(?U)` flag that would have reconciled them. Spelling the boundary out keeps the
+     * two engines in agreement, which is the only reason a JVM test says anything about the app.
+     */
+    private const val WORD = """[\p{L}\p{N}_]"""
+    private const val NOT_AFTER_WORD = """(?<!$WORD)"""
+    private const val NOT_BEFORE_WORD = """(?!$WORD)"""
+
     private val CATEGORY = Regex("""@([\p{L}\p{N}_-]+)""")
-    private val NUMERIC_DATE = Regex("""\b(\d{1,2})[/-](\d{1,2})\b""")
+    private val NUMERIC_DATE = Regex("""$NOT_AFTER_WORD(\d{1,2})[/-](\d{1,2})$NOT_BEFORE_WORD""")
     private val WHITESPACE = Regex("""\s+""")
 
     private val english = Patterns(TaskLexicon.English)
@@ -353,45 +363,44 @@ object TaskInputParser {
     private fun List<TaskToken>.isFree(range: IntRange): Boolean =
         none { it.range.first <= range.last && range.first <= it.range.last }
 
-    /**
-     * One language's patterns, compiled once. Every pattern carries the inline `(?U)` flag: Java's
-     * `\b` and `\w` are ASCII-only by default, so without it `\bالجمعة\b` never matches a thing.
-     */
+    /** One language's patterns, compiled once. See [WORD] for why none of them says `\b`. */
     private class Patterns(val lexicon: TaskLexicon) {
 
         private val clock = """(\d{1,2})(?::(\d{2}))?\s*(${lexicon.am.alt(lexicon.pm)})?"""
 
         /** `from 3pm to 5pm`, `3pm-5pm`, `3-5pm`, `15:00 until 17:00`. */
         val timeRange = compile(
-            """\b(?:${lexicon.rangeFrom.alt()}\s+)?$clock\s*(?:-|–|—|${lexicon.rangeTo.alt()})\s*$clock\b""",
+            """(?:${lexicon.rangeFrom.alt()}\s+)?$clock\s*(?:-|–|—|${lexicon.rangeTo.alt()})\s*$clock""",
         )
         val relativeIn = compile(
-            """\b${lexicon.relativeIn.alt()}\s+(\d+)\s*""" +
-                """(${lexicon.minuteUnits.alt(lexicon.hourUnits, lexicon.dayUnits, lexicon.weekUnits)})\b""",
+            """${lexicon.relativeIn.alt()}\s+(\d+)\s*""" +
+                """(${lexicon.minuteUnits.alt(lexicon.hourUnits, lexicon.dayUnits, lexicon.weekUnits)})""",
         )
         val duration = compile(
-            """\b(?:${lexicon.durationFor.alt()}\s+)?""" +
+            """(?:${lexicon.durationFor.alt()}\s+)?""" +
                 """(?:(\d+)\s*${lexicon.hourUnits.alt()}(?:\s*(\d{1,2})\s*${lexicon.minuteUnits.alt()}?)?""" +
-                """|(\d+)\s*${lexicon.minuteUnits.alt()})\b""",
+                """|(\d+)\s*${lexicon.minuteUnits.alt()})""",
         )
         val timeMeridiem = compile(
-            """\b(?:${lexicon.timeAt.alt()}\s+)?(\d{1,2})(?::(\d{2}))?\s*(${lexicon.am.alt(lexicon.pm)})\b""",
+            """(?:${lexicon.timeAt.alt()}\s+)?(\d{1,2})(?::(\d{2}))?\s*(${lexicon.am.alt(lexicon.pm)})""",
         )
 
         /** The `at` is the whole guard: without it `Read chapter 3` would become a time. */
-        val timeAt = compile("""\b${lexicon.timeAt.alt()}\s+(\d{1,2})(?::(\d{2}))?\b""")
-        val time24H = compile("""\b(?:${lexicon.timeAt.alt()}\s+)?(\d{1,2}):(\d{2})\b""")
-        val noon = compile("""\b${lexicon.noon.alt()}\b""")
-        val midnight = compile("""\b${lexicon.midnight.alt()}\b""")
-        val dayPart = compile("""\b(${lexicon.morning.alt(lexicon.afternoon, lexicon.evening)})\b""")
-        val relativeDay = compile("""\b(${lexicon.today.alt(lexicon.tonight, lexicon.tomorrow)})\b""")
-        val nextWeek = compile("""\b${lexicon.nextWeek.alt()}\b""")
+        val timeAt = compile("""${lexicon.timeAt.alt()}\s+(\d{1,2})(?::(\d{2}))?""")
+        val time24H = compile("""(?:${lexicon.timeAt.alt()}\s+)?(\d{1,2}):(\d{2})""")
+        val noon = compile(lexicon.noon.alt())
+        val midnight = compile(lexicon.midnight.alt())
+        val dayPart = compile("""(${lexicon.morning.alt(lexicon.afternoon, lexicon.evening)})""")
+        val relativeDay = compile("""(${lexicon.today.alt(lexicon.tonight, lexicon.tomorrow)})""")
+        val nextWeek = compile(lexicon.nextWeek.alt())
         val weekday = compile(
-            """\b${optional(lexicon.weekdayPrefixes, before = true)}(${lexicon.weekdays.keys.toList().alt()})""" +
-                """${optional(lexicon.weekdaySuffixes, before = false)}\b""",
+            """${optional(lexicon.weekdayPrefixes, before = true)}(${lexicon.weekdays.keys.toList().alt()})""" +
+                optional(lexicon.weekdaySuffixes, before = false),
         )
 
-        private fun compile(pattern: String) = Regex("(?U)$pattern", RegexOption.IGNORE_CASE)
+        /** Every pattern here begins and ends on a word, so the boundary is the same on both sides. */
+        private fun compile(pattern: String) =
+            Regex("$NOT_AFTER_WORD$pattern$NOT_BEFORE_WORD", RegexOption.IGNORE_CASE)
 
         /**
          * A self-contained alternation of literals, longest first — regex alternation is
