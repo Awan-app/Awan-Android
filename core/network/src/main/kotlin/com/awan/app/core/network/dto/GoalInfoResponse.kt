@@ -1,0 +1,16 @@
+package com.awan.app.core.network.dto
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class GoalInfoResponse(
+    @SerialName("id") val id: String,
+    @SerialName("title") val title: String,
+    @SerialName("description") val description: String? = null,
+    @SerialName("status") val status: GoalStatusDto,
+    @SerialName("targetDate") val targetDate: String? = null,
+    @SerialName("createdAt") val createdAt: String? = null,
+    @SerialName("inbox") val inbox: Boolean = false,
+    @SerialName("tasks") val tasks: List<TaskInfoResponse> = emptyList(),
+)
