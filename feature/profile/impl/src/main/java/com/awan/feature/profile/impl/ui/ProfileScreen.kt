@@ -7,7 +7,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.feature.profile.impl.presentation.ProfileUiState
@@ -19,13 +21,13 @@ fun ProfileScreen(
     uiState: ProfileUiState,
     onEditClick: () -> Unit = {},
     onDailyZonesClick: () -> Unit = {},
-    onPreferenceClick: (String) -> Unit = {},
     onSettingsClick: (String) -> Unit = {},
     onThemeClick: (Boolean) -> Unit = {},
     onLanguageClick: (String) -> Unit = {},
     onUpdateSleepSchedule: (String, String) -> Unit = { _, _ -> },
     onUpdateSessionDuration: (Int) -> Unit = {},
     onUpdateTimezone: (String) -> Unit = {},
+    onLogout: () -> Unit = {},
     onRetry: () -> Unit = {},
 ) {
     Box(
@@ -41,13 +43,13 @@ fun ProfileScreen(
                 uiState = uiState,
                 onEditClick = onEditClick,
                 onDailyZonesClick = onDailyZonesClick,
-                onPreferenceClick = onPreferenceClick,
                 onSettingsClick = onSettingsClick,
                 onThemeClick = onThemeClick,
                 onLanguageClick = onLanguageClick,
                 onUpdateSleepSchedule = onUpdateSleepSchedule,
                 onUpdateSessionDuration = onUpdateSessionDuration,
-                onUpdateTimezone = onUpdateTimezone
+                onUpdateTimezone = onUpdateTimezone,
+                onLogout = onLogout
             )
         } else if (uiState.errorMessage != null) {
             ProfileErrorState(
@@ -91,21 +93,32 @@ private fun ProfileContent(
     uiState: ProfileUiState,
     onEditClick: () -> Unit,
     onDailyZonesClick: () -> Unit,
-    onPreferenceClick: (String) -> Unit,
     onSettingsClick: (String) -> Unit,
     onThemeClick: (Boolean) -> Unit,
     onLanguageClick: (String) -> Unit,
     onUpdateSleepSchedule: (String, String) -> Unit,
     onUpdateSessionDuration: (Int) -> Unit,
     onUpdateTimezone: (String) -> Unit,
+    onLogout: () -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(28.dp)
+            .padding(horizontal = 20.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        AwanText(
+            text = stringResource(ProfileR.string.profile_title),
+            style = AwanTheme.styles.headingText.copy(
+                textStyle = AwanTheme.typography.heading.copy(
+                    fontSize = 32.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
+                )
+            ),
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+
         ProfileHeaderCard(
             profile = profile,
             uiState = uiState,
@@ -116,7 +129,6 @@ private fun ProfileContent(
             profile = profile,
             uiState = uiState,
             onDailyZonesClick = onDailyZonesClick,
-            onPreferenceClick = onPreferenceClick,
             onUpdateSleepSchedule = onUpdateSleepSchedule,
             onUpdateSessionDuration = onUpdateSessionDuration,
             onUpdateTimezone = onUpdateTimezone
@@ -129,9 +141,10 @@ private fun ProfileContent(
         )
 
         SettingsCard(
-            onSettingsClick = onSettingsClick
+            onSettingsClick = onSettingsClick,
+            onLogoutClick = onLogout
         )
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
