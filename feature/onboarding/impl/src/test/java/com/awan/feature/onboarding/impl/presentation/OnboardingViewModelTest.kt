@@ -1,17 +1,13 @@
 package com.awan.feature.onboarding.impl.presentation
 
 import com.awan.app.core.common.error.AppError
-import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.OnboardingData
-import com.awan.app.core.data.task.TaskRepository
 import com.awan.app.core.domain.onboarding.DayBoundsValidation
-import com.awan.app.core.domain.onboarding.ScheduleFirstTaskUseCase
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
+import com.awan.app.core.domain.task.usecase.CreateAndScheduleFirstTaskUseCase
 import com.awan.app.core.domain.template.usecase.CreateWeeklyTemplateUseCase
-import com.awan.app.core.data.task.CreateTaskUseCase
 import com.awan.app.core.model.DayBounds
-import com.awan.app.core.network.dto.TaskInfoResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -33,45 +29,21 @@ class OnboardingViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: FakeOnboardingRepository
-    private lateinit var fakeTaskRepository: FakeTaskRepository
+    private lateinit var fakeAiTaskRepository: FakeAiTaskRepository
     private lateinit var fakeTemplateRepository: FakeTemplateRepository
     private lateinit var viewModel: OnboardingViewModel
-
-    private class FakeTaskRepository : TaskRepository {
-        var createdTaskTitle: String? = null
-
-        override suspend fun createTask(
-            title: String,
-            description: String?,
-            estimatedDurationMinutes: Int?,
-            mandatory: Boolean?,
-            estimatedPoints: Int?,
-            allowTaskSplitting: Boolean?,
-            goalId: String?,
-        ): Result<TaskInfoResponse> {
-            createdTaskTitle = title
-            return Result.Success(
-                TaskInfoResponse(
-                    id = "task-123",
-                    title = title,
-                    estimatedDuration = estimatedDurationMinutes,
-                )
-            )
-        }
-    }
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeOnboardingRepository()
-        fakeTaskRepository = FakeTaskRepository()
+        fakeAiTaskRepository = FakeAiTaskRepository()
         fakeTemplateRepository = FakeTemplateRepository()
         viewModel = OnboardingViewModel(
             repository = repository,
             suggestZoneSchedule = SuggestZoneScheduleUseCase(),
-            scheduleFirstTask = ScheduleFirstTaskUseCase(),
             validateDayBounds = ValidateDayBounds(),
-            createTaskUseCase = CreateTaskUseCase(fakeTaskRepository),
+            createAndScheduleFirstTask = CreateAndScheduleFirstTaskUseCase(fakeAiTaskRepository),
             createWeeklyTemplate = CreateWeeklyTemplateUseCase(fakeTemplateRepository),
         )
     }
@@ -162,17 +134,55 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `submitting a first task creates task via CreateTaskUseCase, celebrates, and persists`() = runTest(testDispatcher) {
+    fun `submitting a first task shows the schedule the server actually returned`() = runTest(testDispatcher) {
         viewModel.onAction(OnboardingAction.FirstTaskTitleChanged("Write brief"))
         viewModel.onAction(OnboardingAction.SubmitFirstTask)
 
         val state = viewModel.state.value
-        assertNotNull(state.firstTask)
+        assertEquals("Write brief", fakeAiTaskRepository.requestedTitle)
+        assertEquals(fakeAiTaskRepository.scheduled, state.firstTask)
         assertTrue(state.celebrateTask)
         assertFalse(state.isSubmittingTask)
-        assertEquals("Write brief", state.firstTask?.title)
-        assertEquals("Write brief", fakeTaskRepository.createdTaskTitle)
+        assertNull(state.firstTaskError)
     }
+
+    @Test
+    fun `a task the engine could not place reports back instead of showing a made-up time`() =
+        runTest(testDispatcher) {
+            fakeAiTaskRepository.scheduled = null
+
+            viewModel.onAction(OnboardingAction.FirstTaskTitleChanged("Write brief"))
+            viewModel.onAction(OnboardingAction.SubmitFirstTask)
+
+            val state = viewModel.state.value
+            assertNull(state.firstTask)
+            assertNotNull(state.firstTaskError)
+            assertFalse(state.celebrateTask)
+            assertFalse(state.isSubmittingTask)
+        }
+
+    @Test
+    fun `a failed AI call surfaces an error and leaves the task unset`() = runTest(testDispatcher) {
+        fakeAiTaskRepository.failWith = AppError.Network
+
+        viewModel.onAction(OnboardingAction.FirstTaskTitleChanged("Write brief"))
+        viewModel.onAction(OnboardingAction.SubmitFirstTask)
+
+        val state = viewModel.state.value
+        assertNull(state.firstTask)
+        assertNotNull(state.firstTaskError)
+        assertFalse(state.isSubmittingTask)
+    }
+
+    @Test
+    fun `the zones the server created are kept so a scheduled task can resolve its zone`() =
+        runTest(testDispatcher) {
+            viewModel.onAction(OnboardingAction.SkipSetup)
+
+            val templateZones = viewModel.state.value.templateZones
+            assertEquals(viewModel.state.value.zones.size, templateZones.size)
+            assertTrue(templateZones.all { it.id.startsWith(FakeTemplateRepository.SERVER_ID_PREFIX) })
+        }
 
     @Test
     fun `reordering a zone moves its window, not just its row`() {

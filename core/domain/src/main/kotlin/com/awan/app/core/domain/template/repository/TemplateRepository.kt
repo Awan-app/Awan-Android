@@ -7,7 +7,8 @@ interface TemplateRepository {
 
     /**
      * Creates the user's weekly template — the [zones] they configured, applied to all seven days.
-     * Only enabled zones are sent; the server owns the generated ids, so nothing is returned.
+     * Only enabled zones are sent. Returns the created zones carrying the server's ids, which is
+     * what a scheduled session's `zoneId` refers to.
      */
-    suspend fun createWeeklyTemplate(zones: List<Zone>): Result<Unit>
+    suspend fun createWeeklyTemplate(zones: List<Zone>): Result<List<Zone>>
 }

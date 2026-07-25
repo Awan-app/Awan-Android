@@ -8,6 +8,6 @@ import javax.inject.Inject
 class CreateWeeklyTemplateUseCase @Inject constructor(
     private val templateRepository: TemplateRepository,
 ) {
-    suspend operator fun invoke(zones: List<Zone>): Result<Unit> =
+    suspend operator fun invoke(zones: List<Zone>): Result<List<Zone>> =
         templateRepository.createWeeklyTemplate(zones)
 }

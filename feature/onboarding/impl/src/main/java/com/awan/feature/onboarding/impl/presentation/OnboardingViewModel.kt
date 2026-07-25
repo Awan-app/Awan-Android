@@ -2,15 +2,17 @@ package com.awan.feature.onboarding.impl.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.OnboardingData
 import com.awan.app.core.data.onboarding.OnboardingRepository
-import com.awan.app.core.domain.onboarding.ScheduleFirstTaskUseCase
+import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
 import com.awan.app.core.domain.onboarding.ZoneEditRules
+import com.awan.app.core.domain.task.usecase.CreateAndScheduleFirstTaskUseCase
 import com.awan.app.core.domain.template.usecase.CreateWeeklyTemplateUseCase
-import com.awan.app.core.data.task.CreateTaskUseCase
+import com.awan.feature.onboarding.impl.R
 import com.awan.app.core.model.DayBounds
 import com.awan.app.core.model.UserProfile
 import com.awan.app.core.model.Zone
@@ -28,9 +30,8 @@ import javax.inject.Inject
 class OnboardingViewModel @Inject constructor(
     private val repository: OnboardingRepository,
     private val suggestZoneSchedule: SuggestZoneScheduleUseCase,
-    private val scheduleFirstTask: ScheduleFirstTaskUseCase,
     private val validateDayBounds: ValidateDayBounds,
-    private val createTaskUseCase: CreateTaskUseCase,
+    private val createAndScheduleFirstTask: CreateAndScheduleFirstTaskUseCase,
     private val createWeeklyTemplate: CreateWeeklyTemplateUseCase,
 ) : ViewModel() {
 
@@ -154,7 +155,8 @@ class OnboardingViewModel @Inject constructor(
             firstTask = s.firstTask,
         )
         if (repository.completeOnboarding(data) is Result.Success) {
-            createWeeklyTemplate(s.zones)
+            val zones = createWeeklyTemplate(s.zones)
+            if (zones is Result.Success) _state.update { it.copy(templateZones = zones.data) }
         }
         isBackendOnboarded = true
     }
@@ -172,16 +174,31 @@ class OnboardingViewModel @Inject constructor(
         val current = _state.value
         if (!current.canSubmitFirstTask) return
         viewModelScope.launch {
-            _state.update { it.copy(isSubmittingTask = true) }
-            val task = scheduleFirstTask(current.firstTaskTitle, current.zones, current.preferredTaskLengthMinutes)
+            _state.update { it.copy(isSubmittingTask = true, firstTaskError = null) }
 
-            // Send task creation request to backend
-            createTaskUseCase(
-                title = task.title,
-                estimatedDurationMinutes = task.durationMinutes,
-            )
+            when (val result = createAndScheduleFirstTask(current.firstTaskTitle)) {
+                is Result.Success -> {
+                    val task = result.data
+                    _state.update {
+                        it.copy(
+                            isSubmittingTask = false,
+                            firstTask = task,
+                            celebrateTask = task != null,
+                            firstTaskError = if (task == null) {
+                                UiText.StringResource(R.string.onboarding_first_task_unscheduled)
+                            } else {
+                                null
+                            },
+                        )
+                    }
+                }
 
-            _state.update { it.copy(isSubmittingTask = false, firstTask = task, celebrateTask = true) }
+                is Result.Error -> _state.update {
+                    it.copy(isSubmittingTask = false, firstTaskError = result.error.toUiText())
+                }
+
+                Result.Loading -> Unit
+            }
         }
     }
 

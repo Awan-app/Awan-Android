@@ -1,5 +1,6 @@
 package com.awan.feature.onboarding.impl.presentation
 
+import com.awan.app.core.common.text.UiText
 import com.awan.app.core.data.onboarding.OnboardingData
 import com.awan.app.core.model.DayBounds
 import com.awan.app.core.model.FirstTask
@@ -14,10 +15,13 @@ data class OnboardingState(
     val boundsValidation: DayBoundsValidation = DayBoundsValidation.Valid,
     val wakingWarningDismissed: Boolean = false,
     val zones: List<Zone> = emptyList(),
+    /** The same zones as the server created them — a scheduled session's `zoneId` points here. */
+    val templateZones: List<Zone> = emptyList(),
     val overlappingZoneIds: Set<String> = emptySet(),
     val preferredTaskLengthMinutes: Int = OnboardingData.DEFAULT_TASK_LENGTH_MINUTES,
     val firstTaskTitle: String = "",
     val firstTask: FirstTask? = null,
+    val firstTaskError: UiText? = null,
     val isSubmittingTask: Boolean = false,
     val celebrateTask: Boolean = false,
     val notificationsPermanentlyDenied: Boolean = false,
@@ -33,7 +37,7 @@ data class OnboardingState(
     val showWakingWarning: Boolean
         get() = boundsValidation == DayBoundsValidation.ShortWakingWindow && !wakingWarningDismissed
 
-    val dayPreview: DayPreviewModel get() = DayPreviewModel.from(bounds, zones, firstTask)
+    val dayPreview: DayPreviewModel get() = DayPreviewModel.from(bounds, zones, firstTask, templateZones)
 
     companion object {
         val TASK_LENGTH_OPTIONS = listOf(30, 45, 60, 90, 120, 180)
