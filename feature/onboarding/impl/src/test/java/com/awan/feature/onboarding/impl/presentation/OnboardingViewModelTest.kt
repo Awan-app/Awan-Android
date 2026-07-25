@@ -199,6 +199,62 @@ class OnboardingViewModelTest {
     }
 
     @Test
+    fun `a failed setup holds the flow and the next exit path retries it`() = runTest(testDispatcher) {
+        val events = mutableListOf<OnboardingEvent>()
+        backgroundScope.launch(testDispatcher) { viewModel.events.collect { events += it } }
+        repository.failWith = AppError.Network
+
+        viewModel.onAction(OnboardingAction.Next) // Welcome -> Name
+        viewModel.onAction(OnboardingAction.NameChanged("Sam", ""))
+        repeat(3) { viewModel.onAction(OnboardingAction.Next) } // -> TaskLength
+        viewModel.onAction(OnboardingAction.Next) // TaskLength: submit fails
+
+        assertEquals(OnboardingStep.TaskLength, viewModel.state.value.step)
+        assertNotNull(viewModel.state.value.setupError)
+        assertFalse(viewModel.state.value.isSubmittingTask)
+
+        repository.failWith = null
+        viewModel.onAction(OnboardingAction.Next) // retried, now succeeds
+
+        assertEquals(2, repository.callCount)
+        assertEquals(OnboardingStep.FirstTask, viewModel.state.value.step)
+        assertNull(viewModel.state.value.setupError)
+        assertTrue(events.isEmpty())
+    }
+
+    @Test
+    fun `a failed template is retried without resending completeOnboarding`() = runTest(testDispatcher) {
+        val events = mutableListOf<OnboardingEvent>()
+        backgroundScope.launch(testDispatcher) { viewModel.events.collect { events += it } }
+        fakeTemplateRepository.failWith = AppError.Network
+
+        viewModel.onAction(OnboardingAction.SkipSetup)
+
+        assertNotNull(viewModel.state.value.setupError)
+        assertTrue(events.isEmpty())
+
+        fakeTemplateRepository.failWith = null
+        viewModel.onAction(OnboardingAction.SkipSetup)
+
+        assertEquals(1, repository.callCount)
+        assertEquals(2, fakeTemplateRepository.callCount)
+        assertEquals(viewModel.state.value.zones, fakeTemplateRepository.createdZones)
+        assertTrue(events.contains(OnboardingEvent.NavigateHome))
+    }
+
+    @Test
+    fun `denying the notification permission still completes the account setup`() = runTest(testDispatcher) {
+        val events = mutableListOf<OnboardingEvent>()
+        backgroundScope.launch(testDispatcher) { viewModel.events.collect { events += it } }
+
+        viewModel.onAction(OnboardingAction.NotificationPermissionResult(granted = false))
+
+        assertTrue(repository.isCompleted)
+        assertNotNull(fakeTemplateRepository.createdZones)
+        assertTrue(events.contains(OnboardingEvent.NavigateHome))
+    }
+
+    @Test
     fun `skipping from Welcome completes onboarding with all defaults`() = runTest(testDispatcher) {
         val events = mutableListOf<OnboardingEvent>()
         backgroundScope.launch(testDispatcher) {

@@ -23,6 +23,8 @@ data class OnboardingState(
     val firstTask: FirstTask? = null,
     val firstTaskError: UiText? = null,
     val isSubmittingTask: Boolean = false,
+    /** Why the backend account setup did not land. Set means the flow cannot be left yet. */
+    val setupError: UiText? = null,
     val celebrateTask: Boolean = false,
     val notificationsPermanentlyDenied: Boolean = false,
 ) {
