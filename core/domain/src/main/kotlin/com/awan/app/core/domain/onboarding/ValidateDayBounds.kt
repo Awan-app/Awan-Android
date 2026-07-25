@@ -1,6 +1,6 @@
 package com.awan.app.core.domain.onboarding
 
-import com.awan.app.core.model.DayBounds
+import com.awan.app.core.domain.onboarding.model.DayBounds
 import javax.inject.Inject
 
 sealed interface DayBoundsValidation {

@@ -12,23 +12,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.profile.model.Profile
-import com.awan.feature.profile.impl.presentation.ProfileUiState
+import com.awan.feature.profile.impl.presentation.ProfileAction
+import com.awan.feature.profile.impl.presentation.ProfileState
 import com.awan.feature.profile.impl.R as ProfileR
 import com.awan.feature.profile.impl.ui.components.*
 
 @Composable
 fun ProfileScreen(
-    uiState: ProfileUiState,
+    uiState: ProfileState,
+    onAction: (ProfileAction) -> Unit,
     onEditClick: () -> Unit = {},
     onDailyZonesClick: () -> Unit = {},
     onSettingsClick: (String) -> Unit = {},
-    onThemeClick: (Boolean) -> Unit = {},
-    onLanguageClick: (String) -> Unit = {},
-    onUpdateSleepSchedule: (String, String) -> Unit = { _, _ -> },
-    onUpdateSessionDuration: (Int) -> Unit = {},
-    onUpdateTimezone: (String) -> Unit = {},
-    onLogout: () -> Unit = {},
-    onRetry: () -> Unit = {},
 ) {
     Box(
         modifier = Modifier
@@ -41,20 +36,15 @@ fun ProfileScreen(
             ProfileContent(
                 profile = uiState.profile,
                 uiState = uiState,
+                onAction = onAction,
                 onEditClick = onEditClick,
                 onDailyZonesClick = onDailyZonesClick,
                 onSettingsClick = onSettingsClick,
-                onThemeClick = onThemeClick,
-                onLanguageClick = onLanguageClick,
-                onUpdateSleepSchedule = onUpdateSleepSchedule,
-                onUpdateSessionDuration = onUpdateSessionDuration,
-                onUpdateTimezone = onUpdateTimezone,
-                onLogout = onLogout
             )
         } else if (uiState.errorMessage != null) {
             ProfileErrorState(
                 errorMessage = uiState.errorMessage.asString(),
-                onRetry = onRetry,
+                onRetry = { onAction(ProfileAction.Refresh) },
                 modifier = Modifier.align(Alignment.Center)
             )
         }
@@ -82,7 +72,7 @@ private fun ProfileErrorState(
             onClick = onRetry,
             modifier = Modifier.wrapContentWidth()
         ) {
-            AwanText(text = androidx.compose.ui.res.stringResource(ProfileR.string.profile_retry))
+            AwanText(text = stringResource(ProfileR.string.profile_retry))
         }
     }
 }
@@ -90,16 +80,11 @@ private fun ProfileErrorState(
 @Composable
 private fun ProfileContent(
     profile: Profile,
-    uiState: ProfileUiState,
+    uiState: ProfileState,
+    onAction: (ProfileAction) -> Unit,
     onEditClick: () -> Unit,
     onDailyZonesClick: () -> Unit,
     onSettingsClick: (String) -> Unit,
-    onThemeClick: (Boolean) -> Unit,
-    onLanguageClick: (String) -> Unit,
-    onUpdateSleepSchedule: (String, String) -> Unit,
-    onUpdateSessionDuration: (Int) -> Unit,
-    onUpdateTimezone: (String) -> Unit,
-    onLogout: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -129,20 +114,20 @@ private fun ProfileContent(
             profile = profile,
             uiState = uiState,
             onDailyZonesClick = onDailyZonesClick,
-            onUpdateSleepSchedule = onUpdateSleepSchedule,
-            onUpdateSessionDuration = onUpdateSessionDuration,
-            onUpdateTimezone = onUpdateTimezone
+            onUpdateSleepSchedule = { wake, sleep -> onAction(ProfileAction.UpdateSleepSchedule(wake, sleep)) },
+            onUpdateSessionDuration = { onAction(ProfileAction.UpdateSessionDuration(it)) },
+            onUpdateTimezone = { onAction(ProfileAction.UpdateTimezone(it)) }
         )
 
         AppearanceCard(
             uiState = uiState,
-            onThemeClick = onThemeClick,
-            onLanguageClick = onLanguageClick
+            onThemeClick = { onAction(ProfileAction.SetTheme(it)) },
+            onLanguageClick = { onAction(ProfileAction.SetLanguage(it)) }
         )
 
         SettingsCard(
             onSettingsClick = onSettingsClick,
-            onLogoutClick = onLogout
+            onLogoutClick = { onAction(ProfileAction.Logout) }
         )
 
         Spacer(modifier = Modifier.height(20.dp))

@@ -19,7 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.*
 import com.awan.feature.profile.impl.helpers.ProfileHelper
 import com.awan.feature.profile.impl.R as ProfileR
-import com.awan.feature.profile.impl.presentation.EditProfileUiState
+import com.awan.feature.profile.impl.presentation.EditProfileAction
+import com.awan.feature.profile.impl.presentation.EditProfileState
 import com.awan.feature.profile.impl.ui.components.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -27,15 +28,8 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
-    uiState: EditProfileUiState,
-    onFirstNameChange: (String) -> Unit,
-    onLastNameChange: (String) -> Unit,
-    onBirthDateChange: (String) -> Unit,
-    onUpdateSleepSchedule: (String, String) -> Unit,
-    onUpdateSessionDuration: (Int) -> Unit,
-    onUpdateSchedulingType: (String) -> Unit,
-    onUpdateTimezone: (String) -> Unit,
-    onSaveClick: () -> Unit,
+    uiState: EditProfileState,
+    onAction: (EditProfileAction) -> Unit,
     onBackClick: () -> Unit,
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
@@ -94,13 +88,13 @@ fun EditProfileScreen(
                             EditField(
                                 label = stringResource(ProfileR.string.profile_first_name),
                                 value = uiState.firstName,
-                                onValueChange = onFirstNameChange,
+                                onValueChange = { onAction(EditProfileAction.FirstNameChange(it)) },
                                 placeholder = "First name"
                             )
                             EditField(
                                 label = stringResource(ProfileR.string.profile_last_name),
                                 value = uiState.lastName,
-                                onValueChange = onLastNameChange,
+                                onValueChange = { onAction(EditProfileAction.LastNameChange(it)) },
                                 placeholder = "Last name"
                             )
                             PreferenceRow(
@@ -129,7 +123,7 @@ fun EditProfileScreen(
                             isExpanded = expandedItem == "wakeup",
                             onExpandClick = { expandedItem = if (expandedItem == "wakeup") null else "wakeup" },
                             onSaveClick = { h, m ->
-                                onUpdateSleepSchedule(ProfileHelper.formatToApiTime(h, m), uiState.sleepTime)
+                                onAction(EditProfileAction.UpdateSleepSchedule(ProfileHelper.formatToApiTime(h, m), uiState.sleepTime))
                                 expandedItem = null
                             },
                             onCancelClick = { expandedItem = null },
@@ -145,7 +139,7 @@ fun EditProfileScreen(
                             isExpanded = expandedItem == "sleep",
                             onExpandClick = { expandedItem = if (expandedItem == "sleep") null else "sleep" },
                             onSaveClick = { h, m ->
-                                onUpdateSleepSchedule(uiState.wakeupTime, ProfileHelper.formatToApiTime(h, m))
+                                onAction(EditProfileAction.UpdateSleepSchedule(uiState.wakeupTime, ProfileHelper.formatToApiTime(h, m)))
                                 expandedItem = null
                             },
                             onCancelClick = { expandedItem = null },
@@ -166,7 +160,7 @@ fun EditProfileScreen(
                             icon = Icons.Default.Public,
                             title = stringResource(ProfileR.string.profile_timezone),
                             value = uiState.timezone,
-                            onClick = { onUpdateTimezone(uiState.timezone) /* Example placeholder */ },
+                            onClick = { onAction(EditProfileAction.UpdateTimezone(uiState.timezone)) },
                             showDivider = true,
                             iconColor = AwanTheme.colors.sky
                         )
@@ -183,7 +177,7 @@ fun EditProfileScreen(
                                 modifier = Modifier.padding(end = 8.dp)
                             ) {
                                 AwanIconButton(
-                                    onClick = { onUpdateSessionDuration((uiState.preferredSessionDuration - 5).coerceAtLeast(5)) },
+                                    onClick = { onAction(EditProfileAction.UpdateSessionDuration((uiState.preferredSessionDuration - 5).coerceAtLeast(5))) },
                                     contentDescription = "Decrease"
                                 ) {
                                     Icon(Icons.Default.Remove, null, tint = AwanTheme.colors.textPrimary, modifier = Modifier.size(16.dp))
@@ -193,7 +187,7 @@ fun EditProfileScreen(
                                     style = AwanTheme.styles.bodyText.copy(textStyle = AwanTheme.typography.body.copy(fontWeight = FontWeight.Bold))
                                 )
                                 AwanIconButton(
-                                    onClick = { onUpdateSessionDuration((uiState.preferredSessionDuration + 5).coerceAtMost(180)) },
+                                    onClick = { onAction(EditProfileAction.UpdateSessionDuration((uiState.preferredSessionDuration + 5).coerceAtMost(180))) },
                                     contentDescription = "Increase"
                                 ) {
                                     Icon(Icons.Default.Add, null, tint = AwanTheme.colors.textPrimary, modifier = Modifier.size(16.dp))
@@ -213,9 +207,9 @@ fun EditProfileScreen(
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                SchedulingOption("SMART", stringResource(ProfileR.string.profile_scheduling_type_smart), uiState.schedulingType == "SMART", onUpdateSchedulingType)
-                                SchedulingOption("MANUAL", stringResource(ProfileR.string.profile_scheduling_type_manual), uiState.schedulingType == "MANUAL", onUpdateSchedulingType)
-                                SchedulingOption("FIXED", stringResource(ProfileR.string.profile_scheduling_type_fixed), uiState.schedulingType == "FIXED", onUpdateSchedulingType)
+                                SchedulingOption("SMART", stringResource(ProfileR.string.profile_scheduling_type_smart), uiState.schedulingType == "SMART") { onAction(EditProfileAction.UpdateSchedulingType(it)) }
+                                SchedulingOption("MANUAL", stringResource(ProfileR.string.profile_scheduling_type_manual), uiState.schedulingType == "MANUAL") { onAction(EditProfileAction.UpdateSchedulingType(it)) }
+                                SchedulingOption("FIXED", stringResource(ProfileR.string.profile_scheduling_type_fixed), uiState.schedulingType == "FIXED") { onAction(EditProfileAction.UpdateSchedulingType(it)) }
                             }
                         }
                     }
@@ -233,7 +227,7 @@ fun EditProfileScreen(
                     .padding(20.dp)
             ) {
                 AwanButton(
-                    onClick = onSaveClick,
+                    onClick = { onAction(EditProfileAction.Save) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !uiState.isSaving && uiState.firstName.isNotBlank() && uiState.lastName.isNotBlank()
                 ) {
@@ -272,7 +266,7 @@ fun EditProfileScreen(
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let {
                         val date = Calendar.getInstance().apply { timeInMillis = it }
-                        onBirthDateChange(dateFormat.format(date.time))
+                        onAction(EditProfileAction.BirthDateChange(dateFormat.format(date.time)))
                     }
                     showDatePicker = false
                 }) {

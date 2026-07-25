@@ -9,26 +9,10 @@ import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-data class EditProfileUiState(
-    val firstName: String = "",
-    val lastName: String = "",
-    val birthDate: String = "",
-    val wakeupTime: String = "07:30:00",
-    val sleepTime: String = "23:00:00",
-    val timezone: String = "UTC",
-    val preferredSessionDuration: Int = 60,
-    val schedulingType: String = "SMART",
-    val isLoading: Boolean = false,
-    val isSaving: Boolean = false,
-    val isUpdatingField: Boolean = false,
-    val isSuccess: Boolean = false,
-    val errorMessage: UiText? = null,
-    val fieldErrorMessage: UiText? = null,
-)
 
 @HiltViewModel
 class EditProfileViewModel @Inject constructor(
@@ -41,8 +25,11 @@ class EditProfileViewModel @Inject constructor(
     private val updateSchedulingTypeUseCase: UpdateSchedulingTypeUseCase,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(EditProfileUiState())
-    val uiState: StateFlow<EditProfileUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(EditProfileState())
+    val uiState: StateFlow<EditProfileState> = _uiState.asStateFlow()
+
+    private val _events = Channel<EditProfileEvent>()
+    val events = _events.receiveAsFlow()
 
     private val _profileUpdated = MutableSharedFlow<Profile>()
     val profileUpdated: SharedFlow<Profile> = _profileUpdated.asSharedFlow()
@@ -52,6 +39,19 @@ class EditProfileViewModel @Inject constructor(
 
     init {
         loadProfile()
+    }
+
+    fun onAction(action: EditProfileAction) {
+        when (action) {
+            is EditProfileAction.FirstNameChange -> onFirstNameChange(action.name)
+            is EditProfileAction.LastNameChange -> onLastNameChange(action.name)
+            is EditProfileAction.BirthDateChange -> onBirthDateChange(action.date)
+            is EditProfileAction.UpdateSleepSchedule -> updateSleepSchedule(action.wakeup, action.sleep)
+            is EditProfileAction.UpdateTimezone -> updateTimezone(action.timezone)
+            is EditProfileAction.UpdateSessionDuration -> updateSessionDuration(action.duration)
+            is EditProfileAction.UpdateSchedulingType -> updateSchedulingType(action.type)
+            EditProfileAction.Save -> saveProfile()
+        }
     }
 
     private fun loadProfile() {
@@ -91,33 +91,33 @@ class EditProfileViewModel @Inject constructor(
         }
     }
 
-    fun onFirstNameChange(name: String) {
+    private fun onFirstNameChange(name: String) {
         _uiState.update { it.copy(firstName = name) }
     }
 
-    fun onLastNameChange(name: String) {
+    private fun onLastNameChange(name: String) {
         _uiState.update { it.copy(lastName = name) }
     }
 
-    fun onBirthDateChange(date: String) {
+    private fun onBirthDateChange(date: String) {
         _uiState.update { it.copy(birthDate = date) }
     }
 
-    fun updateSleepSchedule(wakeup: String, sleep: String) {
+    private fun updateSleepSchedule(wakeup: String, sleep: String) {
         executeFieldUpdate { updateSleepScheduleUseCase(wakeup, sleep) }
     }
 
-    fun updateTimezone(timezone: String) {
+    private fun updateTimezone(timezone: String) {
         _uiState.update { it.copy(timezone = timezone) }
         executeFieldUpdate { updateTimezoneUseCase(timezone) }
     }
 
-    fun updateSessionDuration(duration: Int) {
+    private fun updateSessionDuration(duration: Int) {
         _uiState.update { it.copy(preferredSessionDuration = duration) }
         executeFieldUpdate { updateSessionSettingsUseCase(duration, originalProfile?.preferences?.bufferBetweenSessions ?: 5) }
     }
 
-    fun updateSchedulingType(type: String) {
+    private fun updateSchedulingType(type: String) {
         _uiState.update { it.copy(schedulingType = type) }
         executeFieldUpdate { updateSchedulingTypeUseCase(type) }
     }
@@ -145,7 +145,7 @@ class EditProfileViewModel @Inject constructor(
         }
     }
 
-    fun saveProfile() {
+    private fun saveProfile() {
         if (_uiState.value.isSaving) return
 
         val currentState = _uiState.value
@@ -198,6 +198,7 @@ class EditProfileViewModel @Inject constructor(
                     _profileUpdated.emit(updated)
                 }
                 _uiState.update { it.copy(isSaving = false, isSuccess = true) }
+                _events.send(EditProfileEvent.SaveSuccess)
             } else {
                 _uiState.update {
                     it.copy(

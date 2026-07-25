@@ -47,4 +47,26 @@
     <string name="profile_scheduling_type_fixed">Fixed</string>
     <string name="profile_retry">Retry</string>
     <string name="profile_logout">Log out</string>
+
+    <!-- Daily Zones -->
+    <string name="profile_daily_zones_add_zone">Add zone</string>
+    <string name="profile_daily_zones_customize_day">Customize a day</string>
+    <string name="profile_daily_zones_customize_day_hint">Make changes for one day only.</string>
+    <string name="profile_daily_zones_customize_day_title">Customize a day</string>
+    <string name="profile_daily_zones_select_day">Select a day to customize</string>
+    <string name="profile_daily_zones_zone_preview">Preview</string>
+    <string name="profile_daily_zones_zone_will_be_added">This zone will be added to your Default routine.</string>
+    <string name="profile_daily_zones_zone_in_default">This zone is in your Default routine.</string>
+    <string name="profile_daily_zones_delete_zone_title">Delete zone?</string>
+    <string name="profile_daily_zones_delete_zone_message">This zone will be removed from your Default routine.</string>
+    <string name="profile_daily_zones_reset_day_title">Reset %1$s?</string>
+    <string name="profile_daily_zones_reset_day_message">%1$s will return to your Default routine.</string>
+    <string name="profile_daily_zones_error_overlap">These zones overlap. Adjust the times and try again.</string>
+    <string name="profile_daily_zones_error_network">Something went wrong. Check your connection and try again.</string>
+    <string name="profile_daily_zones_error_generic">We couldn\'t save your changes. Please try again.</string>
+    <string name="profile_daily_zones_error_day_assigned">One or more selected days already have a routine.</string>
+    <string name="profile_daily_zones_custom_schedule">Custom schedule</string>
+    <string name="profile_daily_zones_edit_default">Edit Default Routine</string>
+    <string name="profile_daily_zones_no_zones">No zones in this routine</string>
+    <string name="profile_daily_zones_no_zones_hint">Add zones to shape your day.</string>
 </resources>

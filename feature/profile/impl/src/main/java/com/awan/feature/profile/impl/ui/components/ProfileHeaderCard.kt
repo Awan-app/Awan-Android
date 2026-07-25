@@ -20,13 +20,13 @@ import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.feature.profile.impl.helpers.ProfileHelper
-import com.awan.feature.profile.impl.presentation.ProfileUiState
+import com.awan.feature.profile.impl.presentation.ProfileState
 import com.awan.feature.profile.impl.R as ProfileR
 
 @Composable
 fun ProfileHeaderCard(
     profile: Profile,
-    uiState: ProfileUiState,
+    uiState: ProfileState,
     onEditClick: () -> Unit,
 ) {
     val isDark = uiState.useDarkTheme

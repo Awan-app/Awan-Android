@@ -10,7 +10,7 @@ import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
-import com.awan.app.core.model.DayBounds
+import com.awan.app.core.domain.onboarding.model.DayBounds
 import com.awan.feature.onboarding.impl.R
 
 /** Shared native time picker; reports the chosen time as minutes-from-midnight. */

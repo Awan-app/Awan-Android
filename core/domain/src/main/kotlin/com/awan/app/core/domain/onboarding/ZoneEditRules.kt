@@ -1,7 +1,7 @@
 package com.awan.app.core.domain.onboarding
 
-import com.awan.app.core.model.DayBounds
-import com.awan.app.core.model.Zone
+import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.domain.zones.model.Zone
 
 /**
  * Pure editing rules for the zones step. All math is done in "minutes since wake" so it is correct

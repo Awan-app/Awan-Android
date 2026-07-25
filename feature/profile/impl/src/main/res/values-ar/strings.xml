@@ -47,4 +47,26 @@
     <string name="profile_scheduling_type_fixed">ثابت</string>
     <string name="profile_retry">إعادة المحاولة</string>
     <string name="profile_logout">تسجيل الخروج</string>
+
+    <!-- Daily Zones -->
+    <string name="profile_daily_zones_add_zone">إضافة منطقة</string>
+    <string name="profile_daily_zones_customize_day">تخصيص يوم</string>
+    <string name="profile_daily_zones_customize_day_hint">قم بإجراء تغييرات ليوم واحد فقط.</string>
+    <string name="profile_daily_zones_customize_day_title">تخصيص يوم</string>
+    <string name="profile_daily_zones_select_day">اختر يومًا للتخصيص</string>
+    <string name="profile_daily_zones_zone_preview">معاينة</string>
+    <string name="profile_daily_zones_zone_will_be_added">ستُضاف هذه المنطقة إلى روتينك الافتراضي.</string>
+    <string name="profile_daily_zones_zone_in_default">هذه المنطقة في روتينك الافتراضي.</string>
+    <string name="profile_daily_zones_delete_zone_title">حذف المنطقة؟</string>
+    <string name="profile_daily_zones_delete_zone_message">ستُزال هذه المنطقة من روتينك الافتراضي.</string>
+    <string name="profile_daily_zones_reset_day_title">إعادة تعيين %1$s؟</string>
+    <string name="profile_daily_zones_reset_day_message">سيعود %1$s إلى روتينك الافتراضي.</string>
+    <string name="profile_daily_zones_error_overlap">تتداخل هذه المناطق. عدّل الأوقات وحاول مرة أخرى.</string>
+    <string name="profile_daily_zones_error_network">حدث خطأ ما. تحقق من اتصالك وحاول مجددًا.</string>
+    <string name="profile_daily_zones_error_generic">تعذّر حفظ تغييراتك. يرجى المحاولة مرة أخرى.</string>
+    <string name="profile_daily_zones_error_day_assigned">يوم أو أكثر من الأيام المختارة لديه روتين بالفعل.</string>
+    <string name="profile_daily_zones_custom_schedule">جدول مخصص</string>
+    <string name="profile_daily_zones_edit_default">تعديل الروتين الافتراضي</string>
+    <string name="profile_daily_zones_no_zones">لا توجد مناطق في هذا الروتين</string>
+    <string name="profile_daily_zones_no_zones_hint">أضف مناطق لتشكيل يومك.</string>
 </resources>

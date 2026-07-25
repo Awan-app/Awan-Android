@@ -8,8 +8,8 @@ import com.awan.app.core.domain.onboarding.ScheduleFirstTaskUseCase
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
 import com.awan.app.core.data.task.CreateTaskUseCase
-import com.awan.app.core.model.DayBounds
-import com.awan.app.core.network.dto.TaskInfoResponse
+import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.network.dto.task.TaskInfoResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch

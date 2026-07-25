@@ -3,7 +3,7 @@ package com.awan.app.core.network.interceptor
 import com.awan.app.core.datastore.auth.AuthTokenProvider
 import com.awan.app.core.network.api.AuthApiService
 import com.awan.app.core.network.device.DeviceIdProvider
-import com.awan.app.core.network.dto.RefreshTokenRequest
+import com.awan.app.core.network.dto.auth.RefreshTokenRequest
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
