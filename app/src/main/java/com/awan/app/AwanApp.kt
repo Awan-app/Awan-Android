@@ -67,7 +67,7 @@ fun AwanApp(appState: AwanAppState, modifier: Modifier = Modifier) {
                     onOpenCalendar = { date -> navigator.navigate(CalendarRoute(date)) },
                 )
                 calendarEntry(
-                    onDateSelected = { date -> navigator.resetCurrentSubStack(HomeRoute(date.toString())) },
+                    onDateSelected = { _ -> },
                     onBack = navigator::goBack,
                 )
                 chatEntry()

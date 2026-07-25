@@ -137,7 +137,7 @@ fun CalendarScreen(
                 }
                 Spacer(modifier = Modifier.width(AwanTheme.spacing.sm))
                 AwanText(
-                    text = "Calendar",
+                    text = stringResource(R.string.calendar_title),
                     style = AwanTheme.styles.displayText,
                     modifier = Modifier.testTag("calendar_title"),
                 )
@@ -161,7 +161,7 @@ fun CalendarScreen(
             Spacer(modifier = Modifier.height(AwanTheme.spacing.xs))
 
             AwanText(
-                text = "Upcoming Deadlines",
+                text = stringResource(R.string.calendar_upcoming_deadlines),
                 style = AwanTheme.styles.headingText,
             )
 
@@ -186,14 +186,14 @@ fun CalendarScreen(
                             onClick = { onAction(CalendarAction.Refresh) },
                             variant = AwanButtonVariant.Secondary,
                         ) {
-                            AwanText("Retry")
+                            AwanText(stringResource(R.string.calendar_retry))
                         }
                     }
                 }
             } else if (state.upcomingGoals.isEmpty()) {
                 AwanSurface(modifier = Modifier.fillMaxWidth()) {
                     AwanText(
-                        text = "No upcoming deadlines scheduled.",
+                        text = stringResource(R.string.calendar_no_deadlines),
                         style = AwanTheme.styles.bodyText,
                         modifier = Modifier.padding(AwanTheme.spacing.sm),
                     )
@@ -239,11 +239,11 @@ private fun StreakSummaryCard(streak: Int) {
             Spacer(modifier = Modifier.width(AwanTheme.spacing.md))
             Column {
                 AwanText(
-                    text = "$streak Day Streak",
+                    text = stringResource(R.string.calendar_streak_title, streak),
                     style = AwanTheme.styles.titleText,
                 )
                 AwanText(
-                    text = "Consecutive active days ending today",
+                    text = stringResource(R.string.calendar_streak_subtitle),
                     style = AwanTheme.styles.captionText,
                 )
             }
@@ -376,7 +376,9 @@ private fun WeekRow(
         runs
     }
 
-    val streakBrush = Brush.horizontalGradient(listOf(Color(0xFFFFC233), Color(0xFFFF8C00)))
+    val streakSun = AwanTheme.colors.zoneSun
+    val streakCoral = AwanTheme.colors.zoneCoral
+    val streakBrush = Brush.horizontalGradient(listOf(streakSun, streakCoral))
 
     Box(
         modifier = Modifier
@@ -441,7 +443,21 @@ private fun DayCell(
         else -> AwanTheme.colors.textPrimary
     }
 
-    val dateDescription = "${dayState.date.dayOfMonth}${if (dayState.isStreakDay) ", streak day" else ""}${if (dayState.hasDeadline) ", has deadline" else ""}"
+    val streakDayString = stringResource(R.string.calendar_streak_day)
+    val hasDeadlineString = stringResource(R.string.calendar_has_deadline)
+    val dateDescription = remember(dayState, streakDayString, hasDeadlineString) {
+        buildString {
+            append(dayState.date.dayOfMonth)
+            if (dayState.isStreakDay) {
+                append(", ")
+                append(streakDayString)
+            }
+            if (dayState.hasDeadline) {
+                append(", ")
+                append(hasDeadlineString)
+            }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -462,8 +478,20 @@ private fun DayCell(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         val bodyTextStyle = AwanTheme.typography.body
+        val selectionModifier = if (dayState.isSelected && !dayState.isToday) {
+            Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(AwanTheme.colors.surface)
+                .drawBehind {
+                    drawCircle(color = Color(0xFF38BDF8), radius = size.minDimension / 2f, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx()))
+                }
+        } else {
+            Modifier.size(36.dp)
+        }
+
         Box(
-            modifier = Modifier.size(36.dp),
+            modifier = selectionModifier,
             contentAlignment = Alignment.Center,
         ) {
             if (dayState.isToday && dayState.isStreakDay) {
@@ -575,16 +603,16 @@ private fun GoalItemSurface(
                 Spacer(modifier = Modifier.height(2.dp))
                 val formatter = remember { DateTimeFormatter.ofPattern("MMM d, yyyy") }
                 AwanText(
-                    text = "Target: ${goal.targetDate.format(formatter)}",
+                    text = stringResource(R.string.calendar_target_date, goal.targetDate.format(formatter)),
                     style = AwanTheme.styles.captionText,
                 )
             }
             val daysUntil = ChronoUnit.DAYS.between(today, goal.targetDate)
             val badgeText = when {
-                daysUntil == 0L -> "Today"
-                daysUntil == 1L -> "Tomorrow"
-                daysUntil > 1L -> "In $daysUntil days"
-                else -> "Past"
+                daysUntil == 0L -> stringResource(R.string.calendar_badge_today)
+                daysUntil == 1L -> stringResource(R.string.calendar_badge_tomorrow)
+                daysUntil > 1L -> stringResource(R.string.calendar_badge_in_days, daysUntil)
+                else -> stringResource(R.string.calendar_badge_past)
             }
             Box(
                 modifier = Modifier
@@ -600,3 +628,4 @@ private fun GoalItemSurface(
         }
     }
 }
+

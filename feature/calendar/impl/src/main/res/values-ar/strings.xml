@@ -1,7 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="calendar_title">التقويم</string>
     <string name="calendar_refresh_error">تعذّر تحديث التقويم. يتم عرض البيانات المحفوظة.</string>
     <string name="calendar_back">رجوع</string>
     <string name="calendar_prev_month">الشهر السابق</string>
     <string name="calendar_next_month">الشهر التالي</string>
+    <string name="calendar_upcoming_deadlines">المواعيد النهائية القادمة</string>
+    <string name="calendar_retry">إعادة المحاولة</string>
+    <string name="calendar_no_deadlines">لا توجد مواعيد نهائية قادمة.</string>
+    <string name="calendar_streak_title">سلسلة %d يوم متتالي</string>
+    <string name="calendar_streak_subtitle">أيام نشطة متتالية تنتهي اليوم</string>
+    <string name="calendar_target_date">المستهدف: %s</string>
+    <string name="calendar_badge_today">اليوم</string>
+    <string name="calendar_badge_tomorrow">غداً</string>
+    <string name="calendar_badge_in_days">خلال %d أيام</string>
+    <string name="calendar_badge_past">سابق</string>
+    <string name="calendar_streak_day">يوم متتالي</string>
+    <string name="calendar_has_deadline">لديه موعد نهائي</string>
 </resources>
+

@@ -1,7 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="calendar_title">Calendar</string>
     <string name="calendar_refresh_error">Couldn\'t refresh calendar. Showing saved data.</string>
     <string name="calendar_back">Back</string>
     <string name="calendar_prev_month">Previous month</string>
     <string name="calendar_next_month">Next month</string>
+    <string name="calendar_upcoming_deadlines">Upcoming Deadlines</string>
+    <string name="calendar_retry">Retry</string>
+    <string name="calendar_no_deadlines">No upcoming deadlines scheduled.</string>
+    <string name="calendar_streak_title">%d Day Streak</string>
+    <string name="calendar_streak_subtitle">Consecutive active days ending today</string>
+    <string name="calendar_target_date">Target: %s</string>
+    <string name="calendar_badge_today">Today</string>
+    <string name="calendar_badge_tomorrow">Tomorrow</string>
+    <string name="calendar_badge_in_days">In %d days</string>
+    <string name="calendar_badge_past">Past</string>
+    <string name="calendar_streak_day">streak day</string>
+    <string name="calendar_has_deadline">has deadline</string>
 </resources>
+

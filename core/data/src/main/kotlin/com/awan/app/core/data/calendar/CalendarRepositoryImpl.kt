@@ -29,7 +29,11 @@ class CalendarRepositoryImpl @Inject constructor(
     private val taskDao: TaskDao,
 ) : CalendarRepository {
     override fun observeCalendar(): Flow<CalendarSnapshot?> = flow {
-        val userId = authTokenProvider.getUserId() ?: return@flow
+        val userId = authTokenProvider.getUserId()
+        if (userId == null) {
+            emit(null)
+            return@flow
+        }
         emitAll(combine(
             userDao.observeUser(userId),
             userDao.observePreferences(userId),

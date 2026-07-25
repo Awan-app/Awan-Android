@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.calendar.CalendarRepository
+import com.awan.feature.calendar.impl.R
 import com.awan.feature.calendar.impl.domain.CalendarDateMapper
-import com.awan.feature.calendar.impl.model.CalendarGoal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +22,7 @@ import javax.inject.Inject
 class CalendarViewModel @Inject constructor(
     private val repository: CalendarRepository,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(createInitialDummyState())
+    private val _state = MutableStateFlow(createInitialState())
     val state: StateFlow<CalendarUiState> = _state.asStateFlow()
     private val events = Channel<CalendarEvent>(Channel.BUFFERED)
     val event = events.receiveAsFlow()
@@ -35,17 +35,37 @@ class CalendarViewModel @Inject constructor(
     }
 
     fun onAction(action: CalendarAction) = when (action) {
-        is CalendarAction.SelectDate -> viewModelScope.launch { events.send(CalendarEvent.DateSelected(action.date)) }
+        is CalendarAction.SelectDate -> selectDate(action.date)
         CalendarAction.PreviousMonth -> changeMonth(-1)
         CalendarAction.NextMonth -> changeMonth(1)
         CalendarAction.Refresh -> refresh()
     }
 
+    private fun selectDate(date: LocalDate) {
+        _state.update { current ->
+            current.copy(
+                selectedDate = date,
+                monthDays = CalendarDateMapper.buildMonthDays(
+                    yearMonth = current.currentYearMonth,
+                    today = current.today,
+                    selectedDate = date,
+                    streakDates = current.streakDates,
+                    goalDates = current.upcomingGoals.map { it.targetDate }.toSet(),
+                ),
+            )
+        }
+        viewModelScope.launch { events.send(CalendarEvent.DateSelected(date)) }
+    }
+
     private fun refresh() = viewModelScope.launch {
-        if (repository.refresh() is Result.Error && _state.value.upcomingGoals.isEmpty()) {
-            _state.update { it.copy(isLoading = false, errorMessage = com.awan.feature.calendar.impl.R.string.calendar_refresh_error) }
-        } else {
-            _state.update { it.copy(isLoading = false) }
+        _state.update { it.copy(isLoading = true) }
+        val result = repository.refresh()
+        _state.update { current ->
+            if (result is Result.Error) {
+                current.copy(isLoading = false, errorMessage = R.string.calendar_refresh_error)
+            } else {
+                current.copy(isLoading = false, errorMessage = null)
+            }
         }
     }
 
@@ -53,18 +73,15 @@ class CalendarViewModel @Inject constructor(
         val zone = CalendarDateMapper.parseZoneIdOrDefault(snapshot.user.timezone)
         val today = LocalDate.now(zone)
         val current = _state.value
-        val selected = current.selectedDate.takeIf { current.monthDays.isNotEmpty() } ?: today
-        val month = current.currentYearMonth.takeIf { current.monthDays.isNotEmpty() } ?: YearMonth.from(selected)
-        val repoGoals = CalendarDateMapper.filterAndSortUpcomingGoals(snapshot.goals, today)
-        val repoStreaks = CalendarDateMapper.calculateStreakDates(snapshot.user.streak, today)
-
-        val goals = repoGoals.ifEmpty { createDummyGoals(today) }
-        val streakCount = if (snapshot.user.streak > 0) snapshot.user.streak else 7
-        val streakDates = if (repoStreaks.isNotEmpty()) repoStreaks else createDummyStreakDates(today, streakCount)
+        val selected = current.selectedDate
+        val month = current.currentYearMonth
+        val goals = CalendarDateMapper.filterAndSortUpcomingGoals(snapshot.goals, today)
+        val streakCount = snapshot.user.streak.coerceAtLeast(0)
+        val streakDates = CalendarDateMapper.calculateStreakDates(streakCount, today)
 
         _state.value = CalendarUiState(
             isLoading = false,
-            errorMessage = current.errorMessage,
+            errorMessage = null,
             streak = streakCount,
             timezone = zone,
             today = today,
@@ -82,34 +99,23 @@ class CalendarViewModel @Inject constructor(
     }
 
     companion object {
-        private fun createDummyGoals(today: LocalDate): List<CalendarGoal> = listOf(
-            CalendarGoal(id = "dummy-1", title = "Complete System Architecture Spec", targetDate = today),
-            CalendarGoal(id = "dummy-2", title = "Submit App Store Artifacts", targetDate = today.plusDays(2)),
-            CalendarGoal(id = "dummy-3", title = "Sprint Review & Demo", targetDate = today.plusDays(5)),
-            CalendarGoal(id = "dummy-4", title = "Release V1.0 Candidate", targetDate = today.plusDays(10)),
-        )
-
-        private fun createDummyStreakDates(today: LocalDate, count: Int): Set<LocalDate> =
-            (0 until count).map { today.minusDays(it.toLong()) }.toSet()
-
-        private fun createInitialDummyState(): CalendarUiState {
+        private fun createInitialState(): CalendarUiState {
             val today = LocalDate.now()
             val month = YearMonth.from(today)
-            val dummyStreak = 7
-            val dummyStreakDates = createDummyStreakDates(today, dummyStreak)
-            val dummyGoals = createDummyGoals(today)
             return CalendarUiState(
-                isLoading = false,
-                streak = dummyStreak,
+                isLoading = true,
+                errorMessage = null,
+                streak = 0,
                 today = today,
                 selectedDate = today,
                 currentYearMonth = month,
-                streakDates = dummyStreakDates,
-                upcomingGoals = dummyGoals,
-                monthDays = CalendarDateMapper.buildMonthDays(month, today, today, dummyStreakDates, dummyGoals.map { it.targetDate }.toSet()),
+                streakDates = emptySet(),
+                upcomingGoals = emptyList(),
+                monthDays = CalendarDateMapper.buildMonthDays(month, today, today, emptySet(), emptySet()),
             )
         }
     }
 }
 
 sealed interface CalendarEvent { data class DateSelected(val date: LocalDate) : CalendarEvent }
+
