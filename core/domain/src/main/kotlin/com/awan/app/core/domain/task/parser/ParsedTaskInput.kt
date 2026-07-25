@@ -2,7 +2,7 @@ package com.awan.app.core.domain.task.parser
 
 import java.time.LocalDateTime
 
-enum class TaskTokenKind { DATE_TIME, DURATION, ZONE }
+enum class TaskTokenKind { DATE_TIME, DURATION, CATEGORY }
 
 /**
  * A recognised phrase in the *raw* input.
@@ -21,7 +21,7 @@ data class ParsedTaskInput(
     val title: String,
     val startAt: LocalDateTime? = null,
     val durationMinutes: Int? = null,
-    val zoneToken: String? = null,
+    val categoryToken: String? = null,
     val tokens: List<TaskToken> = emptyList(),
     /** The sentence named an actual clock time, rather than a bare day that defaulted to one. */
     val hasExplicitTime: Boolean = false,

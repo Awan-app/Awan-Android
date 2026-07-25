@@ -3,6 +3,9 @@ package com.awan.app.core.data.di
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSource
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSourceImpl
 import com.awan.app.core.data.auth.repository.AuthRepositoryImpl
+import com.awan.app.core.data.category.CategoryRepositoryImpl
+import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
+import com.awan.app.core.data.category.remote.CategoryRemoteDataSourceImpl
 import com.awan.app.core.data.onboarding.OnboardingRepository
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
@@ -14,6 +17,7 @@ import com.awan.app.core.data.zone.ZoneRepositoryImpl
 import com.awan.app.core.data.zone.remote.ZoneRemoteDataSource
 import com.awan.app.core.data.zone.remote.ZoneRemoteDataSourceImpl
 import com.awan.app.core.domain.auth.repository.AuthRepository
+import com.awan.app.core.domain.category.repository.CategoryRepository
 import com.awan.app.core.domain.task.repository.TaskRepository
 import com.awan.app.core.domain.zone.repository.ZoneRepository
 import dagger.Binds
@@ -61,6 +65,18 @@ internal abstract class DataModule {
     abstract fun bindZoneRepository(
         impl: ZoneRepositoryImpl,
     ): ZoneRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCategoryRemoteDataSource(
+        impl: CategoryRemoteDataSourceImpl,
+    ): CategoryRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindCategoryRepository(
+        impl: CategoryRepositoryImpl,
+    ): CategoryRepository
 
     @Binds
     @Singleton

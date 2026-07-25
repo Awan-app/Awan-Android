@@ -1,17 +1,21 @@
 package com.awan.app.core.data.task
 
+import com.awan.app.core.data.category.toModel
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.Task
 import com.awan.app.core.model.TaskDraft
+import com.awan.app.core.model.TaskSchedule
 import com.awan.app.core.model.TaskSession
 import com.awan.app.core.model.TaskStatus
 import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.network.dto.CreateTaskRequest
 import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
+import com.awan.app.core.network.dto.ScheduledSessionDto
 import com.awan.app.core.network.dto.SessionDraftDto
 import com.awan.app.core.network.dto.SessionDto
 import com.awan.app.core.network.dto.TaskInfoResponse
+import com.awan.app.core.network.dto.TaskScheduleResponse
 import com.awan.app.core.network.dto.TaskWithSessionsResponse
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -24,8 +28,9 @@ internal fun TaskDraft.toRequest(): CreateTaskRequest = CreateTaskRequest(
     description = description?.takeIf { it.isNotBlank() },
     estimatedDuration = durationMinutes,
     mandatory = mandatory,
-    estimatedPoints = 0,
-    allowTaskSplitting = false,
+    estimatedPoints = estimatedPoints,
+    allowTaskSplitting = allowTaskSplitting,
+    categoryId = categoryId,
     goalId = goalId,
 )
 
@@ -52,7 +57,40 @@ internal fun TaskInfoResponse.toModel(): Task = Task(
     allowTaskSplitting = allowTaskSplitting ?: false,
     goalId = goalId,
     dependsOnTaskIds = dependsOnTaskIds.orEmpty(),
+    category = category?.toModel(),
 )
+
+/**
+ * An empty `scheduledSessions` with nothing in `unscheduledTasks` still means nothing was placed, so
+ * it gets a reason of its own rather than passing for a successful schedule.
+ */
+internal fun TaskScheduleResponse.toModel(): TaskSchedule {
+    val sessions = scheduledSessions.orEmpty().mapNotNull { it.toModel() }
+    val refusal = unscheduledTasks.orEmpty().firstOrNull()
+    return TaskSchedule(
+        sessions = sessions,
+        unscheduledReason = when {
+            refusal != null -> refusal.message ?: refusal.reason ?: UNKNOWN_REFUSAL
+            sessions.isEmpty() -> UNKNOWN_REFUSAL
+            else -> null
+        },
+    )
+}
+
+private const val UNKNOWN_REFUSAL = "UNSCHEDULED"
+
+internal fun ScheduledSessionDto.toModel(): TaskSession? {
+    val parsedStart = start.toLocalDateTimeOrNull() ?: return null
+    val parsedEnd = end.toLocalDateTimeOrNull() ?: return null
+    return TaskSession(
+        id = sessionId,
+        start = parsedStart,
+        end = parsedEnd,
+        status = SessionStatus.SCHEDULED,
+        locked = false,
+        zoneId = zoneId,
+    )
+}
 
 internal fun TaskWithSessionsResponse.toModel(): TaskWithSessions = TaskWithSessions(
     task = task.toModel(),

@@ -15,4 +15,5 @@ data class TaskInfoResponse(
     @SerialName("allowTaskSplitting") val allowTaskSplitting: Boolean? = false,
     @SerialName("goalId") val goalId: String? = null,
     @SerialName("dependsOnTaskIds") val dependsOnTaskIds: List<String>? = emptyList(),
+    @SerialName("category") val category: CategoryDto? = null,
 )

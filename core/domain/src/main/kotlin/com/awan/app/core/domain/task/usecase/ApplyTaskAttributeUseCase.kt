@@ -12,6 +12,7 @@ sealed interface TaskAttribute {
     data class At(val moment: LocalDateTime) : TaskAttribute
     data class On(val date: LocalDate) : TaskAttribute
     data class Lasting(val minutes: Int) : TaskAttribute
+    data class In(val categoryName: String) : TaskAttribute
 }
 
 /**
@@ -27,6 +28,7 @@ class ApplyTaskAttributeUseCase @Inject constructor(
             is TaskAttribute.At -> TaskInputWriter.withTime(input, parsed, attribute.moment, today)
             is TaskAttribute.On -> TaskInputWriter.withDate(input, parsed, attribute.date, today)
             is TaskAttribute.Lasting -> TaskInputWriter.withDuration(input, parsed, attribute.minutes)
+            is TaskAttribute.In -> TaskInputWriter.withCategory(input, parsed, attribute.categoryName)
         }
     }
 }

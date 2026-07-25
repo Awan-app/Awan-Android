@@ -8,10 +8,14 @@ import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
 import com.awan.app.core.domain.task.repository.TaskRepository
 import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
+import com.awan.app.core.domain.zone.repository.ZoneRepository
+import com.awan.app.core.domain.zone.usecase.GetZonesForDateUseCase
 import com.awan.app.core.model.DayBounds
+import com.awan.app.core.model.DayZone
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.Task
 import com.awan.app.core.model.TaskDraft
+import com.awan.app.core.model.TaskSchedule
 import com.awan.app.core.model.TaskWithSessions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,6 +31,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnboardingViewModelTest {
@@ -54,6 +59,20 @@ class OnboardingViewModelTest {
             draft: TaskDraft,
             sessions: List<SessionDraft>,
         ): Result<TaskWithSessions> = error("onboarding never schedules its first task")
+
+        override suspend fun createTaskWithAi(title: String, description: String?): Result<Task> =
+            error("onboarding never asks the AI")
+
+        override suspend fun scheduleTask(taskId: String): Result<TaskSchedule> =
+            error("onboarding never schedules its first task")
+
+        override suspend fun deleteTask(taskId: String): Result<Unit> = error("onboarding never deletes")
+    }
+
+    /** Onboarding's first task is unscheduled, so the zone lookup is never reached. */
+    private class FakeZoneRepository : ZoneRepository {
+        override suspend fun getZonesForDate(date: LocalDate): Result<List<DayZone>> =
+            error("onboarding never schedules its first task")
     }
 
     @Before
@@ -66,7 +85,10 @@ class OnboardingViewModelTest {
             suggestZoneSchedule = SuggestZoneScheduleUseCase(),
             scheduleFirstTask = ScheduleFirstTaskUseCase(),
             validateDayBounds = ValidateDayBounds(),
-            createTaskUseCase = CreateTaskUseCase(fakeTaskRepository),
+            createTaskUseCase = CreateTaskUseCase(
+                fakeTaskRepository,
+                GetZonesForDateUseCase(FakeZoneRepository()),
+            ),
         )
     }
 

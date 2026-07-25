@@ -22,6 +22,9 @@ class TaskInputWriterTest {
     private fun withDate(input: String, date: LocalDate) =
         TaskInputWriter.withDate(input, parse(input), date, today)
 
+    private fun withCategory(input: String, categoryName: String) =
+        TaskInputWriter.withCategory(input, parse(input), categoryName)
+
     @Test
     fun `a time is appended when the sentence had none`() {
         assertEquals(
@@ -109,6 +112,31 @@ class TaskInputWriterTest {
             assertEquals("round trip of '$text'", date, reparsed.startAt?.toLocalDate())
             assertEquals("title survived '$text'", "Go Swimming", reparsed.title)
         }
+    }
+
+    // ── Zones ────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `a zone is appended when the sentence had none, and replaced when it had one`() {
+        val once = withCategory("Gym", "Play")
+        assertEquals("Gym @Play", once)
+        assertEquals("Gym @Work", withCategory(once, "Work"))
+    }
+
+    @Test
+    fun `a single-word zone round-trips through the parser as its own token`() {
+        listOf("Study", "Work", "Play", "Personal").forEach { name ->
+            val text = withCategory("Gym", name)
+            val reparsed = parse(text)
+            assertEquals("round trip of '$text'", name.lowercase(), reparsed.categoryToken?.lowercase())
+            assertEquals("title survived '$text'", "Gym", reparsed.title)
+        }
+    }
+
+    @Test
+    fun `a multi-word zone is written by its first word so the parser can hold it`() {
+        assertEquals("Gym @Deep", withCategory("Gym", "Deep Work"))
+        assertEquals("Deep", parse("Gym @Deep").categoryToken)
     }
 
     // ── The contract that makes the sentence the source of truth ─────────────

@@ -4,10 +4,12 @@ import java.time.LocalDateTime
 
 /**
  * What the quick-add sheet has collected so far: the parser fills [startAt], [durationMinutes] and
- * [zoneToken] from the typed sentence, the chips let the user override them, and
- * `CreateTaskFromDraftUseCase` turns it into the right API call.
+ * [categoryToken] from the typed sentence, the chips let the user override them, and
+ * `CreateTaskUseCase` turns it into the right API call.
  *
- * A null [startAt] means unscheduled — the task lands in the Inbox with no session.
+ * A null [startAt] means unscheduled — the task lands in the Inbox with no session. There is no
+ * `zoneId` here on purpose: the draft names a category, and the session's zone is resolved from it
+ * against the chosen day inside `CreateTaskUseCase`.
  */
 data class TaskDraft(
     val title: String,
@@ -15,8 +17,10 @@ data class TaskDraft(
     val mandatory: Boolean = true,
     val durationMinutes: Int? = null,
     val startAt: LocalDateTime? = null,
-    val zoneToken: String? = null,
-    val zoneId: String? = null,
+    val categoryToken: String? = null,
+    val categoryId: String? = null,
+    val estimatedPoints: Int = 0,
+    val allowTaskSplitting: Boolean = false,
     val goalId: String? = null,
 ) {
     val isValid: Boolean get() = title.isNotBlank()

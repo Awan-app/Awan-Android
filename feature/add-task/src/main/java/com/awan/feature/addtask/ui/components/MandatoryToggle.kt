@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -49,13 +50,14 @@ fun MandatoryToggle(
         tone = AwanTheme.colors.zoneTangerine,
         modifier = modifier.semantics { role = Role.Switch },
         active = mandatory,
-        leading = { DotOnARail(travelled = mandatory) },
+        leading = { DotOnARail(travelled = mandatory, tone = AwanTheme.colors.zoneTangerine) },
         onClick = onToggle,
     )
 }
 
+/** The row's own dot, freed to travel. Shared by every chip in the sheet that behaves as a switch. */
 @Composable
-private fun DotOnARail(travelled: Boolean) {
+internal fun DotOnARail(travelled: Boolean, tone: Color) {
     val colors = AwanTheme.colors
     val reduced = reducedMotion()
     val travel = RailWidth - ThumbInset * 2 - AwanChipDotSize
@@ -63,17 +65,17 @@ private fun DotOnARail(travelled: Boolean) {
     val offset by animateDpAsState(
         targetValue = if (travelled) ThumbInset + travel else ThumbInset,
         animationSpec = if (reduced) snap() else AwanTheme.motion.bouncy.spec(),
-        label = "mandatoryThumb",
+        label = "railThumb",
     )
     val rail by animateColorAsState(
-        targetValue = if (travelled) colors.zoneTangerine else colors.line,
+        targetValue = if (travelled) tone else colors.line,
         animationSpec = AwanTheme.motion.settle.spec(),
-        label = "mandatoryRail",
+        label = "railTrack",
     )
     val thumb by animateColorAsState(
         targetValue = if (travelled) colors.surface else colors.meta,
         animationSpec = AwanTheme.motion.settle.spec(),
-        label = "mandatoryDot",
+        label = "railDot",
     )
 
     Box(

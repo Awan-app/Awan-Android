@@ -25,4 +25,5 @@ data class Task(
     val allowTaskSplitting: Boolean = false,
     val goalId: String? = null,
     val dependsOnTaskIds: List<String> = emptyList(),
+    val category: Category? = null,
 )

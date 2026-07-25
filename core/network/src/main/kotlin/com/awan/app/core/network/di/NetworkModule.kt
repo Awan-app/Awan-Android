@@ -3,6 +3,7 @@ package com.awan.app.core.network.di
 import android.content.Context
 import com.awan.app.core.network.BuildConfig
 import com.awan.app.core.network.api.AuthApiService
+import com.awan.app.core.network.api.CategoryApiService
 import com.awan.app.core.network.api.OnboardingApiService
 import com.awan.app.core.network.api.TaskApiService
 import com.awan.app.core.network.api.ZoneApiService
@@ -127,6 +128,11 @@ object NetworkModule {
     @Singleton
     fun providesZoneApiService(retrofit: Retrofit): ZoneApiService =
         retrofit.create(ZoneApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesCategoryApiService(retrofit: Retrofit): CategoryApiService =
+        retrofit.create(CategoryApiService::class.java)
 
     @Provides
     @Singleton

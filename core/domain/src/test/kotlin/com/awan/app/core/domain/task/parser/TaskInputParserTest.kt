@@ -21,7 +21,7 @@ class TaskInputParserTest {
         assertEquals("Buy groceries", result.title)
         assertNull(result.startAt)
         assertNull(result.durationMinutes)
-        assertNull(result.zoneToken)
+        assertNull(result.categoryToken)
         assertTrue(result.tokens.isEmpty())
     }
 
@@ -169,12 +169,12 @@ class TaskInputParserTest {
         val result = parse("Study chapter 4 @study")
 
         assertEquals("Study chapter 4", result.title)
-        assertEquals("study", result.zoneToken)
+        assertEquals("study", result.categoryToken)
     }
 
     @Test
     fun `an unknown zone token still parses`() {
-        assertEquals("nosuchzone", parse("Task @nosuchzone").zoneToken)
+        assertEquals("nosuchzone", parse("Task @nosuchzone").categoryToken)
     }
 
     @Test
@@ -182,11 +182,11 @@ class TaskInputParserTest {
         val result = parse("Study chapter 4 @study mon 4pm for 90m")
 
         assertEquals("Study chapter 4", result.title)
-        assertEquals("study", result.zoneToken)
+        assertEquals("study", result.categoryToken)
         assertEquals(90, result.durationMinutes)
         assertEquals(LocalDateTime.of(2026, 7, 27, 16, 0), result.startAt)
         assertEquals(
-            setOf(TaskTokenKind.ZONE, TaskTokenKind.DURATION, TaskTokenKind.DATE_TIME),
+            setOf(TaskTokenKind.CATEGORY, TaskTokenKind.DURATION, TaskTokenKind.DATE_TIME),
             result.tokens.map { it.kind }.toSet(),
         )
     }
@@ -196,7 +196,7 @@ class TaskInputParserTest {
         val result = parse("tomorrow 6pm @play")
 
         assertEquals("", result.title)
-        assertEquals("play", result.zoneToken)
+        assertEquals("play", result.categoryToken)
     }
 
     @Test
@@ -204,7 +204,7 @@ class TaskInputParserTest {
         val input = "Gym @play"
         val result = TaskInputParser.parse(input, now)
 
-        val zone = result.tokens.single { it.kind == TaskTokenKind.ZONE }
+        val zone = result.tokens.single { it.kind == TaskTokenKind.CATEGORY }
         assertEquals("@play", input.substring(zone.range.first, zone.range.last + 1))
     }
 

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,7 +32,10 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.awan.app.core.designsystem.AwanAiAura
 import com.awan.app.core.designsystem.AwanButton
+import com.awan.app.core.designsystem.AwanButtonVariant
+import com.awan.app.core.designsystem.AwanConfirmDialog
 import com.awan.app.core.designsystem.AwanDatePickerDialog
 import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanText
@@ -45,14 +49,18 @@ import com.awan.app.core.designsystem.SparkleBurst
 import com.awan.app.core.designsystem.reducedMotion
 import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskAction
+import com.awan.feature.addtask.presentation.AddTaskAiStage
 import com.awan.feature.addtask.presentation.AddTaskEvent
 import com.awan.feature.addtask.presentation.AddTaskMode
 import com.awan.feature.addtask.presentation.AddTaskPicker
 import com.awan.feature.addtask.presentation.AddTaskState
 import com.awan.feature.addtask.presentation.AddTaskViewModel
+import com.awan.feature.addtask.presentation.TaskConfirmation
 import com.awan.feature.addtask.ui.components.AddTaskModeSelector
+import com.awan.feature.addtask.ui.components.AiToggle
 import com.awan.feature.addtask.ui.components.GoalPlaceholder
 import com.awan.feature.addtask.ui.components.TaskAttributeChips
+import com.awan.feature.addtask.ui.components.TaskConfirmationPanel
 import com.awan.feature.addtask.ui.components.rememberTokenHighlight
 
 private val MascotWidth = 108.dp
@@ -73,7 +81,20 @@ fun AddTaskSheet(
     viewModel: AddTaskViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val sheetState = rememberModalBottomSheetState()
+
+    /**
+     * `ModalBottomSheet` asks this *before* it moves — the scrim tap, the drag and the back press all
+     * gate on it. Refusing here is what keeps a half-written sheet on screen while the question is
+     * asked; letting the dismissal through and reacting to it afterwards means the sheet has already
+     * animated away by the time anyone can object, and it never comes back.
+     */
+    val sheetState = rememberModalBottomSheetState(
+        confirmValueChange = { target ->
+            val blocked = target == SheetValue.Hidden && viewModel.state.value.isDirty
+            if (blocked) viewModel.onAction(AddTaskAction.DismissRequested)
+            !blocked
+        },
+    )
 
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
@@ -86,8 +107,10 @@ fun AddTaskSheet(
         }
     }
 
+    // No BackHandler here: back already routes through the sheet's own dismissal, and intercepting it
+    // would skip the slide-down that a clean close should still get.
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { viewModel.onAction(AddTaskAction.DismissRequested) },
         sheetState = sheetState,
         containerColor = AwanTheme.colors.background,
         contentColor = AwanTheme.colors.textPrimary,
@@ -102,6 +125,18 @@ fun AddTaskSheet(
     }
 
     AttributePickers(state = state, onAction = viewModel::onAction)
+
+    if (state.showDiscardConfirm) {
+        AwanConfirmDialog(
+            title = stringResource(R.string.add_task_discard_title),
+            body = stringResource(R.string.add_task_discard_body),
+            confirmLabel = stringResource(R.string.add_task_discard_confirm),
+            confirmVariant = AwanButtonVariant.Destructive,
+            onConfirm = { viewModel.onAction(AddTaskAction.DiscardConfirmed) },
+            dismissLabel = stringResource(R.string.add_task_discard_cancel),
+            onDismiss = { viewModel.onAction(AddTaskAction.DiscardCancelled) },
+        )
+    }
 }
 
 /**
@@ -130,8 +165,8 @@ private fun AttributePickers(state: AddTaskState, onAction: (AddTaskAction) -> U
             onConfirm = { onAction(AddTaskAction.TimePicked(it)) },
         )
 
-        // Length is a menu hanging off its own chip, so it lives in TaskAttributeChips.
-        AddTaskPicker.DURATION, null -> Unit
+        // Length and category are menus hanging off their own chips — see TaskAttributeChips.
+        AddTaskPicker.DURATION, AddTaskPicker.CATEGORY, null -> Unit
     }
 }
 
@@ -151,18 +186,29 @@ private fun AddTaskSheetContent(
                 .padding(top = AwanTheme.spacing.md, bottom = AwanTheme.spacing.xl),
             verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
         ) {
-            CascadeItem(0, Modifier.fillMaxWidth()) {
-                AddTaskModeSelector(
-                    selected = state.mode,
-                    onSelect = { onAction(AddTaskAction.ModeChanged(it)) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            if (state.showsModeSelector) {
+                CascadeItem(0, Modifier.fillMaxWidth()) {
+                    AddTaskModeSelector(
+                        selected = state.mode,
+                        onSelect = { onAction(AddTaskAction.ModeChanged(it)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
 
-            Crossfade(targetState = state.mode, label = "addTaskMode") { mode ->
-                when (mode) {
+            val body = state.confirmation ?: state.mode
+            Crossfade(targetState = body, label = "addTaskBody") { target ->
+                when (target) {
+                    is TaskConfirmation -> TaskConfirmationPanel(
+                        confirmation = target,
+                        today = state.today,
+                        onDone = { onAction(AddTaskAction.DismissRequested) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
                     AddTaskMode.TASK -> TaskForm(state = state, onAction = onAction)
                     AddTaskMode.GOAL -> GoalPlaceholder()
+                    else -> Unit
                 }
             }
         }
@@ -205,46 +251,72 @@ private fun TaskForm(
     state: AddTaskState,
     onAction: (AddTaskAction) -> Unit,
 ) {
+    val composing = state.aiStage.isComposing
+
     Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
+        // Above the form, not below it: it is the offer to skip the form, so it has to be read first.
+        if (state.showsAiSwitch) {
+            CascadeItem(1, Modifier.fillMaxWidth()) {
+                AiToggle(
+                    enabled = state.aiStage != AddTaskAiStage.OFF,
+                    onToggle = { onAction(AddTaskAction.AiToggled) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
         // The task name is the draft. It gets the heading scale and the bordered field; the note
         // below it is deliberately quieter so the two never compete for the eye.
         CascadeItem(1, Modifier.fillMaxWidth()) {
-            AwanTextField(
-                value = state.input,
-                onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
-                placeholder = stringResource(R.string.add_task_title_placeholder),
-                contentDescriptionText = stringResource(R.string.add_task_title_content_description),
-                textStyle = AwanTheme.styles.headingText,
-                placeholderStyle = AwanTheme.styles.headingText.copy(color = AwanTheme.colors.meta),
-                visualTransformation = rememberTokenHighlight(state.parsed.tokens),
-                capitalization = KeyboardCapitalization.Sentences,
-                imeAction = ImeAction.Next,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            AwanAiAura(active = composing, modifier = Modifier.fillMaxWidth()) {
+                AwanTextField(
+                    value = state.input,
+                    onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
+                    placeholder = stringResource(R.string.add_task_title_placeholder),
+                    contentDescriptionText = stringResource(R.string.add_task_title_content_description),
+                    textStyle = AwanTheme.styles.headingText,
+                    placeholderStyle = AwanTheme.styles.headingText.copy(color = AwanTheme.colors.meta),
+                    // Empty while the parser is stood down, which is what hides the highlights.
+                    visualTransformation = rememberTokenHighlight(state.parsed.tokens),
+                    enabled = state.aiStage != AddTaskAiStage.WORKING,
+                    capitalization = KeyboardCapitalization.Sentences,
+                    imeAction = ImeAction.Next,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
 
         CascadeItem(2, Modifier.fillMaxWidth()) {
             NoteField(
                 value = state.description,
+                placeholder = stringResource(
+                    if (composing) R.string.add_task_ai_note_placeholder
+                    else R.string.add_task_description_placeholder,
+                ),
                 onValueChange = { onAction(AddTaskAction.DescriptionChanged(it)) },
             )
         }
 
         CascadeItem(3) {
-            AwanText(stringResource(R.string.add_task_hint), style = AwanTheme.styles.metaText)
+            AwanText(hintFor(state), style = AwanTheme.styles.metaText)
         }
 
-        CascadeItem(4, Modifier.fillMaxWidth()) {
-            TaskAttributeChips(
-                state = state,
-                today = state.today,
-                onEditWhen = { onAction(AddTaskAction.PickerOpened(AddTaskPicker.DATE)) },
-                onEditDuration = { onAction(AddTaskAction.PickerOpened(AddTaskPicker.DURATION)) },
-                onDurationPicked = { onAction(AddTaskAction.DurationPicked(it)) },
-                onDurationMenuDismissed = { onAction(AddTaskAction.PickerDismissed) },
-                onToggleMandatory = { onAction(AddTaskAction.MandatoryToggled) },
-                modifier = Modifier.fillMaxWidth(),
-            )
+        if (state.showsAttributeChips) {
+            CascadeItem(4, Modifier.fillMaxWidth()) {
+                TaskAttributeChips(
+                    state = state,
+                    today = state.today,
+                    onEditWhen = { onAction(AddTaskAction.PickerOpened(AddTaskPicker.DATE)) },
+                    onEditDuration = { onAction(AddTaskAction.PickerOpened(AddTaskPicker.DURATION)) },
+                    onDurationPicked = { onAction(AddTaskAction.DurationPicked(it)) },
+                    onDurationMenuDismissed = { onAction(AddTaskAction.PickerDismissed) },
+                    onEditCategory = { onAction(AddTaskAction.PickerOpened(AddTaskPicker.CATEGORY)) },
+                    onCategoryPicked = { onAction(AddTaskAction.CategoryPicked(it)) },
+                    onCategoryMenuDismissed = { onAction(AddTaskAction.PickerDismissed) },
+                    onToggleMandatory = { onAction(AddTaskAction.MandatoryToggled) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
 
         state.errorMessage?.let {
@@ -252,9 +324,60 @@ private fun TaskForm(
         }
 
         CascadeItem(5, Modifier.fillMaxWidth()) {
-            SubmitButton(state = state, onSubmit = { onAction(AddTaskAction.Submit) })
+            SheetActions(state = state, onAction = onAction)
         }
     }
+}
+
+/** Says what the current stage is asking for, so the copy under the field is never stale. */
+@Composable
+private fun hintFor(state: AddTaskState): String = stringResource(
+    when {
+        state.aiStage.isComposing -> R.string.add_task_ai_hint
+        state.aiStage == AddTaskAiStage.REVIEW -> R.string.add_task_ai_review_hint
+        else -> R.string.add_task_hint
+    },
+)
+
+/**
+ * Review is the only stage that asks two questions at once — hand it to Awan, or take it back. Every
+ * other stage has exactly one thing to press.
+ */
+@Composable
+private fun SheetActions(state: AddTaskState, onAction: (AddTaskAction) -> Unit) {
+    if (state.aiStage == AddTaskAiStage.REVIEW) {
+        Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+            AwanButton(
+                onClick = { onAction(AddTaskAction.ScheduleWithAi) },
+                enabled = !state.isSubmitting,
+                isLoading = state.isSubmitting,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                AwanText(stringResource(R.string.add_task_ai_schedule_with_ai))
+            }
+            AwanButton(
+                onClick = { onAction(AddTaskAction.ScheduleManually) },
+                enabled = !state.isSubmitting,
+                variant = AwanButtonVariant.Quiet,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                AwanText(stringResource(R.string.add_task_ai_schedule_manually))
+            }
+        }
+        return
+    }
+
+    SubmitButton(
+        state = state,
+        label = stringResource(
+            when (state.aiStage) {
+                AddTaskAiStage.COMPOSING -> R.string.add_task_ai_submit
+                AddTaskAiStage.WORKING -> R.string.add_task_ai_working
+                else -> R.string.add_task_submit
+            },
+        ),
+        onSubmit = { onAction(AddTaskAction.Submit) },
+    )
 }
 
 /**
@@ -262,9 +385,8 @@ private fun TaskForm(
  * off the task name rather than a second field of equal weight.
  */
 @Composable
-private fun NoteField(value: String, onValueChange: (String) -> Unit) {
+private fun NoteField(value: String, placeholder: String, onValueChange: (String) -> Unit) {
     val label = stringResource(R.string.add_task_description_content_description)
-    val placeholder = stringResource(R.string.add_task_description_placeholder)
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
@@ -291,7 +413,7 @@ private fun NoteField(value: String, onValueChange: (String) -> Unit) {
 
 /** Pops the moment the sentence becomes submittable — the same beat the onboarding footer uses. */
 @Composable
-private fun SubmitButton(state: AddTaskState, onSubmit: () -> Unit) {
+private fun SubmitButton(state: AddTaskState, label: String, onSubmit: () -> Unit) {
     val reduced = reducedMotion()
     val pop = remember { Animatable(1f) }
     val spec = AwanTheme.motion.playful.spec<Float>()
@@ -314,6 +436,6 @@ private fun SubmitButton(state: AddTaskState, onSubmit: () -> Unit) {
                 scaleY = pop.value
             },
     ) {
-        AwanText(stringResource(R.string.add_task_submit))
+        AwanText(label)
     }
 }

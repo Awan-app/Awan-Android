@@ -17,7 +17,21 @@ sealed interface AddTaskAction {
     /** Minutes from midnight, on the day just picked — or the one the sentence already names. */
     data class TimePicked(val minutesFromMidnight: Int) : AddTaskAction
     data class DurationPicked(val minutes: Int) : AddTaskAction
+    data class CategoryPicked(val categoryName: String) : AddTaskAction
+
+    data object AiToggled : AddTaskAction
+
+    /** Keeps Awan's task and asks the engine to place it. */
+    data object ScheduleWithAi : AddTaskAction
+
+    /** Reveals the when chip; confirming then replaces Awan's task with a scheduled one. */
+    data object ScheduleManually : AddTaskAction
 
     data object Submit : AddTaskAction
+
+    /** A dismiss the user asked for. Becomes [Dismiss] only once nothing would be lost. */
+    data object DismissRequested : AddTaskAction
+    data object DiscardConfirmed : AddTaskAction
+    data object DiscardCancelled : AddTaskAction
     data object Dismiss : AddTaskAction
 }

@@ -9,13 +9,16 @@
     <string name="add_task_description_content_description">Task note</string>
 
     <string name="add_task_hint">Try “Gym session tomorrow 6pm @play”</string>
+    <string name="add_task_ai_hint">Describe it however you like — Awan works out the rest.</string>
 
     <string name="add_task_chip_mandatory">Must do</string>
     <string name="add_task_chip_optional">Can skip</string>
     <string name="add_task_chip_today_no_time">Today</string>
     <string name="add_task_chip_no_duration">Any length</string>
-    <string name="add_task_chip_zone_unknown">Zone “%1$s” not found</string>
-    <string name="add_task_chip_zone_resolving">Finding zone…</string>
+    <string name="add_task_chip_no_category">No category</string>
+    <string name="add_task_category_menu_empty">No categories set up yet</string>
+    <string name="add_task_chip_category_unknown">Category “%1$s” not found</string>
+    <string name="add_task_chip_category_resolving">Finding category…</string>
 
     <string name="add_task_duration_minutes">%1$d min</string>
     <string name="add_task_duration_hours">%1$d h</string>
@@ -30,10 +33,31 @@
     <string name="add_task_picker_cancel">Cancel</string>
 
     <string name="add_task_submit">Add task</string>
-    <string name="add_task_close">Close</string>
+
+    <string name="add_task_ai_switch">Let Awan fill it in</string>
+    <string name="add_task_ai_switch_body">Just say what you need done. Awan works out how long it takes, where it belongs, and when to do it.</string>
+    <string name="add_task_ai_switch_content_description">Let Awan work out the task details</string>
+    <string name="add_task_ai_note_placeholder">Anything else Awan should know?</string>
+    <string name="add_task_ai_submit">Ask Awan</string>
+    <string name="add_task_ai_working">Awan is working it out…</string>
+    <string name="add_task_ai_review_hint">Change anything that looks off, then pick how to schedule it.</string>
+    <string name="add_task_ai_schedule_with_ai">Let Awan schedule it</string>
+    <string name="add_task_ai_schedule_manually">I\'ll pick a time</string>
+
+    <string name="add_task_confirm_title">All set!</string>
+    <string name="add_task_confirm_first_session">Starts with</string>
+    <string name="add_task_confirm_inbox">Waiting in your Inbox — no time set yet</string>
+    <string name="add_task_confirm_done">Done</string>
+
+    <string name="add_task_discard_title">Discard this task?</string>
+    <string name="add_task_discard_body">Everything you\'ve entered here will be lost.</string>
+    <string name="add_task_discard_confirm">Discard</string>
+    <string name="add_task_discard_cancel">Keep editing</string>
 
     <string name="add_task_goal_title">Goals are coming</string>
     <string name="add_task_goal_body">Soon you\'ll be able to hand Awan a goal and get a whole plan back. For now, add tasks one at a time.</string>
 
     <string name="add_task_error_create_failed">Couldn\'t add that task. Check your connection and try again.</string>
+    <string name="add_task_error_ai_failed">Awan couldn\'t build that one. Check your connection and try again.</string>
+    <string name="add_task_error_ai_schedule_failed">Awan couldn\'t find a slot for this. Try picking a time yourself.</string>
 </resources>

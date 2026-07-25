@@ -53,7 +53,7 @@ object TaskInputParser {
     private const val UNIT_HOURS = """h|hr|hrs|hour|hours"""
     private const val UNIT_MINUTES = """m|min|mins|minute|minutes"""
 
-    private val ZONE = Regex("""@([\p{L}\p{N}_-]+)""")
+    private val CATEGORY = Regex("""@([\p{L}\p{N}_-]+)""")
 
     /** `from 3pm to 5pm`, `3pm-5pm`, `3-5pm`, `15:00 until 17:00`. */
     private val TIME_RANGE = Regex(
@@ -91,7 +91,7 @@ object TaskInputParser {
         val claimed = mutableListOf<TaskToken>()
         // Every matcher runs so it consumes its phrase out of the title, even when a
         // higher-priority match already supplied the value.
-        val zone = matchZone(input, claimed)
+        val category = matchCategory(input, claimed)
         val range = matchTimeRange(input, claimed)
         val relative = matchRelativeIn(input, claimed, now)
         val dayPart = matchDayPart(input, claimed, now.toLocalDate())
@@ -108,7 +108,7 @@ object TaskInputParser {
             title = titleFrom(input, claimed),
             startAt = resolveStart(date, time, now),
             durationMinutes = duration,
-            zoneToken = zone,
+            categoryToken = category,
             tokens = claimed.sortedBy { it.range.first },
             hasExplicitTime = time != null,
         )
@@ -116,9 +116,9 @@ object TaskInputParser {
 
     // ── Token matching ───────────────────────────────────────────────────────
 
-    private fun matchZone(input: String, claimed: MutableList<TaskToken>): String? =
-        ZONE.find(input)
-            ?.also { claimed.claim(it.range, TaskTokenKind.ZONE) }
+    private fun matchCategory(input: String, claimed: MutableList<TaskToken>): String? =
+        CATEGORY.find(input)
+            ?.also { claimed.claim(it.range, TaskTokenKind.CATEGORY) }
             ?.groupValues?.get(1)
 
     private data class MatchedRange(val start: LocalTime, val durationMinutes: Int)

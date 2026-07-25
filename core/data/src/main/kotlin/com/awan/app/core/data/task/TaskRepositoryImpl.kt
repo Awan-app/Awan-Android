@@ -9,7 +9,10 @@ import com.awan.app.core.domain.task.repository.TaskRepository
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.Task
 import com.awan.app.core.model.TaskDraft
+import com.awan.app.core.model.TaskSchedule
 import com.awan.app.core.model.TaskWithSessions
+import com.awan.app.core.network.dto.CreateTaskWithAiRequest
+import com.awan.app.core.network.dto.ScheduleTaskRequest
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -30,5 +33,19 @@ class TaskRepositoryImpl @Inject constructor(
         sessions: List<SessionDraft>,
     ): Result<TaskWithSessions> = withContext(ioDispatcher) {
         remoteDataSource.createTaskWithSessions(draft.toRequest(sessions)).map { it.toModel() }
+    }
+
+    override suspend fun createTaskWithAi(title: String, description: String?): Result<Task> =
+        withContext(ioDispatcher) {
+            remoteDataSource.createTaskWithAi(CreateTaskWithAiRequest(title, description))
+                .map { it.toModel() }
+        }
+
+    override suspend fun scheduleTask(taskId: String): Result<TaskSchedule> = withContext(ioDispatcher) {
+        remoteDataSource.scheduleTask(ScheduleTaskRequest(taskId)).map { it.toModel() }
+    }
+
+    override suspend fun deleteTask(taskId: String): Result<Unit> = withContext(ioDispatcher) {
+        remoteDataSource.deleteTask(taskId)
     }
 }

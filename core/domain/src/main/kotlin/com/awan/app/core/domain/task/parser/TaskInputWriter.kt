@@ -40,6 +40,10 @@ object TaskInputWriter {
     fun withDuration(input: String, parsed: ParsedTaskInput, minutes: Int): String =
         input.replacing(parsed.tokensOf(TaskTokenKind.DURATION), durationPhrase(minutes))
 
+    /** Replaces whatever `@category` the sentence already had, or appends one if it had none. */
+    fun withCategory(input: String, parsed: ParsedTaskInput, categoryName: String): String =
+        input.replacing(parsed.tokensOf(TaskTokenKind.CATEGORY), categoryPhrase(categoryName))
+
     /** `today at 3pm`, `tomorrow at 3:30pm`, `friday at 9am`, `24/12 at 9am`. */
     fun timePhrase(moment: LocalDateTime, today: LocalDate): String =
         "${datePhrase(moment.toLocalDate(), today)} at ${clockPhrase(moment.toLocalTime())}"
@@ -55,6 +59,14 @@ object TaskInputWriter {
             else -> "for ${hours}h$remainder"
         }
     }
+
+    /**
+     * ponytail: first word only. The `@token` the parser reads cannot hold a space, so a multi-word
+     * category round-trips by prefix — exact for the single-word defaults (Study/Work/Play/Personal),
+     * and the caller resolves the rest by `startsWith`. Upgrade path: quote multi-word categories
+     * (`@"Deep Work"`) on both sides.
+     */
+    private fun categoryPhrase(categoryName: String): String = "@${categoryName.substringBefore(' ')}"
 
     private fun datePhrase(date: LocalDate, today: LocalDate): String {
         val delta = ChronoUnit.DAYS.between(today, date)

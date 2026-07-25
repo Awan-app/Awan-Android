@@ -1,10 +1,5 @@
 package com.awan.feature.addtask.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -17,6 +12,7 @@ import com.awan.app.core.designsystem.AwanChipDot
 import com.awan.app.core.designsystem.AwanDropdownMenu
 import com.awan.app.core.designsystem.AwanDropdownMenuItem
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.model.Category
 import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskPicker
 import com.awan.feature.addtask.presentation.AddTaskState
@@ -42,6 +38,9 @@ fun TaskAttributeChips(
     onEditDuration: () -> Unit,
     onDurationPicked: (Int) -> Unit,
     onDurationMenuDismissed: () -> Unit,
+    onEditCategory: () -> Unit,
+    onCategoryPicked: (String) -> Unit,
+    onCategoryMenuDismissed: () -> Unit,
     onToggleMandatory: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -51,13 +50,15 @@ fun TaskAttributeChips(
         horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
     ) {
-        // Always present: with nothing stated the task is simply for today, at no set time.
-        AwanChip(
-            label = whenChipLabel(state, today),
-            tone = colors.zoneSky,
-            active = state.parsed.startAt != null,
-            onClick = onEditWhen,
-        )
+        // Present except while Awan's answer is under review, where scheduling is a later question.
+        if (state.showsWhenChip) {
+            AwanChip(
+                label = whenChipLabel(state, today),
+                tone = colors.zoneSky,
+                active = state.parsed.startAt != null,
+                onClick = onEditWhen,
+            )
+        }
 
         Box {
             AwanChip(
@@ -76,8 +77,16 @@ fun TaskAttributeChips(
             )
         }
 
-        PoppingChip(visible = state.parsed.zoneToken != null) {
-            ZoneChip(state)
+        Box {
+            CategoryChip(state = state, onClick = onEditCategory)
+
+            CategoryMenu(
+                expanded = state.openPicker == AddTaskPicker.CATEGORY,
+                categories = state.availableCategories,
+                selectedCategoryId = state.resolvedCategory?.id,
+                onDismiss = onCategoryMenuDismissed,
+                onSelect = onCategoryPicked,
+            )
         }
 
         MandatoryToggle(mandatory = state.mandatory, onToggle = onToggleMandatory)
@@ -114,39 +123,73 @@ private fun DurationMenu(
     }
 }
 
-/** Springs in on the bouncy spec so a recognised token lands with the same weight as a nudge card. */
+/**
+ * Always present, like the when and length chips: it names the resolved category, or reads
+ * "No category" when the sentence hasn't stated one. A `@token` that matched nothing is the one loud
+ * state — it is a typo the user can see and fix, so it wears the destructive tone rather than the
+ * lavender.
+ */
 @Composable
-private fun PoppingChip(visible: Boolean, content: @Composable () -> Unit) {
-    val spec = AwanTheme.motion.bouncy.spec<Float>()
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(spec) + scaleIn(spec, initialScale = 0.72f),
-        exit = fadeOut() + scaleOut(targetScale = 0.85f),
-    ) {
-        content()
-    }
-}
-
-@Composable
-private fun ZoneChip(state: AddTaskState) {
-    val token = state.parsed.zoneToken ?: return
+private fun CategoryChip(state: AddTaskState, onClick: () -> Unit) {
+    val token = state.parsed.categoryToken
     val colors = AwanTheme.colors
     when {
-        state.resolvedZone != null -> AwanChip(
-            label = state.resolvedZone.name,
+        state.resolvedCategory != null -> AwanChip(
+            label = state.resolvedCategory.name,
             tone = colors.zoneLavender,
+            onClick = onClick,
         )
 
-        state.isResolvingZone -> AwanChip(
-            label = stringResource(R.string.add_task_chip_zone_resolving),
+        state.isResolvingCategory -> AwanChip(
+            label = stringResource(R.string.add_task_chip_category_resolving),
             tone = colors.zoneLavender,
             active = false,
+            onClick = onClick,
+        )
+
+        token != null -> AwanChip(
+            label = stringResource(R.string.add_task_chip_category_unknown, token),
+            tone = colors.destructive,
+            active = false,
+            onClick = onClick,
         )
 
         else -> AwanChip(
-            label = stringResource(R.string.add_task_chip_zone_unknown, token),
-            tone = colors.destructive,
+            label = stringResource(R.string.add_task_chip_no_category),
+            tone = colors.zoneLavender,
             active = false,
+            onClick = onClick,
         )
+    }
+}
+
+/** The user's categories as one-tap rows, written back into the sentence as `@category`. */
+@Composable
+private fun CategoryMenu(
+    expanded: Boolean,
+    categories: List<Category>,
+    selectedCategoryId: String?,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit,
+) {
+    AwanDropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        if (categories.isEmpty()) {
+            // Tapping a chip that opens an empty menu reads as broken; say why instead.
+            AwanDropdownMenuItem(
+                label = stringResource(R.string.add_task_category_menu_empty),
+                onClick = {},
+                enabled = false,
+            )
+            return@AwanDropdownMenu
+        }
+        categories.forEach { category ->
+            val active = category.id == selectedCategoryId
+            AwanDropdownMenuItem(
+                label = category.name,
+                onClick = { onSelect(category.name) },
+                selected = active,
+                leading = { AwanChipDot(tone = AwanTheme.colors.zoneLavender, active = active) },
+            )
+        }
     }
 }
