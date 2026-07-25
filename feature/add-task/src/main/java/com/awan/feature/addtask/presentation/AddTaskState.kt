@@ -87,11 +87,16 @@ data class AddTaskState(
 ) {
     /**
      * While the parser is stood down there is no `parsed.title` to check, so the raw text stands in
-     * for it — otherwise the AI flow could never be submitted.
+     * for it — otherwise the AI flow could never be submitted. Placing a task without Awan means the
+     * sentence has to carry the whole placement itself: a title, a clock time and a length. A bare
+     * day defaults its hour, which is not a time anyone chose, so it does not count as one.
      */
     val canSubmit: Boolean
-        get() = mode == AddTaskMode.TASK && !isSubmitting && when {
-            aiStage.isComposing -> input.isNotBlank()
+        get() = mode == AddTaskMode.TASK && !isSubmitting && when (aiStage) {
+            AddTaskAiStage.COMPOSING, AddTaskAiStage.WORKING -> input.isNotBlank()
+            AddTaskAiStage.OFF ->
+                parsed.title.isNotBlank() && parsed.hasExplicitTime && parsed.durationMinutes != null
+
             else -> parsed.title.isNotBlank()
         }
 
@@ -135,11 +140,13 @@ data class AddTaskState(
 
     /**
      * Awan watches what you type: curious once the sentence carries something schedulable or once
-     * it is thinking, greeting you while it's still just a title, cheering when the task lands.
+     * it is thinking, greeting you while it's still just a title, cheering when the task lands. The
+     * cheer outlasts [isCelebrating] — that only times the sparkles, and dropping back to a greeting
+     * while the receipt is still up would read as Awan losing interest in what it just did.
      */
     val mascot: MascotExpression
         get() = when {
-            isCelebrating -> MascotExpression.Celebrate
+            isCelebrating || confirmation != null -> MascotExpression.Celebrate
             mode == AddTaskMode.GOAL -> MascotExpression.Curious
             aiStage != AddTaskAiStage.OFF -> MascotExpression.Curious
             parsed.startAt != null || parsed.categoryToken != null -> MascotExpression.Curious

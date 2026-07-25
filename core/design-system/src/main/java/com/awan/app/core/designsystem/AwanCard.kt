@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -47,7 +46,10 @@ fun AwanCard(
         Modifier
     }
 
-    Box(
+    // The rim is a background on the same node rather than a Box behind one: a sibling could only be
+    // told to match the card's *outer* size, which left the surface as narrow as its own content
+    // whenever the card was given a width of its own.
+    Column(
         modifier = modifier
             .then(clickModifier)
             .shadow(
@@ -55,19 +57,15 @@ fun AwanCard(
                 shape = shape,
                 spotColor = colors.sky,
                 ambientColor = colors.sky,
-            ),
-    ) {
-        Box(Modifier.matchParentSize().clip(shape).background(rimColor))
-        Column(
-            modifier = Modifier
-                .padding(bottom = AwanCardRimDepth)
-                .clip(shape)
-                .background(background)
-                .border(2.dp, borderColor, shape)
-                .padding(contentPadding),
-            content = content,
-        )
-    }
+            )
+            .background(rimColor, shape)
+            .padding(bottom = AwanCardRimDepth)
+            .clip(shape)
+            .background(background)
+            .border(2.dp, borderColor, shape)
+            .padding(contentPadding),
+        content = content,
+    )
 }
 
 internal val AwanCardRimDepth = 4.dp

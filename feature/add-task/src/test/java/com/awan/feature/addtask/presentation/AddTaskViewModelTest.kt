@@ -195,7 +195,7 @@ class AddTaskViewModelTest {
     fun `typing parses the sentence into chips and a clean title`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 
-        viewModel.onAction(AddTaskAction.InputChanged("Gym session tomorrow 6pm"))
+        viewModel.onAction(AddTaskAction.InputChanged("Gym session tomorrow 6pm for 45m"))
 
         val state = viewModel.state.value
         assertEquals("Gym session", state.parsed.title)
@@ -235,21 +235,43 @@ class AddTaskViewModelTest {
     fun `an unresolvable category token does not block submitting`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 
-        viewModel.onAction(AddTaskAction.InputChanged("Gym session tomorrow 6pm @nowhere"))
+        viewModel.onAction(AddTaskAction.InputChanged("Gym session tomorrow 6pm for 45m @nowhere"))
 
         assertNull(viewModel.state.value.resolvedCategory)
         assertTrue(viewModel.state.value.canSubmit)
     }
 
     @Test
-    fun `an unscheduled task is created without any session`() = runTest(testDispatcher) {
+    fun `placing a task without Awan needs a time and a length as well as a title`() =
+        runTest(testDispatcher) {
+            val viewModel = viewModel()
+
+            viewModel.onAction(AddTaskAction.InputChanged("Buy groceries"))
+            assertFalse(viewModel.state.value.canSubmit)
+
+            viewModel.onAction(AddTaskAction.InputChanged("Buy groceries for 45m"))
+            assertFalse(viewModel.state.value.canSubmit)
+
+            // A bare day defaults its hour rather than naming one, so it is still not a time.
+            viewModel.onAction(AddTaskAction.InputChanged("Buy groceries tomorrow for 45m"))
+            assertFalse(viewModel.state.value.canSubmit)
+
+            viewModel.onAction(AddTaskAction.InputChanged("Buy groceries tomorrow 6pm"))
+            assertFalse(viewModel.state.value.canSubmit)
+
+            viewModel.onAction(AddTaskAction.InputChanged("Buy groceries tomorrow 6pm for 45m"))
+            assertTrue(viewModel.state.value.canSubmit)
+        }
+
+    @Test
+    fun `a submit that the form would not allow creates nothing`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 
         viewModel.onAction(AddTaskAction.InputChanged("Buy groceries"))
         viewModel.onAction(AddTaskAction.Submit)
 
-        assertEquals("Buy groceries", taskRepository.lastDraft?.title)
-        assertTrue(taskRepository.lastSessions.isEmpty())
+        assertNull(taskRepository.lastDraft)
+        assertTrue(taskRepository.calls.isEmpty())
     }
 
     @Test
@@ -268,7 +290,7 @@ class AddTaskViewModelTest {
     fun `the session's zone is the one handing that category a window on the day`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 
-        viewModel.onAction(AddTaskAction.InputChanged("Gym session tomorrow 6pm @play"))
+        viewModel.onAction(AddTaskAction.InputChanged("Gym session tomorrow 6pm for 45m @play"))
         viewModel.onAction(AddTaskAction.Submit)
 
         assertEquals(LocalDate.of(2026, 7, 23), zoneRepository.requestedDate)
@@ -281,7 +303,7 @@ class AddTaskViewModelTest {
         zoneRepository = FakeZoneRepository(emptyList())
         val viewModel = viewModel()
 
-        viewModel.onAction(AddTaskAction.InputChanged("Gym session tomorrow 6pm @play"))
+        viewModel.onAction(AddTaskAction.InputChanged("Gym session tomorrow 6pm for 45m @play"))
         viewModel.onAction(AddTaskAction.Submit)
 
         assertEquals("cat-play", taskRepository.lastDraft?.categoryId)
@@ -290,9 +312,12 @@ class AddTaskViewModelTest {
 
     @Test
     fun `a scheduled task with no duration falls back to the default length`() = runTest(testDispatcher) {
-        val viewModel = viewModel()
+        // The form now insists on a length, so only Awan's own task can reach the create without one.
+        taskRepository.aiTask = taskRepository.aiTask.copy(estimatedDurationMinutes = null)
+        val viewModel = reviewingViewModel()
 
-        viewModel.onAction(AddTaskAction.InputChanged("Gym session tomorrow 6pm"))
+        viewModel.onAction(AddTaskAction.ScheduleManually)
+        viewModel.onAction(AddTaskAction.TimePicked(18 * 60))
         viewModel.onAction(AddTaskAction.Submit)
 
         val session = taskRepository.lastSessions.single()
@@ -306,7 +331,7 @@ class AddTaskViewModelTest {
     fun `tasks are mandatory by default and the chip toggles it off`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 
-        viewModel.onAction(AddTaskAction.InputChanged("Buy groceries"))
+        viewModel.onAction(AddTaskAction.InputChanged("Buy groceries tomorrow 6pm for 45m"))
         assertTrue(viewModel.state.value.mandatory)
 
         viewModel.onAction(AddTaskAction.MandatoryToggled)
@@ -334,11 +359,13 @@ class AddTaskViewModelTest {
 
     @Test
     fun `an unscheduled create says so rather than inventing a time`() = runTest(testDispatcher) {
-        val viewModel = viewModel()
+        // Taking Awan's task back without naming a time is the one create left that has no session.
+        val viewModel = reviewingViewModel()
 
-        viewModel.onAction(AddTaskAction.InputChanged("Buy groceries"))
+        viewModel.onAction(AddTaskAction.ScheduleManually)
         viewModel.onAction(AddTaskAction.Submit)
 
+        assertTrue(taskRepository.lastSessions.isEmpty())
         assertNull(requireNotNull(viewModel.state.value.confirmation).firstSession)
     }
 
@@ -346,7 +373,7 @@ class AddTaskViewModelTest {
     fun `closing the receipt emits TaskCreated without asking to discard`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 
-        viewModel.onAction(AddTaskAction.InputChanged("Buy groceries"))
+        viewModel.onAction(AddTaskAction.InputChanged("Buy groceries tomorrow 6pm for 45m"))
         viewModel.onAction(AddTaskAction.Submit)
         viewModel.onAction(AddTaskAction.DismissRequested)
 
@@ -567,17 +594,20 @@ class AddTaskViewModelTest {
     fun `the receipt arrives cheering and settles down`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 
-        viewModel.onAction(AddTaskAction.InputChanged("Buy groceries"))
+        viewModel.onAction(AddTaskAction.InputChanged("Buy groceries tomorrow 6pm for 45m"))
         viewModel.onAction(AddTaskAction.Submit)
 
         val celebrating = viewModel.state.value
         assertTrue(celebrating.isCelebrating)
         assertEquals(MascotExpression.Celebrate, celebrating.mascot)
 
-        // The sparkles are a beat, not a gate — the receipt stays up after they finish.
+        // The sparkles are a beat, not a gate — the receipt stays up after they finish, and so does
+        // the cheer: Awan going back to a greeting under its own receipt reads as losing interest.
         advanceUntilIdle()
-        assertFalse(viewModel.state.value.isCelebrating)
-        requireNotNull(viewModel.state.value.confirmation)
+        val settled = viewModel.state.value
+        assertFalse(settled.isCelebrating)
+        requireNotNull(settled.confirmation)
+        assertEquals(MascotExpression.Celebrate, settled.mascot)
     }
 
     @Test
@@ -585,11 +615,11 @@ class AddTaskViewModelTest {
         taskRepository.failWith = AppError.Network
         val viewModel = viewModel()
 
-        viewModel.onAction(AddTaskAction.InputChanged("Buy groceries"))
+        viewModel.onAction(AddTaskAction.InputChanged("Buy groceries tomorrow 6pm for 45m"))
         viewModel.onAction(AddTaskAction.Submit)
 
         val state = viewModel.state.value
-        assertEquals("Buy groceries", state.input)
+        assertEquals("Buy groceries tomorrow 6pm for 45m", state.input)
         assertFalse(state.isSubmitting)
         assertEquals(R.string.add_task_error_create_failed, state.errorMessage)
     }
