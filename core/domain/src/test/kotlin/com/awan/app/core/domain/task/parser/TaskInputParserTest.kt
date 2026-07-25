@@ -1,16 +1,32 @@
 package com.awan.app.core.domain.task.parser
 
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import java.time.LocalDateTime
+import java.util.Locale
 
 class TaskInputParserTest {
 
     /** Wednesday 2026-07-22, 10:00. */
     private val now = LocalDateTime.of(2026, 7, 22, 10, 0)
+
+    /** These sentences are English, and [TaskInputParser] reads the language it is handed. */
+    private val hostLocale: Locale = Locale.getDefault()
+
+    @Before
+    fun setUp() {
+        Locale.setDefault(Locale.ENGLISH)
+    }
+
+    @After
+    fun tearDown() {
+        Locale.setDefault(hostLocale)
+    }
 
     private fun parse(input: String) = TaskInputParser.parse(input, now)
 
@@ -304,6 +320,22 @@ class TaskInputParserTest {
         assertEquals(LocalDateTime.of(2026, 7, 22, 14, 0), parse("Run this afternoon").startAt)
         assertEquals(LocalDateTime.of(2026, 7, 22, 19, 0), parse("Run this evening").startAt)
         assertEquals("Run", parse("Run this evening").title)
+    }
+
+    @Test
+    fun `an explicit clock time beats the hour a day part would default to`() {
+        val result = parse("Call this morning at 10am")
+
+        assertEquals("Call", result.title)
+        assertEquals(LocalDateTime.of(2026, 7, 22, 10, 0), result.startAt)
+    }
+
+    @Test
+    fun `a relative day keeps its day and takes the stated clock`() {
+        val result = parse("Meeting in 3 days at 2pm")
+
+        assertEquals("Meeting", result.title)
+        assertEquals(LocalDateTime.of(2026, 7, 25, 14, 0), result.startAt)
     }
 
     @Test

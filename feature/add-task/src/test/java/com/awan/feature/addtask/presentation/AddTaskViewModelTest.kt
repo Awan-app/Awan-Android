@@ -46,6 +46,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
+import java.util.Locale
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddTaskViewModelTest {
@@ -172,8 +173,12 @@ class AddTaskViewModelTest {
             onAction(AddTaskAction.Submit)
         }
 
+    /** The sentences asserted here are English, and the parser follows the ambient locale. */
+    private val hostLocale: Locale = Locale.getDefault()
+
     @Before
     fun setUp() {
+        Locale.setDefault(Locale.ENGLISH)
         Dispatchers.setMain(testDispatcher)
         taskRepository = FakeTaskRepository()
         zoneRepository = FakeZoneRepository(listOf(playZone))
@@ -183,6 +188,7 @@ class AddTaskViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+        Locale.setDefault(hostLocale)
     }
 
     @Test

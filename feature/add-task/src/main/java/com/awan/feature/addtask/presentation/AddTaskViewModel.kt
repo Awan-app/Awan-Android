@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.task.parser.ParsedTaskInput
-import com.awan.app.core.domain.task.parser.TaskInputWriter
 import com.awan.app.core.domain.task.usecase.ApplyTaskAttributeUseCase
 import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
 import com.awan.app.core.domain.task.usecase.CreateTaskWithAiUseCase
@@ -242,11 +241,11 @@ class AddTaskViewModel @Inject constructor(
         var sentence = task.title
         var parsed = parseTaskInput(sentence)
         task.estimatedDurationMinutes?.let {
-            sentence = TaskInputWriter.withDuration(sentence, parsed, it)
+            sentence = applyTaskAttribute(sentence, parsed, TaskAttribute.Lasting(it))
             parsed = parseTaskInput(sentence)
         }
         task.category?.let {
-            sentence = TaskInputWriter.withCategory(sentence, parsed, it.name)
+            sentence = applyTaskAttribute(sentence, parsed, TaskAttribute.In(it.name))
             parsed = parseTaskInput(sentence)
         }
         return copy(

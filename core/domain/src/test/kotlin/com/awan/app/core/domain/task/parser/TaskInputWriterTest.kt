@@ -1,15 +1,31 @@
 package com.awan.app.core.domain.task.parser
 
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.Locale
 
 class TaskInputWriterTest {
 
     /** Wednesday 2026-07-22, 10:00. */
     private val now = LocalDateTime.of(2026, 7, 22, 10, 0)
     private val today: LocalDate = now.toLocalDate()
+
+    /** These phrases are English; [TaskInputWriterArabicTest] covers the other half. */
+    private val hostLocale: Locale = Locale.getDefault()
+
+    @Before
+    fun setUp() {
+        Locale.setDefault(Locale.ENGLISH)
+    }
+
+    @After
+    fun tearDown() {
+        Locale.setDefault(hostLocale)
+    }
 
     private fun parse(input: String) = TaskInputParser.parse(input, now)
 
