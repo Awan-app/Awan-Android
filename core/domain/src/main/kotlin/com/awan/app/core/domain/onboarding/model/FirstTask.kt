@@ -1,4 +1,4 @@
-package com.awan.app.core.model
+package com.awan.app.core.domain.onboarding.model
 
 data class FirstTask(
     val id: String,

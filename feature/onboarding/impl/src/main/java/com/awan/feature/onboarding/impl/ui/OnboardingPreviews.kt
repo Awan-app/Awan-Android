@@ -3,8 +3,8 @@ package com.awan.feature.onboarding.impl.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.awan.app.core.designsystem.AwanTheme
-import com.awan.app.core.model.DayBounds
-import com.awan.app.core.model.FirstTask
+import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.domain.onboarding.model.FirstTask
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.feature.onboarding.impl.presentation.OnboardingState
 import com.awan.feature.onboarding.impl.presentation.OnboardingStep

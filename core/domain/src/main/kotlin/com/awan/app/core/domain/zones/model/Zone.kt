@@ -1,8 +1,8 @@
-package com.awan.app.core.model
+package com.awan.app.core.domain.zones.model
 
 /**
  * A named window of the day a task can be placed into. [startMinutes]/[endMinutes] are
- * minutes-from-midnight; list order is the zone's order. Colors are ARGB so `:core:model`
+ * minutes-from-midnight; list order is the zone's order. Colors are ARGB so the domain layer
  * stays free of any Android/Compose dependency.
  */
 data class Zone(
@@ -23,7 +23,7 @@ data class Zone(
 
         /**
          * The four fixed default zones in canonical order. Windows here are placeholders;
-         * [com.awan.app.core.model] never lays them out — the onboarding suggestion use case does.
+         * the domain model doesn't lay them out — the onboarding suggestion use case does.
          */
         val defaults: List<Zone> = listOf(
             Zone(id = STUDY, name = "Study", colorArgb = 0xFF7A64FF.toInt(), startMinutes = 0, endMinutes = 0),

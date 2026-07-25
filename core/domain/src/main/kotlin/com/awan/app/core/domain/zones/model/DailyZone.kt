@@ -1,4 +1,4 @@
-package com.awan.app.core.model
+package com.awan.app.core.domain.zones.model
 
 data class DailyZone(
     val id: String?,
@@ -19,6 +19,7 @@ data class WeeklyTemplate(
 
 data class TemplateOverride(
     val id: String,
+    val name: String? = null,
     val dateOfDay: String,
     val zones: List<DailyZone>
 )

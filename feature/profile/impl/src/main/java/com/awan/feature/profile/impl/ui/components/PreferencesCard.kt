@@ -10,13 +10,13 @@ import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.feature.profile.impl.helpers.ProfileHelper
-import com.awan.feature.profile.impl.presentation.ProfileUiState
+import com.awan.feature.profile.impl.presentation.ProfileState
 import com.awan.feature.profile.impl.R as ProfileR
 
 @Composable
 fun PreferencesCard(
     profile: Profile,
-    uiState: ProfileUiState,
+    uiState: ProfileState,
     onDailyZonesClick: () -> Unit,
     onUpdateSleepSchedule: (String, String) -> Unit,
     onUpdateSessionDuration: (Int) -> Unit,

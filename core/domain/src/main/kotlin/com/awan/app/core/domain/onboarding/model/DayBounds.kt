@@ -1,4 +1,4 @@
-package com.awan.app.core.model
+package com.awan.app.core.domain.onboarding.model
 
 /**
  * Waking day expressed as minutes-from-midnight. [sleepMinutes] < [wakeMinutes] means the waking

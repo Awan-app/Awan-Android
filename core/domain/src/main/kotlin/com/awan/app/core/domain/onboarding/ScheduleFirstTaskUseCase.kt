@@ -1,7 +1,7 @@
 package com.awan.app.core.domain.onboarding
 
-import com.awan.app.core.model.FirstTask
-import com.awan.app.core.model.Zone
+import com.awan.app.core.domain.onboarding.model.FirstTask
+import com.awan.app.core.domain.zones.model.Zone
 import java.util.UUID
 import javax.inject.Inject
 

@@ -1,4 +1,4 @@
-package com.awan.app.core.model
+package com.awan.app.core.domain.profile.model
 
 data class UserProfile(
     val firstName: String,

@@ -8,12 +8,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
+import com.awan.app.core.designsystem.AwanTheme
 import com.awan.core.navigation.Navigator
 import com.awan.feature.auth.impl.navigation.authEntry
 import com.awan.feature.calendar.impl.navigation.calendarEntry
@@ -35,6 +37,7 @@ fun AwanApp(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = AwanTheme.colors.background,
         bottomBar = {
             val currentRoute = appState.navigationState.currentKey
             val isTopLevel = appState.topLevelDestinations.any { it.route == currentRoute }
@@ -57,7 +60,12 @@ fun AwanApp(
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            color = AwanTheme.colors.background
+        ) {
             val entryProvider = entryProvider {
                 splashEntry(
                     onNavigateToNext = { isLoggedIn ->
@@ -89,22 +97,35 @@ fun AwanApp(
                 goalsEntry()
                 profileEntry(
                     onNavigateToEditProfile = { navigator.navigate(com.awan.feature.profile.api.EditProfileRoute) },
+                    onNavigateToDailyZones = { navigator.navigate(com.awan.feature.profile.api.DailyZonesRoute) },
+                    onNavigateToRoutineDetails = { id ->
+                        navigator.navigate(com.awan.feature.profile.api.RoutineDetailsRoute(id))
+                    },
+                    onNavigateToEditRoutine = { id ->
+                        navigator.navigate(com.awan.feature.profile.api.EditRoutineRoute(id))
+                    },
+                    onNavigateToDayDetails = { date ->
+                        navigator.navigate(com.awan.feature.profile.api.DayDetailsRoute(date))
+                    },
                     onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) },
                     onBack = { navigator.goBack() }
                 )
             }
 
-            BackHandler(
-                enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack
-            ) {
-                navigator.goBack()
-            }
+            Column {
+                BackHandler(
+                    enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack
+                ) {
+                    navigator.goBack()
+                }
 
-            NavDisplay(
-                backStack = appState.navigationState.currentSubStack,
-                onBack = { navigator.goBack() },
-                entryProvider = entryProvider
-            )
+                NavDisplay(
+                    modifier = Modifier.fillMaxSize(),
+                    backStack = appState.navigationState.currentSubStack,
+                    onBack = { navigator.goBack() },
+                    entryProvider = entryProvider
+                )
+            }
         }
     }
 }

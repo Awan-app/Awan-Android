@@ -1,7 +1,7 @@
 package com.awan.app.core.data.task
 
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.network.dto.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskInfoResponse
 import javax.inject.Inject
 
 class CreateTaskUseCase @Inject constructor(
