@@ -3,6 +3,10 @@ package com.awan.app.core.data.di
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSource
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSourceImpl
 import com.awan.app.core.data.auth.repository.AuthRepositoryImpl
+import com.awan.app.core.data.calendar.CalendarRepository
+import com.awan.app.core.data.calendar.CalendarRepositoryImpl
+import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSource
+import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSourceImpl
 import com.awan.app.core.data.onboarding.OnboardingRepository
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
@@ -21,40 +25,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class DataModule {
-
-    @Binds
-    @Singleton
-    abstract fun bindOnboardingRemoteDataSource(
-        impl: OnboardingRemoteDataSourceImpl,
-    ): OnboardingRemoteDataSource
-
-    @Binds
-    @Singleton
-    abstract fun bindOnboardingRepository(
-        impl: OnboardingRepositoryImpl,
-    ): OnboardingRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindTaskRemoteDataSource(
-        impl: TaskRemoteDataSourceImpl,
-    ): TaskRemoteDataSource
-
-    @Binds
-    @Singleton
-    abstract fun bindTaskRepository(
-        impl: TaskRepositoryImpl,
-    ): TaskRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindAuthRemoteDataSource(
-        impl: AuthRemoteDataSourceImpl,
-    ): AuthRemoteDataSource
-
-    @Binds
-    @Singleton
-    abstract fun bindAuthRepository(
-        impl: AuthRepositoryImpl,
-    ): AuthRepository
+    @Binds @Singleton abstract fun bindCalendarRemoteDataSource(impl: CalendarRemoteDataSourceImpl): CalendarRemoteDataSource
+    @Binds @Singleton abstract fun bindCalendarRepository(impl: CalendarRepositoryImpl): CalendarRepository
+    @Binds @Singleton abstract fun bindOnboardingRemoteDataSource(impl: OnboardingRemoteDataSourceImpl): OnboardingRemoteDataSource
+    @Binds @Singleton abstract fun bindOnboardingRepository(impl: OnboardingRepositoryImpl): OnboardingRepository
+    @Binds @Singleton abstract fun bindTaskRemoteDataSource(impl: TaskRemoteDataSourceImpl): TaskRemoteDataSource
+    @Binds @Singleton abstract fun bindTaskRepository(impl: TaskRepositoryImpl): TaskRepository
+    @Binds @Singleton abstract fun bindAuthRemoteDataSource(impl: AuthRemoteDataSourceImpl): AuthRemoteDataSource
+    @Binds @Singleton abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
 }

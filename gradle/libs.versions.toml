@@ -43,6 +43,7 @@ room = "2.7.2"
 
 # New — Lottie
 lottie = "6.6.2"
+composeIcons = "2.2.1"
 
 [libraries]
 androidx-compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
@@ -119,6 +120,9 @@ room-ktx      = { group = "androidx.room", name = "room-ktx",      version.ref =
 room-compiler = { group = "androidx.room", name = "room-compiler",  version.ref = "room" }
 room-testing  = { group = "androidx.room", name = "room-testing",   version.ref = "room" }
 
+# Lucide
+compose-icons-lucide-cmp = { group = "com.composables", name = "icons-lucide-cmp", version.ref = "composeIcons" }
+
 # Lottie
 lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", version.ref = "lottie" }
 
@@ -148,4 +152,3 @@ awan-android-feature = { id = "awan.android.feature" }
 awan-jvm-library = { id = "awan.jvm.library" }
 awan-feature = { id = "awan.feature" }
 awan-android-room = { id = "awan.android.room" }
-
