@@ -12,95 +12,70 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.awan.core.navigation.Navigator
+import com.awan.feature.auth.api.LoginRoute
+import com.awan.feature.auth.api.OtpRoute
 import com.awan.feature.auth.impl.navigation.authEntry
+import com.awan.feature.calendar.api.CalendarRoute
 import com.awan.feature.calendar.impl.navigation.calendarEntry
 import com.awan.feature.chat.impl.navigation.chatEntry
 import com.awan.feature.goals.impl.navigation.goalsEntry
+import com.awan.feature.home.api.HomeRoute
 import com.awan.feature.home.impl.navigation.homeEntry
+import com.awan.feature.onboarding.api.OnboardingRoute
 import com.awan.feature.onboarding.impl.navigation.onboardingEntry
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.profile_setup.impl.navigation.profileSetupEntry
 import com.awan.feature.splash.impl.navigation.splashEntry
 
-@Suppress("LongMethod")
 @Composable
-fun AwanApp(
-    appState: AwanAppState,
-    modifier: Modifier = Modifier
-) {
+fun AwanApp(appState: AwanAppState, modifier: Modifier = Modifier) {
     val navigator = remember { Navigator(appState.navigationState) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
-            val currentRoute = appState.navigationState.currentKey
-            val isTopLevel = appState.topLevelDestinations.any { it.route == currentRoute }
-            if (isTopLevel) {
-                NavigationBar {
-                    appState.topLevelDestinations.forEach { destination ->
-                        NavigationBarItem(
-                            selected = appState.navigationState.currentTopLevelKey == destination.route,
-                            onClick = { navigator.navigate(destination.route) },
-                            icon = {
-                                Icon(
-                                    imageVector = destination.icon,
-                                    contentDescription = destination.label
-                                )
-                            },
-                            label = { Text(destination.label) }
-                        )
-                    }
+            val isTopLevel = appState.topLevelDestinations.any { it.route == appState.navigationState.currentKey }
+            if (isTopLevel) NavigationBar {
+                appState.topLevelDestinations.forEach { destination ->
+                    NavigationBarItem(
+                        selected = appState.navigationState.currentTopLevelKey == destination.route,
+                        onClick = { navigator.navigate(destination.route) },
+                        icon = { Icon(destination.icon, destination.label) },
+                        label = { Text(destination.label) },
+                    )
                 }
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-            val entryProvider = entryProvider {
-                splashEntry(
-                    onNavigateToNext = { isLoggedIn ->
-                        if (isLoggedIn) {
-                            navigator.replaceAll(com.awan.feature.home.api.HomeRoute)
-                        } else {
-                            navigator.replaceAll(com.awan.feature.auth.api.LoginRoute)
-                        }
-                    }
-                )
+        Column(Modifier.padding(padding)) {
+            val entries = entryProvider {
+                splashEntry { loggedIn -> navigator.replaceAll(if (loggedIn) HomeRoute() else LoginRoute) }
                 authEntry(
-                    onNavigateToOtp = { email -> navigator.navigate(com.awan.feature.auth.api.OtpRoute(email)) },
-                    onNavigateToHome = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) },
-                    onNavigateToOnboarding = { navigator.replaceAll(com.awan.feature.onboarding.api.OnboardingRoute) },
-                    onPopBackStack = { navigator.goBack() }
+                    onNavigateToOtp = { navigator.navigate(OtpRoute(it)) },
+                    onNavigateToHome = { navigator.replaceAll(HomeRoute()) },
+                    onNavigateToOnboarding = { navigator.replaceAll(OnboardingRoute) },
+                    onPopBackStack = navigator::goBack,
                 )
-                onboardingEntry(
-                    onComplete = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) },
-                    onExit = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
-                )
-                profileSetupEntry(
-                    onNavigateToHome = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) }
-                )
+                onboardingEntry(onComplete = { navigator.replaceAll(HomeRoute()) }, onExit = { navigator.replaceAll(LoginRoute) })
+                profileSetupEntry(onNavigateToHome = { navigator.replaceAll(HomeRoute()) })
                 homeEntry(
-                    onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
+                    onLogout = { navigator.replaceAll(LoginRoute) },
+                    onOpenCalendar = { date -> navigator.navigate(CalendarRoute(date)) },
                 )
-                calendarEntry()
+                calendarEntry(
+                    onDateSelected = { date -> navigator.resetCurrentSubStack(HomeRoute(date.toString())) },
+                    onBack = navigator::goBack,
+                )
                 chatEntry()
                 goalsEntry()
                 profileEntry()
             }
-
-            BackHandler(
-                enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack
-            ) {
-                navigator.goBack()
-            }
-
-            NavDisplay(
-                backStack = appState.navigationState.currentSubStack,
-                onBack = { navigator.goBack() },
-                entryProvider = entryProvider
-            )
+            BackHandler(enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack) { navigator.goBack() }
+            NavDisplay(backStack = appState.navigationState.currentSubStack, onBack = navigator::goBack, entryProvider = entries)
         }
     }
 }

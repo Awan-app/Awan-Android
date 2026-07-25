@@ -42,6 +42,7 @@ import com.awan.app.core.domain.auth.model.User
 fun HomeScreen(
     modifier: Modifier = Modifier,
     onLogout: () -> Unit = {},
+    onOpenCalendar: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -70,11 +71,20 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
+                onClick = onOpenCalendar,
+                modifier = Modifier.fillMaxWidth(0.9f),
+            ) {
+                Text("Open calendar")
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
                 onClick = { viewModel.toggleShowData() },
                 modifier = Modifier.fillMaxWidth(0.9f)
             ) {
                 Text(
-                    if (uiState.isDataVisible) "Hide User Info" else "🧪 Test: Inspect User Domain Object"
+                    if (uiState.isDataVisible) "Hide User Info" else "?? Test: Inspect User Domain Object"
                 )
             }
 
@@ -87,7 +97,7 @@ fun HomeScreen(
                     containerColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Text("🧪 Test: Logout / Clear Session")
+                Text("?? Test: Logout / Clear Session")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -148,7 +158,7 @@ private fun UserDataInspectionCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "🔒 User Domain Object",
+                    text = "?? User Domain Object",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

@@ -17,7 +17,7 @@ Reference docs live in `docs/reference/` (architecture, layers, feature guide) a
 - Lint: `./gradlew lint`
 - Static analysis: `./gradlew detekt` (config: `detekt.yml` at repo root, with compose rules + formatting)
 
-Gradle 9.4.1 with configuration cache enabled; daemon toolchain is JVM 21. AGP 9.2.1, Kotlin 2.4.0, compileSdk 37 / minSdk 24, Compose BOM 2026.06.01. Version catalog: `gradle/libs.versions.toml`.
+Gradle 9.4.1 with configuration cache enabled; daemon toolchain is JVM 21. AGP 9.2.1, Kotlin 2.4.0, compileSdk 37 / minSdk 26, Compose BOM 2026.06.01. Version catalog: `gradle/libs.versions.toml`.
 
 ## Git & Jira
 

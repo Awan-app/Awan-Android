@@ -152,3 +152,4 @@ awan-android-feature = { id = "awan.android.feature" }
 awan-jvm-library = { id = "awan.jvm.library" }
 awan-feature = { id = "awan.feature" }
 awan-android-room = { id = "awan.android.room" }
+awan-android-navigation = { id = "awan.android.navigation" }

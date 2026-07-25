@@ -13,10 +13,5 @@ dependencies {
     implementation(project(":core:domain"))
     api(project(":core:network"))
     implementation(project(":core:datastore"))
-    implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.serialization.json)
-
-    testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
+    implementation(project(":core:database"))
 }
-

@@ -32,7 +32,7 @@ internal fun Project.configureKotlinAndroid(ext: LibraryExtension) {
         compileSdk = 37
 
         defaultConfig {
-            minSdk = 24
+            minSdk = 26
         }
 
         compileOptions {
@@ -53,7 +53,7 @@ internal fun Project.configureKotlinAndroid(ext: ApplicationExtension) {
         compileSdk = 37
 
         defaultConfig {
-            minSdk = 24
+            minSdk = 26
             targetSdk = 37
         }
 

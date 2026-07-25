@@ -9,4 +9,7 @@ android {
 
 dependencies {
     implementation(project(":feature:calendar:api"))
+    implementation(project(":core:design-system"))
+    implementation(project(":core:data"))
+    implementation(project(":core:model"))
 }

@@ -31,6 +31,8 @@ abstract class AndroidFeatureConventionPlugin : Plugin<Project> {
                 add("implementation", libs.findLibrary("hilt-navigation-compose").get())
                 // collectAsStateWithLifecycle() extension.
                 add("implementation", libs.findLibrary("lifecycle-compose").get())
+                // Lucide CMP icons for feature UI screens.
+                add("implementation", libs.findLibrary("compose-icons-lucide-cmp").get())
 
                 // Test dependencies
                 add("testImplementation", libs.findLibrary("junit").get())
