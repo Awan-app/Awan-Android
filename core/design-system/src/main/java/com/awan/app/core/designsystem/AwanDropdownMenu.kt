@@ -100,27 +100,30 @@ private fun BoxScope.ScrollThumb(scroll: ScrollState, visible: Boolean) {
     }
 }
 
-/** A row of [AwanDropdownMenu]. [selected] is the difference between the current value and the rest. */
+/**
+ * A row of [AwanDropdownMenu]. [selected] is the difference between the current value and the rest;
+ * a non-[enabled] row reads as a static note in muted ink — used for empty-state messages.
+ */
 @Composable
 fun AwanDropdownMenuItem(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
+    enabled: Boolean = true,
     leading: @Composable (() -> Unit)? = null,
 ) {
     val colors = AwanTheme.colors
+    val ink = when {
+        !enabled -> colors.meta
+        selected -> colors.textPrimary
+        else -> colors.textSecondary
+    }
     DropdownMenuItem(
         onClick = onClick,
         modifier = modifier,
+        enabled = enabled,
         leadingIcon = leading,
-        text = {
-            AwanText(
-                text = label,
-                style = AwanTheme.styles.buttonCompactText.copy(
-                    color = if (selected) colors.textPrimary else colors.textSecondary,
-                ),
-            )
-        },
+        text = { AwanText(text = label, style = AwanTheme.styles.buttonCompactText.copy(color = ink)) },
     )
 }
