@@ -257,38 +257,45 @@ fun EditProfileScreen(
         }
     }
 
+    val birthDateFormat = remember {
+        SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+    }
+
     if (showDatePicker) {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = try {
-                dateFormat.parse(uiState.birthDate)?.time
+                birthDateFormat.parse(uiState.birthDate)?.time
             } catch (e: Exception) {
                 null
             }
         )
-        DatePickerDialog(
+        AwanDatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let {
-                        val date = Calendar.getInstance().apply { timeInMillis = it }
-                        onBirthDateChange(dateFormat.format(date.time))
-                    }
-                    showDatePicker = false
-                }) {
-                    AwanText(stringResource(ProfileR.string.profile_ok), style = AwanTheme.styles.buttonCompactText)
+                AwanButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            onBirthDateChange(birthDateFormat.format(Date(millis)))
+                        }
+                        showDatePicker = false
+                    },
+                    variant = AwanButtonVariant.Quiet
+                ) {
+                    AwanText(stringResource(ProfileR.string.profile_ok))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    AwanText(stringResource(ProfileR.string.profile_cancel), style = AwanTheme.styles.buttonCompactText)
+                AwanButton(
+                    onClick = { showDatePicker = false },
+                    variant = AwanButtonVariant.Quiet
+                ) {
+                    AwanText(stringResource(ProfileR.string.profile_cancel))
                 }
-            },
-            colors = DatePickerDefaults.colors(
-                containerColor = AwanTheme.colors.surface
-            )
+            }
         ) {
-            DatePicker(state = datePickerState)
+            AwanDatePicker(state = datePickerState)
         }
     }
 }

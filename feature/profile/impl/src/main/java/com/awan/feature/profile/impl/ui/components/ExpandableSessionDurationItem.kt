@@ -91,9 +91,10 @@ fun ExpandableSessionDurationItem(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    TextButton(
+                    AwanButton(
                         onClick = onCancelClick,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        variant = AwanButtonVariant.Quiet
                     ) {
                         AwanText(
                             text = stringResource(ProfileR.string.profile_cancel),
@@ -103,17 +104,10 @@ fun ExpandableSessionDurationItem(
                     AwanButton(
                         onClick = { onSaveClick(localDuration) },
                         modifier = Modifier.weight(1f),
-                        enabled = !isLoading
+                        enabled = !isLoading,
+                        isLoading = isLoading
                     ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                color = AwanTheme.colors.onSky,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            AwanText(text = stringResource(ProfileR.string.profile_save))
-                        }
+                        AwanText(text = stringResource(ProfileR.string.profile_save))
                     }
                 }
             }
