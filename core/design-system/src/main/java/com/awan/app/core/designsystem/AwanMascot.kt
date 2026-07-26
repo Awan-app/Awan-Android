@@ -30,7 +30,7 @@ fun AwanMascot(
     var isBlinking by remember { mutableStateOf(false) }
 
     if (blinkEnabled && expression != MascotExpression.Idle) {
-        LaunchedEffect(Unit) {
+        LaunchedEffect(expression, blinkEnabled) {
             while (true) {
                 delay((3000..6000).random().toLong().milliseconds)
                 isBlinking = true
