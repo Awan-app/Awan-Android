@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.compose.ui.graphics.Color
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.common.text.UiText
+import com.awan.feature.home.impl.R
 import com.awan.app.core.designsystem.CategoryProgressSegment
 import com.awan.app.core.designsystem.MascotExpression
 import com.awan.app.core.designsystem.ScheduleCategory
@@ -400,13 +402,14 @@ class HomeViewModel @Inject constructor(
     private fun buildSubtitle(sessionCount: Int, isToday: Boolean) =
         "Clear skies — $sessionCount sessions scheduled${if (isToday) " today" else ""}"
 
-    private fun com.awan.app.core.common.error.AppError.toReadableMessage(): String = when (this) {
-        is com.awan.app.core.common.error.AppError.Network    -> "No internet connection. Check your network and retry."
-        is com.awan.app.core.common.error.AppError.Timeout    -> "Request timed out. Please try again."
-        is com.awan.app.core.common.error.AppError.Unauthorized -> "Session expired. Please log in again."
-        is com.awan.app.core.common.error.AppError.Server     -> "Server error ($code). Please try again later."
-        is com.awan.app.core.common.error.AppError.Api        -> body?.takeIf { it.isNotBlank() } ?: "Something went wrong."
-        is com.awan.app.core.common.error.AppError.Serialization -> "Unexpected server response. Please update the app."
-        is com.awan.app.core.common.error.AppError.Unknown    -> "An unexpected error occurred."
+    private fun com.awan.app.core.common.error.AppError.toReadableMessage(): UiText = when (this) {
+        is com.awan.app.core.common.error.AppError.Network    -> UiText.StringResource(R.string.home_error_network)
+        is com.awan.app.core.common.error.AppError.Timeout    -> UiText.StringResource(R.string.home_error_timeout)
+        is com.awan.app.core.common.error.AppError.Unauthorized -> UiText.StringResource(R.string.home_error_unauthorized)
+        is com.awan.app.core.common.error.AppError.Server     -> UiText.StringResource(R.string.home_error_server, code)
+        is com.awan.app.core.common.error.AppError.Api        -> body?.takeIf { it.isNotBlank() }?.let { UiText.DynamicString(it) }
+            ?: UiText.StringResource(R.string.home_error_something_went_wrong)
+        is com.awan.app.core.common.error.AppError.Serialization -> UiText.StringResource(R.string.home_error_serialization)
+        is com.awan.app.core.common.error.AppError.Unknown    -> UiText.StringResource(R.string.home_error_unknown)
     }
 }

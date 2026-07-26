@@ -14,4 +14,11 @@
     <string name="home_schedule_alert_fix_it">إصلاح الآن</string>
     <string name="home_default_user_name">صديقي</string>
     <string name="home_greeting_prefix">مساء الخير</string>
+    <string name="home_error_network">لا يوجد اتصال بالإنترنت. تحقق من الاتصال وحاول مجدداً.</string>
+    <string name="home_error_timeout">انتهت مهلة الطلب. يرجى المحاولة مرة أخرى.</string>
+    <string name="home_error_unauthorized">انتهت الجلسة. يرجى تسجيل الدخول مجدداً.</string>
+    <string name="home_error_server">خطأ في الخادم (%1$d). يرجى المحاولة لاحقاً.</string>
+    <string name="home_error_something_went_wrong">حدث خطأ ما.</string>
+    <string name="home_error_serialization">استجابة غير متوقعة من الخادم. يرجى تحديث التطبيق.</string>
+    <string name="home_error_unknown">حدث خطأ غير متوقع.</string>
 </resources>

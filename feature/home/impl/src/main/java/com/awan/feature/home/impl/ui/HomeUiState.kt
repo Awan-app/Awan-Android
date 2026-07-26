@@ -2,6 +2,7 @@
 
 package com.awan.feature.home.impl.ui
 
+import com.awan.app.core.common.text.UiText
 import com.awan.app.core.designsystem.CategoryProgressSegment
 import com.awan.app.core.designsystem.MascotExpression
 import com.awan.app.core.designsystem.ScheduleCategory
@@ -44,5 +45,5 @@ data class HomeUiState(
     val hasConflict: Boolean = false,
     val conflictMessage: String = "",
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
 )

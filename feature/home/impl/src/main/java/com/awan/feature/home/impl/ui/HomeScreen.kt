@@ -37,11 +37,12 @@ import com.awan.app.core.designsystem.AwanHeaderBar
 import com.awan.app.core.designsystem.AwanScheduleAlertCard
 import com.awan.app.core.designsystem.AwanScheduleTimeline
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.common.text.UiText
 import com.awan.feature.home.impl.R
 
 private sealed interface TimelineContentState {
     data object Loading : TimelineContentState
-    data class Error(val message: String) : TimelineContentState
+    data class Error(val message: UiText) : TimelineContentState
     data object Ready : TimelineContentState
 }
 
@@ -143,7 +144,7 @@ fun HomeScreen(
                                 Text(text = "☁️", fontSize = 48.sp)
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
-                                    text = state.message,
+                                    text = state.message.asString(),
                                     fontSize = 15.sp,
                                     color = Color(0xFF334155),
                                     fontWeight = FontWeight.Medium,
