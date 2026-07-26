@@ -384,22 +384,18 @@ class HomeViewModel @Inject constructor(
         val cal = Calendar.getInstance()
         val hour24 = cal.get(Calendar.HOUR_OF_DAY)
         val minute = cal.get(Calendar.MINUTE)
-        val amPm   = if (hour24 >= 12) "PM" else "AM"
-        val hour12 = when {
-            hour24 == 0  -> 12
-            hour24 > 12  -> hour24 - 12
-            else         -> hour24
-        }
         val greeting = when (hour24) {
             in 4..11 -> "Good morning"
             in 12..17 -> "Good afternoon"
             else -> "Good evening"
         }
+        val currentMins = hour24 * 60 + minute
+        val formattedTime = com.awan.app.core.designsystem.formatTime(currentMins) + " ."
         _uiState.update { state ->
             state.copy(
                 greetingPrefix = greeting,
-                currentTimeFormatted = String.format(Locale.US, "%d:%02d %s .", hour12, minute, amPm),
-                currentTimeMinutes   = hour24 * 60 + minute,
+                currentTimeFormatted = formattedTime,
+                currentTimeMinutes   = currentMins,
             )
         }
     }
