@@ -72,26 +72,13 @@ object TimelineLayoutEngine {
             for (session in cluster) {
                 val colIdx = sessionColumnMap[session.id] ?: 0
 
-                var maxConcurrent = 1
-                val sStart = session.startMinutes
-                val sEnd = session.startMinutes + session.durationMinutes
-
-                for (other in cluster) {
-                    val oStart = other.startMinutes
-                    val oEnd = other.startMinutes + other.durationMinutes
-                    if (maxOf(sStart, oStart) < minOf(sEnd, oEnd)) {
-                        val otherCol = sessionColumnMap[other.id] ?: 0
-                        maxConcurrent = maxOf(maxConcurrent, otherCol + 1)
-                    }
-                }
-
                 result.add(
                     PositionedSession(
                         session = session,
                         startMinutes = session.startMinutes,
                         durationMinutes = session.durationMinutes,
                         columnIndex = colIdx,
-                        totalColumns = maxOf(totalClusterCols, maxConcurrent),
+                        totalColumns = totalClusterCols,
                     )
                 )
             }
