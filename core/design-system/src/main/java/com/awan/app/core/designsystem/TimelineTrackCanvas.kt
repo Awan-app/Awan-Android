@@ -24,32 +24,19 @@ fun TimelineTrackCanvas(
     currentPointerY: Dp?,
     isToday: Boolean = true,
     isPastDate: Boolean = false,
+    subIntervalMins: Int = 0,
     modifier: Modifier = Modifier,
 ) {
-    /** Hours that hold more than one session — these get 10-min tick marks */
-    val multiSessionHours = buildSet<Int> {
-        zones.forEach { zone ->
-            val count = sessions.count { it.zoneId == zone.id }
-            if (count > 1) {
-                for (h in zone.startHour until zone.endHour) add(h)
-            }
-        }
-    }
-
+    val hourLineColor = AwanTheme.colors.line
     Canvas(
         modifier = modifier
             .fillMaxSize()
-            .zIndex(1f)
+            .zIndex(1f),
     ) {
-        val trackX    = 52.dp.toPx()
-        val pointerY  = currentPointerY?.toPx()
-        val defaultGray = Color(0xFFCBD5E1)
-        val pastGray    = Color(0xFF94A3B8)
-
-        // sub-tick styling
-        val subTickColor = Color(0x33CBD5E1)   // very subtle – 20% opacity
-        val subTickWidth = 6.dp.toPx()         // short horizontal mark
-        val subTickStroke = 1.dp.toPx()
+        val trackX      = 52.dp.toPx()
+        val pointerY    = currentPointerY?.toPx()
+        val defaultGray = hourLineColor
+        val pastGray    = hourLineColor.copy(alpha = 0.55f)
 
         fun getTrackColorAtHour(hour: Int): Color {
             val insideZone = zones.find { hour > it.startHour && hour < it.endHour }
@@ -61,9 +48,11 @@ fun TimelineTrackCanvas(
             val endZone = zones.find { hour == it.endHour }
             if (endZone != null) return endZone.category.color
 
-            val hourTopDp = hourYOffsets[hour] ?: (hour * hourHeightDp).dp
-            val hourTopPx = hourTopDp.toPx()
-            return if (isPastDate || (isToday && pointerY != null && hourTopPx <= pointerY)) pastGray else defaultGray
+            val hourTopPx = (hourYOffsets[hour] ?: (hour * hourHeightDp).dp).toPx()
+            return if (isPastDate || (isToday && pointerY != null && hourTopPx <= pointerY))
+                pastGray
+            else
+                defaultGray
         }
 
         for (h in startHour until endHour) {
@@ -82,68 +71,80 @@ fun TimelineTrackCanvas(
                 endY   = hBottom,
             )
 
-            // ── Main vertical track line ──────────────────────────────────────
-            if (isPastDate) {
-                drawLine(
-                    brush = gradientBrush,
-                    start = Offset(trackX, hTop),
-                    end   = Offset(trackX, hBottom),
+            drawLine(
+                color       = hourLineColor.copy(alpha = 0.70f),
+                start       = Offset(trackX, hTop),
+                end         = Offset(size.width, hTop),
+                strokeWidth = 1.dp.toPx(),
+            )
+
+            when {
+                isPastDate -> drawLine(
+                    brush       = gradientBrush,
+                    start       = Offset(trackX, hTop),
+                    end         = Offset(trackX, hBottom),
                     strokeWidth = 3.dp.toPx(),
                 )
-            } else if (!isToday) {
-                drawLine(
-                    brush = gradientBrush,
-                    start = Offset(trackX, hTop),
-                    end   = Offset(trackX, hBottom),
+                !isToday -> drawLine(
+                    brush       = gradientBrush,
+                    start       = Offset(trackX, hTop),
+                    end         = Offset(trackX, hBottom),
                     strokeWidth = 2.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f),
+                    pathEffect  = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f),
                 )
-            } else {
-                if (pointerY != null && pointerY >= hTop && pointerY <= hBottom) {
-                    drawLine(
-                        brush = gradientBrush,
-                        start = Offset(trackX, hTop),
-                        end   = Offset(trackX, pointerY),
-                        strokeWidth = 3.dp.toPx(),
-                    )
-                    drawLine(
-                        brush = gradientBrush,
-                        start = Offset(trackX, pointerY),
-                        end   = Offset(trackX, hBottom),
-                        strokeWidth = 2.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f),
-                    )
-                } else if (pointerY != null && hBottom <= pointerY) {
-                    drawLine(
-                        brush = gradientBrush,
-                        start = Offset(trackX, hTop),
-                        end   = Offset(trackX, hBottom),
-                        strokeWidth = 3.dp.toPx(),
-                    )
-                } else {
-                    drawLine(
-                        brush = gradientBrush,
-                        start = Offset(trackX, hTop),
-                        end   = Offset(trackX, hBottom),
-                        strokeWidth = 2.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f),
-                    )
+                else -> {
+                    if (pointerY != null && pointerY >= hTop && pointerY <= hBottom) {
+                        drawLine(gradientBrush, Offset(trackX, hTop), Offset(trackX, pointerY), 3.dp.toPx())
+                        drawLine(
+                            gradientBrush,
+                            Offset(trackX, pointerY),
+                            Offset(trackX, hBottom),
+                            2.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f),
+                        )
+                    } else if (pointerY != null && hBottom <= pointerY) {
+                        drawLine(gradientBrush, Offset(trackX, hTop), Offset(trackX, hBottom), 3.dp.toPx())
+                    } else {
+                        drawLine(
+                            gradientBrush,
+                            Offset(trackX, hTop),
+                            Offset(trackX, hBottom),
+                            2.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f),
+                        )
+                    }
                 }
             }
 
-            // ── 10-min sub-tick marks for multi-session hours ─────────────────
-            if (multiSessionHours.contains(h) && hHeight > 80f) {
-                for (subMin in 10..50 step 10) {
-                    val subFraction = subMin / 60f
-                    val subY        = hTop + hHeight * subFraction
+            if (subIntervalMins > 0 && hHeight > 0f) {
+                val step = subIntervalMins
+                val tickAlpha  = if (step == 5) 0x22 else 0x44
+                val tickColor  = Color(tickAlpha shl 24 or 0xCBD5E1)
+                val tickWidth  = if (step == 5) 5.dp.toPx() else 8.dp.toPx()
+                val tickStroke = if (step == 5) 0.8.dp.toPx() else 1.dp.toPx()
 
-                    // Subtle horizontal tick to the right of the track line
-                    drawLine(
-                        color       = subTickColor,
-                        start       = Offset(trackX, subY),
-                        end         = Offset(trackX + subTickWidth, subY),
-                        strokeWidth = subTickStroke,
-                    )
+                var subMin = step
+                while (subMin < 60) {
+                    val isMidHour = (subMin == 30)
+                    val subY      = hTop + hHeight * (subMin / 60f)
+
+                    if (isMidHour && step == 10) {
+                        drawLine(
+                            color       = Color(0xFFE2E8F0).copy(alpha = 0.45f),
+                            start       = Offset(trackX, subY),
+                            end         = Offset(size.width, subY),
+                            strokeWidth = 0.8.dp.toPx(),
+                            pathEffect  = PathEffect.dashPathEffect(floatArrayOf(6f, 8f), 0f),
+                        )
+                    } else {
+                        drawLine(
+                            color       = tickColor,
+                            start       = Offset(trackX, subY),
+                            end         = Offset(trackX + tickWidth, subY),
+                            strokeWidth = tickStroke,
+                        )
+                    }
+                    subMin += step
                 }
             }
         }

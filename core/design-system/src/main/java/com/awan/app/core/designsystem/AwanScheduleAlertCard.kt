@@ -24,13 +24,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.ui.res.stringResource
+
 @Composable
 fun AwanScheduleAlertCard(
     message: String,
     onFixItClick: () -> Unit,
     onLaterClick: () -> Unit,
     modifier: Modifier = Modifier,
-    title: String = "SCHEDULE CONFLICT DETECTED",
+    title: String = stringResource(R.string.ds_schedule_conflict_title),
 ) {
     val shape = RoundedCornerShape(20.dp)
 
@@ -82,7 +84,6 @@ fun AwanScheduleAlertCard(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // LATER button
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(99.dp))
@@ -96,7 +97,7 @@ fun AwanScheduleAlertCard(
                         .padding(horizontal = 18.dp, vertical = 7.dp),
                 ) {
                     AwanText(
-                        text = "LATER",
+                        text = stringResource(R.string.ds_later),
                         style = AwanTheme.typography.button.copy(
                             fontSize = 13.sp,
                             color = Color(0xFF92400E),
@@ -106,7 +107,6 @@ fun AwanScheduleAlertCard(
 
                 Spacer(modifier = Modifier.width(10.dp))
 
-                // FIX IT button
                 Box(
                     modifier = Modifier
                         .shadow(4.dp, RoundedCornerShape(99.dp), spotColor = Color(0xFF2563EB))
@@ -121,7 +121,7 @@ fun AwanScheduleAlertCard(
                         .padding(horizontal = 22.dp, vertical = 7.dp),
                 ) {
                     AwanText(
-                        text = "FIX IT",
+                        text = stringResource(R.string.ds_fix_it),
                         style = AwanTheme.typography.button.copy(
                             fontSize = 13.sp,
                             color = Color.White,

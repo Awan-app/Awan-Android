@@ -16,15 +16,28 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 
 @Composable
 fun AwanHeaderBar(
@@ -35,133 +48,157 @@ fun AwanHeaderBar(
     subtitleText: String = "Clear skies — 6 things floating today",
     greetingPrefix: String = "Good afternoon",
     selectedDateText: String = "Today · Wed, Jul 15",
+    isCollapsed: Boolean = false,
+    totalSessionsCount: Int = 0,
+    completedSessionsCount: Int = 0,
+    completedHours: Double = 0.0,
+    totalHours: Double = 0.0,
+    scheduledHoursText: String = "",
+    progressSegments: List<CategoryProgressSegment> = emptyList(),
     onPreviousDayClick: () -> Unit = {},
     onNextDayClick: () -> Unit = {},
     onDatePillClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val displayName = userName.ifBlank { stringResource(R.string.ds_friend) }
+
+    val mascotWidth by animateDpAsState(
+        targetValue = if (isCollapsed) 96.dp else 160.dp,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "mascotWidth",
+    )
+
     Column(
         modifier = modifier.fillMaxWidth(),
     ) {
-        // Top Section: Light Modern Card Container wrapping Greeting, Badges & Compact Mascot
-        val cardShape = RoundedCornerShape(18.dp)
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .shadow(2.dp, cardShape, spotColor = Color(0xFF0EA5E9).copy(alpha = 0.15f))
-                .clip(cardShape)
-                .background(Color(0xFFF8FAFC))
-                .border(1.dp, Color(0xFFE2E8F0), cardShape)
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = 4.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                modifier = Modifier.weight(1f),
             ) {
-                // Left Column: Greeting, Name, Dual Badges (Streak + Coins)
-                Column(
-                    modifier = Modifier.weight(1f),
+                AnimatedVisibility(
+                    visible = !isCollapsed,
+                    enter = fadeIn(tween(220)) + expandVertically(tween(220)),
+                    exit = fadeOut(tween(180)) + shrinkVertically(tween(180)),
                 ) {
-                    AwanText(
-                        text = "$greetingPrefix,",
-                        style = AwanTheme.typography.title
-                    )
-                    Spacer(modifier = Modifier.height(1.dp))
-                    AwanText(
-                        text = userName,
-                        style = AwanTheme.typography.title,
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Dual Badges Row (Streak 🔥 | Coins 🪙)
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        val badgeShape = RoundedCornerShape(12.dp)
-
-                        // Compact Translucent Streak Pill Badge (🔥)
-                        Box(
-                            modifier = Modifier
-                                .clip(badgeShape)
-                                .background(Color(0xFFEA580C).copy(alpha = 0.08f))
-                                .border(1.dp, Color(0xFFEA580C).copy(alpha = 0.25f), badgeShape)
-                                .padding(horizontal = 10.dp, vertical = 4.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                AwanText(
-                                    text = "🔥",
-                                    style = AwanTheme.typography.body.copy(fontSize = 13.sp),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                AwanText(
-                                    text = streakCount.toString(),
-                                    style = AwanTheme.typography.heading.copy(
-                                        fontSize = 13.5.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = Color(0xFFEA580C),
-                                    ),
-                                )
-                            }
-                        }
-
-                        // Compact Translucent Coins Pill Badge (🪙)
-                        Box(
-                            modifier = Modifier
-                                .clip(badgeShape)
-                                .background(Color(0xFFEAB308).copy(alpha = 0.08f))
-                                .border(1.dp, Color(0xFFEAB308).copy(alpha = 0.25f), badgeShape)
-                                .padding(horizontal = 10.dp, vertical = 4.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                AwanText(
-                                    text = "🪙",
-                                    style = AwanTheme.typography.body.copy(fontSize = 13.sp),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                AwanText(
-                                    text = pointsCount.toString(),
-                                    style = AwanTheme.typography.heading.copy(
-                                        fontSize = 13.5.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = Color(0xFFCA8A04),
-                                    ),
-                                )
-                            }
-                        }
+                    Column {
+                        AwanText(
+                            text = "$greetingPrefix,",
+                            style = AwanTheme.typography.title,
+                        )
+                        Spacer(modifier = Modifier.height(1.dp))
+                        AwanText(
+                            text = displayName,
+                            style = AwanTheme.typography.title,
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
                     }
                 }
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val badgeShape = RoundedCornerShape(12.dp)
 
-                // Right: Large Animated Awan Cloud Mascot
-                AwanMascot(
-                    expression = mascotExpression,
-                    width = 80.dp,
-                )
+                    Box(
+                        modifier = Modifier
+                            .clip(badgeShape)
+                            .background(Color(0xFFEA580C).copy(alpha = 0.10f))
+                            .border(1.dp, Color(0xFFEA580C).copy(alpha = 0.30f), badgeShape)
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            AwanText(
+                                text = "🔥",
+                                style = AwanTheme.typography.body.copy(fontSize = 13.sp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            AwanText(
+                                text = streakCount.toString(),
+                                style = AwanTheme.typography.heading.copy(
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFFEA580C),
+                                ),
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(badgeShape)
+                            .background(Color(0xFFEAB308).copy(alpha = 0.08f))
+                            .border(1.dp, Color(0xFFEAB308).copy(alpha = 0.25f), badgeShape)
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            AwanText(
+                                text = "🪙",
+                                style = AwanTheme.typography.body.copy(fontSize = 13.sp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            AwanText(
+                                text = pointsCount.toString(),
+                                style = AwanTheme.typography.heading.copy(
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFFCA8A04),
+                                ),
+                            )
+                        }
+                    }
+                }
             }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            AwanMascot(
+                expression = mascotExpression,
+                width = mascotWidth,
+            )
+        }
+
+        AnimatedVisibility(
+            visible = isCollapsed,
+            enter = fadeIn(tween(220)) + expandVertically(tween(220)),
+            exit = fadeOut(tween(180)) + shrinkVertically(tween(180)),
+        ) {
+            AwanProgressSummaryCard(
+                subtitle = "$completedSessionsCount/$totalSessionsCount sessions",
+                completedHours = completedHours,
+                totalHours = totalHours,
+                segments = progressSegments,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp),
+            )
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Date Selector Bar: [<] [ Today · Wed, Jul 15 📅 ] [>]
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Left Arrow Button (<)
             NavArrowButton3D(
                 arrowText = "‹",
                 onClick = onPreviousDayClick,
             )
 
-            // Center Date Pill
             val pillShape = RoundedCornerShape(18.dp)
+            val surfaceColor = AwanTheme.colors.surface
+            val lineColor = AwanTheme.colors.line
+            val textPrimaryColor = AwanTheme.colors.textPrimary
+            val shadowColor = AwanTheme.colors.line
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -169,11 +206,11 @@ fun AwanHeaderBar(
                     .shadow(
                         elevation = 4.dp,
                         shape = pillShape,
-                        spotColor = Color(0xFF94A3B8),
+                        spotColor = shadowColor,
                     )
                     .clip(pillShape)
-                    .background(Color.White)
-                    .border(1.5.dp, Color(0xFFE2E8F0), pillShape)
+                    .background(surfaceColor)
+                    .border(1.5.dp, lineColor, pillShape)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -185,12 +222,11 @@ fun AwanHeaderBar(
                     text = selectedDateText,
                     style = AwanTheme.typography.heading.copy(
                         fontSize = 15.sp,
-                        color = Color(0xFF1E293B),
+                        color = textPrimaryColor,
                     ),
                 )
             }
 
-            // Right Arrow Button (>)
             NavArrowButton3D(
                 arrowText = "›",
                 onClick = onNextDayClick,
@@ -206,6 +242,9 @@ private fun NavArrowButton3D(
     modifier: Modifier = Modifier,
 ) {
     val buttonShape = RoundedCornerShape(16.dp)
+    val surfaceColor = AwanTheme.colors.surface
+    val lineColor = AwanTheme.colors.line
+    val textPrimaryColor = AwanTheme.colors.textPrimary
 
     Box(
         modifier = modifier
@@ -213,11 +252,11 @@ private fun NavArrowButton3D(
             .shadow(
                 elevation = 4.dp,
                 shape = buttonShape,
-                spotColor = Color(0xFF94A3B8),
+                spotColor = lineColor,
             )
             .clip(buttonShape)
-            .background(Color.White)
-            .border(1.5.dp, Color(0xFFE2E8F0), buttonShape)
+            .background(surfaceColor)
+            .border(1.5.dp, lineColor, buttonShape)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -229,7 +268,7 @@ private fun NavArrowButton3D(
             text = arrowText,
             style = AwanTheme.typography.title.copy(
                 fontSize = 20.sp,
-                color = Color(0xFF1E293B),
+                color = textPrimaryColor,
             ),
         )
     }

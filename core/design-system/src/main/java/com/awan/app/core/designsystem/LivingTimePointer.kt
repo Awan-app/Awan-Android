@@ -1,94 +1,101 @@
 package com.awan.app.core.designsystem
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 
 @Composable
 fun LivingTimePointer(
     pointerY: Dp,
     currentTimeFormatted: String,
-    activePointerColor: Color,
-    pulseScale: Float,
-    pulseAlpha: Float,
+    activePointerColor: Color = Color(0xFF0EA5E9),
+    pulseScale: Float = 1f,
+    pulseAlpha: Float = 0f,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.zIndex(50f)) {
+    val trackXDp = 52.dp
+    val liveColor = Color(0xFF0EA5E9)
+
+    val infiniteTransition = rememberInfiniteTransition(label = "liveCirclePulse")
+
+    val auraScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 2.4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "auraScale",
+    )
+
+    val auraAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.65f,
+        targetValue = 0.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "auraAlpha",
+    )
+
+    val dotPulseScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(700, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "dotPulseScale",
+    )
+
+    Box(modifier = modifier.fillMaxWidth().zIndex(50f)) {
         Box(
             modifier = Modifier
-                .offset(x = 52.dp - 12.dp, y = pointerY - 12.dp)
-                .size(24.dp)
+                .offset(x = trackXDp - 10.dp, y = pointerY - 10.dp)
+                .size(20.dp)
+                .graphicsLayer {
+                    scaleX = auraScale
+                    scaleY = auraScale
+                    alpha = auraAlpha
+                }
+                .clip(CircleShape)
+                .background(liveColor)
                 .zIndex(50f),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size((14 * pulseScale).dp)
-                    .clip(CircleShape)
-                    .background(activePointerColor.copy(alpha = pulseAlpha)),
-            )
-            Box(
-                modifier = Modifier
-                    .size(11.dp)
-                    .shadow(3.dp, CircleShape)
-                    .clip(CircleShape)
-                    .background(activePointerColor)
-                    .border(2.dp, Color.White, CircleShape),
-            )
-        }
+        )
 
         Box(
             modifier = Modifier
-                .offset(x = (-10).dp, y = pointerY - 11.dp)
-                .zIndex(50f),
-        ) {
-            val badgeShape = RoundedCornerShape(99.dp)
-            Box(
-                modifier = Modifier
-                    .shadow(3.dp, badgeShape, spotColor = activePointerColor)
-                    .clip(badgeShape)
-                    .background(activePointerColor)
-                    .border(1.dp, Color.White.copy(alpha = 0.6f), badgeShape)
-                    .padding(horizontal = 6.dp, vertical = 2.5.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    AwanText(
-                        text = currentTimeFormatted,
-                        style = AwanTheme.typography.heading.copy(
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                        ),
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(4.dp)
-                            .clip(CircleShape)
-                            .background(Color.White),
-                    )
+                .offset(x = trackXDp - 6.dp, y = pointerY - 6.dp)
+                .size(12.dp)
+                .graphicsLayer {
+                    scaleX = dotPulseScale
+                    scaleY = dotPulseScale
                 }
-            }
-        }
+                .shadow(4.dp, CircleShape, spotColor = liveColor)
+                .clip(CircleShape)
+                .background(liveColor)
+                .border(2.dp, Color.White, CircleShape)
+                .zIndex(52f),
+        )
     }
 }

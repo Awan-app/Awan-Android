@@ -17,16 +17,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 
-/**
- * A single 3D puffy cloud matching the reference image styling.
- * Built using layered radial gradient circles to create a soft, voluminous 3D cloud effect.
- */
+
 @Composable
 fun AwanCloud(
     modifier: Modifier = Modifier,
@@ -38,7 +40,6 @@ fun AwanCloud(
         val w = this.size.width
         val h = this.size.height
 
-        // 1. Far Left Puff Circle
         val leftRadius = w * 0.22f
         val leftCenter = Offset(w * 0.25f, h * 0.58f)
         drawCircle(
@@ -51,7 +52,6 @@ fun AwanCloud(
             center = leftCenter,
         )
 
-        // 2. Far Right Puff Circle
         val rightRadius = w * 0.24f
         val rightCenter = Offset(w * 0.75f, h * 0.58f)
         drawCircle(
@@ -64,7 +64,6 @@ fun AwanCloud(
             center = rightCenter,
         )
 
-        // 3. Top Right High Puff Circle
         val topRightRadius = w * 0.27f
         val topRightCenter = Offset(w * 0.62f, h * 0.38f)
         drawCircle(
@@ -77,7 +76,6 @@ fun AwanCloud(
             center = topRightCenter,
         )
 
-        // 4. Center-Left Main Large Puff Circle
         val mainRadius = w * 0.32f
         val mainCenter = Offset(w * 0.40f, h * 0.45f)
         drawCircle(
@@ -90,7 +88,6 @@ fun AwanCloud(
             center = mainCenter,
         )
 
-        // 5. Bottom Base Filling Circle
         val bottomRadius = w * 0.30f
         val bottomCenter = Offset(w * 0.50f, h * 0.68f)
         drawCircle(
@@ -105,9 +102,7 @@ fun AwanCloud(
     }
 }
 
-/**
- * A horizon bed of 3D puffy clouds floating across the bottom of the timeline.
- */
+
 @Composable
 fun AwanCloudsHorizon(
     modifier: Modifier = Modifier,
@@ -147,11 +142,26 @@ fun AwanCloudsHorizon(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(130.dp)
-            .padding(top = 16.dp),
+            .height(140.dp)
+            .graphicsLayer {
+                compositingStrategy = CompositingStrategy.Offscreen
+            }
+            .drawWithContent {
+                drawContent()
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.Black,
+                        ),
+                        startY = 0f,
+                        endY = size.height * 0.40f,
+                    ),
+                    blendMode = BlendMode.DstIn,
+                )
+            },
         contentAlignment = Alignment.BottomCenter,
     ) {
-        // Background layer cloud (left)
         AwanCloud(
             size = 140.dp,
             baseColor = Color(0xFFF1F5F9),
@@ -161,7 +171,6 @@ fun AwanCloudsHorizon(
                 .offset(x = (-20).dp, y = (10 + floatY2).dp),
         )
 
-        // Background layer cloud (right)
         AwanCloud(
             size = 150.dp,
             baseColor = Color(0xFFF8FAFC),
@@ -171,7 +180,6 @@ fun AwanCloudsHorizon(
                 .offset(x = 25.dp, y = (5 + floatY3).dp),
         )
 
-        // Foreground center-left cloud
         AwanCloud(
             size = 160.dp,
             baseColor = Color.White,
@@ -181,7 +189,6 @@ fun AwanCloudsHorizon(
                 .offset(x = (-50).dp, y = floatY1.dp),
         )
 
-        // Foreground center-right cloud
         AwanCloud(
             size = 145.dp,
             baseColor = Color.White,
