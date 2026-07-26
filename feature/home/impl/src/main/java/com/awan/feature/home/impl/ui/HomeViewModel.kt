@@ -251,7 +251,7 @@ class HomeViewModel @Inject constructor(
         }
 
         val date = _uiState.value.selectedDate
-        val startTime = date.atTime(sessionToSync.startMinutes / 60, sessionToSync.startMinutes % 60)
+        val startTime = date.atStartOfDay().plusMinutes(sessionToSync.startMinutes.toLong())
         val endTime = startTime.plusMinutes(sessionToSync.durationMinutes.toLong())
         val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
         val startIso = startTime.format(dtFormatter)
@@ -300,7 +300,7 @@ class HomeViewModel @Inject constructor(
 
         val sessionToSync = movedSession ?: return
         val date = _uiState.value.selectedDate
-        val startTime = date.atTime(sessionToSync.startMinutes / 60, sessionToSync.startMinutes % 60)
+        val startTime = date.atStartOfDay().plusMinutes(sessionToSync.startMinutes.toLong())
         val endTime = startTime.plusMinutes(sessionToSync.durationMinutes.toLong())
         val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
         val startIso = startTime.format(dtFormatter)
