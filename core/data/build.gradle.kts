@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":core:domain"))
     api(project(":core:network"))
     implementation(project(":core:datastore"))
+    implementation(project(":core:database"))
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
 

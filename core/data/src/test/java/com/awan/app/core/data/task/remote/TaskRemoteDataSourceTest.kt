@@ -29,6 +29,14 @@ class TaskRemoteDataSourceTest {
                     status = "SCHEDULED",
                 )
             }
+
+            override suspend fun getTasksByDate(date: String): List<com.awan.app.core.network.dto.TaskWithSessionsDto> {
+                return emptyList()
+            }
+
+            override suspend fun createTaskWithSessions(request: com.awan.app.core.network.dto.CreateTaskWithSessionsRequest): com.awan.app.core.network.dto.TaskWithSessionsDto {
+                throw NotImplementedError()
+            }
         }
         val dataSource = TaskRemoteDataSourceImpl(fakeApiService, json, testDispatcher)
         val result = dataSource.createTask(CreateTaskRequest(title = "Study Kotlin"))
