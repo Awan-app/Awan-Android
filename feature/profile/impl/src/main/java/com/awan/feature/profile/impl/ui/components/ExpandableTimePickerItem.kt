@@ -7,10 +7,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.designsystem.*
+import android.text.format.DateFormat
 import com.awan.feature.profile.impl.helpers.ProfileHelper
 import com.awan.feature.profile.impl.R as ProfileR
 
@@ -32,7 +34,7 @@ fun ExpandableTimePickerItem(
     val timePickerState = rememberTimePickerState(
         initialHour = hour,
         initialMinute = minute,
-        is24Hour = false
+        is24Hour = DateFormat.is24HourFormat(LocalContext.current)
     )
 
     key(isExpanded, hour, minute) { }
@@ -41,7 +43,7 @@ fun ExpandableTimePickerItem(
         PreferenceRow(
             icon = icon,
             title = title,
-            value = "${ProfileHelper.formatDisplayTime(hour, minute)} ${stringResource(if (hour < 12) ProfileR.string.profile_am else ProfileR.string.profile_pm)}",
+            value = ProfileHelper.formatDisplayTime(LocalContext.current, hour, minute),
             onClick = onExpandClick,
             showDivider = showDivider && !isExpanded,
             isExpanded = isExpanded
