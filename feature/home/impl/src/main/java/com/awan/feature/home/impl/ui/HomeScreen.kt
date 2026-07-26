@@ -12,11 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -33,11 +31,14 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.awan.app.core.common.text.UiText
+import com.awan.app.core.designsystem.AwanButton
+import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanHeaderBar
 import com.awan.app.core.designsystem.AwanScheduleAlertCard
 import com.awan.app.core.designsystem.AwanScheduleTimeline
+import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
-import com.awan.app.core.common.text.UiText
 import com.awan.feature.home.impl.R
 
 private sealed interface TimelineContentState {
@@ -118,14 +119,16 @@ fun HomeScreen(
                             ) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(48.dp),
-                                    color = Color(0xFF2E8BFF),
+                                    color = AwanTheme.colors.sky,
                                     strokeWidth = 3.dp,
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
-                                Text(
+                                AwanText(
                                     text = stringResource(R.string.loading_your_schedule),
-                                    fontSize = 14.sp,
-                                    color = Color(0xFF64748B),
+                                    style = AwanTheme.typography.body.copy(
+                                        fontSize = 14.sp,
+                                        color = AwanTheme.colors.textSecondary,
+                                    ),
                                 )
                             }
                         }
@@ -141,27 +144,26 @@ fun HomeScreen(
                                 verticalArrangement = Arrangement.Center,
                                 modifier = Modifier.padding(horizontal = 24.dp),
                             ) {
-                                Text(text = "☁️", fontSize = 48.sp)
+                                AwanText(text = "☁️", style = AwanTheme.typography.display.copy(fontSize = 48.sp))
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Text(
+                                AwanText(
                                     text = state.message.asString(),
-                                    fontSize = 15.sp,
-                                    color = Color(0xFF334155),
-                                    fontWeight = FontWeight.Medium,
-                                    textAlign = TextAlign.Center,
-                                    lineHeight = 22.sp,
+                                    style = AwanTheme.typography.body.copy(
+                                        fontSize = 15.sp,
+                                        color = AwanTheme.colors.textPrimary,
+                                        fontWeight = FontWeight.Medium,
+                                        textAlign = TextAlign.Center,
+                                        lineHeight = 22.sp,
+                                    ),
                                 )
                                 Spacer(modifier = Modifier.height(20.dp))
-                                Button(
+                                AwanButton(
                                     onClick = viewModel::retryLoad,
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF2E8BFF),
-                                    ),
+                                    variant = AwanButtonVariant.Primary,
                                 ) {
-                                    Text(
+                                    AwanText(
                                         text = stringResource(R.string.retry),
-                                        color = Color.White,
-                                        fontWeight = FontWeight.SemiBold,
+                                        style = AwanTheme.typography.button,
                                     )
                                 }
                             }
