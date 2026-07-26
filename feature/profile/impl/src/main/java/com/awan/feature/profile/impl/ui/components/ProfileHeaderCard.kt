@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -32,7 +31,7 @@ fun ProfileHeaderCard(
     val isDark = uiState.useDarkTheme
 
     val mascotBgColor by animateColorAsState(
-        targetValue = if (isDark) Color(0xFF1B2B48) else Color(0xFFFFD93D),
+        targetValue = if (isDark) AwanTheme.colors.skyMidday else AwanTheme.colors.zoneSun,
         animationSpec = tween(1000, easing = LinearOutSlowInEasing),
         label = "mascotBg"
     )
@@ -54,7 +53,7 @@ fun ProfileHeaderCard(
                 contentAlignment = Alignment.Center
             ) {
                 val celestialColor by animateColorAsState(
-                    targetValue = if (isDark) Color(0xFFE0E0E0) else Color(0xFFFFB74D),
+                    targetValue = if (isDark) AwanTheme.colors.textPrimary else AwanTheme.colors.zoneTangerine,
                     animationSpec = tween(1000, easing = LinearOutSlowInEasing),
                     label = "celestialColor"
                 )
