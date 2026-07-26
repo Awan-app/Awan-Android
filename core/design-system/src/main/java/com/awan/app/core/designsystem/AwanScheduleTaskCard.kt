@@ -298,7 +298,7 @@ private fun CalendarStyleCheckbox(
         label = "checkScale",
     )
 
-    val greenCompletedColor = Color(0xFF22C55E)
+    val greenCompletedColor = AwanTheme.colors.success
 
     val bgColor by animateColorAsState(
         targetValue = if (isCompleted) greenCompletedColor else Color.Transparent,
