@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="loading_your_schedule">Loading your schedule…</string>
+    <string name="retry">Retry</string>
+    <string name="home_todays_plan">TODAY\'S PLAN</string>
+    <string name="home_add_task">+ TASK</string>
+    <string name="home_add_goal">+ GOAL</string>
+    <string name="home_no_sessions">No scheduled sessions in this zone</string>
+    <string name="home_done_tasks">%1$d/%2$d done</string>
+    <string name="home_tasks_count">%1$d/%2$d sessions</string>
+    <string name="home_pts">+%1$d pts</string>
+    <string name="home_schedule_conflict_title">SCHEDULE CONFLICT DETECTED</string>
+    <string name="home_schedule_alert_later">LATER</string>
+    <string name="home_schedule_alert_fix_it">FIX IT</string>
+    <string name="home_default_user_name">Friend</string>
+    <string name="home_greeting_prefix">Good afternoon</string>
+</resources>
