@@ -22,6 +22,8 @@ class HomeRepositoryImpl @Inject constructor(
     private val userDao: UserDao,
 ) : HomeRepository {
 
+    private val scheduleCache = java.util.concurrent.ConcurrentHashMap<LocalDate, DaySchedule>()
+
     override suspend fun getUserProfile(): Result<UserProfileInfo> {
         val result = remoteDataSource.getUserProfile()
         if (result is Result.Success) {
@@ -76,7 +78,10 @@ class HomeRepositoryImpl @Inject constructor(
         val zones: List<ZoneDto> = when (zonesResult) {
             is Result.Success -> zonesResult.data
             is Result.Error -> {
-                if (zonesResult.error !is AppError.Server) return zonesResult
+                if (zonesResult.error !is AppError.Server) {
+                    scheduleCache[date]?.let { return Result.Success(it) }
+                    return zonesResult
+                }
                 emptyList()
             }
             is Result.Loading -> emptyList()
@@ -89,10 +94,14 @@ class HomeRepositoryImpl @Inject constructor(
         }
 
         val tasksResult = remoteDataSource.getTasksByDate(dateStr)
-        if (tasksResult is Result.Error) return tasksResult
+        if (tasksResult is Result.Error) {
+            scheduleCache[date]?.let { return Result.Success(it) }
+            return tasksResult
+        }
 
         val tasks = (tasksResult as Result.Success).data
         val schedule = HomeMapper.toDaySchedule(date, effectiveZones, tasks)
+        scheduleCache[date] = schedule
         return Result.Success(schedule)
     }
 
@@ -138,7 +147,17 @@ class HomeRepositoryImpl @Inject constructor(
             endIso = endIso,
         )
         return when (result) {
-            is Result.Success -> Result.Success(Unit)
+            is Result.Success -> {
+                scheduleCache.forEach { (date, cachedSchedule) ->
+                    if (cachedSchedule.sessions.any { it.id == sessionId }) {
+                        val updatedSessions = cachedSchedule.sessions.map { session ->
+                            if (session.id == sessionId) session.copy(status = status) else session
+                        }
+                        scheduleCache[date] = cachedSchedule.copy(sessions = updatedSessions)
+                    }
+                }
+                Result.Success(Unit)
+            }
             is Result.Error -> Result.Error(result.error)
             else -> Result.Error(AppError.Unknown(Throwable("Failed to update session status")))
         }
