@@ -6,6 +6,7 @@ import com.awan.app.core.network.api.AuthApiService
 import com.awan.app.core.network.api.OnboardingApiService
 import com.awan.app.core.network.api.TaskApiService
 import com.awan.app.core.network.api.ZonesApiService
+import com.awan.app.core.network.api.TemplateApiService
 import com.awan.app.core.network.device.AndroidDeviceIdProvider
 import com.awan.app.core.network.device.DeviceIdProvider
 import com.awan.app.core.network.interceptor.AuthInterceptor
@@ -135,11 +136,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun providesTemplateApiService(retrofit: Retrofit): com.awan.app.core.network.api.TemplateApiService =
-        retrofit.create(com.awan.app.core.network.api.TemplateApiService::class.java)
-
-    @Provides
-    @Singleton
     fun providesUserApiService(retrofit: Retrofit): com.awan.app.core.network.api.UserApiService =
         retrofit.create(com.awan.app.core.network.api.UserApiService::class.java)
 
@@ -147,6 +143,11 @@ object NetworkModule {
     @Singleton
     fun providesSessionApiService(retrofit: Retrofit): com.awan.app.core.network.api.SessionApiService =
         retrofit.create(com.awan.app.core.network.api.SessionApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesTemplateApiService(retrofit: Retrofit): TemplateApiService =
+        retrofit.create(TemplateApiService::class.java)
 
     @Provides
     @Singleton

@@ -10,11 +10,17 @@ import com.awan.app.core.data.onboarding.OnboardingRepository
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSourceImpl
+import com.awan.app.core.data.task.AiTaskRepositoryImpl
 import com.awan.app.core.data.task.TaskRepository
 import com.awan.app.core.data.task.TaskRepositoryImpl
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.data.task.remote.TaskRemoteDataSourceImpl
+import com.awan.app.core.data.template.TemplateRepositoryImpl
+import com.awan.app.core.data.template.remote.TemplateRemoteDataSource
+import com.awan.app.core.data.template.remote.TemplateRemoteDataSourceImpl
 import com.awan.app.core.domain.auth.repository.AuthRepository
+import com.awan.app.core.domain.task.repository.AiTaskRepository
+import com.awan.app.core.domain.template.repository.TemplateRepository
 import com.awan.app.core.domain.home.repository.HomeRepository
 import dagger.Binds
 import dagger.Module
@@ -49,6 +55,24 @@ internal abstract class DataModule {
     abstract fun bindTaskRepository(
         impl: TaskRepositoryImpl,
     ): TaskRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAiTaskRepository(
+        impl: AiTaskRepositoryImpl,
+    ): AiTaskRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTemplateRemoteDataSource(
+        impl: TemplateRemoteDataSourceImpl,
+    ): TemplateRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindTemplateRepository(
+        impl: TemplateRepositoryImpl,
+    ): TemplateRepository
 
     @Binds
     @Singleton

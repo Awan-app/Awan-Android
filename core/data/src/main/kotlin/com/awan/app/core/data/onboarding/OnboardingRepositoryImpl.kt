@@ -4,12 +4,11 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
+import com.awan.app.core.data.util.formatMinutesToTime
 import com.awan.app.core.datastore.UserPreferencesDataSource
-import com.awan.app.core.model.DayBounds
 import com.awan.app.core.network.dto.CompleteOnboardingRequest
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -62,12 +61,5 @@ class OnboardingRepositoryImpl @Inject constructor(
             is Result.Error -> Result.Error(result.error)
             Result.Loading -> Result.Loading
         }
-    }
-
-    private fun formatMinutesToTime(minutes: Int): String {
-        val totalMinutes = minutes.mod(DayBounds.MINUTES_PER_DAY)
-        val hours = totalMinutes / 60
-        val mins = totalMinutes % 60
-        return String.format(Locale.US, "%02d:%02d:00", hours, mins)
     }
 }
