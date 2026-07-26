@@ -123,6 +123,21 @@ class HomeViewModel @Inject constructor(
                 zoneById[orphanZoneId] = synthetic
             }
 
+        if (zones.isEmpty() && schedule.sessions.isNotEmpty()) {
+            val startMin = schedule.sessions.minOf { it.startMinutes }
+            val endMin   = schedule.sessions.maxOf { it.startMinutes + it.durationMinutes }
+            val fallbackZone = ScheduleZone(
+                id = "zone_default",
+                categoryId = "personal",
+                category = TaskCategory.Personal,
+                startHour = (startMin / 60).coerceIn(0, 23),
+                endHour = ceilHour(endMin).coerceIn(1, 24),
+                isCollapsed = false,
+            )
+            zones.add(fallbackZone)
+            zoneById[fallbackZone.id] = fallbackZone
+        }
+
         val sessions = schedule.sessions.mapNotNull { it.toUiSession(zoneById) }
 
         val completedCount = sessions.count { it.status == TaskStatus.Completed }

@@ -20,8 +20,10 @@ internal fun DayZone.toUiZone(): ScheduleZone = ScheduleZone(
 )
 
 internal fun DaySession.toUiSession(zoneById: Map<String, ScheduleZone>): ScheduleSession? {
-    val resolvedZoneId = zoneId ?: return null
-    val zone = zoneById[resolvedZoneId] ?: return null
+    val zone = (if (zoneId != null) zoneById[zoneId] else null)
+        ?: findMatchingZoneForSession(this, zoneById)
+        ?: return null
+    val resolvedZoneId = zone.id
     val catName = categoryName
     val category = if (!catName.isNullOrBlank()) {
         resolveCategory(catName)
@@ -40,6 +42,17 @@ internal fun DaySession.toUiSession(zoneById: Map<String, ScheduleZone>): Schedu
         isFixed = locked,
         points = points,
     )
+}
+
+private fun findMatchingZoneForSession(
+    session: DaySession,
+    zoneById: Map<String, ScheduleZone>,
+): ScheduleZone? {
+    if (zoneById.isEmpty()) return null
+    val sessionCategory = session.categoryName?.let { resolveCategory(it) } ?: TaskCategory.Personal
+    return zoneById.values.find { it.category == sessionCategory }
+        ?: zoneById.values.find { it.category == TaskCategory.Personal }
+        ?: zoneById.values.firstOrNull()
 }
 
 internal fun resolveCategoryWithColor(name: String, hexColor: String?): TaskCategory {
