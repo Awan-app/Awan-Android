@@ -10,10 +10,12 @@ import com.awan.app.core.domain.auth.usecase.LogoutUseCase
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -38,10 +40,30 @@ class ProfileViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
+    private val _events = Channel<ProfileEvent>()
+    val events = _events.receiveAsFlow()
+
     init {
         loadProfile()
         observeProfile()
         observePreferences()
+    }
+
+    fun onAction(action: ProfileAction) {
+        when (action) {
+            is ProfileAction.SetTheme -> setTheme(action.useDarkTheme)
+            is ProfileAction.SetLanguage -> setLanguage(action.languageCode)
+            ProfileAction.Refresh -> loadProfile()
+            is ProfileAction.UpdateSleepSchedule -> updateSleepSchedule(action.wakeupTime, action.sleepTime)
+            is ProfileAction.UpdateSessionDuration -> updateSessionDuration(action.duration)
+            is ProfileAction.UpdateTimezone -> updateTimezone(action.timezone)
+            is ProfileAction.UpdatePersonalInfo -> updatePersonalInfo(
+                action.firstName,
+                action.lastName,
+                action.birthDate
+            )
+            ProfileAction.Logout -> logout()
+        }
     }
 
     private fun observeProfile() {
@@ -67,36 +89,32 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun setTheme(useDarkTheme: Boolean) {
+    private fun setTheme(useDarkTheme: Boolean) {
         viewModelScope.launch {
             userDataRepository.setDarkThemeEnabled(useDarkTheme)
         }
     }
 
-    fun setLanguage(languageCode: String) {
+    private fun setLanguage(languageCode: String) {
         viewModelScope.launch {
             userDataRepository.setLocale(languageCode)
         }
     }
 
-    fun refresh() {
-        loadProfile()
-    }
-
-    fun updateSleepSchedule(wakeupTime: String, sleepTime: String) {
+    private fun updateSleepSchedule(wakeupTime: String, sleepTime: String) {
         executeFieldUpdate { profileRepository.updateSleepSchedule(wakeupTime, sleepTime) }
     }
 
-    fun updateSessionDuration(duration: Int) {
+    private fun updateSessionDuration(duration: Int) {
         val currentBuffer = _uiState.value.profile?.preferences?.bufferBetweenSessions ?: 5
         executeFieldUpdate { profileRepository.updateSessionSettings(duration, currentBuffer) }
     }
 
-    fun updateTimezone(timezone: String) {
+    private fun updateTimezone(timezone: String) {
         executeFieldUpdate { profileRepository.updateTimezone(timezone) }
     }
 
-    fun updatePersonalInfo(firstName: String, lastName: String, birthDate: String) {
+    private fun updatePersonalInfo(firstName: String, lastName: String, birthDate: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isUpdatingField = true, fieldError = null) }
             
@@ -124,11 +142,11 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun logout(onSuccess: () -> Unit) {
+    private fun logout() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             when (logoutUseCase()) {
-                is Result.Success -> onSuccess()
+                is Result.Success -> _events.send(ProfileEvent.LogoutSuccess)
                 is Result.Error -> {
                     _uiState.update {
                         it.copy(
