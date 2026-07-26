@@ -59,7 +59,7 @@ fun EditProfileScreen(
                 navigationIcon = {
                     AwanIconButton(
                         onClick = onBackClick,
-                        contentDescription = "Back"
+                        contentDescription = stringResource(ProfileR.string.profile_back)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -95,18 +95,18 @@ fun EditProfileScreen(
                                 label = stringResource(ProfileR.string.profile_first_name),
                                 value = uiState.firstName,
                                 onValueChange = onFirstNameChange,
-                                placeholder = "First name"
+                                placeholder = stringResource(ProfileR.string.profile_first_name)
                             )
                             EditField(
                                 label = stringResource(ProfileR.string.profile_last_name),
                                 value = uiState.lastName,
                                 onValueChange = onLastNameChange,
-                                placeholder = "Last name"
+                                placeholder = stringResource(ProfileR.string.profile_last_name)
                             )
                             PreferenceRow(
                                 icon = Icons.Default.Cake,
                                 title = stringResource(ProfileR.string.profile_birth_date),
-                                value = uiState.birthDate.ifBlank { "Select Date" },
+                                value = uiState.birthDate.ifBlank { stringResource(ProfileR.string.profile_select_date) },
                                 onClick = { showDatePicker = true },
                                 iconColor = AwanTheme.colors.zoneTangerine
                             )
@@ -184,17 +184,17 @@ fun EditProfileScreen(
                             ) {
                                 AwanIconButton(
                                     onClick = { onUpdateSessionDuration((uiState.preferredSessionDuration - 5).coerceAtLeast(5)) },
-                                    contentDescription = "Decrease"
+                                    contentDescription = stringResource(ProfileR.string.profile_decrease)
                                 ) {
                                     Icon(Icons.Default.Remove, null, tint = AwanTheme.colors.textPrimary, modifier = Modifier.size(16.dp))
                                 }
                                 AwanText(
-                                    text = "${uiState.preferredSessionDuration}m",
+                                    text = stringResource(ProfileR.string.profile_session_time_value, uiState.preferredSessionDuration),
                                     style = AwanTheme.styles.bodyText.copy(textStyle = AwanTheme.typography.body.copy(fontWeight = FontWeight.Bold))
                                 )
                                 AwanIconButton(
                                     onClick = { onUpdateSessionDuration((uiState.preferredSessionDuration + 5).coerceAtMost(180)) },
-                                    contentDescription = "Increase"
+                                    contentDescription = stringResource(ProfileR.string.profile_increase)
                                 ) {
                                     Icon(Icons.Default.Add, null, tint = AwanTheme.colors.textPrimary, modifier = Modifier.size(16.dp))
                                 }
@@ -276,12 +276,12 @@ fun EditProfileScreen(
                     }
                     showDatePicker = false
                 }) {
-                    AwanText("OK", style = AwanTheme.styles.buttonCompactText)
+                    AwanText(stringResource(ProfileR.string.profile_ok), style = AwanTheme.styles.buttonCompactText)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    AwanText("Cancel", style = AwanTheme.styles.buttonCompactText)
+                    AwanText(stringResource(ProfileR.string.profile_cancel), style = AwanTheme.styles.buttonCompactText)
                 }
             },
             colors = DatePickerDefaults.colors(

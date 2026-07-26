@@ -92,7 +92,8 @@ fun ProfileHeaderCard(
             
             Column(modifier = Modifier.weight(1f)) {
                 AwanText(
-                    text = ProfileHelper.getDisplayName(profile.firstName, profile.lastName, profile.email),
+                    text = ProfileHelper.getDisplayName(profile.firstName, profile.lastName, profile.email)
+                        .ifBlank { stringResource(ProfileR.string.profile_user_placeholder) },
                     style = AwanTheme.styles.titleText.copy(
                         textStyle = AwanTheme.typography.title.copy(fontSize = 18.sp)
                     )

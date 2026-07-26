@@ -47,4 +47,23 @@
     <string name="profile_scheduling_type_fixed">Fixed</string>
     <string name="profile_retry">Retry</string>
     <string name="profile_logout">Log out</string>
+
+    <string name="profile_select_language">Select Language</string>
+    <string name="profile_language_english">English</string>
+    <string name="profile_language_arabic">Arabic</string>
+    <string name="profile_select_timezone">Select Timezone</string>
+    <string name="profile_search_timezone">Search region or city...</string>
+    <string name="profile_close">Close</string>
+    <string name="profile_minutes">minutes</string>
+    <string name="profile_decrease">Decrease</string>
+    <string name="profile_increase">Increase</string>
+    <string name="profile_back">Back</string>
+    <string name="profile_select_date">Select Date</string>
+    <string name="profile_ok">OK</string>
+    <string name="profile_enabled">Enabled</string>
+
+    <string name="profile_am">AM</string>
+    <string name="profile_pm">PM</string>
+    <string name="profile_user_placeholder">User</string>
+    <string name="profile_error_logout">Failed to logout</string>
 </resources>

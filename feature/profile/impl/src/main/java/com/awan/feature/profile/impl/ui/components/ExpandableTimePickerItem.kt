@@ -14,7 +14,6 @@ import com.awan.app.core.common.text.UiText
 import com.awan.app.core.designsystem.*
 import com.awan.feature.profile.impl.helpers.ProfileHelper
 import com.awan.feature.profile.impl.R as ProfileR
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +42,7 @@ fun ExpandableTimePickerItem(
         PreferenceRow(
             icon = icon,
             title = title,
-            value = ProfileHelper.formatDisplayTime(hour, minute),
+            value = "${ProfileHelper.formatDisplayTime(hour, minute)} ${stringResource(if (hour < 12) ProfileR.string.profile_am else ProfileR.string.profile_pm)}",
             onClick = onExpandClick,
             showDivider = showDivider && !isExpanded,
             isExpanded = isExpanded

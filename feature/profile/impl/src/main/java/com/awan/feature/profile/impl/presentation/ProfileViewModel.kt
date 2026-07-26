@@ -109,7 +109,7 @@ class ProfileViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = UiText.DynamicString("Failed to logout")
+                            errorMessage = UiText.StringResource(com.awan.feature.profile.impl.R.string.profile_error_logout)
                         )
                     }
                 }

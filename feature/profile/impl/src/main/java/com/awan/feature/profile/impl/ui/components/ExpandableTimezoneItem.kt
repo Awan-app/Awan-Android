@@ -66,7 +66,7 @@ fun ExpandableTimezoneItem(
                 AwanTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = "Search region or city...",
+                    placeholder = stringResource(ProfileR.string.profile_search_timezone),
                     modifier = Modifier.fillMaxWidth()
                 )
 

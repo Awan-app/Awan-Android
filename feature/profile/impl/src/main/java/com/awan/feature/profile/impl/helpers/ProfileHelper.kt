@@ -26,15 +26,14 @@ object ProfileHelper {
     }
 
     fun formatDisplayTime(hour: Int, minute: Int): String {
-        val amPm = if (hour < 12) "AM" else "PM"
         val h = if (hour % 12 == 0) 12 else hour % 12
-        return String.format(Locale.getDefault(), "%02d:%02d %s", h, minute, amPm)
+        return String.format(Locale.getDefault(), "%02d:%02d", h, minute)
     }
 
     fun getDisplayName(firstName: String?, lastName: String?, email: String?): String {
         if (!firstName.isNullOrBlank() || !lastName.isNullOrBlank()) {
             return "${firstName.orEmpty()} ${lastName.orEmpty()}".trim()
         }
-        return email?.substringBefore("@") ?: "User"
+        return email?.substringBefore("@") ?: ""
     }
 }

@@ -10,8 +10,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.*
+import com.awan.feature.profile.impl.R
 
 @Composable
 fun LanguageSelectionDialog(
@@ -21,16 +23,26 @@ fun LanguageSelectionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { AwanText(text = "Select Language", style = AwanTheme.styles.titleText) },
+        title = { AwanText(text = stringResource(R.string.profile_select_language), style = AwanTheme.styles.titleText) },
         text = {
             Column {
-                LanguageOption("English", "en", currentLanguage == "en" || currentLanguage == "", onLanguageSelected)
-                LanguageOption("العربية", "ar", currentLanguage == "ar", onLanguageSelected)
+                LanguageOption(
+                    label = stringResource(R.string.profile_language_english),
+                    code = "en",
+                    isSelected = currentLanguage == "en" || currentLanguage == "",
+                    onSelect = onLanguageSelected
+                )
+                LanguageOption(
+                    label = stringResource(R.string.profile_language_arabic),
+                    code = "ar",
+                    isSelected = currentLanguage == "ar",
+                    onSelect = onLanguageSelected
+                )
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                AwanText(text = "Cancel", style = AwanTheme.styles.buttonCompactText)
+                AwanText(text = stringResource(R.string.profile_cancel), style = AwanTheme.styles.buttonCompactText)
             }
         },
         containerColor = AwanTheme.colors.surface,

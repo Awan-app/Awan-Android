@@ -13,8 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.*
+import com.awan.feature.profile.impl.R
 import java.util.TimeZone
 
 @Composable
@@ -38,11 +40,11 @@ fun TimezoneSelectionDialog(
         onDismissRequest = onDismiss,
         title = { 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                AwanText(text = "Select Timezone", style = AwanTheme.styles.titleText)
+                AwanText(text = stringResource(R.string.profile_select_timezone), style = AwanTheme.styles.titleText)
                 AwanTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = "Search region or city...",
+                    placeholder = stringResource(R.string.profile_search_timezone),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -83,7 +85,7 @@ fun TimezoneSelectionDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                AwanText(text = "Close", style = AwanTheme.styles.buttonCompactText)
+                AwanText(text = stringResource(R.string.profile_close), style = AwanTheme.styles.buttonCompactText)
             }
         },
         containerColor = AwanTheme.colors.surface,

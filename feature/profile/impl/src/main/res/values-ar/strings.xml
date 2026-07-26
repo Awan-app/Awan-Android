@@ -47,4 +47,23 @@
     <string name="profile_scheduling_type_fixed">ثابت</string>
     <string name="profile_retry">إعادة المحاولة</string>
     <string name="profile_logout">تسجيل الخروج</string>
+
+    <string name="profile_select_language">اختر اللغة</string>
+    <string name="profile_language_english">الإنجليزية</string>
+    <string name="profile_language_arabic">العربية</string>
+    <string name="profile_select_timezone">اختر المنطقة الزمنية</string>
+    <string name="profile_search_timezone">ابحث عن منطقة أو مدينة…</string>
+    <string name="profile_close">إغلاق</string>
+    <string name="profile_minutes">دقائق</string>
+    <string name="profile_decrease">تقليل</string>
+    <string name="profile_increase">زيادة</string>
+    <string name="profile_back">عودة</string>
+    <string name="profile_select_date">اختر التاريخ</string>
+    <string name="profile_ok">موافق</string>
+    <string name="profile_enabled">مفعل</string>
+
+    <string name="profile_am">ص</string>
+    <string name="profile_pm">م</string>
+    <string name="profile_user_placeholder">مستخدم</string>
+    <string name="profile_error_logout">فشل تسجيل الخروج</string>
 </resources>
