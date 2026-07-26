@@ -23,6 +23,9 @@ import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
+import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.kotlin.dsl.dependencies
+import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -38,8 +41,11 @@ internal fun Project.configureKotlinAndroid(ext: LibraryExtension) {
         compileOptions {
             sourceCompatibility = JavaVersion.VERSION_17
             targetCompatibility = JavaVersion.VERSION_17
+            isCoreLibraryDesugaringEnabled = true
         }
     }
+
+    addCoreLibraryDesugaring()
 
     tasks.withType<KotlinCompile>().configureEach {
         compilerOptions {
@@ -60,10 +66,20 @@ internal fun Project.configureKotlinAndroid(ext: ApplicationExtension) {
         compileOptions {
             sourceCompatibility = JavaVersion.VERSION_17
             targetCompatibility = JavaVersion.VERSION_17
+            isCoreLibraryDesugaringEnabled = true
         }
     }
 
+    addCoreLibraryDesugaring()
     configureKotlinJvmTarget()
+}
+
+/** `java.time` is API 26+; minSdk is 24, so every module desugars it. */
+private fun Project.addCoreLibraryDesugaring() {
+    val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
+    dependencies {
+        add("coreLibraryDesugaring", libs.findLibrary("desugar-jdk-libs").get())
+    }
 }
 
 private fun Project.configureKotlinJvmTarget() {
