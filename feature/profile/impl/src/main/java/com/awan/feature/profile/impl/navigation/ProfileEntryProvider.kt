@@ -3,10 +3,10 @@ package com.awan.feature.profile.impl.navigation
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.os.LocaleListCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
 import com.awan.core.navigation.Route
 import com.awan.feature.profile.api.ProfileRoute
@@ -31,7 +31,7 @@ fun ProfileRouteScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
     onLogout: () -> Unit,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
