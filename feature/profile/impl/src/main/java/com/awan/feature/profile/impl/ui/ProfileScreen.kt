@@ -14,7 +14,12 @@ import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.feature.profile.impl.presentation.ProfileUiState
 import com.awan.feature.profile.impl.R as ProfileR
-import com.awan.feature.profile.impl.ui.components.*
+import com.awan.feature.profile.impl.ui.components.EditPersonalInfoSheet
+import com.awan.feature.profile.impl.ui.components.ProfileHeaderCard
+import com.awan.feature.profile.impl.ui.components.PreferencesCard
+import com.awan.feature.profile.impl.ui.components.AppearanceCard
+import com.awan.feature.profile.impl.ui.components.SettingsCard
+import com.awan.feature.profile.impl.ui.components.ProfileShimmer
 
 @Composable
 fun ProfileScreen(
@@ -31,6 +36,7 @@ fun ProfileScreen(
     onRetry: () -> Unit = {},
 ) {
     var showEditSheet by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -51,7 +57,7 @@ fun ProfileScreen(
                 onUpdateSleepSchedule = onUpdateSleepSchedule,
                 onUpdateSessionDuration = onUpdateSessionDuration,
                 onUpdateTimezone = onUpdateTimezone,
-                onLogout = onLogout
+                onLogout = { showLogoutDialog = true }
             )
 
             if (showEditSheet) {
@@ -65,6 +71,29 @@ fun ProfileScreen(
                         showEditSheet = false
                     },
                     isLoading = uiState.isUpdatingField
+                )
+            }
+
+            if (showLogoutDialog) {
+                AwanDialog(
+                    title = stringResource(ProfileR.string.profile_logout_confirm_title),
+                    body = stringResource(ProfileR.string.profile_logout_confirm_subtitle),
+                    icon = {
+                        AwanMascot(
+                            expression = MascotExpression.Curious,
+                            width = AwanTheme.spacing.xxl * 3,
+                            blinkEnabled = true
+                        )
+                    },
+                    primaryLabel = stringResource(ProfileR.string.profile_logout),
+                    primaryVariant = AwanButtonVariant.Destructive,
+                    onPrimary = {
+                        onLogout()
+                        showLogoutDialog = false
+                    },
+                    secondaryLabel = stringResource(ProfileR.string.profile_cancel),
+                    onSecondary = { showLogoutDialog = false },
+                    onDismiss = { showLogoutDialog = false }
                 )
             }
         } else if (uiState.errorMessage != null) {

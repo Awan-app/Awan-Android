@@ -47,6 +47,8 @@
     <string name="profile_scheduling_type_fixed">Fixed</string>
     <string name="profile_retry">Retry</string>
     <string name="profile_logout">Log out</string>
+    <string name="profile_logout_confirm_title">Leaving so soon?</string>
+    <string name="profile_logout_confirm_subtitle">Are you sure you want to log out of your account?</string>
 
     <string name="profile_select_language">Select Language</string>
     <string name="profile_language_english">English</string>
