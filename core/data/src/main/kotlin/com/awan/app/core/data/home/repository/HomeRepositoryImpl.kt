@@ -97,6 +97,7 @@ class HomeRepositoryImpl @Inject constructor(
     }
 
 
+    @Suppress("NewApi")
     private suspend fun resolveZoneFallback(date: LocalDate, dateStr: String): List<ZoneDto> {
         val overridesResult = remoteDataSource.getTemplateOverrides()
         if (overridesResult is Result.Success) {

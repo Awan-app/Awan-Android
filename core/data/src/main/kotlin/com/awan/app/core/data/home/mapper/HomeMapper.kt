@@ -9,13 +9,8 @@ import com.awan.app.core.network.dto.TaskInfoResponse
 import com.awan.app.core.network.dto.TaskWithSessionsDto
 import com.awan.app.core.network.dto.ZoneDto
 import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-
 
 internal object HomeMapper {
-
-    private val dtFormatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
     fun toDaySchedule(
         date: LocalDate,
@@ -48,11 +43,8 @@ internal object HomeMapper {
     // ── Session ───────────────────────────────────────────────────────────
 
     private fun SessionDto.toDaySession(task: TaskInfoResponse): DaySession {
-        val startDt = runCatching { LocalDateTime.parse(start, dtFormatter) }.getOrNull()
-        val endDt   = runCatching { LocalDateTime.parse(end, dtFormatter) }.getOrNull()
-
-        val startMin = startDt?.let { it.hour * 60 + it.minute } ?: 0
-        val endMin   = endDt?.let { it.hour * 60 + it.minute } ?: (startMin + 30)
+        val startMin = parseIsoTimeToMinutes(start)
+        val endMin   = parseIsoTimeToMinutes(end).let { if (it <= startMin) startMin + 30 else it }
         val duration = (endMin - startMin).coerceAtLeast(1)
 
         return DaySession(
@@ -81,6 +73,18 @@ internal object HomeMapper {
         val hours   = parts.getOrNull(0)?.toIntOrNull() ?: return 0
         val minutes = parts.getOrNull(1)?.toIntOrNull() ?: 0
         return hours * 60 + minutes
+    }
+
+    private fun parseIsoTimeToMinutes(isoString: String): Int {
+        return try {
+            val timePart = if (isoString.contains("T")) isoString.substringAfter("T") else isoString
+            val parts = timePart.split(":")
+            val hours = parts.getOrNull(0)?.toIntOrNull() ?: 0
+            val minutes = parts.getOrNull(1)?.toIntOrNull() ?: 0
+            hours * 60 + minutes
+        } catch (_: Exception) {
+            0
+        }
     }
 
     private fun parseSessionStatus(raw: String): SessionStatus = when (raw.uppercase()) {

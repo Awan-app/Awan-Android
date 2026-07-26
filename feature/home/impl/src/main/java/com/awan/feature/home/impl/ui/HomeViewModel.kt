@@ -1,3 +1,5 @@
+@file:Suppress("NewApi")
+
 package com.awan.feature.home.impl.ui
 
 import androidx.lifecycle.ViewModel
