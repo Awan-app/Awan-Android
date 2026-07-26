@@ -130,19 +130,19 @@ fun ProfileHeaderCard(
         ) {
             StatItem(
                 icon = Icons.Default.Whatshot,
-                value = profile.streak.toString(),
+                value = (profile.streak ?: 0).toString(),
                 label = stringResource(ProfileR.string.profile_streak),
                 iconTint = AwanTheme.colors.zoneTangerine
             )
             StatItem(
                 icon = Icons.Default.Star,
-                value = profile.maxStreak.toString(),
+                value = (profile.maxStreak ?: 0).toString(),
                 label = stringResource(ProfileR.string.profile_max_streak),
                 iconTint = AwanTheme.colors.zoneSun
             )
             StatItem(
                 icon = Icons.Default.Diamond,
-                value = profile.points.toString(),
+                value = (profile.points ?: 0).toString(),
                 label = stringResource(ProfileR.string.profile_total_points),
                 iconTint = AwanTheme.colors.sky
             )

@@ -25,6 +25,11 @@ fun <T> Result<T>.onSuccess(action: (T) -> Unit): Result<T> {
     return this
 }
 
+suspend fun <T> Result<T>.suspendOnSuccess(action: suspend (T) -> Unit): Result<T> {
+    if (this is Result.Success) action(data)
+    return this
+}
+
 fun <T> Flow<T>.asResult(): Flow<Result<T>> = this
     .map<T, Result<T>> { Result.Success(it) }
     .onStart { emit(Result.Loading) }

@@ -56,8 +56,8 @@ fun ProfileScreen(
 
             if (showEditSheet) {
                 EditPersonalInfoSheet(
-                    initialFirstName = uiState.profile.firstName,
-                    initialLastName = uiState.profile.lastName,
+                    initialFirstName = uiState.profile.firstName ?: "",
+                    initialLastName = uiState.profile.lastName ?: "",
                     initialBirthDate = uiState.profile.birthDate ?: "",
                     onDismiss = { showEditSheet = false },
                     onSave = { first, last, birth ->

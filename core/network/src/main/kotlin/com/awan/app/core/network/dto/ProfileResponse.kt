@@ -7,12 +7,12 @@ import kotlinx.serialization.Serializable
 data class ProfileResponse(
     @SerialName("id") val id: String? = null,
     @SerialName("email") val email: String? = null,
-    @SerialName("firstName") val firstName: String,
-    @SerialName("lastName") val lastName: String,
+    @SerialName("firstName") val firstName: String? = null,
+    @SerialName("lastName") val lastName: String? = null,
     @SerialName("birthDate") val birthDate: String? = null,
-    @SerialName("points") val points: Int = 0,
-    @SerialName("streak") val streak: Int = 0,
-    @SerialName("maxStreak") val maxStreak: Int = 0,
+    @SerialName("points") val points: Int? = null,
+    @SerialName("streak") val streak: Int? = null,
+    @SerialName("maxStreak") val maxStreak: Int? = null,
     @SerialName("preferences") val preferences: UserPreferencesResponse? = null,
 )
 

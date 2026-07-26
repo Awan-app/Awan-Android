@@ -3,12 +3,12 @@ package com.awan.app.core.domain.profile.model
 data class Profile(
     val id: String?,
     val email: String?,
-    val firstName: String,
-    val lastName: String,
+    val firstName: String?,
+    val lastName: String?,
     val birthDate: String?,
-    val points: Int,
-    val streak: Int,
-    val maxStreak: Int,
+    val points: Int?,
+    val streak: Int?,
+    val maxStreak: Int?,
     val preferences: UserPreferences?
 )
 
