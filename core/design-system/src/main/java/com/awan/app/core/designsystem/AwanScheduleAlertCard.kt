@@ -2,8 +2,6 @@ package com.awan.app.core.designsystem
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,16 +13,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-import androidx.compose.ui.res.stringResource
 
 @Composable
 fun AwanScheduleAlertCard(
@@ -40,13 +36,13 @@ fun AwanScheduleAlertCard(
         modifier = modifier
             .fillMaxWidth()
             .shadow(
-                elevation = 6.dp,
+                elevation = 4.dp,
                 shape = shape,
-                spotColor = Color(0xFFF59E0B),
+                spotColor = AwanTheme.colors.zoneTangerine.copy(alpha = 0.25f),
             )
             .clip(shape)
-            .background(Color(0xFFFFFBEB))
-            .border(1.5.dp, Color(0xFFFDE68A), shape)
+            .background(AwanTheme.colors.skyDawn.copy(alpha = 0.35f))
+            .border(1.5.dp, AwanTheme.colors.zoneTangerine.copy(alpha = 0.40f), shape)
             .padding(16.dp),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -62,7 +58,8 @@ fun AwanScheduleAlertCard(
                     text = title,
                     style = AwanTheme.typography.heading.copy(
                         fontSize = 14.sp,
-                        color = Color(0xFFB45309),
+                        fontWeight = FontWeight.Bold,
+                        color = AwanTheme.colors.textPrimary,
                     ),
                 )
             }
@@ -73,7 +70,7 @@ fun AwanScheduleAlertCard(
                 text = message,
                 style = AwanTheme.typography.body.copy(
                     fontSize = 13.5.sp,
-                    color = Color(0xFF78350F),
+                    color = AwanTheme.colors.textSecondary,
                 ),
             )
 
@@ -84,48 +81,25 @@ fun AwanScheduleAlertCard(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(99.dp))
-                        .background(Color(0xFFFEF3C7))
-                        .border(1.dp, Color(0xFFFDE68A), RoundedCornerShape(99.dp))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = onLaterClick,
-                        )
-                        .padding(horizontal = 18.dp, vertical = 7.dp),
+                AwanButton(
+                    onClick = onLaterClick,
+                    variant = AwanButtonVariant.Quiet,
                 ) {
                     AwanText(
                         text = stringResource(R.string.ds_later),
-                        style = AwanTheme.typography.button.copy(
-                            fontSize = 13.sp,
-                            color = Color(0xFF92400E),
-                        ),
+                        style = AwanTheme.typography.button.copy(fontSize = 13.sp),
                     )
                 }
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
 
-                Box(
-                    modifier = Modifier
-                        .shadow(4.dp, RoundedCornerShape(99.dp), spotColor = Color(0xFF2563EB))
-                        .clip(RoundedCornerShape(99.dp))
-                        .background(Color(0xFF2563EB))
-                        .border(1.5.dp, Color(0xFF60A5FA), RoundedCornerShape(99.dp))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = onFixItClick,
-                        )
-                        .padding(horizontal = 22.dp, vertical = 7.dp),
+                AwanButton(
+                    onClick = onFixItClick,
+                    variant = AwanButtonVariant.Primary,
                 ) {
                     AwanText(
                         text = stringResource(R.string.ds_fix_it),
-                        style = AwanTheme.typography.button.copy(
-                            fontSize = 13.sp,
-                            color = Color.White,
-                        ),
+                        style = AwanTheme.typography.button.copy(fontSize = 13.sp),
                     )
                 }
             }
