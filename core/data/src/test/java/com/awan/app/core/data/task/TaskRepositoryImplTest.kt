@@ -2,7 +2,9 @@ package com.awan.app.core.data.task
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
+import com.awan.app.core.network.dto.CreateAiTaskRequest
 import com.awan.app.core.network.dto.CreateTaskRequest
+import com.awan.app.core.network.dto.ScheduleTaskRequest
 import com.awan.app.core.network.dto.TaskInfoResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -28,6 +30,10 @@ class TaskRepositoryImplTest {
                     )
                 )
             }
+
+            override suspend fun createTaskWithAi(request: CreateAiTaskRequest) = error("not used")
+
+            override suspend fun scheduleTask(request: ScheduleTaskRequest) = error("not used")
         }
         val repository = TaskRepositoryImpl(fakeRemoteDataSource, testDispatcher)
         val result = repository.createTask(title = "Read docs", estimatedDurationMinutes = 45)
