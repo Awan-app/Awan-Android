@@ -4,7 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -19,7 +19,6 @@ import com.awan.feature.profile.impl.ui.components.*
 @Composable
 fun ProfileScreen(
     uiState: ProfileUiState,
-    onEditClick: () -> Unit = {},
     onDailyZonesClick: () -> Unit = {},
     onSettingsClick: (String) -> Unit = {},
     onThemeClick: (Boolean) -> Unit = {},
@@ -27,9 +26,12 @@ fun ProfileScreen(
     onUpdateSleepSchedule: (String, String) -> Unit = { _, _ -> },
     onUpdateSessionDuration: (Int) -> Unit = {},
     onUpdateTimezone: (String) -> Unit = {},
+    onUpdatePersonalInfo: (String, String, String) -> Unit = { _, _, _ -> },
     onLogout: () -> Unit = {},
     onRetry: () -> Unit = {},
 ) {
+    var showEditSheet by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -41,7 +43,7 @@ fun ProfileScreen(
             ProfileContent(
                 profile = uiState.profile,
                 uiState = uiState,
-                onEditClick = onEditClick,
+                onEditClick = { showEditSheet = true },
                 onDailyZonesClick = onDailyZonesClick,
                 onSettingsClick = onSettingsClick,
                 onThemeClick = onThemeClick,
@@ -51,6 +53,20 @@ fun ProfileScreen(
                 onUpdateTimezone = onUpdateTimezone,
                 onLogout = onLogout
             )
+
+            if (showEditSheet) {
+                EditPersonalInfoSheet(
+                    initialFirstName = uiState.profile.firstName,
+                    initialLastName = uiState.profile.lastName,
+                    initialBirthDate = uiState.profile.birthDate ?: "",
+                    onDismiss = { showEditSheet = false },
+                    onSave = { first, last, birth ->
+                        onUpdatePersonalInfo(first, last, birth)
+                        showEditSheet = false
+                    },
+                    isLoading = uiState.isUpdatingField
+                )
+            }
         } else if (uiState.errorMessage != null) {
             ProfileErrorState(
                 errorMessage = uiState.errorMessage.asString(),

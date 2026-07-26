@@ -88,9 +88,7 @@ fun AwanApp(
                 chatEntry()
                 goalsEntry()
                 profileEntry(
-                    onNavigateToEditProfile = { navigator.navigate(com.awan.feature.profile.api.EditProfileRoute) },
-                    onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) },
-                    onBack = { navigator.goBack() }
+                    onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
                 )
             }
 

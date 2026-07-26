@@ -35,6 +35,8 @@ class ProfileViewModel @Inject constructor(
     private val updateSleepScheduleUseCase: UpdateSleepScheduleUseCase,
     private val updateSessionSettingsUseCase: UpdateSessionSettingsUseCase,
     private val updateTimezoneUseCase: UpdateTimezoneUseCase,
+    private val updateProfilePartialUseCase: UpdateProfilePartialUseCase,
+    private val updateBirthDateUseCase: UpdateBirthDateUseCase,
     private val logoutUseCase: LogoutUseCase,
     private val userDataRepository: UserPreferencesDataSource,
 ) : ViewModel() {
@@ -98,6 +100,34 @@ class ProfileViewModel @Inject constructor(
 
     fun updateTimezone(timezone: String) {
         executeFieldUpdate { updateTimezoneUseCase(timezone) }
+    }
+
+    fun updatePersonalInfo(firstName: String, lastName: String, birthDate: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdatingField = true, fieldError = null) }
+            
+            val nameResult = updateProfilePartialUseCase(firstName, lastName)
+            if (nameResult is Result.Error) {
+                _uiState.update { it.copy(isUpdatingField = false, fieldError = nameResult.error.toUiText()) }
+                return@launch
+            }
+
+            val birthDateResult = updateBirthDateUseCase(birthDate)
+            if (birthDateResult is Result.Error) {
+                _uiState.update { it.copy(isUpdatingField = false, fieldError = birthDateResult.error.toUiText()) }
+                return@launch
+            }
+
+            if (nameResult is Result.Success && birthDateResult is Result.Success) {
+                _uiState.update {
+                    it.copy(
+                        isUpdatingField = false,
+                        profile = birthDateResult.data,
+                        fieldError = null
+                    )
+                }
+            }
+        }
     }
 
     fun logout(onSuccess: () -> Unit) {
