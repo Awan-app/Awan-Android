@@ -1,5 +1,6 @@
 package com.awan.app.core.designsystem
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -28,13 +29,18 @@ import androidx.compose.ui.zIndex
 fun LivingTimePointer(
     pointerY: Dp,
     currentTimeFormatted: String,
-    activePointerColor: Color = Color(0xFF0EA5E9),
+    activePointerColor: Color = AwanTheme.colors.sky,
     pulseScale: Float = 1f,
     pulseAlpha: Float = 0f,
     modifier: Modifier = Modifier,
 ) {
     val trackXDp = 52.dp
-    val liveColor = Color(0xFF0EA5E9)
+
+    val liveColor by animateColorAsState(
+        targetValue = activePointerColor,
+        animationSpec = tween(durationMillis = 300),
+        label = "livePointerColor",
+    )
 
     val infiniteTransition = rememberInfiniteTransition(label = "liveCirclePulse")
 

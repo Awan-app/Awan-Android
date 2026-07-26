@@ -149,7 +149,7 @@ fun AwanScheduleTimeline(
     val activeZone = remember(zones, currentTimeMinutes) {
         zones.find { currentTimeMinutes in (it.startHour * 60)..(it.endHour * 60) }
     }
-    val activePointerColor = activeZone?.category?.color ?: Color(0xFF0EA5E9)
+    val activePointerColor = activeZone?.category?.color ?: AwanTheme.colors.sky
 
     val currentPointerY = remember(isToday, currentTimeMinutes, effectiveHourHeightDpValue) {
         if (isToday && currentTimeFormatted.isNotBlank()
