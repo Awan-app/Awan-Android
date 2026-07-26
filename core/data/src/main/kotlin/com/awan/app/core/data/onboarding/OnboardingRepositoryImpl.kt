@@ -13,10 +13,14 @@ import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
 
+import com.awan.app.core.database.dao.UserDao
+import com.awan.app.core.database.model.UserEntity
+
 @Singleton
 class OnboardingRepositoryImpl @Inject constructor(
     private val remoteDataSource: OnboardingRemoteDataSource,
     private val userPreferencesDataSource: UserPreferencesDataSource,
+    private val userDao: UserDao,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : OnboardingRepository {
 
@@ -39,6 +43,19 @@ class OnboardingRepositoryImpl @Inject constructor(
         when (val result = remoteDataSource.completeOnboarding(request)) {
             is Result.Success -> {
                 userPreferencesDataSource.setOnboardingCompleted(true)
+                val response = result.data
+                userDao.upsertUser(
+                    UserEntity(
+                        id = response.id,
+                        email = response.email ?: "",
+                        firstName = response.firstName ?: firstName,
+                        lastName = response.lastName ?: lastName,
+                        birthDate = response.birthDate ?: "2000-01-01",
+                        points = response.points ?: 0,
+                        streak = response.streak ?: 0,
+                        maxStreak = response.maxStreak ?: 0,
+                    ),
+                )
                 Result.Success(Unit)
             }
             is Result.Error -> Result.Error(result.error)

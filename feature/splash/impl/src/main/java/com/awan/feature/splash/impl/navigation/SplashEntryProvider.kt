@@ -3,40 +3,43 @@ package com.awan.feature.splash.impl.navigation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
 import com.awan.core.navigation.Route
 import com.awan.feature.splash.api.SplashRoute
-import androidx.compose.runtime.LaunchedEffect
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.awan.feature.splash.impl.ui.SplashDestination
 import com.awan.feature.splash.impl.ui.SplashViewModel
 
 fun EntryProviderScope<Route>.splashEntry(
-    onNavigateToNext: (isLoggedIn: Boolean) -> Unit
+    onNavigateToNext: (destination: SplashDestination) -> Unit,
 ) {
     entry<SplashRoute> {
         SplashRouteScreen(onNext = onNavigateToNext)
     }
-} 
+}
 
 @Composable
 fun SplashRouteScreen(
-    onNext: (isLoggedIn: Boolean) -> Unit,
+    onNext: (destination: SplashDestination) -> Unit,
     viewModel: SplashViewModel = hiltViewModel(),
 ) {
-    val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
+    val destination by viewModel.destination.collectAsStateWithLifecycle()
 
-    LaunchedEffect(isLoggedIn) {
-        kotlinx.coroutines.delay(2000)
-        onNext(isLoggedIn)
+    LaunchedEffect(destination) {
+        if (destination != SplashDestination.Loading) {
+            kotlinx.coroutines.delay(2000)
+            onNext(destination)
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

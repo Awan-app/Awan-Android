@@ -11,7 +11,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-enum class AwanChipTone { Sky, Violet, Tangerine, Neutral }
+
 
 /** Small sky-tinted pill for reassurances / hints (optionally with a leading icon). */
 @Composable

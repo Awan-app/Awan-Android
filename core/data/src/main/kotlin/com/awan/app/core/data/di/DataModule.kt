@@ -3,6 +3,9 @@ package com.awan.app.core.data.di
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSource
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSourceImpl
 import com.awan.app.core.data.auth.repository.AuthRepositoryImpl
+import com.awan.app.core.data.home.remote.HomeRemoteDataSource
+import com.awan.app.core.data.home.remote.HomeRemoteDataSourceImpl
+import com.awan.app.core.data.home.repository.HomeRepositoryImpl
 import com.awan.app.core.data.onboarding.OnboardingRepository
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
@@ -18,6 +21,7 @@ import com.awan.app.core.data.template.remote.TemplateRemoteDataSourceImpl
 import com.awan.app.core.domain.auth.repository.AuthRepository
 import com.awan.app.core.domain.task.repository.AiTaskRepository
 import com.awan.app.core.domain.template.repository.TemplateRepository
+import com.awan.app.core.domain.home.repository.HomeRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -81,4 +85,18 @@ internal abstract class DataModule {
     abstract fun bindAuthRepository(
         impl: AuthRepositoryImpl,
     ): AuthRepository
+
+
+    @Binds
+    @Singleton
+    abstract fun bindHomeRemoteDataSource(
+        impl: HomeRemoteDataSourceImpl,
+    ): HomeRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindHomeRepository(
+        impl: HomeRepositoryImpl,
+    ): HomeRepository
 }
+
