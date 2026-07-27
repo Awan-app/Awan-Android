@@ -12,4 +12,5 @@ data class CreateTaskRequest(
     @SerialName("estimatedPoints") val estimatedPoints: Int? = 0,
     @SerialName("allowTaskSplitting") val allowTaskSplitting: Boolean? = false,
     @SerialName("goalId") val goalId: String? = null,
+    @SerialName("categoryId") val categoryId: String? = null,
 )

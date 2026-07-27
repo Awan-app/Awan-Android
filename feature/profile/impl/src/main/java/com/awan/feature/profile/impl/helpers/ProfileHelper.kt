@@ -1,5 +1,8 @@
 package com.awan.feature.profile.impl.helpers
 
+import android.content.Context
+import android.text.format.DateFormat
+import java.util.Calendar
 import java.util.Locale
 
 object ProfileHelper {
@@ -25,16 +28,18 @@ object ProfileHelper {
         return String.format(Locale.US, "%02d:%02d:00", hour, minute)
     }
 
-    fun formatDisplayTime(hour: Int, minute: Int): String {
-        val amPm = if (hour < 12) "AM" else "PM"
-        val h = if (hour % 12 == 0) 12 else hour % 12
-        return String.format(Locale.getDefault(), "%02d:%02d %s", h, minute, amPm)
+    fun formatDisplayTime(context: Context, hour: Int, minute: Int): String {
+        val calendar = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+        }
+        return DateFormat.getTimeFormat(context).format(calendar.time)
     }
 
     fun getDisplayName(firstName: String?, lastName: String?, email: String?): String {
         if (!firstName.isNullOrBlank() || !lastName.isNullOrBlank()) {
             return "${firstName.orEmpty()} ${lastName.orEmpty()}".trim()
         }
-        return email?.substringBefore("@") ?: "User"
+        return email?.substringBefore("@") ?: ""
     }
 }

@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -32,7 +31,7 @@ fun ProfileHeaderCard(
     val isDark = uiState.useDarkTheme
 
     val mascotBgColor by animateColorAsState(
-        targetValue = if (isDark) Color(0xFF1B2B48) else Color(0xFFFFD93D),
+        targetValue = if (isDark) AwanTheme.colors.skyMidday else AwanTheme.colors.zoneSun,
         animationSpec = tween(1000, easing = LinearOutSlowInEasing),
         label = "mascotBg"
     )
@@ -54,7 +53,7 @@ fun ProfileHeaderCard(
                 contentAlignment = Alignment.Center
             ) {
                 val celestialColor by animateColorAsState(
-                    targetValue = if (isDark) Color(0xFFE0E0E0) else Color(0xFFFFB74D),
+                    targetValue = if (isDark) AwanTheme.colors.textPrimary else AwanTheme.colors.zoneTangerine,
                     animationSpec = tween(1000, easing = LinearOutSlowInEasing),
                     label = "celestialColor"
                 )
@@ -92,7 +91,8 @@ fun ProfileHeaderCard(
             
             Column(modifier = Modifier.weight(1f)) {
                 AwanText(
-                    text = ProfileHelper.getDisplayName(profile.firstName, profile.lastName, profile.email),
+                    text = ProfileHelper.getDisplayName(profile.firstName, profile.lastName, profile.email)
+                        .ifBlank { stringResource(ProfileR.string.profile_user_placeholder) },
                     style = AwanTheme.styles.titleText.copy(
                         textStyle = AwanTheme.typography.title.copy(fontSize = 18.sp)
                     )
@@ -129,19 +129,19 @@ fun ProfileHeaderCard(
         ) {
             StatItem(
                 icon = Icons.Default.Whatshot,
-                value = profile.streak.toString(),
+                value = (profile.streak ?: 0).toString(),
                 label = stringResource(ProfileR.string.profile_streak),
                 iconTint = AwanTheme.colors.zoneTangerine
             )
             StatItem(
                 icon = Icons.Default.Star,
-                value = profile.maxStreak.toString(),
+                value = (profile.maxStreak ?: 0).toString(),
                 label = stringResource(ProfileR.string.profile_max_streak),
                 iconTint = AwanTheme.colors.zoneSun
             )
             StatItem(
                 icon = Icons.Default.Diamond,
-                value = profile.points.toString(),
+                value = (profile.points ?: 0).toString(),
                 label = stringResource(ProfileR.string.profile_total_points),
                 iconTint = AwanTheme.colors.sky
             )

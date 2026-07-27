@@ -3,8 +3,11 @@ package com.awan.feature.profile.impl.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.core.os.LocaleListCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
 import com.awan.core.navigation.Route
 import com.awan.feature.profile.api.DailyZonesRoute
@@ -23,6 +26,8 @@ import com.awan.feature.profile.impl.presentation.EditRoutineAction
 import com.awan.feature.profile.impl.presentation.EditRoutineEvent
 import com.awan.feature.profile.impl.presentation.EditRoutineViewModel
 import com.awan.feature.profile.impl.presentation.ProfileEvent
+import com.awan.feature.profile.impl.presentation.ProfileAction
+import com.awan.feature.profile.impl.presentation.ProfileEvent
 import com.awan.feature.profile.impl.presentation.ProfileViewModel
 import com.awan.feature.profile.impl.presentation.RoutineDetailsAction
 import com.awan.feature.profile.impl.presentation.RoutineDetailsEvent
@@ -33,6 +38,7 @@ import com.awan.feature.profile.impl.ui.ProfileScreen
 import com.awan.feature.profile.impl.ui.dailyzones.DailyZonesScreen
 import com.awan.feature.profile.impl.ui.daydetails.DayDetailsScreen
 import com.awan.feature.profile.impl.ui.routinedetails.RoutineDetailsScreen
+import kotlinx.coroutines.flow.collectLatest
 
 fun EntryProviderScope<Route>.profileEntry(
     onNavigateToEditProfile: () -> Unit,
@@ -96,7 +102,15 @@ fun ProfileRouteScreen(
     onDailyZonesClick: () -> Unit,
     onLogout: () -> Unit,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                ProfileEvent.LogoutSuccess -> onLogout()
+            }
+        }
+    }
 
     LaunchedEffect(viewModel.events) {
         viewModel.events.collect { event ->
@@ -111,6 +125,7 @@ fun ProfileRouteScreen(
         onAction = viewModel::onAction,
         onEditClick = onEditClick,
         onDailyZonesClick = onDailyZonesClick,
+        onDailyZonesClick = { },
         onSettingsClick = { _ -> },
     )
 }
@@ -129,7 +144,7 @@ fun EditProfileRouteScreen(
             }
         }
     }
-    
+
     EditProfileScreen(
         uiState = uiState,
         onAction = viewModel::onAction,
@@ -146,7 +161,7 @@ fun DailyZonesRouteScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    
+
     LaunchedEffect(Unit) {
         viewModel.onAction(DailyZonesAction.LoadData)
     }
@@ -169,7 +184,7 @@ fun RoutineDetailsRouteScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    
+
     LaunchedEffect(templateId) {
         viewModel.onAction(RoutineDetailsAction.LoadTemplate(templateId))
     }
@@ -233,5 +248,27 @@ fun DayDetailsRouteScreen(
         uiState = uiState,
         onAction = viewModel::onAction,
         onBackClick = onBack
+        onThemeClick = { useDarkTheme ->
+            viewModel.onAction(ProfileAction.SetTheme(useDarkTheme))
+        },
+        onLanguageClick = { languageCode ->
+            viewModel.onAction(ProfileAction.SetLanguage(languageCode))
+            val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags(languageCode)
+            AppCompatDelegate.setApplicationLocales(appLocale)
+        },
+        onUpdateSleepSchedule = { wakeup, sleep ->
+            viewModel.onAction(ProfileAction.UpdateSleepSchedule(wakeup, sleep))
+        },
+        onUpdateSessionDuration = { duration ->
+            viewModel.onAction(ProfileAction.UpdateSessionDuration(duration))
+        },
+        onUpdateTimezone = { timezone ->
+            viewModel.onAction(ProfileAction.UpdateTimezone(timezone))
+        },
+        onUpdatePersonalInfo = { first, last, birth ->
+            viewModel.onAction(ProfileAction.UpdatePersonalInfo(first, last, birth))
+        },
+        onLogout = { viewModel.onAction(ProfileAction.Logout) },
+        onRetry = { viewModel.onAction(ProfileAction.Refresh) }
     )
 }

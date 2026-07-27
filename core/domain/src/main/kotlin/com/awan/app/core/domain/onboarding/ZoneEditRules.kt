@@ -28,6 +28,9 @@ object ZoneEditRules {
      * Apply a drag edit to one zone: snap both edges to 5, enforce the 15-min minimum, and clamp
      * inside the waking window [wake+0 .. sleep]. Non-destructive to sibling zones (overlaps are
      * flagged elsewhere, not prevented).
+     *
+     * A user-set window never crosses midnight: the backend stores zone edges as `LocalTime` and
+     * rejects an end that is not after its start, so the window is cut short at the end of the day.
      */
     fun editWindow(zone: Zone, newStartMinutes: Int, newEndMinutes: Int, bounds: DayBounds): Zone {
         val waking = bounds.wakingMinutes
@@ -37,7 +40,9 @@ object ZoneEditRules {
         if (linEnd - linStart < MIN_ZONE_MINUTES) linStart = (linEnd - MIN_ZONE_MINUTES).coerceAtLeast(0)
         val duration = linEnd - linStart
         val absStart = absolute(linStart, bounds.wakeMinutes)
-        return zone.copy(startMinutes = absStart, endMinutes = absStart + duration)
+            .coerceAtMost(DayBounds.MINUTES_PER_DAY - MIN_ZONE_MINUTES)
+        val absEnd = (absStart + duration).coerceAtMost(DayBounds.MINUTES_PER_DAY)
+        return zone.copy(startMinutes = absStart, endMinutes = absEnd)
     }
 
     /**

@@ -6,15 +6,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.designsystem.*
+import android.text.format.DateFormat
 import com.awan.feature.profile.impl.helpers.ProfileHelper
 import com.awan.feature.profile.impl.R as ProfileR
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +34,7 @@ fun ExpandableTimePickerItem(
     val timePickerState = rememberTimePickerState(
         initialHour = hour,
         initialMinute = minute,
-        is24Hour = false
+        is24Hour = DateFormat.is24HourFormat(LocalContext.current)
     )
 
     key(isExpanded, hour, minute) { }
@@ -43,7 +43,7 @@ fun ExpandableTimePickerItem(
         PreferenceRow(
             icon = icon,
             title = title,
-            value = ProfileHelper.formatDisplayTime(hour, minute),
+            value = ProfileHelper.formatDisplayTime(LocalContext.current, hour, minute),
             onClick = onExpandClick,
             showDivider = showDivider && !isExpanded,
             isExpanded = isExpanded
@@ -69,32 +69,16 @@ fun ExpandableTimePickerItem(
                     )
                 }
 
-                TimePicker(
-                    state = timePickerState,
-                    colors = TimePickerDefaults.colors(
-                        clockDialColor = AwanTheme.colors.background,
-                        clockDialSelectedContentColor = AwanTheme.colors.onSky,
-                        clockDialUnselectedContentColor = AwanTheme.colors.textPrimary,
-                        selectorColor = AwanTheme.colors.sky,
-                        periodSelectorBorderColor = AwanTheme.colors.line,
-                        periodSelectorSelectedContainerColor = AwanTheme.colors.sky.copy(alpha = 0.2f),
-                        periodSelectorSelectedContentColor = AwanTheme.colors.sky,
-                        periodSelectorUnselectedContainerColor = Color.Transparent,
-                        periodSelectorUnselectedContentColor = AwanTheme.colors.textSecondary,
-                        timeSelectorSelectedContainerColor = AwanTheme.colors.sky.copy(alpha = 0.2f),
-                        timeSelectorSelectedContentColor = AwanTheme.colors.sky,
-                        timeSelectorUnselectedContainerColor = AwanTheme.colors.background,
-                        timeSelectorUnselectedContentColor = AwanTheme.colors.textPrimary,
-                    )
-                )
+                AwanTimePicker(state = timePickerState)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    TextButton(
+                    AwanButton(
                         onClick = onCancelClick,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        variant = AwanButtonVariant.Quiet
                     ) {
                         AwanText(
                             text = stringResource(ProfileR.string.profile_cancel),
@@ -104,17 +88,10 @@ fun ExpandableTimePickerItem(
                     AwanButton(
                         onClick = { onSaveClick(timePickerState.hour, timePickerState.minute) },
                         modifier = Modifier.weight(1f),
-                        enabled = !isLoading
+                        enabled = !isLoading,
+                        isLoading = isLoading
                     ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                color = AwanTheme.colors.onSky,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            AwanText(text = stringResource(ProfileR.string.profile_save))
-                        }
+                        AwanText(text = stringResource(ProfileR.string.profile_save))
                     }
                 }
             }

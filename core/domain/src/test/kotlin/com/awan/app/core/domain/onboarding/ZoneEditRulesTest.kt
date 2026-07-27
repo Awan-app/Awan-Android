@@ -34,6 +34,17 @@ class ZoneEditRulesTest {
     }
 
     @Test
+    fun `editWindow never lets a window run past midnight`() {
+        val overnight = DayBounds(wakeMinutes = 22 * 60, sleepMinutes = 6 * 60)
+        val zone = Zone("z", "Z", 0, startMinutes = 23 * 60, endMinutes = 23 * 60 + 60)
+
+        val edited = ZoneEditRules.editWindow(zone, newStartMinutes = 23 * 60, newEndMinutes = 24 * 60 + 60, overnight)
+
+        assertEquals(23 * 60, edited.startMinutes)
+        assertEquals(DayBounds.MINUTES_PER_DAY, edited.endMinutes)
+    }
+
+    @Test
     fun `overlapping enabled zones are flagged, disabled ones ignored`() {
         val a = Zone("a", "A", 0, startMinutes = 450, endMinutes = 675)
         val b = Zone("b", "B", 0, startMinutes = 600, endMinutes = 800)

@@ -1,12 +1,22 @@
 package com.awan.app.core.data.profile.repository
 
+import com.awan.app.core.common.dispatcher.AwanDispatchers
+import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.result.map
-import com.awan.app.core.common.result.onSuccess
+import com.awan.app.core.common.result.suspendOnSuccess
+import com.awan.app.core.data.profile.mapper.asEntity
+import com.awan.app.core.data.profile.mapper.asExternalModel
 import com.awan.app.core.data.profile.mapper.toDomain
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
+import com.awan.app.core.database.dao.UserDao
+import com.awan.app.core.database.model.UserEntity
+import com.awan.app.core.database.model.UserWithPreferences
+import com.awan.app.core.datastore.auth.AuthTokenProvider
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.repository.ProfileRepository
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import com.awan.app.core.network.dto.profile.AwardPointsRequest
 import com.awan.app.core.network.dto.profile.DeductPointsRequest
 import com.awan.app.core.network.dto.profile.UpdateBirthDateRequest
@@ -17,26 +27,95 @@ import com.awan.app.core.network.dto.profile.UpdateSessionSettingsRequest
 import com.awan.app.core.network.dto.profile.UpdateSleepScheduleRequest
 import com.awan.app.core.network.dto.profile.UpdateTimezoneRequest
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class ProfileRepositoryImpl @Inject constructor(
     private val profileRemoteDataSource: ProfileRemoteDataSource,
+    private val userDao: UserDao,
+    private val authTokenProvider: AuthTokenProvider,
+    @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : ProfileRepository {
 
-    private val _profile = MutableStateFlow<Profile?>(null)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observeProfile(): Flow<Profile?> =
+        authTokenProvider.observeIsLoggedIn()
+            .flatMapLatest { isLoggedIn ->
+                if (isLoggedIn) {
+                    flow<Profile?> {
+                        val userId = authTokenProvider.getUserId()
+                        if (userId != null) {
+                            val profileFlow: Flow<Profile?> = userDao.observeUserWithPreferences(userId)
+                                .map { userWithPreferences: UserWithPreferences? ->
+                                    userWithPreferences?.asExternalModel()
+                                }
+                            emitAll(profileFlow)
+                        } else {
+                            emit(null)
+                        }
+                    }
+                } else {
+                    flowOf(null)
+                }
+            }
+            .flowOn(ioDispatcher)
 
-    override fun observeProfile(): Flow<Profile?> = _profile.asStateFlow()
+    private suspend fun updateLocalCache(newProfile: Profile) {
+        val userId = newProfile.id ?: authTokenProvider.getUserId() ?: return
+        val existing = userDao.getUserWithPreferences(userId)?.asExternalModel()
 
-    private fun updateCache(profile: Profile) {
-        _profile.value = profile
+        val newPrefs = newProfile.preferences
+        val mergedProfile = if (existing == null) {
+            newProfile
+        } else {
+            existing.copy(
+                email = newProfile.email ?: existing.email,
+                firstName = newProfile.firstName ?: existing.firstName,
+                lastName = newProfile.lastName ?: existing.lastName,
+                birthDate = newProfile.birthDate ?: existing.birthDate,
+                points = newProfile.points ?: existing.points,
+                streak = newProfile.streak ?: existing.streak,
+                maxStreak = newProfile.maxStreak ?: existing.maxStreak,
+                preferences = if (newPrefs != null) {
+                    val existingPrefs = existing.preferences
+                    if (existingPrefs == null) {
+                        newPrefs
+                    } else {
+                        existingPrefs.copy(
+                            timezone = newPrefs.timezone ?: existingPrefs.timezone,
+                            preferredSessionDuration = newPrefs.preferredSessionDuration ?: existingPrefs.preferredSessionDuration,
+                            bufferBetweenSessions = newPrefs.bufferBetweenSessions ?: existingPrefs.bufferBetweenSessions,
+                            wakeupTime = newPrefs.wakeupTime ?: existingPrefs.wakeupTime,
+                            sleepTime = newPrefs.sleepTime ?: existingPrefs.sleepTime,
+                            schedulingType = newPrefs.schedulingType ?: existingPrefs.schedulingType,
+                        )
+                    }
+                } else {
+                    existing.preferences
+                }
+            )
+        }
+
+        val userEntity: UserEntity = mergedProfile.asEntity().copy(id = userId)
+        val preferences = mergedProfile.preferences
+        if (preferences != null) {
+            userDao.upsertUserWithPreferences(userEntity, preferences.asEntity(userId))
+        } else {
+            userDao.upsertUser(userEntity)
+        }
     }
 
     override suspend fun getProfile(): Result<Profile> =
         profileRemoteDataSource.getProfileInfo()
             .map { it.toDomain() }
-            .onSuccess(::updateCache)
+            .suspendOnSuccess { updateLocalCache(it) }
 
     override suspend fun updateName(
         firstName: String,
@@ -44,12 +123,12 @@ class ProfileRepositoryImpl @Inject constructor(
     ): Result<Profile> =
         profileRemoteDataSource.updateProfileName(
             UpdateNameRequest(firstName = firstName, lastName = lastName),
-        ).map { it.toDomain() }.onSuccess(::updateCache)
+        ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
 
     override suspend fun updateBirthDate(birthDate: String): Result<Profile> =
         profileRemoteDataSource.updateProfileBirthDate(
             UpdateBirthDateRequest(birthDate = birthDate),
-        ).map { it.toDomain() }.onSuccess(::updateCache)
+        ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
 
     override suspend fun updateProfilePartial(
         firstName: String?,
@@ -72,12 +151,12 @@ class ProfileRepositoryImpl @Inject constructor(
                 sleepTime = sleepTime,
                 schedulingType = schedulingType,
             ),
-        ).map { it.toDomain() }.onSuccess(::updateCache)
+        ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
 
     override suspend fun updateTimezone(timezone: String): Result<Profile> =
         profileRemoteDataSource.updateTimezone(
             UpdateTimezoneRequest(timezone = timezone),
-        ).map { it.toDomain() }.onSuccess(::updateCache)
+        ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
 
     override suspend fun updateSessionSettings(
         preferredSessionDuration: Int,
@@ -88,7 +167,7 @@ class ProfileRepositoryImpl @Inject constructor(
                 preferredSessionDuration = preferredSessionDuration,
                 bufferBetweenSessions = bufferBetweenSessions,
             ),
-        ).map { it.toDomain() }.onSuccess(::updateCache)
+        ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
 
     override suspend fun updateSleepSchedule(
         wakeupTime: String,
@@ -99,30 +178,30 @@ class ProfileRepositoryImpl @Inject constructor(
                 wakeupTime = wakeupTime,
                 sleepTime = sleepTime,
             ),
-        ).map { it.toDomain() }.onSuccess(::updateCache)
+        ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
 
     override suspend fun updateSchedulingType(schedulingType: String): Result<Profile> =
         profileRemoteDataSource.updateSchedulingType(
             UpdateSchedulingTypeRequest(schedulingType = schedulingType),
-        ).map { it.toDomain() }.onSuccess(::updateCache)
+        ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
 
     override suspend fun incrementStreak(): Result<Profile> =
         profileRemoteDataSource.incrementStreak()
             .map { it.toDomain() }
-            .onSuccess(::updateCache)
+            .suspendOnSuccess { updateLocalCache(it) }
 
     override suspend fun resetStreak(): Result<Profile> =
         profileRemoteDataSource.resetStreak()
             .map { it.toDomain() }
-            .onSuccess(::updateCache)
+            .suspendOnSuccess { updateLocalCache(it) }
 
     override suspend fun awardPoints(points: Int): Result<Profile> =
         profileRemoteDataSource.awardPoints(
             AwardPointsRequest(points = points),
-        ).map { it.toDomain() }.onSuccess(::updateCache)
+        ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
 
     override suspend fun deductPoints(points: Int): Result<Profile> =
         profileRemoteDataSource.deductPoints(
             DeductPointsRequest(points = points),
-        ).map { it.toDomain() }.onSuccess(::updateCache)
+        ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
 }

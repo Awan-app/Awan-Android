@@ -5,7 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -94,7 +94,7 @@ fun PreferenceRow(
                     content()
                 } else {
                     Icon(
-                        imageVector = if (onClick != null && value != null) Icons.Default.ExpandMore else Icons.Default.ChevronRight,
+                        imageVector = if (onClick != null && value != null) Icons.Default.ExpandMore else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = null,
                         tint = AwanTheme.colors.meta,
                         modifier = Modifier

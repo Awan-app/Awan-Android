@@ -3,6 +3,9 @@ package com.awan.app.core.data.di
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSource
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSourceImpl
 import com.awan.app.core.data.auth.repository.AuthRepositoryImpl
+import com.awan.app.core.data.home.remote.HomeRemoteDataSource
+import com.awan.app.core.data.home.remote.HomeRemoteDataSourceImpl
+import com.awan.app.core.data.home.repository.HomeRepositoryImpl
 import com.awan.app.core.data.onboarding.OnboardingRepository
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSourceImpl
@@ -10,15 +13,22 @@ import com.awan.app.core.data.profile.repository.ProfileRepositoryImpl
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSourceImpl
+import com.awan.app.core.data.task.AiTaskRepositoryImpl
 import com.awan.app.core.data.task.TaskRepository
 import com.awan.app.core.data.task.TaskRepositoryImpl
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.data.task.remote.TaskRemoteDataSourceImpl
+import com.awan.app.core.data.template.TemplateRepositoryImpl
+import com.awan.app.core.data.template.remote.TemplateRemoteDataSource
+import com.awan.app.core.data.template.remote.TemplateRemoteDataSourceImpl
 import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
 import com.awan.app.core.data.zones.remote.ZonesRemoteDataSourceImpl
 import com.awan.app.core.data.zones.repository.ZonesRepositoryImpl
 import com.awan.app.core.domain.auth.repository.AuthRepository
 import com.awan.app.core.domain.profile.repository.ProfileRepository
+import com.awan.app.core.domain.task.repository.AiTaskRepository
+import com.awan.app.core.domain.template.repository.TemplateRepository
+import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.domain.zones.repository.ZonesRepository
 import dagger.Binds
 import dagger.Module
@@ -56,6 +66,24 @@ internal abstract class DataModule {
 
     @Binds
     @Singleton
+    abstract fun bindAiTaskRepository(
+        impl: AiTaskRepositoryImpl,
+    ): AiTaskRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTemplateRemoteDataSource(
+        impl: TemplateRemoteDataSourceImpl,
+    ): TemplateRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindTemplateRepository(
+        impl: TemplateRepositoryImpl,
+    ): TemplateRepository
+
+    @Binds
+    @Singleton
     abstract fun bindAuthRemoteDataSource(
         impl: AuthRemoteDataSourceImpl,
     ): AuthRemoteDataSource
@@ -89,4 +117,17 @@ internal abstract class DataModule {
     abstract fun bindZonesRepository(
         impl: ZonesRepositoryImpl,
     ): ZonesRepository
+
+
+    @Binds
+    @Singleton
+    abstract fun bindHomeRemoteDataSource(
+        impl: HomeRemoteDataSourceImpl,
+    ): HomeRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindHomeRepository(
+        impl: HomeRepositoryImpl,
+    ): HomeRepository
 }

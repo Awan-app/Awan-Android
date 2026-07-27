@@ -2,8 +2,10 @@ package com.awan.app.core.data.task.remote
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.TaskApiService
-import com.awan.app.core.network.dto.task.CreateTaskRequest
-import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.CreateAiTaskRequest
+import com.awan.app.core.network.dto.CreateTaskRequest
+import com.awan.app.core.network.dto.ScheduleTaskRequest
+import com.awan.app.core.network.dto.TaskInfoResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -28,6 +30,18 @@ class TaskRemoteDataSourceTest {
                     estimatedDuration = request.estimatedDuration,
                     status = "SCHEDULED",
                 )
+            }
+
+            override suspend fun createTaskWithAi(request: CreateAiTaskRequest) = error("not used")
+
+            override suspend fun scheduleTask(request: ScheduleTaskRequest) = error("not used")
+
+            override suspend fun getTasksByDate(date: String): List<com.awan.app.core.network.dto.TaskWithSessionsDto> {
+                return emptyList()
+            }
+
+            override suspend fun createTaskWithSessions(request: com.awan.app.core.network.dto.CreateTaskWithSessionsRequest): com.awan.app.core.network.dto.TaskWithSessionsDto {
+                throw NotImplementedError()
             }
         }
         val dataSource = TaskRemoteDataSourceImpl(fakeApiService, json, testDispatcher)

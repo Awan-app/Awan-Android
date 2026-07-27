@@ -13,6 +13,7 @@ import com.awan.app.core.network.dto.zone.WeeklyTemplateDto
 import com.awan.app.core.network.dto.zone.ZoneDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
+import com.awan.app.core.network.dto.ZoneDto
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -62,6 +63,7 @@ interface ZonesApiService {
         @Path("templateId") templateId: String,
         @Body request: UpdateZonesRequest
     ): List<ZoneDto>
+}
 
     ///////// Template Overrides /////////////
 

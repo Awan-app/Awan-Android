@@ -25,7 +25,7 @@ fun SettingsCard(
             PreferenceRow(
                 icon = Icons.Default.NotificationsActive,
                 title = stringResource(ProfileR.string.profile_notifications),
-                value = "Enabled",
+                value = stringResource(ProfileR.string.profile_enabled),
                 onClick = { onSettingsClick("notifications") },
                 showDivider = true,
                 iconColor = AwanTheme.colors.zoneTangerine

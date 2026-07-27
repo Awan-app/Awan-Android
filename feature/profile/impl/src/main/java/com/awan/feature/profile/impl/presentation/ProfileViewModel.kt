@@ -8,31 +8,24 @@ import com.awan.app.core.common.text.UiText
 import com.awan.app.core.datastore.UserPreferencesDataSource
 import com.awan.app.core.domain.auth.usecase.LogoutUseCase
 import com.awan.app.core.domain.profile.model.Profile
-import com.awan.app.core.domain.profile.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val getProfileUseCase: GetProfileUseCase,
-    private val observeProfileUseCase: ObserveProfileUseCase,
-    private val updateSleepScheduleUseCase: UpdateSleepScheduleUseCase,
-    private val updateSessionSettingsUseCase: UpdateSessionSettingsUseCase,
-    private val updateTimezoneUseCase: UpdateTimezoneUseCase,
+    private val profileRepository: ProfileRepository,
     private val logoutUseCase: LogoutUseCase,
     private val userDataRepository: UserPreferencesDataSource,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ProfileState())
-    val uiState: StateFlow<ProfileState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(ProfileUiState())
+    val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<ProfileEvent>()
     val events = _events.receiveAsFlow()
@@ -41,6 +34,23 @@ class ProfileViewModel @Inject constructor(
         loadProfile()
         observeProfile()
         observePreferences()
+    }
+
+    fun onAction(action: ProfileAction) {
+        when (action) {
+            is ProfileAction.SetTheme -> setTheme(action.useDarkTheme)
+            is ProfileAction.SetLanguage -> setLanguage(action.languageCode)
+            ProfileAction.Refresh -> loadProfile()
+            is ProfileAction.UpdateSleepSchedule -> updateSleepSchedule(action.wakeupTime, action.sleepTime)
+            is ProfileAction.UpdateSessionDuration -> updateSessionDuration(action.duration)
+            is ProfileAction.UpdateTimezone -> updateTimezone(action.timezone)
+            is ProfileAction.UpdatePersonalInfo -> updatePersonalInfo(
+                action.firstName,
+                action.lastName,
+                action.birthDate
+            )
+            ProfileAction.Logout -> logout()
+        }
     }
 
     fun onAction(action: ProfileAction) {
@@ -57,7 +67,7 @@ class ProfileViewModel @Inject constructor(
 
     private fun observeProfile() {
         viewModelScope.launch {
-            observeProfileUseCase().collectLatest { profile ->
+            profileRepository.observeProfile().collectLatest { profile ->
                 if (profile != null) {
                     _uiState.update { it.copy(profile = profile) }
                 }
@@ -91,30 +101,59 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun updateSleepSchedule(wakeupTime: String, sleepTime: String) {
-        executeFieldUpdate { updateSleepScheduleUseCase(wakeupTime, sleepTime) }
+        executeFieldUpdate { profileRepository.updateSleepSchedule(wakeupTime, sleepTime) }
     }
 
     private fun updateSessionDuration(duration: Int) {
         val currentBuffer = _uiState.value.profile?.preferences?.bufferBetweenSessions ?: 5
-        executeFieldUpdate { updateSessionSettingsUseCase(duration, currentBuffer) }
+        executeFieldUpdate { profileRepository.updateSessionSettings(duration, currentBuffer) }
     }
 
     private fun updateTimezone(timezone: String) {
-        executeFieldUpdate { updateTimezoneUseCase(timezone) }
+        executeFieldUpdate { profileRepository.updateTimezone(timezone) }
+    }
+
+    private fun updatePersonalInfo(firstName: String, lastName: String, birthDate: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdatingField = true, fieldError = null) }
+
+            val nameResult = profileRepository.updateProfilePartial(firstName = firstName, lastName = lastName)
+            if (nameResult is Result.Error) {
+                _uiState.update { it.copy(isUpdatingField = false, fieldError = nameResult.error.toUiText()) }
+                return@launch
+            }
+
+            val birthDateResult = profileRepository.updateBirthDate(birthDate)
+            if (birthDateResult is Result.Error) {
+                _uiState.update { it.copy(isUpdatingField = false, fieldError = birthDateResult.error.toUiText()) }
+                return@launch
+            }
+            }
+        }
+
+    private fun logout() {
+            if (nameResult is Result.Success && birthDateResult is Result.Success) {
+                _uiState.update {
+                    it.copy(
+                        isUpdatingField = false,
+                        profile = birthDateResult.data,
+                        fieldError = null
+                    )
+                }
+            }
+        }
     }
 
     private fun logout() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             when (logoutUseCase()) {
-                is Result.Success -> {
-                    _events.send(ProfileEvent.LogoutSuccess)
-                }
+                is Result.Success -> _events.send(ProfileEvent.LogoutSuccess)
                 is Result.Error -> {
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = UiText.DynamicString("Failed to logout")
+                            errorMessage = UiText.StringResource(com.awan.feature.profile.impl.R.string.profile_error_logout)
                         )
                     }
                 }
@@ -152,7 +191,7 @@ class ProfileViewModel @Inject constructor(
     private fun loadProfile() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            when (val result = getProfileUseCase()) {
+            when (val result = profileRepository.getProfile()) {
                 is Result.Success -> {
                     _uiState.update {
                         it.copy(

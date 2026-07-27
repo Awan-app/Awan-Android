@@ -6,6 +6,7 @@ import androidx.room.Transaction
 import androidx.room.Upsert
 import com.awan.app.core.database.model.UserEntity
 import com.awan.app.core.database.model.UserPreferencesEntity
+import com.awan.app.core.database.model.UserWithPreferences
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -22,6 +23,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE id = :userId")
     suspend fun getUser(userId: String): UserEntity?
 
+    @Query("SELECT * FROM users LIMIT 1")
+    suspend fun getFirstUser(): UserEntity?
+
     @Query("DELETE FROM users WHERE id = :userId")
     suspend fun deleteUser(userId: String)
 
@@ -37,6 +41,14 @@ interface UserDao {
     suspend fun getPreferences(userId: String): UserPreferencesEntity?
 
     // ── Combined ──────────────────────────────────────────────────────────────
+
+    @Transaction
+    @Query("SELECT * FROM users WHERE id = :userId")
+    fun observeUserWithPreferences(userId: String): Flow<UserWithPreferences?>
+
+    @Transaction
+    @Query("SELECT * FROM users WHERE id = :userId")
+    suspend fun getUserWithPreferences(userId: String): UserWithPreferences?
 
     /**
      * Atomically persists both the user profile and their preferences.

@@ -69,4 +69,25 @@
     <string name="profile_daily_zones_edit_default">تعديل الروتين الافتراضي</string>
     <string name="profile_daily_zones_no_zones">لا توجد مناطق في هذا الروتين</string>
     <string name="profile_daily_zones_no_zones_hint">أضف مناطق لتشكيل يومك.</string>
+    <string name="profile_logout_confirm_title">هل ستغادرنا قريباً؟</string>
+    <string name="profile_logout_confirm_subtitle">هل أنت متأكد من أنك تريد تسجيل الخروج من حسابك؟</string>
+
+    <string name="profile_select_language">اختر اللغة</string>
+    <string name="profile_language_english">الإنجليزية</string>
+    <string name="profile_language_arabic">العربية</string>
+    <string name="profile_select_timezone">اختر المنطقة الزمنية</string>
+    <string name="profile_search_timezone">ابحث عن منطقة أو مدينة…</string>
+    <string name="profile_close">إغلاق</string>
+    <string name="profile_minutes">دقائق</string>
+    <string name="profile_decrease">تقليل</string>
+    <string name="profile_increase">زيادة</string>
+    <string name="profile_back">عودة</string>
+    <string name="profile_select_date">اختر التاريخ</string>
+    <string name="profile_ok">موافق</string>
+    <string name="profile_enabled">مفعل</string>
+
+    <string name="profile_am">ص</string>
+    <string name="profile_pm">م</string>
+    <string name="profile_user_placeholder">مستخدم</string>
+    <string name="profile_error_logout">فشل تسجيل الخروج</string>
 </resources>

@@ -64,6 +64,7 @@ fun StepScaffold(
     chrome: StepChrome,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    notice: String? = null,
     body: @Composable () -> Unit,
 ) {
     val skip by rememberUpdatedState(chrome.onSkip)
@@ -138,7 +139,7 @@ fun StepScaffold(
         }
 
         Spacer(Modifier.size(AwanTheme.spacing.md))
-        StepFooter(chrome)
+        StepFooter(chrome, notice)
     }
 }
 
@@ -215,7 +216,7 @@ private fun Mascot(
 }
 
 @Composable
-private fun StepFooter(chrome: StepChrome) {
+private fun StepFooter(chrome: StepChrome, notice: String?) {
     val reduced = reducedMotion()
     val pop = remember { Animatable(1f) }
     val spec = AwanTheme.motion.playful.spec<Float>()
@@ -233,6 +234,13 @@ private fun StepFooter(chrome: StepChrome) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
     ) {
+        if (notice != null) {
+            InlineNotice(
+                text = notice,
+                tone = NoticeTone.Error,
+                modifier = Modifier.padding(horizontal = AwanTheme.spacing.xl),
+            )
+        }
         AwanButton(
             onClick = { chrome.primary.onClick() },
             enabled = enabled,

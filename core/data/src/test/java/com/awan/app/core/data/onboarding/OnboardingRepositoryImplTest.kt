@@ -28,18 +28,20 @@ class OnboardingRepositoryImplTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeRemoteDataSource: FakeOnboardingRemoteDataSource
     private lateinit var fakePreferencesDataSource: FakeUserPreferencesDataSource
-    private lateinit var fakeZonesRepository: FakeZonesRepository
+    private lateinit var fakeUserDao: FakeUserDao
     private lateinit var repository: OnboardingRepositoryImpl
 
     @Before
     fun setUp() {
         fakeRemoteDataSource = FakeOnboardingRemoteDataSource()
         fakePreferencesDataSource = FakeUserPreferencesDataSource()
+        fakeUserDao = FakeUserDao()
         fakeZonesRepository = FakeZonesRepository()
         repository = OnboardingRepositoryImpl(
             remoteDataSource = fakeRemoteDataSource,
             zonesRepository = fakeZonesRepository,
             userPreferencesDataSource = fakePreferencesDataSource,
+            userDao = fakeUserDao,
             ioDispatcher = testDispatcher,
         )
     }
@@ -95,9 +97,26 @@ class OnboardingRepositoryImplTest {
         override suspend fun setDefaultRegion(region: String) {}
     }
 
+    private class FakeUserDao : com.awan.app.core.database.dao.UserDao {
+        override suspend fun upsertUser(user: com.awan.app.core.database.model.UserEntity) {}
+        override fun observeUser(userId: String): Flow<com.awan.app.core.database.model.UserEntity?> = MutableStateFlow(null)
+        override suspend fun getUser(userId: String): com.awan.app.core.database.model.UserEntity? = null
+        override suspend fun getFirstUser(): com.awan.app.core.database.model.UserEntity? = null
+        override suspend fun deleteUser(userId: String) {}
+        override suspend fun upsertPreferences(preferences: com.awan.app.core.database.model.UserPreferencesEntity) {}
+        override fun observePreferences(userId: String): Flow<com.awan.app.core.database.model.UserPreferencesEntity?> = MutableStateFlow(null)
+        override suspend fun getPreferences(userId: String): com.awan.app.core.database.model.UserPreferencesEntity? = null
+
+        override fun observeUserWithPreferences(userId: String): Flow<com.awan.app.core.database.model.UserWithPreferences?> =
+            MutableStateFlow(null)
+
+        override suspend fun getUserWithPreferences(userId: String): com.awan.app.core.database.model.UserWithPreferences? =
+            null
+    }
+
     private class FakeZonesRepository : ZonesRepository {
         override suspend fun getTemplates(): Result<List<WeeklyTemplate>> = Result.Success(emptyList())
-        override suspend fun createTemplate(name: String, daysOfWeek: List<DayOfWeek>, zones: List<DailyZone>): Result<WeeklyTemplate> = 
+        override suspend fun createTemplate(name: String, daysOfWeek: List<DayOfWeek>, zones: List<DailyZone>): Result<WeeklyTemplate> =
             Result.Success(WeeklyTemplate(id = "default", name = name, daysOfWeek = daysOfWeek, zones = zones))
         override suspend fun getTemplate(templateId: String): Result<WeeklyTemplate> = Result.Error(com.awan.app.core.common.error.AppError.Unknown())
         override suspend fun updateTemplate(templateId: String, name: String, daysOfWeek: List<DayOfWeek>): Result<WeeklyTemplate> = Result.Error(com.awan.app.core.common.error.AppError.Unknown())

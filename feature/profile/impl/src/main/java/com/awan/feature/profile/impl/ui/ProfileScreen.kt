@@ -4,7 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -15,16 +15,24 @@ import com.awan.app.core.domain.profile.model.Profile
 import com.awan.feature.profile.impl.presentation.ProfileAction
 import com.awan.feature.profile.impl.presentation.ProfileState
 import com.awan.feature.profile.impl.R as ProfileR
-import com.awan.feature.profile.impl.ui.components.*
+import com.awan.feature.profile.impl.ui.components.EditPersonalInfoSheet
+import com.awan.feature.profile.impl.ui.components.ProfileHeaderCard
+import com.awan.feature.profile.impl.ui.components.PreferencesCard
+import com.awan.feature.profile.impl.ui.components.AppearanceCard
+import com.awan.feature.profile.impl.ui.components.SettingsCard
+import com.awan.feature.profile.impl.ui.components.ProfileShimmer
 
 @Composable
 fun ProfileScreen(
-    uiState: ProfileState,
+    uiState: ProfileUiState,
     onAction: (ProfileAction) -> Unit,
     onEditClick: () -> Unit = {},
     onDailyZonesClick: () -> Unit = {},
     onSettingsClick: (String) -> Unit = {},
 ) {
+    var showEditSheet by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -38,9 +46,53 @@ fun ProfileScreen(
                 uiState = uiState,
                 onAction = onAction,
                 onEditClick = onEditClick,
+                onEditClick = { showEditSheet = true },
                 onDailyZonesClick = onDailyZonesClick,
                 onSettingsClick = onSettingsClick,
+                onThemeClick = onThemeClick,
+                onLanguageClick = onLanguageClick,
+                onUpdateSleepSchedule = onUpdateSleepSchedule,
+                onUpdateSessionDuration = onUpdateSessionDuration,
+                onUpdateTimezone = onUpdateTimezone,
+                onLogout = { showLogoutDialog = true }
             )
+
+            if (showEditSheet) {
+                EditPersonalInfoSheet(
+                    initialFirstName = uiState.profile.firstName ?: "",
+                    initialLastName = uiState.profile.lastName ?: "",
+                    initialBirthDate = uiState.profile.birthDate ?: "",
+                    onDismiss = { showEditSheet = false },
+                    onSave = { first, last, birth ->
+                        onUpdatePersonalInfo(first, last, birth)
+                        showEditSheet = false
+                    },
+                    isLoading = uiState.isUpdatingField
+                )
+            }
+
+            if (showLogoutDialog) {
+                AwanDialog(
+                    title = stringResource(ProfileR.string.profile_logout_confirm_title),
+                    body = stringResource(ProfileR.string.profile_logout_confirm_subtitle),
+                    icon = {
+                        AwanMascot(
+                            expression = MascotExpression.Curious,
+                            width = AwanTheme.spacing.xxl * 3,
+                            blinkEnabled = true
+                        )
+                    },
+                    primaryLabel = stringResource(ProfileR.string.profile_logout),
+                    primaryVariant = AwanButtonVariant.Destructive,
+                    onPrimary = {
+                        onLogout()
+                        showLogoutDialog = false
+                    },
+                    secondaryLabel = stringResource(ProfileR.string.profile_cancel),
+                    onSecondary = { showLogoutDialog = false },
+                    onDismiss = { showLogoutDialog = false }
+                )
+            }
         } else if (uiState.errorMessage != null) {
             ProfileErrorState(
                 errorMessage = uiState.errorMessage.asString(),

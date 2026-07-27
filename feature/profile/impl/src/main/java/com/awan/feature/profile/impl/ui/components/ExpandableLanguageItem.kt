@@ -28,15 +28,15 @@ fun ExpandableLanguageItem(
     showDivider: Boolean = false
 ) {
     val languages = listOf(
-        "en" to "English",
-        "ar" to "العربية"
+        "en" to stringResource(ProfileR.string.profile_language_english),
+        "ar" to stringResource(ProfileR.string.profile_language_arabic)
     )
 
     Column(modifier = Modifier.fillMaxWidth()) {
         PreferenceRow(
             icon = Icons.Default.Language,
             title = stringResource(ProfileR.string.profile_language),
-            value = languages.find { it.first == currentLanguage }?.second ?: "English",
+            value = languages.find { it.first == currentLanguage }?.second ?: stringResource(ProfileR.string.profile_language_english),
             onClick = onExpandClick,
             showDivider = showDivider && !isExpanded,
             isExpanded = isExpanded,
