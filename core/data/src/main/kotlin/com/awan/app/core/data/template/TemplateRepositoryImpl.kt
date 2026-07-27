@@ -55,8 +55,8 @@ class TemplateRepositoryImpl @Inject constructor(
 
     /** The inverse of [toZoneRequest], carrying the server id a scheduled session points at. */
     private fun toZone(zone: ZoneResponse): Zone? {
-        val startMinutes = zone.startTime?.let(::parseTimeToMinutes) ?: return null
-        val endMinutes = zone.endTime?.let(::parseTimeToMinutes) ?: return null
+        val startMinutes = zone.startTime.let(::parseTimeToMinutes) ?: return null
+        val endMinutes = zone.endTime.let(::parseTimeToMinutes) ?: return null
         return Zone(
             id = zone.id,
             name = zone.name.orEmpty(),

@@ -16,7 +16,7 @@ import kotlin.time.Duration.Companion.milliseconds
  * Awan the cloud mascot — the brand's biggest stage. Idle expressions gently float; [MascotExpression.Celebrate]
  * does a springy cheer. Static vector frames stand in until the APNG set is delivered.
  */
-enum class MascotExpression { Greet, Curious, Celebrate, Idle }
+
 
 private const val MASCOT_ASPECT = 60f / 82f
 
@@ -24,7 +24,7 @@ private const val MASCOT_ASPECT = 60f / 82f
 fun AwanMascot(
     expression: MascotExpression,
     modifier: Modifier = Modifier,
-    width: Dp = 120.dp,
+    width: Dp = 20.dp,
     blinkEnabled: Boolean = false,
 ) {
     var isBlinking by remember { mutableStateOf(false) }

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="loading_your_schedule">جاري تحميل جدولك…</string>
+    <string name="retry">إعادة المحاولة</string>
+    <string name="home_todays_plan">خطة اليوم</string>
+    <string name="home_add_task">+ مهمة</string>
+    <string name="home_add_goal">+ هدف</string>
+    <string name="home_no_sessions">لا توجد جلسات مخصصة في هذه المنطقة</string>
+    <string name="home_done_tasks">%1$d/%2$d مكتمل</string>
+    <string name="home_tasks_count">%1$d/%2$d جلسات</string>
+    <string name="home_pts">+%1$d نقطة</string>
+    <string name="home_schedule_conflict_title">تم اكتشاف تعارض في الجدول</string>
+    <string name="home_schedule_alert_later">لاحقاً</string>
+    <string name="home_schedule_alert_fix_it">إصلاح الآن</string>
+    <string name="home_default_user_name">صديقي</string>
+    <string name="home_greeting_prefix">مساء الخير</string>
+    <string name="home_error_network">لا يوجد اتصال بالإنترنت. تحقق من الاتصال وحاول مجدداً.</string>
+    <string name="home_error_timeout">انتهت مهلة الطلب. يرجى المحاولة مرة أخرى.</string>
+    <string name="home_error_unauthorized">انتهت الجلسة. يرجى تسجيل الدخول مجدداً.</string>
+    <string name="home_error_server">خطأ في الخادم (%1$d). يرجى المحاولة لاحقاً.</string>
+    <string name="home_error_something_went_wrong">حدث خطأ ما.</string>
+    <string name="home_error_serialization">استجابة غير متوقعة من الخادم. يرجى تحديث التطبيق.</string>
+    <string name="home_error_unknown">حدث خطأ غير متوقع.</string>
+</resources>
