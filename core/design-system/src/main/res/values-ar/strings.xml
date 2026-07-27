@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ds_no_sessions_in_zone">لا توجد جلسات مخصصة في هذه المنطقة</string>
+    <string name="ds_done_count">%1$d/%2$d مكتمل</string>
+    <string name="ds_tasks_count">%1$d/%2$d جلسات</string>
+    <string name="ds_schedule_conflict_title">تم اكتشاف تعارض في الجدول</string>
+    <string name="ds_later">لاحقاً</string>
+    <string name="ds_fix_it">إصلاح الآن</string>
+    <string name="ds_todays_plan">خطة اليوم</string>
+    <string name="ds_add_task">+ مهمة</string>
+    <string name="ds_add_goal">+ هدف</string>
+    <string name="ds_pts">+%1$d نقطة</string>
+    <string name="ds_friend">صديقي</string>
+</resources>

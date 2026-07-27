@@ -38,13 +38,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
-enum class AwanButtonVariant {
-    Primary,
-    Secondary,
-    Destructive,
-    Quiet,
-    Google,
-}
+
 
 @Composable
 fun AwanButton(

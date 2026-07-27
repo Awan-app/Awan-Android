@@ -22,15 +22,18 @@ class OnboardingRepositoryImplTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeRemoteDataSource: FakeOnboardingRemoteDataSource
     private lateinit var fakePreferencesDataSource: FakeUserPreferencesDataSource
+    private lateinit var fakeUserDao: FakeUserDao
     private lateinit var repository: OnboardingRepositoryImpl
 
     @Before
     fun setUp() {
         fakeRemoteDataSource = FakeOnboardingRemoteDataSource()
         fakePreferencesDataSource = FakeUserPreferencesDataSource()
+        fakeUserDao = FakeUserDao()
         repository = OnboardingRepositoryImpl(
             remoteDataSource = fakeRemoteDataSource,
             userPreferencesDataSource = fakePreferencesDataSource,
+            userDao = fakeUserDao,
             ioDispatcher = testDispatcher,
         )
     }
@@ -84,5 +87,16 @@ class OnboardingRepositoryImplTest {
         override suspend fun setDefaultZone(zone: String) {}
         override suspend fun setLocale(locale: String) {}
         override suspend fun setDefaultRegion(region: String) {}
+    }
+
+    private class FakeUserDao : com.awan.app.core.database.dao.UserDao {
+        override suspend fun upsertUser(user: com.awan.app.core.database.model.UserEntity) {}
+        override fun observeUser(userId: String): Flow<com.awan.app.core.database.model.UserEntity?> = MutableStateFlow(null)
+        override suspend fun getUser(userId: String): com.awan.app.core.database.model.UserEntity? = null
+        override suspend fun getFirstUser(): com.awan.app.core.database.model.UserEntity? = null
+        override suspend fun deleteUser(userId: String) {}
+        override suspend fun upsertPreferences(preferences: com.awan.app.core.database.model.UserPreferencesEntity) {}
+        override fun observePreferences(userId: String): Flow<com.awan.app.core.database.model.UserPreferencesEntity?> = MutableStateFlow(null)
+        override suspend fun getPreferences(userId: String): com.awan.app.core.database.model.UserPreferencesEntity? = null
     }
 }
