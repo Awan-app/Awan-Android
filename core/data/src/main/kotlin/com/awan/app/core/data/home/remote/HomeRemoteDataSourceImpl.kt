@@ -5,7 +5,7 @@ import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.TaskApiService
 import com.awan.app.core.network.api.TemplateApiService
-import com.awan.app.core.network.api.ZonesApiService
+import com.awan.app.core.network.api.ZoneApiService
 import com.awan.app.core.network.dto.TaskWithSessionsDto
 import com.awan.app.core.network.dto.TemplateDto
 import com.awan.app.core.network.dto.TemplateOverrideResponseDto
@@ -23,7 +23,7 @@ import com.awan.app.core.network.dto.SessionDto
 import com.awan.app.core.network.dto.UpdateSessionRequest
 
 class HomeRemoteDataSourceImpl @Inject constructor(
-    private val zonesApiService: ZonesApiService,
+    private val zonesApiService: ZoneApiService,
     private val taskApiService: TaskApiService,
     private val templateApiService: TemplateApiService,
     private val userApiService: UserApiService,

@@ -6,4 +6,5 @@ enum class AwanButtonVariant {
     Destructive,
     Quiet,
     Google,
+    Chip,
 }

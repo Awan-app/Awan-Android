@@ -57,6 +57,7 @@ dependencies {
     implementation(project(":feature:profile:impl"))
     implementation(project(":feature:profile-setup:api"))
     implementation(project(":feature:profile-setup:impl"))
+    implementation(project(":feature:add-task"))
 
     // Core modules
     implementation(project(":core:common"))

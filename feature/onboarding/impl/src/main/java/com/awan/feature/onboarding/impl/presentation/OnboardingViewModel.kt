@@ -11,10 +11,12 @@ import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
 import com.awan.app.core.domain.onboarding.ZoneEditRules
+import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
 import com.awan.app.core.domain.task.usecase.CreateAndScheduleFirstTaskUseCase
 import com.awan.app.core.domain.template.usecase.CreateWeeklyTemplateUseCase
 import com.awan.feature.onboarding.impl.R
 import com.awan.app.core.model.DayBounds
+import com.awan.app.core.model.TaskDraft
 import com.awan.app.core.model.UserProfile
 import com.awan.app.core.model.Zone
 import dagger.hilt.android.lifecycle.HiltViewModel
