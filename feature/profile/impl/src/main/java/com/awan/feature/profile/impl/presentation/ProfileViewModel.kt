@@ -8,11 +8,14 @@ import com.awan.app.core.common.text.UiText
 import com.awan.app.core.datastore.UserPreferencesDataSource
 import com.awan.app.core.domain.auth.usecase.LogoutUseCase
 import com.awan.app.core.domain.profile.model.Profile
+import com.awan.app.core.domain.profile.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,8 +27,8 @@ class ProfileViewModel @Inject constructor(
     private val userDataRepository: UserPreferencesDataSource,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ProfileUiState())
-    val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(ProfileState())
+    val uiState: StateFlow<ProfileState> = _uiState.asStateFlow()
 
     private val _events = Channel<ProfileEvent>()
     val events = _events.receiveAsFlow()
@@ -49,18 +52,6 @@ class ProfileViewModel @Inject constructor(
                 action.lastName,
                 action.birthDate
             )
-            ProfileAction.Logout -> logout()
-        }
-    }
-
-    fun onAction(action: ProfileAction) {
-        when (action) {
-            ProfileAction.Refresh -> loadProfile()
-            is ProfileAction.SetTheme -> setTheme(action.useDarkTheme)
-            is ProfileAction.SetLanguage -> setLanguage(action.languageCode)
-            is ProfileAction.UpdateSleepSchedule -> updateSleepSchedule(action.wakeupTime, action.sleepTime)
-            is ProfileAction.UpdateSessionDuration -> updateSessionDuration(action.duration)
-            is ProfileAction.UpdateTimezone -> updateTimezone(action.timezone)
             ProfileAction.Logout -> logout()
         }
     }
@@ -128,10 +119,7 @@ class ProfileViewModel @Inject constructor(
                 _uiState.update { it.copy(isUpdatingField = false, fieldError = birthDateResult.error.toUiText()) }
                 return@launch
             }
-            }
-        }
 
-    private fun logout() {
             if (nameResult is Result.Success && birthDateResult is Result.Success) {
                 _uiState.update {
                     it.copy(

@@ -1,16 +1,18 @@
 package com.awan.app.core.data.util
 
-import com.awan.app.core.model.DayBounds
+import com.awan.app.core.domain.onboarding.model.DayBounds
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.util.Locale
 
-/** Minutes-from-midnight to the `HH:mm:ss` the API expects. Wraps, so 1500 becomes `01:00:00`. */
+/** Minutes-from-midnight to the `HH:mm:ss` the API expects. Caps at `23:59:59` when >= 1440. */
 internal fun formatMinutesToTime(minutes: Int): String {
+    if (minutes >= DayBounds.MINUTES_PER_DAY) return "23:59:59"
     val totalMinutes = minutes.mod(DayBounds.MINUTES_PER_DAY)
     return String.format(Locale.US, "%02d:%02d:00", totalMinutes / 60, totalMinutes % 60)
 }
+
 
 /** Inverse of [formatMinutesToTime]. Null when the API sends something that is not `HH:mm[:ss]`. */
 internal fun parseTimeToMinutes(time: String): Int? {

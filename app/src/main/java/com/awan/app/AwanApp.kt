@@ -8,12 +8,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
+import com.awan.app.core.designsystem.AwanTheme
 import com.awan.core.navigation.Navigator
 import com.awan.feature.auth.impl.navigation.authEntry
 import com.awan.feature.calendar.impl.navigation.calendarEntry
@@ -98,7 +100,6 @@ fun AwanApp(
                 chatEntry()
                 goalsEntry()
                 profileEntry(
-                    onNavigateToEditProfile = { navigator.navigate(com.awan.feature.profile.api.EditProfileRoute) },
                     onNavigateToDailyZones = { navigator.navigate(com.awan.feature.profile.api.DailyZonesRoute) },
                     onNavigateToRoutineDetails = { id ->
                         navigator.navigate(com.awan.feature.profile.api.RoutineDetailsRoute(id))

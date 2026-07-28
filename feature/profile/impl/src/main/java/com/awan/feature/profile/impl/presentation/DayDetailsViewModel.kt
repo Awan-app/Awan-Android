@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.collections.copy
 
 @HiltViewModel
 class DayDetailsViewModel @Inject constructor(
@@ -48,9 +47,15 @@ class DayDetailsViewModel @Inject constructor(
             } else null
 
             _uiState.update { state ->
+                val sortedZones = if (zonesResult is Result.Success) {
+                    zonesResult.data.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
+                } else {
+                    state.effectiveZones
+                }
+
                 state.copy(
                     isLoading = false,
-                    effectiveZones = if (zonesResult is Result.Success) zonesResult.data else state.effectiveZones,
+                    effectiveZones = sortedZones,
                     isOverride = override != null,
                     overrideId = override?.id,
                     error = if (zonesResult is Result.Error) DailyZonesHelper.zonesErrorToUiText(zonesResult.error) else null

@@ -5,7 +5,7 @@ import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.model.Session
 import com.awan.app.core.domain.zones.model.TemplateOverride
 import com.awan.app.core.domain.zones.model.WeeklyTemplate
-import com.awan.app.core.network.dto.auth.SessionDto
+import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.zone.TemplateOverrideDto
 import com.awan.app.core.network.dto.zone.WeeklyTemplateDto
 import com.awan.app.core.network.dto.zone.ZoneDto
@@ -15,7 +15,7 @@ fun ZoneDto.toDomain(): DailyZone = DailyZone(
     name = name,
     startTime = startTime,
     endTime = endTime,
-    color = color,
+    color = color ?: "#2E8BFF",
     templateId = templateId,
     templateOverrideId = templateOverrideId
 )
@@ -25,7 +25,7 @@ fun DailyZone.toDto(): ZoneDto = ZoneDto(
     name = name,
     startTime = startTime,
     endTime = endTime,
-    color = color,
+    color = color ?: "#2E8BFF",
     templateId = templateId,
     templateOverrideId = templateOverrideId
 )
@@ -33,7 +33,13 @@ fun DailyZone.toDto(): ZoneDto = ZoneDto(
 fun WeeklyTemplateDto.toDomain(): WeeklyTemplate = WeeklyTemplate(
     id = id,
     name = name,
-    daysOfWeek = daysOfWeek.map { DayOfWeek.valueOf(it) },
+    daysOfWeek = daysOfWeek.map { 
+        try {
+            DayOfWeek.valueOf(it.uppercase()) 
+        } catch (e: Exception) {
+            DayOfWeek.MONDAY // Fallback or handle error
+        }
+    },
     zones = zones.map { it.toDomain() }
 )
 

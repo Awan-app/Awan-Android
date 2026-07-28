@@ -18,7 +18,6 @@ import com.awan.feature.profile.impl.presentation.RoutineDetailsAction
 import com.awan.feature.profile.impl.presentation.RoutineDetailsState
 import com.awan.feature.profile.impl.ui.components.RoutineSummaryCard
 import com.awan.feature.profile.impl.ui.components.ZoneDetailItem
-import com.awan.feature.profile.impl.ui.components.AwanConfirmationDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,15 +30,17 @@ fun RoutineDetailsScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     if (showDeleteDialog) {
-        AwanConfirmationDialog(
+        AwanDialog(
             title = "Delete this routine?",
-            text = "This will remove this routine and all zones inside it from the days using it.",
-            confirmText = "Delete",
-            isDestructive = true,
-            onConfirm = {
+            body = "This will remove this routine and all zones inside it from the days using it.",
+            primaryLabel = "Delete",
+            primaryVariant = AwanButtonVariant.Destructive,
+            onPrimary = {
                 showDeleteDialog = false
                 uiState.template?.id?.let { onAction(RoutineDetailsAction.DeleteRoutine(it)) }
             },
+            secondaryLabel = "Cancel",
+            onSecondary = { showDeleteDialog = false },
             onDismiss = { showDeleteDialog = false }
         )
     }

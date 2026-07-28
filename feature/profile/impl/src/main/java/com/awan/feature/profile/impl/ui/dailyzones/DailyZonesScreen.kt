@@ -1,7 +1,10 @@
 package com.awan.feature.profile.impl.ui.dailyzones
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -46,10 +49,9 @@ fun DailyZonesScreen(
 
     // ── Add / Edit Zone Sheet ──────────────────────────────
     if (showAddZoneSheet) {
-        val templateName = uiState.currentTemplate?.name ?: "Default"
         AddEditZoneSheet(
             zone = editingZone,
-            templateName = templateName,
+            templateName = uiState.currentTemplate?.name ?: "Default",
             onDismiss = {
                 showAddZoneSheet = false
                 editingZone = null
@@ -69,15 +71,17 @@ fun DailyZonesScreen(
 
     // ── Delete Confirmation ────────────────────────────────
     if (showDeleteConfirm != null) {
-        AwanConfirmationDialog(
+        AwanDialog(
             title = stringResource(R.string.profile_daily_zones_delete_zone_title),
-            text = stringResource(R.string.profile_daily_zones_delete_zone_message),
-            confirmText = "Delete",
-            isDestructive = true,
-            onConfirm = {
+            body = stringResource(R.string.profile_daily_zones_delete_zone_message),
+            primaryLabel = "Delete",
+            primaryVariant = AwanButtonVariant.Destructive,
+            onPrimary = {
                 onAction(DailyZonesAction.DeleteZone(showDeleteConfirm!!))
                 showDeleteConfirm = null
             },
+            secondaryLabel = "Cancel",
+            onSecondary = { showDeleteConfirm = null },
             onDismiss = { showDeleteConfirm = null }
         )
     }
@@ -85,15 +89,17 @@ fun DailyZonesScreen(
     // ── Reset to Default Confirmation ──────────────────────
     if (showResetConfirm) {
         val dayLabel = DailyZonesHelper.displayName(uiState.selectedDay)
-        AwanConfirmationDialog(
+        AwanDialog(
             title = stringResource(R.string.profile_daily_zones_reset_day_title, dayLabel),
-            text = stringResource(R.string.profile_daily_zones_reset_day_message, dayLabel),
-            confirmText = "Reset",
-            isDestructive = true,
-            onConfirm = {
+            body = stringResource(R.string.profile_daily_zones_reset_day_message, dayLabel),
+            primaryLabel = "Reset",
+            primaryVariant = AwanButtonVariant.Destructive,
+            onPrimary = {
                 onAction(DailyZonesAction.ResetDay)
                 showResetConfirm = false
             },
+            secondaryLabel = "Cancel",
+            onSecondary = { showResetConfirm = false },
             onDismiss = { showResetConfirm = false }
         )
     }
@@ -159,19 +165,32 @@ fun DailyZonesScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // ── Weekly Day Selector ────────────────────────
-            DaySelector(
-                selectedDay = uiState.selectedDay,
-                overriddenDays = overriddenDays,
-                onDaySelected = { onAction(DailyZonesAction.SelectDay(it)) }
-            )
+            val currentTemplateColor = uiState.currentTemplate?.zones?.firstOrNull()?.color?.toColor() ?: AwanTheme.colors.sky
+            val currentTemplateDays = uiState.currentTemplate?.daysOfWeek ?: emptyList()
 
-            // ── Template Selector ──────────────────────────
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = AwanTheme.colors.surface,
+                border = BorderStroke(1.dp, AwanTheme.colors.line)
+            ) {
+                Box(modifier = Modifier.padding(12.dp)) {
+                    DaySelector(
+                        selectedDay = uiState.selectedDay,
+                        overriddenDays = overriddenDays,
+                        templateDays = currentTemplateDays,
+                        templateColor = currentTemplateColor,
+                        onDaySelected = { onAction(DailyZonesAction.SelectDay(it)) }
+                    )
+                }
+            }
+
+            // ── Routine Picker (Horizontal List) ───────────
             if (uiState.templates.isNotEmpty()) {
-                TemplateSelector(
+                RoutinePicker(
                     templates = uiState.templates,
-                    selectedTemplateId = uiState.selectedTemplateId,
-                    onTemplateSelected = { onAction(DailyZonesAction.SelectTemplate(it)) },
-                    onCreateRoutineClick = onCreateRoutineClick
+                    selectedTemplateId = uiState.currentTemplate?.id,
+                    onTemplateSelected = { onAction(DailyZonesAction.SelectTemplate(it)) }
                 )
             }
 
@@ -187,6 +206,9 @@ fun DailyZonesScreen(
                 zoneCount = uiState.selectedDayZones.size,
                 isOverride = uiState.currentOverride != null,
                 onResetClick = { showResetConfirm = true },
+                templates = uiState.templates,
+                onTemplateSelected = { onAction(DailyZonesAction.SelectTemplate(it)) },
+                onCreateRoutineClick = onCreateRoutineClick,
                 onEditRoutineClick = if (!uiState.isLoading && currentTemplateId != null && uiState.currentOverride == null) {
                     { onNavigateToRoutineDetails(currentTemplateId) }
                 } else null,
@@ -227,6 +249,17 @@ fun DailyZonesScreen(
                 modifier = Modifier.padding(bottom = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Secondary: Create Routine
+                AwanButton(
+                    onClick = onCreateRoutineClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    variant = AwanButtonVariant.Secondary,
+                    icon = Icons.Default.DateRange,
+                    enabled = !uiState.isSaving
+                ) {
+                    AwanText(text = "Create New Routine")
+                }
+
                 // Primary: Add zone
                 AwanButton(
                     onClick = { showAddZoneSheet = true },
@@ -287,7 +320,9 @@ fun AwanErrorSnackbar(
 @Composable
 fun EmptyZonesState(onAddZoneClick: () -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -307,7 +342,11 @@ fun EmptyZonesState(onAddZoneClick: () -> Unit) {
             style = AwanTheme.styles.bodyText.copy(color = AwanTheme.colors.textSecondary)
         )
         Spacer(modifier = Modifier.height(24.dp))
-        AwanButton(onClick = onAddZoneClick) {
+        AwanButton(
+            onClick = onAddZoneClick,
+            modifier = Modifier.fillMaxWidth(),
+            icon = Icons.Default.Add
+        ) {
             AwanText(text = stringResource(R.string.profile_daily_zones_add_zone))
         }
     }

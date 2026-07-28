@@ -1,7 +1,7 @@
 package com.awan.app.core.domain.task.repository
 
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.model.FirstTask
+import com.awan.app.core.domain.onboarding.model.FirstTask
 
 interface AiTaskRepository {
 

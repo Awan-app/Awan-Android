@@ -7,11 +7,10 @@ import com.awan.app.core.data.template.remote.TemplateRemoteDataSource
 import com.awan.app.core.data.util.formatMinutesToTime
 import com.awan.app.core.data.util.parseTimeToMinutes
 import com.awan.app.core.domain.template.repository.TemplateRepository
-import com.awan.app.core.model.DayBounds
-import com.awan.app.core.model.Zone
-import com.awan.app.core.network.dto.CreateTemplateRequest
-import com.awan.app.core.network.dto.TemplateZoneRequest
-import com.awan.app.core.network.dto.ZoneResponse
+import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.domain.zones.model.Zone
+import com.awan.app.core.network.dto.zone.CreateTemplateRequest
+import com.awan.app.core.network.dto.zone.ZoneDto
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -28,11 +27,11 @@ class TemplateRepositoryImpl @Inject constructor(
         val request = CreateTemplateRequest(
             name = TEMPLATE_NAME,
             daysOfWeek = DAYS_OF_WEEK,
-            zones = zones.filter { it.isEnabled }.map(::toZoneRequest),
+            zones = zones.filter { it.isEnabled }.map(::toZoneDto),
         )
 
         when (val result = remoteDataSource.createTemplate(request)) {
-            is Result.Success -> Result.Success(result.data.zones.orEmpty().mapNotNull(::toZone))
+            is Result.Success -> Result.Success(result.data.zones.mapNotNull(::toZone))
             is Result.Error -> Result.Error(result.error)
             Result.Loading -> Result.Loading
         }
@@ -42,7 +41,7 @@ class TemplateRepositoryImpl @Inject constructor(
      * The API stores zone windows as `LocalTime`, which cannot wrap — a zone that runs past
      * midnight is truncated at the end of the day and the remainder is dropped.
      */
-    private fun toZoneRequest(zone: Zone): TemplateZoneRequest = TemplateZoneRequest(
+    private fun toZoneDto(zone: Zone): ZoneDto = ZoneDto(
         name = zone.name,
         startTime = formatMinutesToTime(zone.startMinutes),
         endTime = if (zone.endMinutes >= DayBounds.MINUTES_PER_DAY) {
@@ -53,13 +52,13 @@ class TemplateRepositoryImpl @Inject constructor(
         color = String.format(Locale.US, "#%06X", zone.colorArgb and RGB_MASK),
     )
 
-    /** The inverse of [toZoneRequest], carrying the server id a scheduled session points at. */
-    private fun toZone(zone: ZoneResponse): Zone? {
+    /** The inverse of [toZoneDto], carrying the server id a scheduled session points at. */
+    private fun toZone(zone: ZoneDto): Zone? {
         val startMinutes = zone.startTime.let(::parseTimeToMinutes) ?: return null
         val endMinutes = zone.endTime.let(::parseTimeToMinutes) ?: return null
         return Zone(
-            id = zone.id,
-            name = zone.name.orEmpty(),
+            id = zone.id.orEmpty(),
+            name = zone.name,
             colorArgb = parseColor(zone.color),
             startMinutes = startMinutes,
             endMinutes = endMinutes,

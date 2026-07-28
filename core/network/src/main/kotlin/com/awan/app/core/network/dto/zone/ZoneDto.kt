@@ -1,14 +1,17 @@
 package com.awan.app.core.network.dto.zone
 
+import com.awan.app.core.network.dto.category.CategoryDto
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ZoneDto(
-    val id: String? = null,
-    val name: String,
-    val startTime: String,
-    val endTime: String,
-    val color: String,
-    val templateId: String? = null,
-    val templateOverrideId: String? = null
+    @SerialName("id") val id: String? = null,
+    @SerialName("name") val name: String,
+    @SerialName("startTime") val startTime: String,
+    @SerialName("endTime") val endTime: String,
+    @SerialName("color") val color: String? = null,
+    @SerialName("templateId") val templateId: String? = null,
+    @SerialName("templateOverrideId") val templateOverrideId: String? = null,
+    @SerialName("category") val category: CategoryDto? = null,
 )

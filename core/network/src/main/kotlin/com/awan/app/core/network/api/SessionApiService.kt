@@ -1,7 +1,7 @@
 package com.awan.app.core.network.api
 
-import com.awan.app.core.network.dto.SessionDto
-import com.awan.app.core.network.dto.UpdateSessionRequest
+import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.network.dto.session.UpdateSessionRequest
 import retrofit2.http.Body
 import retrofit2.http.PUT
 import retrofit2.http.Path

@@ -4,16 +4,15 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
-import com.awan.app.core.data.util.formatMinutesToTime
 import com.awan.app.core.datastore.UserPreferencesDataSource
 import com.awan.app.core.domain.zones.repository.ZonesRepository
 import com.awan.app.core.domain.onboarding.model.DayBounds
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.network.dto.onboarding.CompleteOnboardingRequest
-import com.awan.app.core.network.dto.CompleteOnboardingRequest
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -96,6 +95,7 @@ class OnboardingRepositoryImpl @Inject constructor(
     }
 
     private fun formatMinutesToTime(minutes: Int): String {
+        if (minutes >= DayBounds.MINUTES_PER_DAY) return "23:59:59"
         val totalMinutes = minutes.mod(DayBounds.MINUTES_PER_DAY)
         val hours = totalMinutes / 60
         val mins = totalMinutes % 60
@@ -103,6 +103,7 @@ class OnboardingRepositoryImpl @Inject constructor(
     }
 
     private fun formatMinutesToTimeShort(minutes: Int): String {
+        if (minutes >= DayBounds.MINUTES_PER_DAY) return "23:59"
         val totalMinutes = minutes.mod(DayBounds.MINUTES_PER_DAY)
         val hours = totalMinutes / 60
         val mins = totalMinutes % 60

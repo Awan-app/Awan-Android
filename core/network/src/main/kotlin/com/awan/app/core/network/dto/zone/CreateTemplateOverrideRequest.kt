@@ -4,8 +4,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class CreateTemplateRequest(
+data class CreateTemplateOverrideRequest(
     @SerialName("name") val name: String,
-    @SerialName("daysOfWeek") val daysOfWeek: List<String>,
-    @SerialName("zones") val zones: List<ZoneDto> = emptyList()
+    @SerialName("dateOfDay") val dateOfDay: String,
+    @SerialName("zones") val zones: List<CreateZoneRequest> = emptyList(),
 )

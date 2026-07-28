@@ -74,6 +74,8 @@ class DailyZonesViewModel @Inject constructor(
 
                 _uiState.update { state ->
                     val defaultTemplate = templates.find { it.name.equals("Default", ignoreCase = true) }
+                        ?: templates.find { it.name.equals("My Week", ignoreCase = true) }
+                        ?: templates.firstOrNull()
                     val newSelectedTemplateId = state.selectedTemplateId ?: defaultTemplate?.id
 
                     state.copy(
@@ -96,7 +98,7 @@ class DailyZonesViewModel @Inject constructor(
     }
 
     private fun selectDay(day: DayOfWeek) {
-        _uiState.update { it.copy(selectedDay = day) }
+        _uiState.update { it.copy(selectedDay = day, selectedTemplateId = null) }
         updateSelectedDayData()
     }
 
@@ -115,7 +117,8 @@ class DailyZonesViewModel @Inject constructor(
         val template = state.templates.find { it.id == state.selectedTemplateId }
             ?: state.templates.find { it.daysOfWeek.contains(state.selectedDay) }
 
-        val zones = override?.zones ?: template?.zones ?: emptyList()
+        val zones = (override?.zones ?: template?.zones ?: emptyList())
+            .sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
 
         _uiState.update { it.copy(
             selectedDayZones = zones,
@@ -157,6 +160,13 @@ class DailyZonesViewModel @Inject constructor(
     }
 
     private fun addZone(zone: DailyZone) {
+        val startMins = DailyZonesHelper.parseTimeToMinutes(zone.startTime)
+        val endMins = DailyZonesHelper.parseTimeToMinutes(zone.endTime)
+        if (startMins >= endMins) {
+            _uiState.update { it.copy(error = UiText.DynamicString("Start time must be before end time")) }
+            return
+        }
+
         if (DailyZonesHelper.isOverlapping(zone, _uiState.value.selectedDayZones)) {
             _uiState.update { it.copy(error = UiText.StringResource(R.string.profile_daily_zones_error_overlap)) }
             return
@@ -167,6 +177,13 @@ class DailyZonesViewModel @Inject constructor(
     }
 
     private fun updateZone(zone: DailyZone) {
+        val startMins = DailyZonesHelper.parseTimeToMinutes(zone.startTime)
+        val endMins = DailyZonesHelper.parseTimeToMinutes(zone.endTime)
+        if (startMins >= endMins) {
+            _uiState.update { it.copy(error = UiText.DynamicString("Start time must be before end time")) }
+            return
+        }
+
         val updatedZones = _uiState.value.selectedDayZones.map {
             if (it.id != null && it.id == zone.id) zone else if (it.id == null && it.name == zone.name) zone else it
         }.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }

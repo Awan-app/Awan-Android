@@ -16,9 +16,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.collections.copy
-import kotlin.plus
-import kotlin.text.compareTo
 
 @HiltViewModel
 class EditRoutineViewModel @Inject constructor(
@@ -28,7 +25,7 @@ class EditRoutineViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(EditRoutineState())
     val uiState: StateFlow<EditRoutineState> = _uiState.asStateFlow()
 
-    private val _events = Channel<EditRoutineEvent>()
+    private val _events = Channel<EditRoutineEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
     fun onAction(action: EditRoutineAction) {
@@ -54,11 +51,12 @@ class EditRoutineViewModel @Inject constructor(
             when (val result = zonesRepository.getTemplate(templateId)) {
                 is Result.Success -> {
                     val template = result.data
+                    val sortedZones = template.zones.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
                     _uiState.update { it.copy(
                         isLoading = false,
                         name = template.name,
                         selectedDays = template.daysOfWeek.toSet(),
-                        zones = template.zones
+                        zones = sortedZones
                     ) }
                 }
                 is Result.Error -> {
@@ -70,7 +68,7 @@ class EditRoutineViewModel @Inject constructor(
     }
 
     private fun onNameChange(name: String) {
-        _uiState.update { it.copy(name = name, validationError = null) }
+        _uiState.update { it.copy(name = name, validationError = null, error = null) }
     }
 
     private fun toggleDay(day: DayOfWeek) {
@@ -80,22 +78,27 @@ class EditRoutineViewModel @Inject constructor(
             } else {
                 state.selectedDays + day
             }
-            state.copy(selectedDays = newDays, validationError = null)
+            state.copy(selectedDays = newDays, validationError = null, error = null)
         }
     }
 
     private fun addZone(zone: DailyZone) {
-        _uiState.update { it.copy(zones = it.zones + zone, validationError = null) }
+        _uiState.update { state ->
+            val updatedZones = (state.zones + zone).sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
+            state.copy(zones = updatedZones, validationError = null, error = null)
+        }
     }
 
     private fun updateZone(oldZone: DailyZone, newZone: DailyZone) {
         _uiState.update { state ->
-            state.copy(zones = state.zones.map { if (it == oldZone) newZone else it }, validationError = null)
+            val updatedZones = state.zones.map { if (it == oldZone) newZone else it }
+                .sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
+            state.copy(zones = updatedZones, validationError = null, error = null)
         }
     }
 
     private fun deleteZone(zone: DailyZone) {
-        _uiState.update { it.copy(zones = it.zones - zone, validationError = null) }
+        _uiState.update { it.copy(zones = it.zones - zone, validationError = null, error = null) }
     }
 
     private fun saveRoutine() {
@@ -117,7 +120,10 @@ class EditRoutineViewModel @Inject constructor(
                 _uiState.update { it.copy(validationError = "Zone name cannot be empty") }
                 return
             }
-            if (zone.startTime.compareTo(zone.endTime) >= 0) {
+            val startMins = DailyZonesHelper.parseTimeToMinutes(zone.startTime)
+            val endMins = DailyZonesHelper.parseTimeToMinutes(zone.endTime)
+            
+            if (startMins >= endMins) {
                 _uiState.update { it.copy(validationError = "Start time must be before end time for ${zone.name}") }
                 return
             }

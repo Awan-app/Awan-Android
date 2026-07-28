@@ -278,5 +278,27 @@ object AwanStyles {
         fontFamily(typography.button.fontFamily!!)
         buttonPressedTransform()
     }
+
+    val chipButtonRim = Style {
+        background(colors.line)
+        shape(shapes.chip)
+    }
+
+    val chipButtonFace = Style {
+        background(colors.surface)
+        border(2.dp, colors.line)
+        shape(shapes.chip)
+        minHeight(AwanChipFaceHeight)
+        contentPadding(horizontal = 12.dp, vertical = 6.dp)
+        contentColor(colors.textSecondary)
+        textStyle(typography.caption)
+        fontFamily(typography.caption.fontFamily!!)
+        buttonPressedTransform()
+        disabled {
+            background(colors.disabledSurface)
+            borderColor(colors.line)
+            contentColor(colors.disabledContent)
+        }
+    }
 }
 

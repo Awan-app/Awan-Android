@@ -24,9 +24,8 @@ import com.awan.feature.profile.impl.ui.components.ProfileShimmer
 
 @Composable
 fun ProfileScreen(
-    uiState: ProfileUiState,
+    uiState: ProfileState,
     onAction: (ProfileAction) -> Unit,
-    onEditClick: () -> Unit = {},
     onDailyZonesClick: () -> Unit = {},
     onSettingsClick: (String) -> Unit = {},
 ) {
@@ -45,16 +44,10 @@ fun ProfileScreen(
                 profile = uiState.profile,
                 uiState = uiState,
                 onAction = onAction,
-                onEditClick = onEditClick,
                 onEditClick = { showEditSheet = true },
                 onDailyZonesClick = onDailyZonesClick,
                 onSettingsClick = onSettingsClick,
-                onThemeClick = onThemeClick,
-                onLanguageClick = onLanguageClick,
-                onUpdateSleepSchedule = onUpdateSleepSchedule,
-                onUpdateSessionDuration = onUpdateSessionDuration,
-                onUpdateTimezone = onUpdateTimezone,
-                onLogout = { showLogoutDialog = true }
+                onLogoutClick = { showLogoutDialog = true }
             )
 
             if (showEditSheet) {
@@ -64,7 +57,7 @@ fun ProfileScreen(
                     initialBirthDate = uiState.profile.birthDate ?: "",
                     onDismiss = { showEditSheet = false },
                     onSave = { first, last, birth ->
-                        onUpdatePersonalInfo(first, last, birth)
+                        onAction(ProfileAction.UpdatePersonalInfo(first, last, birth))
                         showEditSheet = false
                     },
                     isLoading = uiState.isUpdatingField
@@ -85,7 +78,7 @@ fun ProfileScreen(
                     primaryLabel = stringResource(ProfileR.string.profile_logout),
                     primaryVariant = AwanButtonVariant.Destructive,
                     onPrimary = {
-                        onLogout()
+                        onAction(ProfileAction.Logout)
                         showLogoutDialog = false
                     },
                     secondaryLabel = stringResource(ProfileR.string.profile_cancel),
@@ -137,6 +130,7 @@ private fun ProfileContent(
     onEditClick: () -> Unit,
     onDailyZonesClick: () -> Unit,
     onSettingsClick: (String) -> Unit,
+    onLogoutClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -179,7 +173,7 @@ private fun ProfileContent(
 
         SettingsCard(
             onSettingsClick = onSettingsClick,
-            onLogoutClick = { onAction(ProfileAction.Logout) }
+            onLogoutClick = onLogoutClick
         )
 
         Spacer(modifier = Modifier.height(20.dp))

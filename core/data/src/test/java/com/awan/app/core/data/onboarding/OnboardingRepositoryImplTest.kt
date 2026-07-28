@@ -29,6 +29,7 @@ class OnboardingRepositoryImplTest {
     private lateinit var fakeRemoteDataSource: FakeOnboardingRemoteDataSource
     private lateinit var fakePreferencesDataSource: FakeUserPreferencesDataSource
     private lateinit var fakeUserDao: FakeUserDao
+    private lateinit var fakeZonesRepository: FakeZonesRepository
     private lateinit var repository: OnboardingRepositoryImpl
 
     @Before

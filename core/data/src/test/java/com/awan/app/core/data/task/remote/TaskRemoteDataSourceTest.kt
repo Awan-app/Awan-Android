@@ -2,10 +2,12 @@ package com.awan.app.core.data.task.remote
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.TaskApiService
-import com.awan.app.core.network.dto.CreateAiTaskRequest
-import com.awan.app.core.network.dto.CreateTaskRequest
-import com.awan.app.core.network.dto.ScheduleTaskRequest
-import com.awan.app.core.network.dto.TaskInfoResponse
+import com.awan.app.core.network.dto.task.CreateAiTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
+import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -36,11 +38,11 @@ class TaskRemoteDataSourceTest {
 
             override suspend fun scheduleTask(request: ScheduleTaskRequest) = error("not used")
 
-            override suspend fun getTasksByDate(date: String): List<com.awan.app.core.network.dto.TaskWithSessionsDto> {
+            override suspend fun getTasksByDate(date: String): List<TaskWithSessionsDto> {
                 return emptyList()
             }
 
-            override suspend fun createTaskWithSessions(request: com.awan.app.core.network.dto.CreateTaskWithSessionsRequest): com.awan.app.core.network.dto.TaskWithSessionsDto {
+            override suspend fun createTaskWithSessions(request: CreateTaskWithSessionsRequest): TaskWithSessionsDto {
                 throw NotImplementedError()
             }
         }

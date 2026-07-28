@@ -136,11 +136,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun providesZonesApiService(retrofit: Retrofit): ZonesApiService =
-        retrofit.create(ZonesApiService::class.java)
-
-    @Provides
-    @Singleton
     fun providesCategoryApiService(retrofit: Retrofit): com.awan.app.core.network.api.CategoryApiService =
         retrofit.create(com.awan.app.core.network.api.CategoryApiService::class.java)
 

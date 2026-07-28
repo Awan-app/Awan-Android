@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 internal const val AWAN_BUTTON_ANIMATION_DURATION_MILLIS = 40
 internal val AwanButtonRimDepth = 4.dp
 internal val AwanButtonRimSide = 2.dp
+internal val AwanChipFaceHeight = 32.dp
 
 private val Baloo2 = FontFamily(
     Font(R.font.baloo2_semibold, FontWeight.SemiBold),

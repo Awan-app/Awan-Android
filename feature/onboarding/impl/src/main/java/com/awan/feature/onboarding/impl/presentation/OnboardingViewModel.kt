@@ -12,11 +12,10 @@ import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
 import com.awan.app.core.domain.onboarding.ZoneEditRules
 import com.awan.app.core.domain.task.usecase.CreateAndScheduleFirstTaskUseCase
-import com.awan.app.core.domain.template.usecase.CreateWeeklyTemplateUseCase
 import com.awan.feature.onboarding.impl.R
-import com.awan.app.core.model.DayBounds
-import com.awan.app.core.model.UserProfile
-import com.awan.app.core.model.Zone
+import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.domain.profile.model.UserProfile
+import com.awan.app.core.domain.zones.model.Zone
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +32,6 @@ class OnboardingViewModel @Inject constructor(
     private val suggestZoneSchedule: SuggestZoneScheduleUseCase,
     private val validateDayBounds: ValidateDayBounds,
     private val createAndScheduleFirstTask: CreateAndScheduleFirstTaskUseCase,
-    private val createWeeklyTemplate: CreateWeeklyTemplateUseCase,
 ) : ViewModel() {
 
     private var zonesUserEdited = false
@@ -150,16 +148,6 @@ class OnboardingViewModel @Inject constructor(
             )
             when (val result = repository.completeOnboarding(data)) {
                 is Result.Success -> isBackendOnboarded = true
-                is Result.Error -> return failSetup(result.error)
-                Result.Loading -> return false
-            }
-        }
-        if (!isTemplateCreated) {
-            when (val result = createWeeklyTemplate(s.zones)) {
-                is Result.Success -> {
-                    isTemplateCreated = true
-                    _state.update { it.copy(templateZones = result.data) }
-                }
                 is Result.Error -> return failSetup(result.error)
                 Result.Loading -> return false
             }

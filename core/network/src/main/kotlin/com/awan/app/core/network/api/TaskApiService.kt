@@ -1,12 +1,12 @@
 package com.awan.app.core.network.api
 
-import com.awan.app.core.network.dto.CreateAiTaskRequest
-import com.awan.app.core.network.dto.CreateTaskRequest
-import com.awan.app.core.network.dto.ScheduleTaskRequest
-import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
-import com.awan.app.core.network.dto.TaskInfoResponse
-import com.awan.app.core.network.dto.TaskScheduleResponse
-import com.awan.app.core.network.dto.TaskWithSessionsDto
+import com.awan.app.core.network.dto.task.CreateAiTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskRequest
+import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
+import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST

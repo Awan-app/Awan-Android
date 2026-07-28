@@ -1,7 +1,7 @@
 package com.awan.app.core.data.zones.remote
 
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.network.dto.auth.SessionDto
+import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.zone.CreateOverrideRequest
 import com.awan.app.core.network.dto.zone.CreateTemplateRequest
 import com.awan.app.core.network.dto.zone.CreateZoneRequest

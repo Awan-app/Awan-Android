@@ -1,12 +1,12 @@
 package com.awan.app.core.network.api
 
-import com.awan.app.core.network.dto.CreateTemplateOverrideRequest
-import com.awan.app.core.network.dto.CreateZoneRequest
-import com.awan.app.core.network.dto.TemplateDto
-import com.awan.app.core.network.dto.TemplateOverrideResponseDto
-import com.awan.app.core.network.dto.ZoneDto
-import com.awan.app.core.network.dto.CreateTemplateRequest
-import com.awan.app.core.network.dto.TemplateResponse
+import com.awan.app.core.network.dto.zone.CreateTemplateOverrideRequest
+import com.awan.app.core.network.dto.zone.CreateZoneRequest
+import com.awan.app.core.network.dto.zone.WeeklyTemplateDto as TemplateDto
+import com.awan.app.core.network.dto.zone.TemplateOverrideDto as TemplateOverrideResponseDto
+import com.awan.app.core.network.dto.zone.ZoneDto
+import com.awan.app.core.network.dto.zone.CreateTemplateRequest
+import com.awan.app.core.network.dto.zone.WeeklyTemplateDto as TemplateResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST

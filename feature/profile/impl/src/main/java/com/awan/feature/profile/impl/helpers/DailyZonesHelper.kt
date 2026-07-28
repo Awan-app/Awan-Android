@@ -15,9 +15,10 @@ object DailyZonesHelper {
         val newStart = parseTimeToMinutes(newZone.startTime)
         val newEnd = parseTimeToMinutes(newZone.endTime)
 
+        if (newStart >= newEnd) return true
+
         return existingZones.any { existing ->
-            if (existing.id != null && existing.id == newZone.id) return@any false
-            if (existing.id == null && existing.name == newZone.name) return@any false
+            if (existing.id != null && newZone.id != null && existing.id == newZone.id) return@any false
 
             val existStart = parseTimeToMinutes(existing.startTime)
             val existEnd = parseTimeToMinutes(existing.endTime)

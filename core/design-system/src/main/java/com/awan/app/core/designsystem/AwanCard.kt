@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -50,7 +52,7 @@ fun AwanCard(
         Modifier
     }
 
-    Box(
+    Layout(
         modifier = modifier
             .then(clickModifier)
             .shadow(
@@ -59,20 +61,48 @@ fun AwanCard(
                 spotColor = colors.sky,
                 ambientColor = colors.sky,
             ),
-        // The rim uses matchParentSize, so the face has to be sized by the same constraints or a
-        // caller's fillMaxWidth() stretches only the rim and it juts out past the surface.
-        propagateMinConstraints = true,
-    ) {
-        Box(Modifier.matchParentSize().clip(shape).background(rimColor))
-        Column(
-            modifier = Modifier
-                .padding(bottom = AwanCardRimDepth)
-                .clip(shape)
-                .background(background)
-                .border(2.dp, borderColor, shape)
-                .padding(contentPadding),
-            content = content,
+        content = {
+            // Rim (index 0)
+            Box(Modifier.clip(shape).background(rimColor))
+            // Face (index 1)
+            Column(
+                modifier = Modifier
+                    .padding(bottom = AwanCardRimDepth)
+                    .clip(shape)
+                    .background(background)
+                    .border(2.dp, borderColor, shape)
+                    .padding(contentPadding),
+                content = content,
+            )
+        }
+    ) { measurables, constraints ->
+        // Face is measured first. Coerce constraints to be valid.
+        val minW = constraints.minWidth.coerceIn(0, constraints.maxWidth)
+        val minH = constraints.minHeight.coerceIn(0, constraints.maxHeight)
+        
+        val safeConstraints = Constraints(
+            minWidth = minW,
+            maxWidth = constraints.maxWidth,
+            minHeight = minH,
+            maxHeight = constraints.maxHeight
         )
+        
+        val facePlaceable = measurables[1].measure(safeConstraints)
+        val width = facePlaceable.width.coerceAtLeast(0)
+        val height = facePlaceable.height.coerceAtLeast(0)
+
+        // Rim needs room for padding(bottom = AwanCardRimDepth)
+        val minRimHeight = AwanCardRimDepth.roundToPx().coerceAtLeast(0)
+        val rimConstraints = Constraints.fixed(
+            width,
+            height.coerceAtLeast(minRimHeight)
+        )
+        val rimPlaceable = measurables[0].measure(rimConstraints)
+
+        layout(width, height) {
+            rimPlaceable.placeRelative(0, 0)
+            facePlaceable.placeRelative(0, 0)
+        }
     }
 }
 

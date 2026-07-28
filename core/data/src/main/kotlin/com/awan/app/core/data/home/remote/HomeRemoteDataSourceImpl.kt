@@ -6,21 +6,21 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.TaskApiService
 import com.awan.app.core.network.api.TemplateApiService
 import com.awan.app.core.network.api.ZonesApiService
-import com.awan.app.core.network.dto.TaskWithSessionsDto
-import com.awan.app.core.network.dto.TemplateDto
-import com.awan.app.core.network.dto.TemplateOverrideResponseDto
-import com.awan.app.core.network.dto.ZoneDto
+import com.awan.app.core.network.dto.task.TaskWithSessionsDto
+import com.awan.app.core.network.dto.zone.WeeklyTemplateDto as TemplateDto
+import com.awan.app.core.network.dto.zone.TemplateOverrideDto as TemplateOverrideResponseDto
+import com.awan.app.core.network.dto.zone.ZoneDto
 import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 import com.awan.app.core.network.api.UserApiService
-import com.awan.app.core.network.dto.CompleteOnboardingResponse
+import com.awan.app.core.network.dto.onboarding.CompleteOnboardingResponse
 
 import com.awan.app.core.network.api.SessionApiService
-import com.awan.app.core.network.dto.SessionDto
-import com.awan.app.core.network.dto.UpdateSessionRequest
+import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.network.dto.session.UpdateSessionRequest
 
 class HomeRemoteDataSourceImpl @Inject constructor(
     private val zonesApiService: ZonesApiService,
@@ -34,7 +34,7 @@ class HomeRemoteDataSourceImpl @Inject constructor(
 
     override suspend fun getZonesByDate(date: String): Result<List<ZoneDto>> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
-            zonesApiService.getZonesByDate(date)
+            zonesApiService.getEffectiveZones(date)
         }
 
     override suspend fun getTasksByDate(date: String): Result<List<TaskWithSessionsDto>> =
