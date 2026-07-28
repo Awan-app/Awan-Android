@@ -4,11 +4,13 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.TaskApiService
-import com.awan.app.core.network.dto.CreateAiTaskRequest
 import com.awan.app.core.network.dto.CreateTaskRequest
+import com.awan.app.core.network.dto.CreateTaskWithAiRequest
+import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.ScheduleTaskRequest
 import com.awan.app.core.network.dto.TaskInfoResponse
 import com.awan.app.core.network.dto.TaskScheduleResponse
+import com.awan.app.core.network.dto.TaskWithSessionsDto
 import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json
@@ -25,7 +27,14 @@ class TaskRemoteDataSourceImpl @Inject constructor(
             taskApiService.createTask(request)
         }
 
-    override suspend fun createTaskWithAi(request: CreateAiTaskRequest): Result<TaskInfoResponse> =
+    override suspend fun createTaskWithSessions(
+        request: CreateTaskWithSessionsRequest,
+    ): Result<TaskWithSessionsDto> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.createTaskWithSessions(request)
+        }
+
+    override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest): Result<TaskWithSessionsDto> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             taskApiService.createTaskWithAi(request)
         }
@@ -33,5 +42,10 @@ class TaskRemoteDataSourceImpl @Inject constructor(
     override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             taskApiService.scheduleTask(request)
+        }
+
+    override suspend fun deleteTask(taskId: String): Result<Unit> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.deleteTask(taskId)
         }
 }
