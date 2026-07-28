@@ -88,7 +88,9 @@ fun AwanApp(
                 calendarEntry()
                 chatEntry()
                 goalsEntry()
-                profileEntry()
+                profileEntry(
+                    onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
+                )
             }
 
             BackHandler(
