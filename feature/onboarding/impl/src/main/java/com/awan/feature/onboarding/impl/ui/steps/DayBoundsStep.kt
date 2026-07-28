@@ -12,7 +12,7 @@ import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.CascadeItem
-import com.awan.app.core.domain.onboarding.DayBoundsValidation
+import com.awan.app.core.domain.onboarding.utils.DayBoundsValidation
 import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.OnboardingAction
 import com.awan.feature.onboarding.impl.presentation.OnboardingState

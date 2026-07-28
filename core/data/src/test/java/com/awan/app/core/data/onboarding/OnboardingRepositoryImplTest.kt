@@ -4,6 +4,7 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.datastore.UserPreferencesDataSource
 import com.awan.app.core.datastore.model.UserPreferencesData
+import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.model.DayBounds
 import com.awan.app.core.model.UserProfile
 import com.awan.app.core.network.dto.CompleteOnboardingRequest
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -59,9 +61,43 @@ class OnboardingRepositoryImplTest {
         assertEquals("23:00:00", sentRequest?.sleepTime)
     }
 
+    @Test
+    fun `hasCompletedOnboarding trusts the local flag without hitting the backend`() = runTest(testDispatcher.scheduler) {
+        fakePreferencesDataSource.isOnboardingCompleted = true
+        fakeRemoteDataSource.isNew = true
+
+        assertTrue(repository.hasCompletedOnboarding())
+    }
+
+    @Test
+    fun `hasCompletedOnboarding caches completion when the backend says the user is not new`() =
+        runTest(testDispatcher.scheduler) {
+            fakeRemoteDataSource.isNew = false
+
+            assertTrue(repository.hasCompletedOnboarding())
+            assertTrue(fakePreferencesDataSource.isOnboardingCompleted)
+        }
+
+    @Test
+    fun `hasCompletedOnboarding is false for a new user and for a failing backend`() = runTest(testDispatcher.scheduler) {
+        fakeRemoteDataSource.isNew = true
+        assertFalse(repository.hasCompletedOnboarding())
+        assertFalse(fakePreferencesDataSource.isOnboardingCompleted)
+
+        fakeRemoteDataSource.shouldFail = true
+        assertFalse(repository.hasCompletedOnboarding())
+    }
+
     private class FakeOnboardingRemoteDataSource : OnboardingRemoteDataSource {
         var lastReceivedRequest: CompleteOnboardingRequest? = null
         var shouldFail: Boolean = false
+        var isNew: Boolean = true
+
+        override suspend fun isNewUser(): Result<Boolean> = if (shouldFail) {
+            Result.Error(com.awan.app.core.common.error.AppError.Network)
+        } else {
+            Result.Success(isNew)
+        }
 
         override suspend fun completeOnboarding(request: CompleteOnboardingRequest): Result<CompleteOnboardingResponse> {
             lastReceivedRequest = request
@@ -74,8 +110,11 @@ class OnboardingRepositoryImplTest {
     }
 
     private class FakeUserPreferencesDataSource : UserPreferencesDataSource {
-        var isOnboardingCompleted: Boolean = false
         private val prefs = MutableStateFlow(UserPreferencesData())
+
+        var isOnboardingCompleted: Boolean
+            get() = prefs.value.onboardingCompleted
+            set(value) { prefs.value = prefs.value.copy(onboardingCompleted = value) }
 
         override val userPreferences: Flow<UserPreferencesData> = prefs
 

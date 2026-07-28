@@ -5,16 +5,18 @@ import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.data.util.formatMinutesToTime
+import com.awan.app.core.database.dao.UserDao
+import com.awan.app.core.database.model.UserEntity
 import com.awan.app.core.datastore.UserPreferencesDataSource
+import com.awan.app.core.domain.onboarding.model.OnboardingData
+import com.awan.app.core.domain.onboarding.repository.OnboardingRepository
 import com.awan.app.core.network.dto.CompleteOnboardingRequest
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
-
-import com.awan.app.core.database.dao.UserDao
-import com.awan.app.core.database.model.UserEntity
 
 @Singleton
 class OnboardingRepositoryImpl @Inject constructor(
@@ -61,5 +63,13 @@ class OnboardingRepositoryImpl @Inject constructor(
             is Result.Error -> Result.Error(result.error)
             Result.Loading -> Result.Loading
         }
+    }
+
+    override suspend fun hasCompletedOnboarding(): Boolean = withContext(ioDispatcher) {
+        if (userPreferencesDataSource.userPreferences.first().onboardingCompleted) return@withContext true
+
+        val completedRemotely = remoteDataSource.isNewUser().let { it is Result.Success && !it.data }
+        if (completedRemotely) userPreferencesDataSource.setOnboardingCompleted(true)
+        completedRemotely
     }
 }

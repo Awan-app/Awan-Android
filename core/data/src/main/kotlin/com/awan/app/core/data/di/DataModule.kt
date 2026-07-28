@@ -9,7 +9,7 @@ import com.awan.app.core.data.category.remote.CategoryRemoteDataSourceImpl
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
 import com.awan.app.core.data.home.remote.HomeRemoteDataSourceImpl
 import com.awan.app.core.data.home.repository.HomeRepositoryImpl
-import com.awan.app.core.data.onboarding.OnboardingRepository
+import com.awan.app.core.domain.onboarding.repository.OnboardingRepository
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSourceImpl
