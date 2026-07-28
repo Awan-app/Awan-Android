@@ -21,7 +21,13 @@ data class DayPreviewModel(
     val task: DayBlockUi?,
 ) {
     companion object {
-        fun from(bounds: DayBounds, zones: List<Zone>, firstTask: FirstTask?): DayPreviewModel {
+        /** [taskZones] carry the server ids a scheduled [firstTask] refers to; [zones] draw the timeline. */
+        fun from(
+            bounds: DayBounds,
+            zones: List<Zone>,
+            firstTask: FirstTask?,
+            taskZones: List<Zone> = emptyList(),
+        ): DayPreviewModel {
             val waking = bounds.wakingMinutes.coerceAtLeast(1)
             val zoneBlocks = zones.map { zone ->
                 val start = (zone.startMinutes - bounds.wakeMinutes).mod(DayBounds.MINUTES_PER_DAY).toFloat() / waking
@@ -39,7 +45,7 @@ data class DayPreviewModel(
                 DayBlockUi(
                     id = it.id,
                     label = it.title,
-                    colorArgb = zones.firstOrNull { z -> z.id == it.zoneId }?.colorArgb ?: 0,
+                    colorArgb = taskZones.firstOrNull { z -> z.id == it.zoneId }?.colorArgb ?: 0,
                     startFraction = start.coerceIn(0f, 1f),
                     endFraction = (start + it.durationMinutes.toFloat() / waking).coerceIn(0f, 1f),
                     enabled = true,

@@ -7,6 +7,7 @@ import com.awan.app.core.network.api.CategoryApiService
 import com.awan.app.core.network.api.OnboardingApiService
 import com.awan.app.core.network.api.TaskApiService
 import com.awan.app.core.network.api.ZoneApiService
+import com.awan.app.core.network.api.TemplateApiService
 import com.awan.app.core.network.device.AndroidDeviceIdProvider
 import com.awan.app.core.network.device.DeviceIdProvider
 import com.awan.app.core.network.interceptor.AuthInterceptor
@@ -133,6 +134,21 @@ object NetworkModule {
     @Singleton
     fun providesCategoryApiService(retrofit: Retrofit): CategoryApiService =
         retrofit.create(CategoryApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesUserApiService(retrofit: Retrofit): com.awan.app.core.network.api.UserApiService =
+        retrofit.create(com.awan.app.core.network.api.UserApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesSessionApiService(retrofit: Retrofit): com.awan.app.core.network.api.SessionApiService =
+        retrofit.create(com.awan.app.core.network.api.SessionApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesTemplateApiService(retrofit: Retrofit): TemplateApiService =
+        retrofit.create(TemplateApiService::class.java)
 
     @Provides
     @Singleton

@@ -119,6 +119,7 @@ fun OnboardingScreen(
         chrome = stepChrome(state, wrappedAction),
         onBack = { onAction(OnboardingAction.Back) },
         modifier = modifier,
+        notice = state.setupError?.asString(),
     ) {
         AnimatedContent(
             targetState = state.step,

@@ -17,3 +17,4 @@ data class TaskInfoResponse(
     @SerialName("dependsOnTaskIds") val dependsOnTaskIds: List<String>? = emptyList(),
     @SerialName("category") val category: CategoryDto? = null,
 )
+

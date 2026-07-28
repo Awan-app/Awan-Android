@@ -1,0 +1,15 @@
+package com.awan.app.core.domain.home.model
+
+data class DaySession(
+    val id: String,
+    val taskId: String,
+    val taskTitle: String,
+    val zoneId: String?,
+    val startMinutes: Int,
+    val durationMinutes: Int,
+    val status: SessionStatus,
+    val locked: Boolean,
+    val points: Int?,
+    val categoryId: String?,
+    val categoryName: String?,
+)

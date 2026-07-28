@@ -26,6 +26,8 @@ import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.profile_setup.impl.navigation.profileSetupEntry
 import com.awan.feature.splash.impl.navigation.splashEntry
 
+import com.awan.feature.splash.impl.ui.SplashDestination
+
 @Suppress("LongMethod")
 @Composable
 fun AwanApp(
@@ -57,11 +59,12 @@ fun AwanApp(
         Column(modifier = Modifier.padding(padding)) {
             val entryProvider = entryProvider {
                 splashEntry(
-                    onNavigateToNext = { isLoggedIn ->
-                        if (isLoggedIn) {
-                            navigator.replaceAll(com.awan.feature.home.api.HomeRoute)
-                        } else {
-                            navigator.replaceAll(com.awan.feature.auth.api.LoginRoute)
+                    onNavigateToNext = { destination ->
+                        when (destination) {
+                            SplashDestination.Auth -> navigator.replaceAll(com.awan.feature.auth.api.LoginRoute)
+                            SplashDestination.Onboarding -> navigator.replaceAll(com.awan.feature.onboarding.api.OnboardingRoute)
+                            SplashDestination.Home -> navigator.replaceAll(com.awan.feature.home.api.HomeRoute)
+                            SplashDestination.Loading -> { /* Keep showing splash */ }
                         }
                     }
                 )
@@ -79,7 +82,8 @@ fun AwanApp(
                     onNavigateToHome = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) }
                 )
                 homeEntry(
-                    onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
+                    onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) },
+                    onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute) },
                 )
                 calendarEntry()
                 chatEntry()
