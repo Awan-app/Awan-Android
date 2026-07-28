@@ -4,6 +4,8 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.TaskDraft
+import com.awan.app.core.network.dto.AiTaskPreviewResponse
+import com.awan.app.core.network.dto.AiTaskPreviewTaskResponse
 import com.awan.app.core.network.dto.CategoryDto
 import com.awan.app.core.network.dto.CreateTaskRequest
 import com.awan.app.core.network.dto.CreateTaskWithAiRequest
@@ -34,6 +36,7 @@ class TaskRepositoryImplTest {
         var lastCreateRequest: CreateTaskRequest? = null
         var lastWithSessionsRequest: CreateTaskWithSessionsRequest? = null
         var lastAiRequest: CreateTaskWithAiRequest? = null
+        var lastPreviewRequest: CreateTaskWithAiRequest? = null
         var deletedTaskId: String? = null
 
         override suspend fun createTask(request: CreateTaskRequest): Result<TaskInfoResponse> {
@@ -79,6 +82,22 @@ class TaskRepositoryImplTest {
                         description = request.description,
                         estimatedDuration = 90,
                         status = "SCHEDULED",
+                        estimatedPoints = 8,
+                        allowTaskSplitting = true,
+                        category = CategoryDto(id = "cat-1", name = "Afternoon Work"),
+                    ),
+                )
+            )
+        }
+
+        override suspend fun previewTaskWithAi(request: CreateTaskWithAiRequest): Result<AiTaskPreviewResponse> {
+            lastPreviewRequest = request
+            return Result.Success(
+                AiTaskPreviewResponse(
+                    task = AiTaskPreviewTaskResponse(
+                        title = request.title,
+                        description = request.description,
+                        estimatedDuration = 90,
                         estimatedPoints = 8,
                         allowTaskSplitting = true,
                         category = CategoryDto(id = "cat-1", name = "Afternoon Work"),
@@ -146,19 +165,19 @@ class TaskRepositoryImplTest {
     }
 
     @Test
-    fun `createTaskWithAi carries the model's own fields through the mapper`() = runTest(testDispatcher) {
+    fun `previewTaskWithAi carries the model's own fields through the mapper`() = runTest(testDispatcher) {
         val remote = FakeRemoteDataSource()
         val repository = TaskRepositoryImpl(remote, testDispatcher)
 
-        val result = repository.createTaskWithAi("Build login page", "with email and password")
+        val result = repository.previewTaskWithAi("Build login page", "with email and password")
 
-        assertEquals("Build login page", remote.lastAiRequest?.title)
+        assertEquals("Build login page", remote.lastPreviewRequest?.title)
         assertTrue(result is Result.Success)
-        val task = (result as Result.Success).data
-        assertEquals(90, task.estimatedDurationMinutes)
-        assertEquals(8, task.estimatedPoints)
-        assertTrue(task.allowTaskSplitting)
-        assertEquals("Afternoon Work", task.category?.name)
+        val suggestion = (result as Result.Success).data
+        assertEquals(90, suggestion.estimatedDurationMinutes)
+        assertEquals(8, suggestion.estimatedPoints)
+        assertTrue(suggestion.allowTaskSplitting)
+        assertEquals("Afternoon Work", suggestion.categoryName)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.awan.app.core.network.api
 
+import com.awan.app.core.network.dto.AiTaskPreviewResponse
 import com.awan.app.core.network.dto.CreateTaskRequest
 import com.awan.app.core.network.dto.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
@@ -27,15 +28,25 @@ interface TaskApiService {
     ): TaskWithSessionsDto
 
     /**
-     * Persists a task straight away with every field the model chose. This is not a preview — the
-     * returned id is a real task already sitting in the user's Inbox, so any path that abandons the
-     * flow it feeds has to delete it.
+     * Persists a task straight away with every field the model chose. The returned id is a real task
+     * already sitting in the user's Inbox. Used only by onboarding's first-task flow, which schedules
+     * it in the same breath — the add-task sheet uses [previewTaskWithAi] instead.
      */
     @POST("v1/ai/task-create")
     suspend fun createTaskWithAi(
         @Body request: CreateTaskWithAiRequest,
     ): TaskWithSessionsDto
-  
+
+    /**
+     * Asks Awan to propose a task from [request] without saving anything — no id, no Inbox row. The
+     * caller creates the real task itself (via [createTask] or [createTaskWithSessions]) once the
+     * user confirms, possibly after editing what Awan proposed.
+     */
+    @POST("v1/ai/task-create?persist=false")
+    suspend fun previewTaskWithAi(
+        @Body request: CreateTaskWithAiRequest,
+    ): AiTaskPreviewResponse
+
     @GET("v1/tasks/date/{date}")
     suspend fun getTasksByDate(
         @Path("date") date: String,

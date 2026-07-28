@@ -10,6 +10,7 @@ import com.awan.app.core.domain.task.repository.TaskRepository
 import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
 import com.awan.app.core.domain.zone.repository.ZoneRepository
 import com.awan.app.core.domain.zone.usecase.GetZonesForDateUseCase
+import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.model.DayZone
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.Task
@@ -64,7 +65,7 @@ class OnboardingViewModelTest {
             sessions: List<SessionDraft>,
         ): Result<TaskWithSessions> = error("onboarding never schedules its first task")
 
-        override suspend fun createTaskWithAi(title: String, description: String?): Result<Task> =
+        override suspend fun previewTaskWithAi(title: String, description: String?): Result<AiTaskSuggestion> =
             error("onboarding never asks the AI")
 
         override suspend fun scheduleTask(taskId: String): Result<TaskSchedule> =
