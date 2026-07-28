@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.feature.profile.impl.R
-import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import com.awan.feature.profile.impl.presentation.DailyZonesAction
 import com.awan.feature.profile.impl.presentation.DailyZonesState
 import com.awan.feature.profile.impl.ui.components.*
@@ -29,8 +28,6 @@ import com.awan.feature.profile.impl.ui.components.*
 fun DailyZonesScreen(
     uiState: DailyZonesState,
     onAction: (DailyZonesAction) -> Unit,
-    /** Navigate to DayDetailsRoute(date) — called from Customize a Day picker and when user taps a day */
-    onNavigateToDayDetails: (String) -> Unit,
     /** Navigate to RoutineDetailsRoute(templateId) — called from Edit Routine */
     onNavigateToRoutineDetails: (String) -> Unit,
     onCreateRoutineClick: () -> Unit,
@@ -39,13 +36,6 @@ fun DailyZonesScreen(
     var showAddZoneSheet by remember { mutableStateOf(false) }
     var editingZone by remember { mutableStateOf<DailyZone?>(null) }
     var showDeleteConfirm by remember { mutableStateOf<DailyZone?>(null) }
-    var showResetConfirm by remember { mutableStateOf(false) }
-    var showCustomizeDaySheet by remember { mutableStateOf(false) }
-
-    // Compute which days of THIS week have overrides — for indicator dots
-    val overriddenDays = remember(uiState.overrides) {
-        uiState.overrides.mapNotNull { DailyZonesHelper.dateStringToDayOfWeek(it.dateOfDay) }.toSet()
-    }
 
     // ── Add / Edit Zone Sheet ──────────────────────────────
     if (showAddZoneSheet) {
@@ -86,36 +76,6 @@ fun DailyZonesScreen(
             secondaryLabel = "Cancel",
             onSecondary = { showDeleteConfirm = null },
             onDismiss = { showDeleteConfirm = null }
-        )
-    }
-
-    // ── Reset to Default Confirmation ──────────────────────
-    if (showResetConfirm) {
-        val dayLabel = DailyZonesHelper.displayName(uiState.selectedDay)
-        AwanDialog(
-            title = stringResource(R.string.profile_daily_zones_reset_day_title, dayLabel),
-            body = stringResource(R.string.profile_daily_zones_reset_day_message, dayLabel),
-            primaryLabel = "Reset",
-            primaryVariant = AwanButtonVariant.Destructive,
-            onPrimary = {
-                onAction(DailyZonesAction.ResetDay)
-                showResetConfirm = false
-            },
-            secondaryLabel = "Cancel",
-            onSecondary = { showResetConfirm = false },
-            onDismiss = { showResetConfirm = false }
-        )
-    }
-
-    // ── Customize a Day — Day Picker Sheet ─────────────────
-    if (showCustomizeDaySheet) {
-        CustomizeDayPickerSheet(
-            overriddenDays = overriddenDays,
-            onDaySelected = { day ->
-                showCustomizeDaySheet = false
-                onNavigateToDayDetails(DailyZonesHelper.getDateForDay(day))
-            },
-            onDismiss = { showCustomizeDaySheet = false }
         )
     }
 
@@ -180,7 +140,7 @@ fun DailyZonesScreen(
                 Box(modifier = Modifier.padding(12.dp)) {
                     DaySelector(
                         selectedDay = uiState.selectedDay,
-                        overriddenDays = overriddenDays,
+                        overriddenDays = emptySet(),
                         templateDays = currentTemplateDays,
                         templateColor = currentTemplateColor,
                         onDaySelected = { onAction(DailyZonesAction.SelectDay(it)) }
@@ -200,20 +160,14 @@ fun DailyZonesScreen(
             val currentTemplateId = uiState.currentTemplate?.id
             RoutineSummaryCard(
                 day = uiState.selectedDay,
-                templateName = if (uiState.currentOverride != null) {
-                    stringResource(R.string.profile_daily_zones_custom_schedule)
-                } else {
-                    uiState.currentTemplate?.name ?: "Default"
-                },
+                templateName = uiState.currentTemplate?.name ?: "Default",
                 zoneCount = uiState.selectedDayZones.size,
-                isOverride = uiState.currentOverride != null,
-                onResetClick = { showResetConfirm = true },
-                onEditRoutineClick = if (!uiState.isLoading && currentTemplateId != null && uiState.currentOverride == null) {
+                isOverride = false,
+                onResetClick = { },
+                onEditRoutineClick = if (!uiState.isLoading && currentTemplateId != null) {
                     { onNavigateToRoutineDetails(currentTemplateId) }
                 } else null,
-                onCustomizeDayClick = if (uiState.currentOverride == null) {
-                    { showCustomizeDaySheet = true }
-                } else null
+                onCustomizeDayClick = null
             )
 
             // ── Zone List / Loading / Empty ────────────────

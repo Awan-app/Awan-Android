@@ -12,7 +12,5 @@ sealed interface DailyZonesAction {
     data class AddZone(val zone: DailyZone) : DailyZonesAction
     data class UpdateZone(val zone: DailyZone) : DailyZonesAction
     data class DeleteZone(val zone: DailyZone) : DailyZonesAction
-    data object CustomizeDay : DailyZonesAction
-    data object ResetDay : DailyZonesAction
     data object ClearError : DailyZonesAction
 }

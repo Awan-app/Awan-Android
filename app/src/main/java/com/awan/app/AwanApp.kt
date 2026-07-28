@@ -104,9 +104,6 @@ fun AwanApp(
                     onNavigateToEditRoutine = { id ->
                         navigator.navigate(com.awan.feature.profile.api.EditRoutineRoute(id))
                     },
-                    onNavigateToDayDetails = { date ->
-                        navigator.navigate(com.awan.feature.profile.api.DayDetailsRoute(date))
-                    },
                     onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) },
                     onBack = { navigator.goBack() }
                 )

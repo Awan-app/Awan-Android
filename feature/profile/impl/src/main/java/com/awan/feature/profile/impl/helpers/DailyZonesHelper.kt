@@ -81,7 +81,6 @@ object DailyZonesHelper {
         }
     }
 
-    /** Maps backend/network errors to user-friendly strings without exposing raw error codes. */
     fun zonesErrorToUiText(error: AppError): UiText = when {
         error is AppError.Api && error.errorCode == "ZONE_OVERLAP" ->
             UiText.StringResource(R.string.profile_daily_zones_error_overlap)
@@ -92,11 +91,9 @@ object DailyZonesHelper {
         else -> error.toUiText()
     }
 
-    /** Full display name e.g. "Monday" */
     fun displayName(day: DayOfWeek): String =
         day.name.lowercase().replaceFirstChar { it.uppercase() }
 
-    /** 3-letter abbreviation e.g. "Mon" */
     fun abbreviation(day: DayOfWeek): String =
         day.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
 
@@ -119,7 +116,6 @@ object DailyZonesHelper {
         return day == today
     }
 
-    /** Compute this week's calendar date (yyyy-MM-dd) for a given [DayOfWeek]. */
     fun getDateForDay(day: DayOfWeek): String {
         val calendar = Calendar.getInstance()
         val currentDay = calendarDayToDayOfWeek(calendar.get(Calendar.DAY_OF_WEEK))
@@ -128,10 +124,6 @@ object DailyZonesHelper {
         return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(calendar.time)
     }
 
-    /**
-     * Parses a yyyy-MM-dd date string and returns the [DayOfWeek] for that date,
-     * or null if the date is outside the current week window (±6 days).
-     */
     fun dateStringToDayOfWeek(dateString: String): DayOfWeek? {
         return try {
             val target = SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(dateString) ?: return null
