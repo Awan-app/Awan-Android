@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -30,6 +31,7 @@ fun AwanTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     style: Style = Style,
+    textStyle: AwanTextStyle? = null,
     placeholder: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
     isError: Boolean = false,
@@ -41,6 +43,11 @@ fun AwanTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
+    val inkColor = AwanTheme.colors.textPrimary
+    val resolvedTextStyle = when (textStyle) {
+        null -> AwanTheme.typography.body.copy(color = inkColor)
+        else -> textStyle.textStyle.copy(color = textStyle.color.takeOrElse { inkColor })
+    }
     val styleState = rememberUpdatedStyleState(interactionSource) {
         it.isEnabled = enabled
     }
@@ -65,7 +72,7 @@ fun AwanTextField(
             .then(baseModifier)
             .styleable(styleState, style),
         enabled = enabled,
-        textStyle = AwanTheme.typography.body.copy(color = AwanTheme.colors.textPrimary),
+        textStyle = resolvedTextStyle,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         visualTransformation = visualTransformation,
@@ -99,6 +106,8 @@ fun AwanTextField(
     placeholder: String,
     modifier: Modifier = Modifier,
     style: Style = Style,
+    textStyle: AwanTextStyle? = null,
+    placeholderStyle: AwanTextStyle? = null,
     trailingContent: (@Composable () -> Unit)? = null,
     isError: Boolean = false,
     enabled: Boolean = true,
@@ -119,10 +128,11 @@ fun AwanTextField(
         onValueChange = onValueChange,
         modifier = modifier,
         style = style,
+        textStyle = textStyle,
         placeholder = {
             AwanText(
                 text = placeholder,
-                style = AwanTheme.styles.placeholderText,
+                style = placeholderStyle ?: AwanTheme.styles.placeholderText,
             )
         },
         trailingContent = trailingContent,

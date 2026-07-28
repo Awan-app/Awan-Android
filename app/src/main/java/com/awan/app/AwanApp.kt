@@ -4,17 +4,18 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.awan.core.navigation.Navigator
+import com.awan.feature.addtask.ui.AddTaskSheet
 import com.awan.feature.auth.impl.navigation.authEntry
 import com.awan.feature.calendar.impl.navigation.calendarEntry
 import com.awan.feature.chat.impl.navigation.chatEntry
@@ -34,6 +35,11 @@ fun AwanApp(
     modifier: Modifier = Modifier
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
+    var showAddTask by rememberSaveable { mutableStateOf(false) }
+
+    if (showAddTask) {
+        AddTaskSheet(onDismiss = { showAddTask = false })
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -41,21 +47,12 @@ fun AwanApp(
             val currentRoute = appState.navigationState.currentKey
             val isTopLevel = appState.topLevelDestinations.any { it.route == currentRoute }
             if (isTopLevel) {
-                NavigationBar {
-                    appState.topLevelDestinations.forEach { destination ->
-                        NavigationBarItem(
-                            selected = appState.navigationState.currentTopLevelKey == destination.route,
-                            onClick = { navigator.navigate(destination.route) },
-                            icon = {
-                                Icon(
-                                    imageVector = destination.icon,
-                                    contentDescription = destination.label
-                                )
-                            },
-                            label = { Text(destination.label) }
-                        )
-                    }
-                }
+                AwanBottomBar(
+                    destinations = appState.topLevelDestinations,
+                    currentTopLevelKey = appState.navigationState.currentTopLevelKey,
+                    onNavigate = navigator::navigate,
+                    onAddTask = { showAddTask = true },
+                )
             }
         }
     ) { padding ->

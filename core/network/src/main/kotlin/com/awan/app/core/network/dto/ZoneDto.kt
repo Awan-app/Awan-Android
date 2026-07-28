@@ -3,6 +3,7 @@ package com.awan.app.core.network.dto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/** `startTime`/`endTime` are `LocalTime` strings — `HH:mm:ss`. */
 @Serializable
 data class ZoneDto(
     @SerialName("id") val id: String,
