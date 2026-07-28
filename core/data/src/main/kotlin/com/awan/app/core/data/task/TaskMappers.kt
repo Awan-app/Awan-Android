@@ -11,12 +11,12 @@ import com.awan.app.core.model.TaskStatus
 import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.network.dto.CreateTaskRequest
 import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
-import com.awan.app.core.network.dto.ScheduledSessionDto
+import com.awan.app.core.network.dto.ScheduledSessionResponse
 import com.awan.app.core.network.dto.SessionDraftDto
 import com.awan.app.core.network.dto.SessionDto
 import com.awan.app.core.network.dto.TaskInfoResponse
 import com.awan.app.core.network.dto.TaskScheduleResponse
-import com.awan.app.core.network.dto.TaskWithSessionsResponse
+import com.awan.app.core.network.dto.TaskWithSessionsDto
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -79,11 +79,11 @@ internal fun TaskScheduleResponse.toModel(): TaskSchedule {
 
 private const val UNKNOWN_REFUSAL = "UNSCHEDULED"
 
-internal fun ScheduledSessionDto.toModel(): TaskSession? {
-    val parsedStart = start.toLocalDateTimeOrNull() ?: return null
-    val parsedEnd = end.toLocalDateTimeOrNull() ?: return null
+internal fun ScheduledSessionResponse.toModel(): TaskSession? {
+    val parsedStart = start?.toLocalDateTimeOrNull() ?: return null
+    val parsedEnd = end?.toLocalDateTimeOrNull() ?: return null
     return TaskSession(
-        id = sessionId,
+        id = sessionId.orEmpty(),
         start = parsedStart,
         end = parsedEnd,
         status = SessionStatus.SCHEDULED,
@@ -92,7 +92,7 @@ internal fun ScheduledSessionDto.toModel(): TaskSession? {
     )
 }
 
-internal fun TaskWithSessionsResponse.toModel(): TaskWithSessions = TaskWithSessions(
+internal fun TaskWithSessionsDto.toModel(): TaskWithSessions = TaskWithSessions(
     task = task.toModel(),
     sessions = sessions.mapNotNull { it.toModel() },
 )

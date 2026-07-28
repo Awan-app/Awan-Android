@@ -45,17 +45,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
-enum class AwanButtonVariant {
-    Primary,
-    Secondary,
-    Destructive,
-    Quiet,
-    Google,
-
-    /** Compact pill for a row of attributes. Tint it per instance through `style` + `rimStyle`. */
-    Chip,
-}
-
 /**
  * [style] and [rimStyle] are applied last onto the variant's face and rim, so a caller can retint a
  * variant without redefining its geometry — which is how one [AwanButtonVariant.Chip] serves a whole

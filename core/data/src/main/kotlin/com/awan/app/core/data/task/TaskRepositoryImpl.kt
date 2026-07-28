@@ -38,7 +38,7 @@ class TaskRepositoryImpl @Inject constructor(
     override suspend fun createTaskWithAi(title: String, description: String?): Result<Task> =
         withContext(ioDispatcher) {
             remoteDataSource.createTaskWithAi(CreateTaskWithAiRequest(title, description))
-                .map { it.toModel() }
+                .map { it.task.toModel() }
         }
 
     override suspend fun scheduleTask(taskId: String): Result<TaskSchedule> = withContext(ioDispatcher) {

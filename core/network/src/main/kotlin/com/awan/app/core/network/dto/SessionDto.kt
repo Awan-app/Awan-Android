@@ -12,9 +12,3 @@ data class SessionDto(
     @SerialName("locked") val locked: Boolean = false,
     @SerialName("zoneId") val zoneId: String? = null,
 )
-
-@Serializable
-data class TaskWithSessionsResponse(
-    @SerialName("task") val task: TaskInfoResponse,
-    @SerialName("sessions") val sessions: List<SessionDto> = emptyList(),
-)

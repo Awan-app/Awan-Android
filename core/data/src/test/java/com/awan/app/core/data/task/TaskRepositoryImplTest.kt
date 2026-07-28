@@ -9,11 +9,11 @@ import com.awan.app.core.network.dto.CreateTaskRequest
 import com.awan.app.core.network.dto.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.ScheduleTaskRequest
-import com.awan.app.core.network.dto.ScheduledSessionDto
+import com.awan.app.core.network.dto.ScheduledSessionResponse
 import com.awan.app.core.network.dto.SessionDto
 import com.awan.app.core.network.dto.TaskInfoResponse
 import com.awan.app.core.network.dto.TaskScheduleResponse
-import com.awan.app.core.network.dto.TaskWithSessionsResponse
+import com.awan.app.core.network.dto.TaskWithSessionsDto
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -51,10 +51,10 @@ class TaskRepositoryImplTest {
 
         override suspend fun createTaskWithSessions(
             request: CreateTaskWithSessionsRequest,
-        ): Result<TaskWithSessionsResponse> {
+        ): Result<TaskWithSessionsDto> {
             lastWithSessionsRequest = request
             return Result.Success(
-                TaskWithSessionsResponse(
+                TaskWithSessionsDto(
                     task = TaskInfoResponse(id = "t-2", title = request.task.title, status = "SCHEDULED"),
                     sessions = request.sessions.mapIndexed { index, session ->
                         SessionDto(
@@ -69,18 +69,20 @@ class TaskRepositoryImplTest {
             )
         }
 
-        override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest): Result<TaskInfoResponse> {
+        override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest): Result<TaskWithSessionsDto> {
             lastAiRequest = request
             return Result.Success(
-                TaskInfoResponse(
-                    id = "t-ai",
-                    title = request.title,
-                    description = request.description,
-                    estimatedDuration = 90,
-                    status = "SCHEDULED",
-                    estimatedPoints = 8,
-                    allowTaskSplitting = true,
-                    category = CategoryDto(id = "cat-1", name = "Afternoon Work"),
+                TaskWithSessionsDto(
+                    task = TaskInfoResponse(
+                        id = "t-ai",
+                        title = request.title,
+                        description = request.description,
+                        estimatedDuration = 90,
+                        status = "SCHEDULED",
+                        estimatedPoints = 8,
+                        allowTaskSplitting = true,
+                        category = CategoryDto(id = "cat-1", name = "Afternoon Work"),
+                    ),
                 )
             )
         }
@@ -90,7 +92,7 @@ class TaskRepositoryImplTest {
                 TaskScheduleResponse(
                     taskId = request.taskId,
                     scheduledSessions = listOf(
-                        ScheduledSessionDto(
+                        ScheduledSessionResponse(
                             sessionId = "s-ai",
                             zoneId = "zone-1",
                             start = "2026-07-25T09:00:00",
@@ -195,8 +197,8 @@ class TaskRepositoryImplTest {
         val remote = object : TaskRemoteDataSource by FakeRemoteDataSource() {
             override suspend fun createTaskWithSessions(
                 request: CreateTaskWithSessionsRequest,
-            ): Result<TaskWithSessionsResponse> = Result.Success(
-                TaskWithSessionsResponse(
+            ): Result<TaskWithSessionsDto> = Result.Success(
+                TaskWithSessionsDto(
                     task = TaskInfoResponse(id = "t-3", title = "Gym", status = "SCHEDULED"),
                     sessions = listOf(SessionDto(id = "s-0", start = "not-a-date", end = "also-not")),
                 )

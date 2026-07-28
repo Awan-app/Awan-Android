@@ -1,22 +1,18 @@
 package com.awan.app.core.network.api
 
-import com.awan.app.core.network.dto.CreateAiTaskRequest
 import com.awan.app.core.network.dto.CreateTaskRequest
 import com.awan.app.core.network.dto.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.ScheduleTaskRequest
 import com.awan.app.core.network.dto.TaskInfoResponse
 import com.awan.app.core.network.dto.TaskScheduleResponse
-import com.awan.app.core.network.dto.TaskWithSessionsResponse
+import com.awan.app.core.network.dto.TaskWithSessionsDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
-import retrofit2.http.Body
 import retrofit2.http.GET
-import retrofit2.http.POST
-import retrofit2.http.Path
 
 interface TaskApiService {
 
@@ -28,7 +24,7 @@ interface TaskApiService {
     @POST("v1/tasks/with-sessions")
     suspend fun createTaskWithSessions(
         @Body request: CreateTaskWithSessionsRequest,
-    ): TaskWithSessionsResponse
+    ): TaskWithSessionsDto
 
     /**
      * Persists a task straight away with every field the model chose. This is not a preview — the
@@ -37,8 +33,8 @@ interface TaskApiService {
      */
     @POST("v1/ai/task-create")
     suspend fun createTaskWithAi(
-        @Body request: CreateTaskWithAiRequest,    
-    ): TaskInfoResponse
+        @Body request: CreateTaskWithAiRequest,
+    ): TaskWithSessionsDto
   
     @GET("v1/tasks/date/{date}")
     suspend fun getTasksByDate(
