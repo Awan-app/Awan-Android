@@ -15,8 +15,7 @@ import com.awan.feature.profile.impl.ui.components.ZoneTimelineItem
 fun DailyZonesTimeline(
     zones: List<DailyZone>,
     onReorder: (Int, Int) -> Unit,
-    onEditZone: (DailyZone) -> Unit,
-    onDeleteZone: (DailyZone) -> Unit
+    onEditZone: (DailyZone) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -30,8 +29,7 @@ fun DailyZonesTimeline(
             ZoneTimelineItem(
                 zone = zone,
                 isLast = index == zones.size - 1,
-                onEdit = { onEditZone(zone) },
-                onDelete = { onDeleteZone(zone) }
+                onClick = { onEditZone(zone) }
             )
         }
     }

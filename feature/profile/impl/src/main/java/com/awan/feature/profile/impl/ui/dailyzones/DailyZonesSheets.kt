@@ -33,13 +33,28 @@ import com.awan.feature.profile.impl.ui.components.ZoneCardBody
 fun AddEditZoneSheet(
     zone: DailyZone?,
     templateName: String = "Default",
+    defaultStartTime: String? = null,
     onDismiss: () -> Unit,
     onConfirm: (DailyZone) -> Unit,
     isSaving: Boolean = false
 ) {
     var name by remember { mutableStateOf(zone?.name ?: "") }
-    var startTime by remember { mutableStateOf(zone?.startTime ?: "09:00") }
-    var endTime by remember { mutableStateOf(zone?.endTime ?: "10:00") }
+    
+    // Initial start time: use provided zone, or defaultStartTime, or 09:00
+    val initialStartTime = remember(zone, defaultStartTime) {
+        zone?.startTime ?: defaultStartTime ?: "09:00"
+    }
+    
+    // Initial end time: use provided zone, or 1 hour after initialStartTime
+    val initialEndTime = remember(zone, initialStartTime) {
+        zone?.endTime ?: run {
+            val startMins = DailyZonesHelper.parseTimeToMinutes(initialStartTime)
+            DailyZonesHelper.formatMinutesToTime(startMins + 60)
+        }
+    }
+
+    var startTime by remember { mutableStateOf(initialStartTime) }
+    var endTime by remember { mutableStateOf(initialEndTime) }
     var color by remember { mutableStateOf(zone?.color ?: "#2EAAFF") }
 
     var showStartTimePicker by remember { mutableStateOf(false) }

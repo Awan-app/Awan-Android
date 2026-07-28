@@ -49,9 +49,12 @@ fun DailyZonesScreen(
 
     // ── Add / Edit Zone Sheet ──────────────────────────────
     if (showAddZoneSheet) {
+        val lastZoneEndTime = uiState.selectedDayZones.lastOrNull()?.endTime
+        
         AddEditZoneSheet(
             zone = editingZone,
             templateName = uiState.currentTemplate?.name ?: "Default",
+            defaultStartTime = lastZoneEndTime,
             onDismiss = {
                 showAddZoneSheet = false
                 editingZone = null
@@ -186,13 +189,12 @@ fun DailyZonesScreen(
             }
 
             // ── Routine Picker (Horizontal List) ───────────
-            if (uiState.templates.isNotEmpty()) {
-                RoutinePicker(
-                    templates = uiState.templates,
-                    selectedTemplateId = uiState.currentTemplate?.id,
-                    onTemplateSelected = { onAction(DailyZonesAction.SelectTemplate(it)) }
-                )
-            }
+            RoutinePicker(
+                templates = uiState.templates,
+                selectedTemplateId = uiState.currentTemplate?.id,
+                onTemplateSelected = { onAction(DailyZonesAction.SelectTemplate(it)) },
+                onCreateRoutineClick = onCreateRoutineClick
+            )
 
             // ── Routine Summary Card ───────────────────────
             val currentTemplateId = uiState.currentTemplate?.id
@@ -206,9 +208,6 @@ fun DailyZonesScreen(
                 zoneCount = uiState.selectedDayZones.size,
                 isOverride = uiState.currentOverride != null,
                 onResetClick = { showResetConfirm = true },
-                templates = uiState.templates,
-                onTemplateSelected = { onAction(DailyZonesAction.SelectTemplate(it)) },
-                onCreateRoutineClick = onCreateRoutineClick,
                 onEditRoutineClick = if (!uiState.isLoading && currentTemplateId != null && uiState.currentOverride == null) {
                     { onNavigateToRoutineDetails(currentTemplateId) }
                 } else null,
@@ -226,7 +225,11 @@ fun DailyZonesScreen(
                         }
                     }
                     uiState.selectedDayZones.isEmpty() -> {
-                        EmptyZonesState(onAddZoneClick = { showAddZoneSheet = true })
+                        EmptyZonesState(
+                            hasTemplate = uiState.currentTemplate != null,
+                            onAddZoneClick = { showAddZoneSheet = true },
+                            onCreateRoutineClick = onCreateRoutineClick
+                        )
                     }
                     else -> {
                         DailyZonesTimeline(
@@ -235,9 +238,6 @@ fun DailyZonesScreen(
                             onEditZone = { zone ->
                                 editingZone = zone
                                 showAddZoneSheet = true
-                            },
-                            onDeleteZone = { zone ->
-                                showDeleteConfirm = zone
                             }
                         )
                     }
@@ -249,23 +249,12 @@ fun DailyZonesScreen(
                 modifier = Modifier.padding(bottom = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Secondary: Create Routine
-                AwanButton(
-                    onClick = onCreateRoutineClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    variant = AwanButtonVariant.Secondary,
-                    icon = Icons.Default.DateRange,
-                    enabled = !uiState.isSaving
-                ) {
-                    AwanText(text = "Create New Routine")
-                }
-
                 // Primary: Add zone
                 AwanButton(
                     onClick = { showAddZoneSheet = true },
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Add,
-                    enabled = !uiState.isSaving
+                    enabled = !uiState.isSaving && uiState.currentTemplate != null
                 ) {
                     AwanText(text = stringResource(R.string.profile_daily_zones_add_zone))
                 }
@@ -318,7 +307,11 @@ fun AwanErrorSnackbar(
 }
 
 @Composable
-fun EmptyZonesState(onAddZoneClick: () -> Unit) {
+fun EmptyZonesState(
+    hasTemplate: Boolean,
+    onAddZoneClick: () -> Unit,
+    onCreateRoutineClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -327,27 +320,40 @@ fun EmptyZonesState(onAddZoneClick: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
-            Icons.Default.CalendarToday,
+            if (hasTemplate) Icons.Default.CalendarToday else Icons.Default.Schedule,
             null,
             modifier = Modifier.size(64.dp),
             tint = AwanTheme.colors.line
         )
         Spacer(modifier = Modifier.height(16.dp))
         AwanText(
-            text = stringResource(R.string.profile_daily_zones_no_zones),
+            text = if (hasTemplate) stringResource(R.string.profile_daily_zones_no_zones) else "No Routine Set",
             style = AwanTheme.styles.titleText
         )
         AwanText(
-            text = stringResource(R.string.profile_daily_zones_no_zones_hint),
-            style = AwanTheme.styles.bodyText.copy(color = AwanTheme.colors.textSecondary)
+            text = if (hasTemplate) 
+                stringResource(R.string.profile_daily_zones_no_zones_hint) 
+            else "You need a routine to start scheduling zones for this day.",
+            style = AwanTheme.styles.bodyText.copy(color = AwanTheme.colors.textSecondary),
+            modifier = Modifier.padding(horizontal = 32.dp)
         )
         Spacer(modifier = Modifier.height(24.dp))
-        AwanButton(
-            onClick = onAddZoneClick,
-            modifier = Modifier.fillMaxWidth(),
-            icon = Icons.Default.Add
-        ) {
-            AwanText(text = stringResource(R.string.profile_daily_zones_add_zone))
+        if (hasTemplate) {
+            AwanButton(
+                onClick = onAddZoneClick,
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Default.Add
+            ) {
+                AwanText(text = stringResource(R.string.profile_daily_zones_add_zone))
+            }
+        } else {
+            AwanButton(
+                onClick = onCreateRoutineClick,
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Default.Add
+            ) {
+                AwanText(text = "Create New Routine")
+            }
         }
     }
 }

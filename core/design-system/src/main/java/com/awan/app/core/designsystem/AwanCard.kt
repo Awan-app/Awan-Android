@@ -32,15 +32,20 @@ import androidx.compose.ui.unit.dp
 fun AwanCard(
     modifier: Modifier = Modifier,
     selected: Boolean = false,
+    selectedColor: Color = AwanTheme.colors.sky,
     onClick: (() -> Unit)? = null,
     background: Color = AwanTheme.colors.surface,
+    customRimColor: Color? = null,
     contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 13.dp),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = AwanTheme.colors
     val shape = AwanTheme.shapes.card
-    val borderColor by animateColorAsState(if (selected) colors.sky else colors.line, label = "cardBorder")
-    val rimColor by animateColorAsState(if (selected) colors.sky.copy(alpha = 0.35f) else colors.line, label = "cardRim")
+    val borderColor by animateColorAsState(if (selected) selectedColor else colors.line, label = "cardBorder")
+    
+    val defaultRimColor = if (selected) selectedColor.copy(alpha = 0.35f) else colors.line
+    val targetRimColor = customRimColor ?: defaultRimColor
+    val rimColor by animateColorAsState(targetRimColor, label = "cardRim")
 
     val clickModifier = if (onClick != null) {
         Modifier.clickable(
@@ -58,8 +63,8 @@ fun AwanCard(
             .shadow(
                 elevation = if (selected) 10.dp else 0.dp,
                 shape = shape,
-                spotColor = colors.sky,
-                ambientColor = colors.sky,
+                spotColor = selectedColor,
+                ambientColor = selectedColor,
             ),
         content = {
             // Rim (index 0)

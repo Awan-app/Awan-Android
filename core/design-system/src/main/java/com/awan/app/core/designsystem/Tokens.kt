@@ -70,6 +70,7 @@ data class AwanColors(
     val zoneTangerinePressed: Color,
     val zoneSunPressed: Color,
     val zoneLavenderPressed: Color,
+    val zoneCardAlpha: Float,
 )
 
 internal val LightAwanColors = AwanColors(
@@ -109,6 +110,7 @@ internal val LightAwanColors = AwanColors(
     zoneTangerinePressed = Color(0xFFD9771C),
     zoneSunPressed = Color(0xFFD99E14),
     zoneLavenderPressed = Color(0xFF7659D9),
+    zoneCardAlpha = 0.15f,
 )
 
 internal val LightHighContrastAwanColors = LightAwanColors.copy(
@@ -153,6 +155,7 @@ internal val DarkAwanColors = AwanColors(
     zoneTangerinePressed = Color(0xFFD9771C),
     zoneSunPressed = Color(0xFFD99E14),
     zoneLavenderPressed = Color(0xFF7659D9),
+    zoneCardAlpha = 0.25f,
 )
 
 @Immutable

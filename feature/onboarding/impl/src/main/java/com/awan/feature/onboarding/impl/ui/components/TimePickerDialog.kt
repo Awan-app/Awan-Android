@@ -2,10 +2,10 @@ package com.awan.feature.onboarding.impl.ui.components
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import com.awan.app.core.designsystem.AwanTimePicker
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanText
@@ -39,6 +39,7 @@ fun TimePickerDialog(
                 AwanText(stringResource(R.string.onboarding_time_picker_cancel), style = AwanTheme.styles.metaText)
             }
         },
-        text = { TimePicker(state = state) },
+        text = { AwanTimePicker(state = state) },
+        containerColor = AwanTheme.colors.surface,
     )
 }

@@ -7,14 +7,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,18 +21,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
-import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import com.awan.feature.profile.impl.presentation.EditRoutineAction
 import com.awan.feature.profile.impl.presentation.EditRoutineState
-import com.awan.feature.profile.impl.ui.components.ZoneCardBody
+import com.awan.feature.profile.impl.ui.components.DailyZoneReorderList
 import com.awan.feature.profile.impl.ui.components.ZoneEditSheet
 import com.awan.feature.profile.impl.ui.dailyzones.AwanErrorSnackbar
 
@@ -47,6 +44,7 @@ fun EditRoutineScreen(
     val context = LocalContext.current
     var showZoneSheet by remember { mutableStateOf(false) }
     var editingZone by remember { mutableStateOf<DailyZone?>(null) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.validationError, uiState.error) {
@@ -61,7 +59,15 @@ fun EditRoutineScreen(
 
     if (showZoneSheet) {
         ZoneEditSheet(
-            zone = editingZone ?: DailyZone(id = null, name = "", startTime = "09:00", endTime = "17:00", color = "#2EAAFF"),
+            zone = editingZone ?: DailyZone(
+                id = null,
+                name = "",
+                startTime = uiState.zones.lastOrNull()?.endTime ?: "09:00",
+                endTime = uiState.zones.lastOrNull()?.endTime?.let { 
+                    DailyZonesHelper.formatMinutesToTime(DailyZonesHelper.parseTimeToMinutes(it) + 60)
+                } ?: "10:00",
+                color = "#2EAAFF"
+            ),
             isNew = editingZone == null,
             onDismiss = {
                 showZoneSheet = false
@@ -75,7 +81,30 @@ fun EditRoutineScreen(
                 }
                 showZoneSheet = false
                 editingZone = null
+            },
+            onDelete = editingZone?.let { zone ->
+                {
+                    onAction(EditRoutineAction.DeleteZone(zone))
+                    showZoneSheet = false
+                    editingZone = null
+                }
             }
+        )
+    }
+
+    if (showDeleteConfirm) {
+        AwanDialog(
+            title = "Delete Routine",
+            body = "Are you sure you want to delete this routine? This action cannot be undone.",
+            primaryLabel = "Delete",
+            primaryVariant = AwanButtonVariant.Destructive,
+            onPrimary = {
+                onAction(EditRoutineAction.DeleteRoutine)
+                showDeleteConfirm = false
+            },
+            secondaryLabel = "Cancel",
+            onSecondary = { showDeleteConfirm = false },
+            onDismiss = { showDeleteConfirm = false }
         )
     }
 
@@ -105,6 +134,16 @@ fun EditRoutineScreen(
                 navigationIcon = {
                     AwanIconButton(onClick = onBackClick, contentDescription = "Back") {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = AwanTheme.colors.textPrimary)
+                    }
+                },
+                actions = {
+                    if (uiState.templateId != null) {
+                        AwanIconButton(
+                            onClick = { showDeleteConfirm = true },
+                            contentDescription = "Delete Routine"
+                        ) {
+                            Icon(Icons.Default.Delete, null, tint = AwanTheme.colors.destructive)
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = AwanTheme.colors.background),
@@ -246,18 +285,16 @@ fun EditRoutineScreen(
                         }
                     }
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        uiState.zones.forEach { zone ->
-                            ZoneCardBody(
-                                zone = zone,
-                                onEdit = {
-                                    editingZone = zone
-                                    showZoneSheet = true
-                                },
-                                onDelete = { onAction(EditRoutineAction.DeleteZone(zone)) }
-                            )
+                    DailyZoneReorderList(
+                        zones = uiState.zones,
+                        onOpen = { zone ->
+                            editingZone = zone
+                            showZoneSheet = true
+                        },
+                        onReorder = { from, to ->
+                            onAction(EditRoutineAction.ReorderZones(from, to))
                         }
-                    }
+                    )
                 }
             }
             

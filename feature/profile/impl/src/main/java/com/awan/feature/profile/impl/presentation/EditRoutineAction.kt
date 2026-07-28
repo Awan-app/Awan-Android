@@ -10,5 +10,7 @@ sealed interface EditRoutineAction {
     data class AddZone(val zone: DailyZone) : EditRoutineAction
     data class UpdateZone(val oldZone: DailyZone, val newZone: DailyZone) : EditRoutineAction
     data class DeleteZone(val zone: DailyZone) : EditRoutineAction
+    data class ReorderZones(val from: Int, val to: Int) : EditRoutineAction
     data object SaveRoutine : EditRoutineAction
+    data object DeleteRoutine : EditRoutineAction
 }

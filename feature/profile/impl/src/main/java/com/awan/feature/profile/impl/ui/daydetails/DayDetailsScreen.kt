@@ -227,17 +227,6 @@ fun DayDetailsScreen(
                         ZoneTimelineItem(
                             zone = zone,
                             isLast = index == editableZones.size - 1,
-                            onEdit = if (isEditing) {
-                                {
-                                    editingZone = zone
-                                    showZoneSheet = true
-                                }
-                            } else null,
-                            onDelete = if (isEditing) {
-                                {
-                                    editableZones = editableZones - zone
-                                }
-                            } else null
                         )
                     }
                 }
@@ -247,7 +236,3 @@ fun DayDetailsScreen(
         }
     }
 }
-
-// Fixed ZoneTimelineItem call in DayDetailsScreen to handle optional callbacks correctly if needed
-// Actually, ZoneTimelineItem requires non-null callbacks, so I should provide dummy ones or adjust ZoneTimelineItem.
-// I'll adjust ZoneTimelineItem to accept nullable callbacks for more flexibility.

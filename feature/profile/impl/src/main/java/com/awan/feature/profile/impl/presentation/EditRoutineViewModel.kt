@@ -36,7 +36,9 @@ class EditRoutineViewModel @Inject constructor(
             is EditRoutineAction.AddZone -> addZone(action.zone)
             is EditRoutineAction.UpdateZone -> updateZone(action.oldZone, action.newZone)
             is EditRoutineAction.DeleteZone -> deleteZone(action.zone)
+            is EditRoutineAction.ReorderZones -> reorderZones(action.from, action.to)
             EditRoutineAction.SaveRoutine -> saveRoutine()
+            EditRoutineAction.DeleteRoutine -> deleteRoutine()
         }
     }
 
@@ -101,6 +103,17 @@ class EditRoutineViewModel @Inject constructor(
         _uiState.update { it.copy(zones = it.zones - zone, validationError = null, error = null) }
     }
 
+    private fun reorderZones(from: Int, to: Int) {
+        _uiState.update { state ->
+            val list = state.zones.toMutableList()
+            if (from in list.indices && to in list.indices) {
+                val item = list.removeAt(from)
+                list.add(to, item)
+            }
+            state.copy(zones = list)
+        }
+    }
+
     private fun saveRoutine() {
         val state = _uiState.value
 
@@ -142,7 +155,6 @@ class EditRoutineViewModel @Inject constructor(
                 zonesRepository.createTemplate(state.name, state.selectedDays.toList(), state.zones)
             } else {
                 // Update Template Name and Days first, then Zones
-                // The API for updateTemplate only takes name and days
                 val updateRes = zonesRepository.updateTemplate(templateId, state.name, state.selectedDays.toList())
                 if (updateRes is Result.Success) {
                     zonesRepository.updateTemplateZones(templateId, state.zones)
@@ -158,6 +170,23 @@ class EditRoutineViewModel @Inject constructor(
                 }
                 is Result.Error -> {
                     _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
+                }
+                Result.Loading -> Unit
+            }
+        }
+    }
+
+    private fun deleteRoutine() {
+        val templateId = _uiState.value.templateId ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDeleting = true, error = null) }
+            when (val result = zonesRepository.deleteTemplate(templateId)) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(isDeleting = false) }
+                    _events.send(EditRoutineEvent.DeleteSuccess)
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isDeleting = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
                 }
                 Result.Loading -> Unit
             }

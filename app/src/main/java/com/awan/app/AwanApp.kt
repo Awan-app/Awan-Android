@@ -101,9 +101,6 @@ fun AwanApp(
                 goalsEntry()
                 profileEntry(
                     onNavigateToDailyZones = { navigator.navigate(com.awan.feature.profile.api.DailyZonesRoute) },
-                    onNavigateToRoutineDetails = { id ->
-                        navigator.navigate(com.awan.feature.profile.api.RoutineDetailsRoute(id))
-                    },
                     onNavigateToEditRoutine = { id ->
                         navigator.navigate(com.awan.feature.profile.api.EditRoutineRoute(id))
                     },

@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -150,7 +151,7 @@ fun DaySelector(
                         .clip(RoundedCornerShape(10.dp))
                         .background(
                             when {
-                                isSelected -> templateColor
+                                isSelected -> AwanTheme.colors.sky
                                 isInTemplate -> templateColor.copy(alpha = 0.15f)
                                 else -> AwanTheme.colors.surface
                             }
@@ -159,7 +160,7 @@ fun DaySelector(
                             width = 1.dp,
                             color = when {
                                 isSelected -> Color.Transparent
-                                isToday -> templateColor
+                                isToday -> AwanTheme.colors.sky
                                 isInTemplate -> templateColor.copy(alpha = 0.3f)
                                 else -> AwanTheme.colors.line
                             },
@@ -189,7 +190,7 @@ fun DaySelector(
                             modifier = Modifier
                                 .size(4.dp)
                                 .clip(CircleShape)
-                                .background(if (isSelected) Color.White else templateColor)
+                                .background(if (isSelected) Color.White else AwanTheme.colors.sky)
                         )
                     }
                     if (hasOverride) {
@@ -209,7 +210,7 @@ fun DaySelector(
                     text = DailyZonesHelper.abbreviation(day),
                     style = AwanTheme.styles.captionText.copy(
                         textStyle = AwanTheme.styles.captionText.textStyle.copy(fontSize = 10.sp),
-                        color = if (isToday && !isSelected) templateColor else AwanTheme.colors.textSecondary
+                        color = if (isToday && !isSelected) AwanTheme.colors.sky else AwanTheme.colors.textSecondary
                     )
                 )
             }
@@ -221,36 +222,72 @@ fun DaySelector(
 fun RoutinePicker(
     templates: List<WeeklyTemplate>,
     selectedTemplateId: String?,
-    onTemplateSelected: (String) -> Unit
+    onTemplateSelected: (String) -> Unit,
+    onCreateRoutineClick: () -> Unit
 ) {
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(bottom = 4.dp)
+        contentPadding = PaddingValues(bottom = 8.dp)
     ) {
         items(templates) { template ->
             val isSelected = template.id == selectedTemplateId
             val routineColor = template.zones.firstOrNull()?.color?.toColor() ?: AwanTheme.colors.sky
             
-            Surface(
+            val backgroundColor = if (isSelected) {
+                routineColor
+            } else {
+                routineColor.copy(alpha = 0.05f).compositeOver(AwanTheme.colors.surface)
+            }
+
+            AwanCard(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { onTemplateSelected(template.id) }
-                    .border(
-                        width = 1.dp, 
-                        color = if (isSelected) routineColor else AwanTheme.colors.line, 
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                color = if (isSelected) routineColor.copy(alpha = 0.12f) else AwanTheme.colors.surface
+                    .clip(RoundedCornerShape(12.dp)),
+                selected = isSelected,
+                selectedColor = if (isSelected) Color.Transparent else routineColor,
+                onClick = { onTemplateSelected(template.id) },
+                background = backgroundColor,
+                customRimColor = if (isSelected) {
+                    routineColor.copy(alpha = 0.9f).compositeOver(Color.Black.copy(alpha = 0.2f))
+                } else null,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 AwanText(
                     text = template.name,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     style = AwanTheme.styles.captionText.copy(
-                        color = if (isSelected) routineColor else AwanTheme.colors.textPrimary,
-                        textStyle = AwanTheme.styles.captionText.textStyle.copy(fontWeight = FontWeight.Medium)
+                        color = if (isSelected) Color.White else routineColor,
+                        textStyle = AwanTheme.styles.captionText.textStyle.copy(fontWeight = FontWeight.Bold)
                     )
                 )
+            }
+        }
+
+        item {
+            AwanCard(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp)),
+                onClick = { onCreateRoutineClick() },
+                background = AwanTheme.colors.surface,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        tint = AwanTheme.colors.sky,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    AwanText(
+                        text = "New",
+                        style = AwanTheme.styles.captionText.copy(
+                            color = AwanTheme.colors.sky,
+                            textStyle = AwanTheme.styles.captionText.textStyle.copy(fontWeight = FontWeight.Bold)
+                        )
+                    )
+                }
             }
         }
     }
@@ -263,17 +300,12 @@ fun RoutineSummaryCard(
     zoneCount: Int,
     isOverride: Boolean,
     onResetClick: () -> Unit,
-    templates: List<WeeklyTemplate> = emptyList(),
-    onTemplateSelected: ((String) -> Unit)? = null,
-    onCreateRoutineClick: (() -> Unit)? = null,
     onEditRoutineClick: (() -> Unit)? = null,
     onCustomizeDayClick: (() -> Unit)? = null
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
     AwanCard(
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(16.dp)
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -286,73 +318,13 @@ fun RoutineSummaryCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     
-                    Box {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .clickable(enabled = !isOverride && templates.isNotEmpty()) {
-                                    expanded = true
-                                }
-                        ) {
-                            AwanText(
-                                text = templateName,
-                                style = AwanTheme.styles.bodyText.copy(
-                                    color = if (isOverride) AwanTheme.colors.sky else AwanTheme.colors.textPrimary,
-                                    textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Medium)
-                                )
-                            )
-                            if (!isOverride && templates.isNotEmpty()) {
-                                Icon(
-                                    Icons.Default.ArrowDropDown,
-                                    contentDescription = null,
-                                    tint = AwanTheme.colors.textSecondary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-
-                        if (!isOverride && templates.isNotEmpty()) {
-                            DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false },
-                                modifier = Modifier.background(AwanTheme.colors.surface)
-                            ) {
-                                templates.forEach { template ->
-                                    DropdownMenuItem(
-                                        text = { AwanText(text = template.name) },
-                                        onClick = {
-                                            onTemplateSelected?.invoke(template.id)
-                                            expanded = false
-                                        },
-                                        leadingIcon = {
-                                            if (template.name == templateName) {
-                                                Icon(Icons.Default.Check, null, tint = AwanTheme.colors.sky)
-                                            }
-                                        }
-                                    )
-                                }
-                                if (onCreateRoutineClick != null) {
-                                    HorizontalDivider(color = AwanTheme.colors.line, modifier = Modifier.padding(vertical = 4.dp))
-                                    DropdownMenuItem(
-                                        text = {
-                                            AwanText(
-                                                text = "+ Create new routine",
-                                                style = AwanTheme.styles.bodyText.copy(
-                                                    textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold),
-                                                    color = AwanTheme.colors.sky
-                                                )
-                                            )
-                                        },
-                                        onClick = {
-                                            onCreateRoutineClick()
-                                            expanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    AwanText(
+                        text = templateName,
+                        style = AwanTheme.styles.bodyText.copy(
+                            color = if (isOverride) AwanTheme.colors.sky else AwanTheme.colors.textPrimary,
+                            textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Medium)
+                        )
+                    )
 
                     AwanText(
                         text = "$zoneCount zones",
