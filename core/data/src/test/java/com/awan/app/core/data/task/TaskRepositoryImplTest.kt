@@ -113,7 +113,7 @@ class TaskRepositoryImplTest {
         val remote = FakeRemoteDataSource()
         val repository = TaskRepositoryImpl(remote, testDispatcher)
 
-        val result = repository.createTask(TaskDraft(title = "  Read docs  ", durationMinutes = 45))
+        val result = repository.createTask(TaskDraft(title = "  Read docs  ", durationMinutes = 45, mandatory = true))
 
         assertEquals("Read docs", remote.lastCreateRequest?.title)
         assertTrue(result is Result.Success)
@@ -221,7 +221,7 @@ class TaskRepositoryImplTest {
     fun `an unknown status maps to UNKNOWN instead of throwing`() = runTest(testDispatcher) {
         val remote = object : TaskRemoteDataSource by FakeRemoteDataSource() {
             override suspend fun createTask(request: CreateTaskRequest): Result<TaskInfoResponse> =
-                Result.Success(TaskInfoResponse(id = "t-4", title = "Gym", status = "TELEPORTED"))
+                Result.Success(TaskInfoResponse(id = "t-4", title = "Gym", status = "GHOST"))
         }
         val repository = TaskRepositoryImpl(remote, testDispatcher)
 

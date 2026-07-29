@@ -13,7 +13,12 @@ import com.awan.app.core.domain.task.usecase.CreateTaskWithAiUseCase
 import com.awan.app.core.domain.task.usecase.DeleteTaskUseCase
 import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
 import com.awan.app.core.domain.task.usecase.ScheduleTaskWithAiUseCase
-import com.awan.app.core.domain.zone.repository.ZoneRepository
+import com.awan.app.core.domain.zones.model.DailyZone
+import com.awan.app.core.domain.zones.model.DayOfWeek
+import com.awan.app.core.domain.zones.model.Session
+import com.awan.app.core.domain.zones.model.TemplateOverride
+import com.awan.app.core.domain.zones.model.WeeklyTemplate
+import com.awan.app.core.domain.zones.repository.ZonesRepository
 import com.awan.app.core.domain.zone.usecase.GetZonesForDateUseCase
 import com.awan.app.core.model.Category
 import com.awan.app.core.model.DayZone
@@ -127,13 +132,35 @@ class AddTaskViewModelTest {
         }
     }
 
-    private class FakeZoneRepository(private val zones: List<DayZone>) : ZoneRepository {
+    private class FakeZoneRepository(private val zones: List<DayZone>) : ZonesRepository {
         var requestedDate: LocalDate? = null
 
         override suspend fun getZonesForDate(date: LocalDate): Result<List<DayZone>> {
             requestedDate = date
             return Result.Success(zones)
         }
+
+        override suspend fun getTemplates(): Result<List<WeeklyTemplate>> = error("not used")
+        override suspend fun createTemplate(name: String, daysOfWeek: List<DayOfWeek>, zones: List<DailyZone>): Result<WeeklyTemplate> = error("not used")
+        override suspend fun getTemplate(templateId: String): Result<WeeklyTemplate> = error("not used")
+        override suspend fun updateTemplate(templateId: String, name: String, daysOfWeek: List<DayOfWeek>): Result<WeeklyTemplate> = error("not used")
+        override suspend fun deleteTemplate(templateId: String): Result<Unit> = error("not used")
+        override suspend fun addZoneToTemplate(templateId: String, zone: DailyZone): Result<DailyZone> = error("not used")
+        override suspend fun getTemplateZones(templateId: String): Result<List<DailyZone>> = error("not used")
+        override suspend fun updateTemplateZones(templateId: String, zones: List<DailyZone>): Result<List<DailyZone>> = error("not used")
+        override suspend fun createOverride(date: String, zones: List<DailyZone>): Result<TemplateOverride> = error("not used")
+        override suspend fun getOverrides(): Result<List<TemplateOverride>> = error("not used")
+        override suspend fun getOverride(overrideId: String): Result<TemplateOverride> = error("not used")
+        override suspend fun updateOverride(overrideId: String, name: String?, date: String): Result<TemplateOverride> = error("not used")
+        override suspend fun deleteOverride(overrideId: String): Result<Unit> = error("not used")
+        override suspend fun addZoneToOverride(overrideId: String, zone: DailyZone): Result<DailyZone> = error("not used")
+        override suspend fun getOverrideZones(overrideId: String): Result<List<DailyZone>> = error("not used")
+        override suspend fun updateOverrideZones(overrideId: String, zones: List<DailyZone>): Result<List<DailyZone>> = error("not used")
+        override suspend fun getZone(zoneId: String): Result<DailyZone> = error("not used")
+        override suspend fun getZoneSessions(zoneId: String): Result<List<Session>> = error("not used")
+        override suspend fun getEffectiveZones(date: String): Result<List<DailyZone>> = error("not used")
+        override suspend fun updateZone(zoneId: String, zone: DailyZone): Result<DailyZone> = error("not used")
+        override suspend fun deleteZone(zoneId: String): Result<Unit> = error("not used")
     }
 
     private class FakeCategoryRepository(private val categories: List<Category>) : CategoryRepository {
@@ -313,7 +340,7 @@ class AddTaskViewModelTest {
     @Test
     fun `a scheduled task with no duration falls back to the default length`() = runTest(testDispatcher) {
         // The form now insists on a length, so only Awan's own task can reach the create without one.
-        taskRepository.aiTask = taskRepository.aiTask.copy(estimatedDurationMinutes = null)
+        taskRepository.aiTask = taskRepository.aiTask.copy(estimatedDurationMinutes = 0)
         val viewModel = reviewingViewModel()
 
         viewModel.onAction(AddTaskAction.ScheduleManually)

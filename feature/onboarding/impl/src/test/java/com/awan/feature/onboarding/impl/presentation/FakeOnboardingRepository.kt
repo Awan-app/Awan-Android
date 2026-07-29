@@ -13,8 +13,10 @@ class FakeOnboardingRepository : OnboardingRepository {
 
     override suspend fun completeOnboarding(data: OnboardingData): Result<Unit> {
         lastCompletedData = data
-        isCompleted = true
         callCount++
-        return failWith?.let { Result.Error(it) } ?: Result.Success(Unit)
+        return failWith?.let { Result.Error(it) } ?: run {
+            isCompleted = true
+            Result.Success(Unit)
+        }
     }
 }

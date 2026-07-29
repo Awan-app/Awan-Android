@@ -2,14 +2,14 @@ package com.awan.app.core.data.task.remote
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.TaskApiService
-import com.awan.app.core.network.dto.CreateTaskRequest
-import com.awan.app.core.network.dto.CreateTaskWithAiRequest
-import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
-import com.awan.app.core.network.dto.ScheduleTaskRequest
-import com.awan.app.core.network.dto.ScheduledSessionResponse
-import com.awan.app.core.network.dto.TaskInfoResponse
-import com.awan.app.core.network.dto.TaskScheduleResponse
-import com.awan.app.core.network.dto.TaskWithSessionsDto
+import com.awan.app.core.network.dto.task.CreateTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithAiRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
+import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.ScheduledSessionResponse
+import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -37,6 +37,9 @@ private open class FakeTaskApiService : TaskApiService {
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Unit = error("not used")
 }
 
+private fun dataSource(api: TaskApiService, json: Json, dispatcher: kotlinx.coroutines.CoroutineDispatcher) = 
+    TaskRemoteDataSourceImpl(api, json, dispatcher)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class TaskRemoteDataSourceTest {
 
@@ -53,10 +56,10 @@ class TaskRemoteDataSourceTest {
                 status = "SCHEDULED",
             )
         }
-        val result = dataSource(api).createTask(CreateTaskRequest(title = "Study Kotlin"))
+        val result = dataSource(api, json, testDispatcher).createTask(CreateTaskRequest(title = "Study Kotlin"))
 
         assertTrue(result is Result.Success)
-        assertEquals("task-123", (result as Result.Success).data.id)
+        assertEquals("task-123", (result as Result.Success<TaskInfoResponse>).data.id)
         assertEquals("Study Kotlin", result.data.title)
     }
 
@@ -69,12 +72,12 @@ class TaskRemoteDataSourceTest {
                 task = TaskInfoResponse(id = "task-456", title = request.task.title, status = "SCHEDULED"),
             )
         }
-        val result = dataSource(api).createTaskWithSessions(
+        val result = dataSource(api, json, testDispatcher).createTaskWithSessions(
             CreateTaskWithSessionsRequest(task = CreateTaskRequest(title = "Gym session")),
         )
 
         assertTrue(result is Result.Success)
-        assertEquals("task-456", (result as Result.Success).data.task.id)
+        assertEquals("task-456", (result as Result.Success<TaskWithSessionsDto>).data.task.id)
     }
 
     @Test
@@ -89,10 +92,10 @@ class TaskRemoteDataSourceTest {
                 ),
             )
         }
-        val result = dataSource(api).createTaskWithAi(CreateTaskWithAiRequest(title = "Build login page"))
+        val result = dataSource(api, json, testDispatcher).createTaskWithAi(CreateTaskWithAiRequest(title = "Build login page"))
 
         assertTrue(result is Result.Success)
-        assertEquals("task-ai", (result as Result.Success).data.task.id)
+        assertEquals("task-ai", (result as Result.Success<TaskWithSessionsDto>).data.task.id)
         assertEquals(90, result.data.task.estimatedDuration)
     }
 
@@ -110,10 +113,10 @@ class TaskRemoteDataSourceTest {
                 ),
             )
         }
-        val result = dataSource(api).scheduleTask(ScheduleTaskRequest(taskId = "task-ai"))
+        val result = dataSource(api, json, testDispatcher).scheduleTask(ScheduleTaskRequest(taskId = "task-ai"))
 
         assertTrue(result is Result.Success)
-        assertEquals("s-1", (result as Result.Success).data.scheduledSessions?.single()?.sessionId)
+        assertEquals("s-1", (result as Result.Success<TaskScheduleResponse>).data.scheduledSessions?.single()?.sessionId)
     }
 
     @Test
@@ -124,7 +127,7 @@ class TaskRemoteDataSourceTest {
                 deleted = taskId
             }
         }
-        val result = dataSource(api).deleteTask("task-ai")
+        val result = dataSource(api, json, testDispatcher).deleteTask("task-ai")
 
         assertTrue(result is Result.Success)
         assertEquals("task-ai", deleted)
