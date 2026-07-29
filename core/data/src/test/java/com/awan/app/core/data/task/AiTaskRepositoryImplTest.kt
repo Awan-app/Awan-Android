@@ -3,12 +3,14 @@ package com.awan.app.core.data.task
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
-import com.awan.app.core.network.dto.task.CreateAiTaskRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithAiRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
 import com.awan.app.core.network.dto.task.ScheduledSessionResponse
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.UnscheduledTaskResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher

@@ -14,6 +14,7 @@ import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.model.Session
 import com.awan.app.core.domain.zones.model.TemplateOverride
 import com.awan.app.core.domain.zones.model.WeeklyTemplate
+import com.awan.app.core.model.DayZone
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -22,6 +23,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDate
 
 class OnboardingRepositoryImplTest {
 
@@ -116,6 +118,7 @@ class OnboardingRepositoryImplTest {
     }
 
     private class FakeZonesRepository : ZonesRepository {
+        override suspend fun getZonesForDate(date: LocalDate): Result<List<DayZone>> = Result.Success(emptyList())
         override suspend fun getTemplates(): Result<List<WeeklyTemplate>> = Result.Success(emptyList())
         override suspend fun createTemplate(name: String, daysOfWeek: List<DayOfWeek>, zones: List<DailyZone>): Result<WeeklyTemplate> =
             Result.Success(WeeklyTemplate(id = "default", name = name, daysOfWeek = daysOfWeek, zones = zones))

@@ -27,6 +27,10 @@ class ZonesRemoteDataSourceImpl @Inject constructor(
     private val ioDispatcher: CoroutineDispatcher,
 ) : ZonesRemoteDataSource {
 
+    override suspend fun getZonesByDate(date: String): Result<List<ZoneDto>> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            zonesApiService.getEffectiveZones(date)
+        }
     override suspend fun getTemplates(): Result<List<WeeklyTemplateDto>> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             zonesApiService.getTemplates()

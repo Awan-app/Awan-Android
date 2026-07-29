@@ -14,6 +14,7 @@ import com.awan.app.core.network.dto.zone.WeeklyTemplateDto
 import com.awan.app.core.network.dto.zone.ZoneDto
 
 interface ZonesRemoteDataSource {
+    suspend fun getZonesByDate(date: String): Result<List<ZoneDto>>
     // Templates
     suspend fun getTemplates(): Result<List<WeeklyTemplateDto>>
     suspend fun createTemplate(request: CreateTemplateRequest): Result<WeeklyTemplateDto>

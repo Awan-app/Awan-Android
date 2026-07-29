@@ -10,7 +10,6 @@ import com.awan.app.core.model.DayZone
 import java.time.LocalDate
 
 interface ZonesRepository {
-    // Current Effective Zones
     suspend fun getZonesForDate(date: LocalDate): Result<List<DayZone>>
 
     // Templates

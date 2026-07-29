@@ -1,7 +1,10 @@
 package com.awan.app.core.data.zones.repository
 
+import com.awan.app.core.common.dispatcher.AwanDispatchers
+import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.result.map
+import com.awan.app.core.data.zone.toModel
 import com.awan.app.core.data.zones.mapper.toDomain
 import com.awan.app.core.data.zones.mapper.toDto
 import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
@@ -11,6 +14,7 @@ import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.model.Session
 import com.awan.app.core.domain.zones.model.TemplateOverride
 import com.awan.app.core.domain.zones.model.WeeklyTemplate
+import com.awan.app.core.model.DayZone
 import com.awan.app.core.network.dto.zone.CreateOverrideRequest
 import com.awan.app.core.network.dto.zone.CreateTemplateRequest
 import com.awan.app.core.network.dto.zone.CreateZoneRequest
@@ -18,12 +22,21 @@ import com.awan.app.core.network.dto.zone.UpdateOverrideRequest
 import com.awan.app.core.network.dto.zone.UpdateTemplateRequest
 import com.awan.app.core.network.dto.zone.UpdateZoneRequest
 import com.awan.app.core.network.dto.zone.UpdateZonesRequest
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import kotlin.map
 
 class ZonesRepositoryImpl @Inject constructor(
-    private val zonesRemoteDataSource: ZonesRemoteDataSource
+    private val zonesRemoteDataSource: ZonesRemoteDataSource,
+    @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : ZonesRepository {
-
+    override suspend fun getZonesForDate(date: LocalDate): Result<List<DayZone>> = withContext(ioDispatcher) {
+        zonesRemoteDataSource.getEffectiveZones(date.format(DateTimeFormatter.ISO_LOCAL_DATE))
+            .map { zones -> zones.mapNotNull { it.toModel() } }
+    }
     override suspend fun getTemplates(): Result<List<WeeklyTemplate>> =
         zonesRemoteDataSource.getTemplates().map { list ->
             list.map { it.toDomain() }

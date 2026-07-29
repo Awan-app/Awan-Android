@@ -18,14 +18,10 @@ import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSourceImpl
 import com.awan.app.core.data.task.TaskRepositoryImpl
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
-import com.awan.app.core.data.task.remote.TaskRemoteDataSourceImpl
-import com.awan.app.core.data.zone.ZoneRepositoryImpl
-import com.awan.app.core.data.zone.remote.ZoneRemoteDataSource
-import com.awan.app.core.data.zone.remote.ZoneRemoteDataSourceImpl
 import com.awan.app.core.domain.category.repository.CategoryRepository
 import com.awan.app.core.domain.task.repository.TaskRepository
-import com.awan.app.core.domain.zone.repository.ZoneRepository
 import com.awan.app.core.data.task.AiTaskRepositoryImpl
+import com.awan.app.core.data.task.remote.TaskRemoteDataSourceImpl
 import com.awan.app.core.data.template.TemplateRepositoryImpl
 import com.awan.app.core.data.template.remote.TemplateRemoteDataSource
 import com.awan.app.core.data.template.remote.TemplateRemoteDataSourceImpl
@@ -71,18 +67,6 @@ internal abstract class DataModule {
     abstract fun bindTaskRepository(
         impl: TaskRepositoryImpl,
     ): TaskRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindZoneRemoteDataSource(
-        impl: ZoneRemoteDataSourceImpl,
-    ): ZoneRemoteDataSource
-
-    @Binds
-    @Singleton
-    abstract fun bindZoneRepository(
-        impl: ZoneRepositoryImpl,
-    ): ZoneRepository
 
     @Binds
     @Singleton
