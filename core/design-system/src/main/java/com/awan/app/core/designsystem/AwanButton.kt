@@ -142,7 +142,6 @@ fun AwanButton(
             .styleable(styleState, AwanTheme.styles.buttonFocus)
             .defaultMinSize(minWidth = minTouchSize, minHeight = minTouchSize),
         contentAlignment = Alignment.TopCenter,
-        propagateMinConstraints = true,
     ) {
         Box(
             modifier = Modifier

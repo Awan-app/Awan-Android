@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
@@ -47,87 +48,88 @@ fun AwanApp(
         AddTaskSheet(onDismiss = { showAddTask = false })
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        bottomBar = {
-            val currentRoute = appState.navigationState.currentKey
-            val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route == currentRoute }
-
-            if (isTopLevel) {
-                val navItems = remember(appState.topLevelDestinations) {
-                    appState.topLevelDestinations.map { dest ->
-                        BottomNavItem(
-                            id = dest.name,
-                            selectedIcon = dest.selectedIcon,
-                            unselectedIcon = dest.unselectedIcon,
-                            label = dest.label,
-                            isFab = dest.isFab
-                        )
+    Box(modifier = modifier.fillMaxSize()) {
+        val entryProvider = entryProvider {
+            splashEntry(
+                onNavigateToNext = { destination ->
+                    when (destination) {
+                        SplashDestination.Auth -> navigator.replaceAll(LoginRoute)
+                        SplashDestination.Onboarding -> navigator.replaceAll(OnboardingRoute)
+                        SplashDestination.Home -> navigator.replaceAll(HomeRoute)
+                        SplashDestination.Loading -> { /* Keep showing splash */ }
                     }
                 }
-                val selectedDest = appState.topLevelDestinations.find { it.route == appState.navigationState.currentTopLevelKey }
+            )
+            authEntry(
+                onNavigateToOtp = { email -> navigator.navigate(OtpRoute(email)) },
+                onNavigateToHome = { navigator.replaceAll(HomeRoute) },
+                onNavigateToOnboarding = { navigator.replaceAll(OnboardingRoute) },
+                onPopBackStack = { navigator.goBack() }
+            )
+            onboardingEntry(
+                onComplete = { navigator.replaceAll(HomeRoute) },
+                onExit = { navigator.replaceAll(LoginRoute) }
+            )
+            marketplaceEntry()
+            homeEntry(
+                onLogout = { navigator.replaceAll(LoginRoute) },
+                onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute) },
+            )
+            calendarEntry()
+            chatEntry()
+            goalsEntry()
+            profileEntry(
+                onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
+            )
+        }
 
-                AwanBottomNavBar(
-                    items = navItems,
-                    selectedItemId = selectedDest?.name,
-                    onItemSelected = { item ->
-                        val dest = appState.topLevelDestinations.find { it.name == item.id }
+        BackHandler(
+            enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack
+        ) {
+            navigator.goBack()
+        }
+
+        NavDisplay(
+            backStack = appState.navigationState.currentSubStack,
+            onBack = { navigator.goBack() },
+            entryProvider = entryProvider,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        val currentRoute = appState.navigationState.currentKey
+        val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route == currentRoute }
+
+        if (isTopLevel) {
+            val navItems = remember(appState.topLevelDestinations) {
+                appState.topLevelDestinations.map { dest ->
+                    BottomNavItem(
+                        id = dest.name,
+                        selectedIcon = dest.selectedIcon,
+                        unselectedIcon = dest.unselectedIcon,
+                        label = dest.label,
+                        isFab = dest.isFab
+                    )
+                }
+            }
+            val selectedDest = appState.topLevelDestinations.find { it.route == appState.navigationState.currentTopLevelKey }
+
+            AwanBottomNavBar(
+                items = navItems,
+                selectedItemId = selectedDest?.name,
+                onItemSelected = { item ->
+                    val dest = appState.topLevelDestinations.find { it.name == item.id }
+                    if (dest?.isFab == true) {
+                        showAddTask = true
+                    } else {
                         dest?.route?.let { route ->
                             navigator.navigate(route)
                         }
-                    },
-                    onFabClick = {
-                        // Action for AI Add Task/Goal floating button
                     }
-                )
-            }
-        }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
-            val entryProvider = entryProvider {
-                splashEntry(
-                    onNavigateToNext = { destination ->
-                        when (destination) {
-                            SplashDestination.Auth -> navigator.replaceAll(LoginRoute)
-                            SplashDestination.Onboarding -> navigator.replaceAll(OnboardingRoute)
-                            SplashDestination.Home -> navigator.replaceAll(HomeRoute)
-                            SplashDestination.Loading -> { /* Keep showing splash */ }
-                        }
-                    }
-                )
-                authEntry(
-                    onNavigateToOtp = { email -> navigator.navigate(OtpRoute(email)) },
-                    onNavigateToHome = { navigator.replaceAll(HomeRoute) },
-                    onNavigateToOnboarding = { navigator.replaceAll(OnboardingRoute) },
-                    onPopBackStack = { navigator.goBack() }
-                )
-                onboardingEntry(
-                    onComplete = { navigator.replaceAll(HomeRoute) },
-                    onExit = { navigator.replaceAll(LoginRoute) }
-                )
-                marketplaceEntry()
-                homeEntry(
-                    onLogout = { navigator.replaceAll(LoginRoute) },
-                    onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute) },
-                )
-                calendarEntry()
-                chatEntry()
-                goalsEntry()
-                profileEntry(
-                    onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
-                )
-            }
-
-            BackHandler(
-                enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack
-            ) {
-                navigator.goBack()
-            }
-
-            NavDisplay(
-                backStack = appState.navigationState.currentSubStack,
-                onBack = { navigator.goBack() },
-                entryProvider = entryProvider
+                },
+                onFabClick = {
+                    showAddTask = true
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }

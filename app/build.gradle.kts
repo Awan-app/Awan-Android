@@ -57,8 +57,6 @@ dependencies {
     implementation(project(":feature:profile:impl"))
     implementation(project(":feature:marketplace:api"))
     implementation(project(":feature:marketplace:impl"))
-    implementation(project(":feature:profile-setup:api"))
-    implementation(project(":feature:profile-setup:impl"))
     implementation(project(":feature:add-task"))
 
     // Core modules

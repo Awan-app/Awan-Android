@@ -150,6 +150,7 @@ private fun ProfileContent(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .statusBarsPadding()
             .padding(horizontal = 20.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -190,6 +191,6 @@ private fun ProfileContent(
             onLogoutClick = onLogout
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(110.dp))
     }
 }

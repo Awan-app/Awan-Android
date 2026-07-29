@@ -67,10 +67,11 @@ fun AwanTextField(
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier
+        modifier = Modifier
             .then(semanticsModifier)
             .then(baseModifier)
-            .styleable(styleState, style),
+            .styleable(styleState, style)
+            .then(modifier),
         enabled = enabled,
         textStyle = resolvedTextStyle,
         keyboardOptions = keyboardOptions,
