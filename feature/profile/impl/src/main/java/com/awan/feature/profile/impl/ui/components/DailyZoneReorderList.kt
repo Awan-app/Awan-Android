@@ -14,10 +14,8 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.awan.app.core.designsystem.AwanTheme
-import com.awan.app.core.designsystem.reducedMotion
+import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
-import com.awan.feature.profile.impl.helpers.toColor
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 

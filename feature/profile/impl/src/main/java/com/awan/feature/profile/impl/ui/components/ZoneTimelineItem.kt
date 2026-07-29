@@ -11,11 +11,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.awan.app.core.designsystem.AwanText
-import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
-import com.awan.feature.profile.impl.helpers.toColor
 
 @Composable
 fun ZoneTimelineItem(

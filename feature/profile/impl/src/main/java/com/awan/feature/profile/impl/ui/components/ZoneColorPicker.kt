@@ -19,10 +19,8 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.awan.app.core.designsystem.AwanText
-import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.*
 import com.awan.feature.profile.impl.R
-import com.awan.feature.profile.impl.helpers.toHexString
 
 @Composable
 fun ZoneColorPicker(

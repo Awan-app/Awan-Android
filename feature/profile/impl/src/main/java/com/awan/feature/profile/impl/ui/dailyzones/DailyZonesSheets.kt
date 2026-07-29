@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
-import com.awan.feature.onboarding.impl.ui.components.TimePickerDialog as AwanTimePickerDialog
 import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import com.awan.feature.profile.impl.ui.components.TimeInputBox
@@ -50,6 +49,8 @@ fun AddEditZoneSheet(
     if (showStartTimePicker) {
         AwanTimePickerDialog(
             initialMinutes = DailyZonesHelper.parseTimeToMinutes(startTime),
+            confirmLabel = stringResource(R.string.profile_zone_confirm),
+            cancelLabel = stringResource(R.string.profile_cancel),
             onDismiss = { showStartTimePicker = false },
             onConfirm = { mins ->
                 startTime = DailyZonesHelper.formatMinutesToTime(mins)
@@ -61,6 +62,8 @@ fun AddEditZoneSheet(
     if (showEndTimePicker) {
         AwanTimePickerDialog(
             initialMinutes = DailyZonesHelper.parseTimeToMinutes(endTime),
+            confirmLabel = stringResource(R.string.profile_zone_confirm),
+            cancelLabel = stringResource(R.string.profile_cancel),
             onDismiss = { showEndTimePicker = false },
             onConfirm = { mins ->
                 endTime = DailyZonesHelper.formatMinutesToTime(mins)

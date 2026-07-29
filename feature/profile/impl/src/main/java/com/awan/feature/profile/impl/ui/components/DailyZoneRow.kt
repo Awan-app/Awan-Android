@@ -18,12 +18,9 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.awan.app.core.designsystem.AwanText
-import com.awan.app.core.designsystem.AwanTheme
-import com.awan.app.core.designsystem.reducedMotion
+import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
-import com.awan.feature.profile.impl.helpers.toColor
 
 private const val PRESS_SCALE = 0.98f
 private val TimeIndent = 25.dp

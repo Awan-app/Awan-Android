@@ -3,8 +3,8 @@ package com.awan.feature.profile.impl.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.domain.zones.model.WeeklyTemplate
-import com.awan.app.core.domain.zones.repository.ZonesRepository
+import com.awan.app.core.domain.zones.usecase.DeleteWeeklyTemplateUseCase
+import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplateUseCase
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -18,7 +18,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RoutineDetailsViewModel @Inject constructor(
-    private val zonesRepository: ZonesRepository
+    private val getWeeklyTemplateUseCase: GetWeeklyTemplateUseCase,
+    private val deleteWeeklyTemplateUseCase: DeleteWeeklyTemplateUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RoutineDetailsState())
@@ -37,7 +38,7 @@ class RoutineDetailsViewModel @Inject constructor(
     private fun loadTemplate(templateId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            when (val result = zonesRepository.getTemplate(templateId)) {
+            when (val result = getWeeklyTemplateUseCase(templateId)) {
                 is Result.Success -> {
                     _uiState.update { it.copy(isLoading = false, template = result.data) }
                 }
@@ -57,7 +58,7 @@ class RoutineDetailsViewModel @Inject constructor(
     private fun deleteRoutine(templateId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isDeleting = true, error = null) }
-            when (val result = zonesRepository.deleteTemplate(templateId)) {
+            when (val result = deleteWeeklyTemplateUseCase(templateId)) {
                 is Result.Success -> {
                     _uiState.update { it.copy(isDeleting = false) }
                     _events.send(RoutineDetailsEvent.DeleteSuccess)

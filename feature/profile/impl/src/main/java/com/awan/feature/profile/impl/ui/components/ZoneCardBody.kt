@@ -14,13 +14,10 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.awan.app.core.designsystem.AwanCard
-import com.awan.app.core.designsystem.AwanText
-import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
-import com.awan.feature.profile.impl.helpers.toColor
 
 @Composable
 fun ZoneCardBody(

@@ -17,7 +17,6 @@ import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,15 +34,6 @@ fun ZoneEditSheet(
 
     val startMins = DailyZonesHelper.parseTimeToMinutes(startTime)
     val endMins = DailyZonesHelper.parseTimeToMinutes(endTime)
-
-    val startState = rememberTimePickerState(
-        initialHour = (startMins / 60).coerceIn(0, 23),
-        initialMinute = (startMins % 60).coerceIn(0, 59)
-    )
-    val endState = rememberTimePickerState(
-        initialHour = (endMins / 60).coerceIn(0, 23),
-        initialMinute = (endMins % 60).coerceIn(0, 59)
-    )
 
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
@@ -145,22 +135,26 @@ fun ZoneEditSheet(
     }
 
     if (showStartTimePicker) {
-        TimePickerDialog(
-            state = startState,
+        AwanTimePickerDialog(
+            initialMinutes = startMins,
+            confirmLabel = stringResource(R.string.profile_zone_confirm),
+            cancelLabel = stringResource(R.string.profile_cancel),
             onDismiss = { showStartTimePicker = false },
-            onConfirm = {
-                startTime = String.format(Locale.US, "%02d:%02d", startState.hour, startState.minute)
+            onConfirm = { mins ->
+                startTime = DailyZonesHelper.formatMinutesToTime(mins)
                 showStartTimePicker = false
             }
         )
     }
 
     if (showEndTimePicker) {
-        TimePickerDialog(
-            state = endState,
+        AwanTimePickerDialog(
+            initialMinutes = endMins,
+            confirmLabel = stringResource(R.string.profile_zone_confirm),
+            cancelLabel = stringResource(R.string.profile_cancel),
             onDismiss = { showEndTimePicker = false },
-            onConfirm = {
-                endTime = String.format(Locale.US, "%02d:%02d", endState.hour, endState.minute)
+            onConfirm = { mins ->
+                endTime = DailyZonesHelper.formatMinutesToTime(mins)
                 showEndTimePicker = false
             }
         )

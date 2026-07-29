@@ -18,5 +18,4 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(project(":core:navigation"))
     implementation(libs.androidx.appcompat)
-    implementation(project(":feature:onboarding:impl"))
 }

@@ -12,7 +12,6 @@ import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.feature.profile.impl.R
-import com.awan.feature.profile.impl.helpers.toColor
 import com.awan.feature.profile.impl.presentation.DailyZonesAction
 import com.awan.feature.profile.impl.presentation.DailyZonesState
 import com.awan.feature.profile.impl.ui.dailyzones.AddEditZoneSheet
