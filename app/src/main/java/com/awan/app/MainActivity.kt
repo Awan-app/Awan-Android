@@ -23,6 +23,7 @@ import com.awan.feature.calendar.api.CalendarRoute
 import com.awan.feature.chat.api.ChatRoute
 import com.awan.feature.goals.api.GoalsRoute
 import com.awan.feature.home.api.HomeRoute
+import com.awan.feature.marketplace.api.MarketplaceRoute
 import com.awan.feature.profile.api.ProfileRoute
 import com.awan.feature.splash.api.SplashRoute
 import dagger.hilt.android.AndroidEntryPoint
@@ -61,9 +62,8 @@ class MainActivity : AppCompatActivity() {
                 startKey = SplashRoute,
                 topLevelKeys = listOf(
                     HomeRoute,
-                    CalendarRoute,
-                    ChatRoute,
                     GoalsRoute,
+                    MarketplaceRoute,
                     ProfileRoute
                 )
             )

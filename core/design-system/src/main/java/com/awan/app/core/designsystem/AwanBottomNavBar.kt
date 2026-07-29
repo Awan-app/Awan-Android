@@ -1,20 +1,29 @@
 package com.awan.app.core.designsystem
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -24,114 +33,248 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 data class BottomNavItem(
     val id: String,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
     val label: String,
-    val icon: String,
+    val isFab: Boolean = false,
 )
 
 @Composable
 fun AwanBottomNavBar(
     items: List<BottomNavItem>,
-    selectedItemId: String,
-    onItemSelected: (String) -> Unit,
+    selectedItemId: String?,
+    onItemSelected: (BottomNavItem) -> Unit,
+    onFabClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val barShape = RoundedCornerShape(24.dp)
+    val navBarShape = RoundedCornerShape(22.dp)
+    val navBarRimDepth = 4.dp
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = 12.dp,
-                shape = barShape,
-                spotColor = Color(0xFF94A3B8),
-            )
-            .clip(barShape)
-            .background(Color.White)
-            .border(1.5.dp, Color(0xFFE2E8F0), barShape)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        contentAlignment = Alignment.BottomCenter
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically,
+        // 2D Gamification Nav Bar Container
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(62.dp + navBarRimDepth),
+            contentAlignment = Alignment.TopCenter
         ) {
-            items.forEach { item ->
-                val isSelected = item.id == selectedItemId
-                BottomNavItemCell(
-                    item = item,
-                    isSelected = isSelected,
-                    onClick = { onItemSelected(item.id) },
-                )
+            // Bottom 2D Rim Base Layer
+            Box(
+                modifier = Modifier
+                    .offset(y = navBarRimDepth)
+                    .fillMaxWidth()
+                    .height(62.dp)
+                    .clip(navBarShape)
+                    .background(AwanTheme.colors.line)
+            )
+
+            // Front Panel Face Layer
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(62.dp)
+                    .shadow(
+                        elevation = 8.dp,
+                        shape = navBarShape,
+                        spotColor = Color(0x1F000000)
+                    )
+                    .clip(navBarShape)
+                    .background(AwanTheme.colors.surface)
+                    .border(
+                        width = 2.dp,
+                        color = AwanTheme.colors.line,
+                        shape = navBarShape
+                    )
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    items.forEach { item ->
+                        if (item.isFab) {
+                            // Spacer slot with dedicated width for floating center button
+                            Spacer(modifier = Modifier.size(60.dp))
+                        } else {
+                            val isSelected = item.id == selectedItemId
+                            NavTabItem(
+                                item = item,
+                                isSelected = isSelected,
+                                onClick = { onItemSelected(item) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
             }
+        }
+
+        // Square-Rounded 3D Primary Button (Duolingo Gamification Style)
+        items.find { it.isFab }?.let { fabItem ->
+            SquareRounded3dPrimaryButton(
+                item = fabItem,
+                onClick = onFabClick,
+                modifier = Modifier.offset(y = (-14).dp)
+            )
         }
     }
 }
 
 @Composable
-private fun BottomNavItemCell(
+private fun NavTabItem(
     item: BottomNavItem,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
     val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.05f else 1.0f,
-        animationSpec = tween(200),
-        label = "navItemScale",
+        targetValue = when {
+            isPressed -> 0.86f
+            isSelected -> 1.08f
+            else -> 1.0f
+        },
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "tabScale"
     )
 
-    val textColor by animateColorAsState(
-        targetValue = if (isSelected) Color(0xFF2563EB) else Color(0xFF64748B),
-        label = "navItemTextColor",
+    val iconColor by animateColorAsState(
+        targetValue = if (isSelected) AwanTheme.colors.sky else AwanTheme.colors.textSecondary.copy(alpha = 0.65f),
+        animationSpec = tween(durationMillis = 180),
+        label = "tabIconColor"
     )
 
-    val itemShape = RoundedCornerShape(99.dp)
+    val tileShape = RoundedCornerShape(12.dp)
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .scale(scale)
+                .size(width = 42.dp, height = 42.dp)
+                .clip(tileShape)
+                .then(
+                    if (isSelected) {
+                        Modifier
+                            .background(AwanTheme.colors.sky.copy(alpha = 0.12f))
+                            .border(
+                                width = 1.5.dp,
+                                color = AwanTheme.colors.sky.copy(alpha = 0.35f),
+                                shape = tileShape
+                            )
+                    } else {
+                        Modifier
+                    }
+                )
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
+                contentDescription = item.label,
+                tint = iconColor,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Square-rounded 3D Game-style primary button (Duolingo Style):
+ * Uses a square-rounded shape matching the 2D gamification theme of the nav bar body.
+ */
+@Composable
+private fun SquareRounded3dPrimaryButton(
+    item: BottomNavItem,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val buttonShape = RoundedCornerShape(18.dp)
+    val rimDepth = 4.dp
+    val pressOffsetY by animateDpAsState(
+        targetValue = if (isPressed) 4.dp else 0.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "buttonPressOffset"
+    )
+
+    val primaryColor = AwanTheme.colors.sky
+    val rimColor = AwanTheme.colors.skyPressed
 
     Box(
         modifier = modifier
-            .scale(scale)
+            .size(width = 56.dp, height = 56.dp + rimDepth)
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
+                interactionSource = interactionSource,
                 indication = null,
-                onClick = onClick,
-            )
-            .then(
-                if (isSelected) {
-                    Modifier
-                        .shadow(4.dp, itemShape, spotColor = Color(0xFF2563EB))
-                        .clip(itemShape)
-                        .background(Color(0xFFEFF6FF))
-                        .border(1.5.dp, Color(0xFFBFDBFE), itemShape)
-                } else {
-                    Modifier
-                }
-            )
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.TopCenter
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            AwanText(
-                text = item.icon,
-                style = AwanTheme.typography.body.copy(fontSize = 16.sp),
-            )
-            if (isSelected) {
-                Spacer(modifier = Modifier.width(6.dp))
-                AwanText(
-                    text = item.label,
-                    style = AwanTheme.typography.heading.copy(
-                        fontSize = 13.5.sp,
-                        color = textColor,
-                    ),
+        // Bottom 3D Rim Base Layer
+        Box(
+            modifier = Modifier
+                .offset(y = rimDepth)
+                .size(56.dp)
+                .shadow(
+                    elevation = 6.dp,
+                    shape = buttonShape,
+                    spotColor = Color(0x33000000)
                 )
-            }
+                .clip(buttonShape)
+                .background(rimColor)
+        )
+
+        // Top Front Face Layer (Presses down on click)
+        Box(
+            modifier = Modifier
+                .offset(y = pressOffsetY)
+                .size(56.dp)
+                .clip(buttonShape)
+                .background(primaryColor)
+                .border(
+                    width = 1.5.dp,
+                    color = Color.White.copy(alpha = 0.4f),
+                    shape = buttonShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = item.selectedIcon,
+                contentDescription = item.label,
+                tint = Color.White,
+                modifier = Modifier.size(26.dp)
+            )
         }
     }
 }
