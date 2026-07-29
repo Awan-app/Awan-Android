@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class AiTaskPreviewResponse(
-    @SerialName("task") val task: AiTaskPreviewTaskResponse = AiTaskPreviewTaskResponse(),
+    @SerialName("task") val task: AiTaskPreviewTaskResponse? = null,
 )
 
 /** Both [categoryId] and [category] are declared since the echoed shape isn't pinned down. */

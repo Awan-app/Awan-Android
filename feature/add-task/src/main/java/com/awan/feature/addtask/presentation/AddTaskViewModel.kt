@@ -260,9 +260,12 @@ class AddTaskViewModel @Inject constructor(
             parsed = parsed,
             description = suggestion.description.orEmpty(),
             mandatory = suggestion.mandatory,
-            // Awan's category may not be one of ours; fall back to the id it actually returned.
+            // Awan's category may not be one of ours — keep the id with whatever name we resolved,
+            // but never fall back to the raw id as a display name (it's usually a UUID).
             resolvedCategory = availableCategories.matching(parsed.categoryToken)
-                ?: suggestion.categoryId?.let { id -> Category(id = id, name = categoryName ?: id) },
+                ?: categoryName?.let { name ->
+                    suggestion.categoryId?.let { id -> Category(id = id, name = name) }
+                },
             isSubmitting = false,
             errorMessage = null,
         )
@@ -289,7 +292,7 @@ class AddTaskViewModel @Inject constructor(
                     return@launch
                 }
 
-                Result.Loading -> return@launch
+                Result.Loading -> Unit
             }
             when (val result = scheduleTaskWithAi(created.id)) {
                 is Result.Success -> when {

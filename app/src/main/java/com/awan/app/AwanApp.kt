@@ -23,6 +23,7 @@ import com.awan.feature.chat.impl.navigation.chatEntry
 import com.awan.feature.goals.impl.navigation.goalsEntry
 import com.awan.feature.home.api.HomeRoute
 import com.awan.feature.home.impl.navigation.homeEntry
+import com.awan.feature.auth.api.OtpRoute
 import com.awan.feature.onboarding.api.OnboardingRoute
 import com.awan.feature.onboarding.impl.navigation.onboardingEntry
 import com.awan.feature.profile.impl.navigation.profileEntry
@@ -72,7 +73,7 @@ fun AwanApp(
                     }
                 )
                 authEntry(
-                    onNavigateToOtp = { email -> navigator.navigate(com.awan.feature.auth.api.OtpRoute(email)) },
+                    onNavigateToOtp = { email -> navigator.navigate(OtpRoute(email)) },
                     onNavigateToHome = { navigator.replaceAll(HomeRoute) },
                     onNavigateToOnboarding = { navigator.replaceAll(OnboardingRoute) },
                     onPopBackStack = { navigator.goBack() }

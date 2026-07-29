@@ -54,7 +54,7 @@ internal fun TaskInfoResponse.toModel(): Task = Task(
     description = description,
     estimatedDurationMinutes = estimatedDuration,
     status = status.toTaskStatus(),
-    mandatory = mandatory ?: false,
+    mandatory = mandatory ?: true,
     estimatedPoints = estimatedPoints ?: 0,
     allowTaskSplitting = allowTaskSplitting ?: false,
     goalId = goalId,
@@ -65,14 +65,14 @@ internal fun TaskInfoResponse.toModel(): Task = Task(
 internal fun AiTaskPreviewResponse.toModel(): AiTaskSuggestion {
     val proposed = task
     return AiTaskSuggestion(
-        title = proposed.title.orEmpty(),
-        description = proposed.description,
-        estimatedDurationMinutes = proposed.estimatedDuration,
-        mandatory = proposed.mandatory ?: true,
-        estimatedPoints = proposed.estimatedPoints ?: 0,
-        allowTaskSplitting = proposed.allowTaskSplitting ?: false,
-        categoryId = proposed.category?.id ?: proposed.categoryId,
-        categoryName = proposed.category?.name,
+        title = proposed?.title.orEmpty(),
+        description = proposed?.description,
+        estimatedDurationMinutes = proposed?.estimatedDuration,
+        mandatory = proposed?.mandatory ?: true,
+        estimatedPoints = proposed?.estimatedPoints ?: 0,
+        allowTaskSplitting = proposed?.allowTaskSplitting ?: false,
+        categoryId = proposed?.category?.id ?: proposed?.categoryId,
+        categoryName = proposed?.category?.name,
     )
 }
 
