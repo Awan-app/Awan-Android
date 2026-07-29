@@ -29,7 +29,7 @@ class DailyZonesViewModel @Inject constructor(
     val uiState: StateFlow<DailyZonesState> = _uiState.asStateFlow()
 
     init {
-        loadData()
+        // No initial load here, handled by LaunchedEffect in RouteScreen
     }
 
     fun onAction(action: DailyZonesAction) {
@@ -165,7 +165,23 @@ class DailyZonesViewModel @Inject constructor(
             _uiState.update { it.copy(isSaving = true, error = null) }
             val result = updateTemplateZonesUseCase(templateId, zones)
             when (result) {
-                is Result.Success -> _uiState.update { it.copy(isSaving = false) }
+                is Result.Success -> {
+                    // Replace local zones with server response to preserve generated IDs
+                    val updatedZones = result.data.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
+                    _uiState.update { state ->
+                        val updatedTemplates = state.templates.map { template ->
+                            if (template.id == templateId) {
+                                template.copy(zones = result.data)
+                            } else template
+                        }
+                        state.copy(
+                            isSaving = false,
+                            selectedDayZones = updatedZones,
+                            templates = updatedTemplates,
+                            currentTemplate = updatedTemplates.find { it.id == templateId }
+                        )
+                    }
+                }
                 is Result.Error -> _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
                 Result.Loading -> Unit
             }

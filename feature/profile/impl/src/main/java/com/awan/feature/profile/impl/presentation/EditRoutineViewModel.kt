@@ -39,7 +39,7 @@ class EditRoutineViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     init {
-        loadAssignedDays()
+        // Handled by LoadTemplate action in RouteScreen
     }
 
     fun onAction(action: EditRoutineAction) {
@@ -53,26 +53,6 @@ class EditRoutineViewModel @Inject constructor(
             is EditRoutineAction.ReorderZones -> reorderZones(action.from, action.to)
             EditRoutineAction.SaveRoutine -> saveRoutine()
             EditRoutineAction.DeleteRoutine -> deleteRoutine()
-        }
-    }
-
-    private fun loadAssignedDays() {
-        viewModelScope.launch {
-            when (val result = getWeeklyTemplatesUseCase()) {
-                is Result.Success -> {
-                    val currentId = _uiState.value.templateId
-                    val allAssigned = result.data.flatMap { template ->
-                        if (template.id != currentId) {
-                            template.daysOfWeek
-                        } else {
-                            emptyList()
-                        }
-                    }.toSet()
-                    _uiState.update { it.copy(assignedDays = allAssigned) }
-                }
-                is Result.Error -> Unit
-                Result.Loading -> Unit
-            }
         }
     }
 
