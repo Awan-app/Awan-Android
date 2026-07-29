@@ -204,6 +204,26 @@ Complete initial onboarding for new users and set up preferences.
 - `INVALID_TIMEZONE` (400) – Invalid timezone string
 - `INVALID_SLEEP_SCHEDULE` (400) – wakeupTime must be before sleepTime
 
+### Check Onboarding Status
+
+**Endpoint:** `GET /v1/users/me/is-new`
+
+Whether the authenticated user still needs onboarding. Used on cold start to decide between Home and
+the onboarding flow when the local completion flag is absent (e.g. reinstall or a new device).
+
+**Response (200):**
+```json
+{
+  "isNew": true
+}
+```
+
+**Field Details:**
+- `isNew` (boolean) – `true` when onboarding has not been completed yet
+
+**Error Codes:**
+- `AUTHENTICATION_FAILED` (401) – Missing/invalid access token
+
 ---
 
 ## User Management

@@ -16,11 +16,14 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.awan.core.navigation.Navigator
 import com.awan.feature.addtask.ui.AddTaskSheet
+import com.awan.feature.auth.api.LoginRoute
 import com.awan.feature.auth.impl.navigation.authEntry
 import com.awan.feature.calendar.impl.navigation.calendarEntry
 import com.awan.feature.chat.impl.navigation.chatEntry
 import com.awan.feature.goals.impl.navigation.goalsEntry
+import com.awan.feature.home.api.HomeRoute
 import com.awan.feature.home.impl.navigation.homeEntry
+import com.awan.feature.onboarding.api.OnboardingRoute
 import com.awan.feature.onboarding.impl.navigation.onboardingEntry
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.profile_setup.impl.navigation.profileSetupEntry
@@ -61,28 +64,28 @@ fun AwanApp(
                 splashEntry(
                     onNavigateToNext = { destination ->
                         when (destination) {
-                            SplashDestination.Auth -> navigator.replaceAll(com.awan.feature.auth.api.LoginRoute)
-                            SplashDestination.Onboarding -> navigator.replaceAll(com.awan.feature.onboarding.api.OnboardingRoute)
-                            SplashDestination.Home -> navigator.replaceAll(com.awan.feature.home.api.HomeRoute)
+                            SplashDestination.Auth -> navigator.replaceAll(LoginRoute)
+                            SplashDestination.Onboarding -> navigator.replaceAll(OnboardingRoute)
+                            SplashDestination.Home -> navigator.replaceAll(HomeRoute)
                             SplashDestination.Loading -> { /* Keep showing splash */ }
                         }
                     }
                 )
                 authEntry(
                     onNavigateToOtp = { email -> navigator.navigate(com.awan.feature.auth.api.OtpRoute(email)) },
-                    onNavigateToHome = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) },
-                    onNavigateToOnboarding = { navigator.replaceAll(com.awan.feature.onboarding.api.OnboardingRoute) },
+                    onNavigateToHome = { navigator.replaceAll(HomeRoute) },
+                    onNavigateToOnboarding = { navigator.replaceAll(OnboardingRoute) },
                     onPopBackStack = { navigator.goBack() }
                 )
                 onboardingEntry(
-                    onComplete = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) },
-                    onExit = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
+                    onComplete = { navigator.replaceAll(HomeRoute) },
+                    onExit = { navigator.replaceAll(LoginRoute) }
                 )
                 profileSetupEntry(
-                    onNavigateToHome = { navigator.replaceAll(com.awan.feature.home.api.HomeRoute) }
+                    onNavigateToHome = { navigator.replaceAll(HomeRoute) }
                 )
                 homeEntry(
-                    onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) },
+                    onLogout = { navigator.replaceAll(LoginRoute) },
                     onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute) },
                 )
                 calendarEntry()

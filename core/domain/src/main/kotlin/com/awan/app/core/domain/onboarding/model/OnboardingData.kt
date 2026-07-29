@@ -1,4 +1,4 @@
-package com.awan.app.core.data.onboarding
+package com.awan.app.core.domain.onboarding.model
 
 import com.awan.app.core.model.DayBounds
 import com.awan.app.core.model.FirstTask

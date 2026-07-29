@@ -1,4 +1,4 @@
-package com.awan.app.core.domain.onboarding
+package com.awan.app.core.domain.onboarding.utils
 
 import com.awan.app.core.model.DayBounds
 import com.awan.app.core.model.Zone
