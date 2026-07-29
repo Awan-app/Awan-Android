@@ -1,32 +1,21 @@
 package com.awan.feature.profile.impl.ui.dailyzones
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
-import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.feature.onboarding.impl.ui.components.TimePickerDialog as AwanTimePickerDialog
 import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
-import com.awan.feature.profile.impl.ui.components.ZoneCardBody
+import com.awan.feature.profile.impl.ui.components.TimeInputBox
+import com.awan.feature.profile.impl.ui.components.ZoneColorPicker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,12 +29,10 @@ fun AddEditZoneSheet(
 ) {
     var name by remember { mutableStateOf(zone?.name ?: "") }
     
-    // Initial start time: use provided zone, or defaultStartTime, or 09:00
     val initialStartTime = remember(zone, defaultStartTime) {
         zone?.startTime ?: defaultStartTime ?: "09:00"
     }
     
-    // Initial end time: use provided zone, or 1 hour after initialStartTime
     val initialEndTime = remember(zone, initialStartTime) {
         zone?.endTime ?: run {
             val startMins = DailyZonesHelper.parseTimeToMinutes(initialStartTime)
@@ -101,145 +88,85 @@ fun AddEditZoneSheet(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 40.dp),
+                .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             AwanText(
-                text = if (zone == null) "Add zone" else "Edit zone",
+                text = if (zone == null) stringResource(R.string.profile_zone_add) else stringResource(R.string.profile_zone_edit),
                 style = AwanTheme.styles.titleText
             )
 
-            // Zone Name
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                AwanText(text = "Zone name", style = AwanTheme.styles.bodyText)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                AwanText(
+                    text = stringResource(R.string.profile_zone_name),
+                    style = AwanTheme.styles.bodyText.copy(
+                        color = AwanTheme.colors.textSecondary,
+                        textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontSize = 13.sp)
+                    )
+                )
                 AwanTextField(
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = "e.g. Focus"
+                    placeholder = stringResource(R.string.profile_zone_name_placeholder)
                 )
             }
 
-            // Start / End Time
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AwanText(text = "Start time", style = AwanTheme.styles.bodyText)
-                    TimeField(
-                        time = DailyZonesHelper.formatTime12h(startTime),
-                        onClick = { showStartTimePicker = true }
-                    )
-                }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AwanText(text = "End time", style = AwanTheme.styles.bodyText)
-                    TimeField(
-                        time = DailyZonesHelper.formatTime12h(endTime),
-                        onClick = { showEndTimePicker = true }
-                    )
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TimeInputBox(
+                    label = stringResource(R.string.profile_zone_start_time),
+                    time = startTime,
+                    onClick = { showStartTimePicker = true },
+                    modifier = Modifier.weight(1f)
+                )
+                TimeInputBox(
+                    label = stringResource(R.string.profile_zone_end_time),
+                    time = endTime,
+                    onClick = { showEndTimePicker = true },
+                    modifier = Modifier.weight(1f)
+                )
             }
 
-            // Color Picker
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                AwanText(text = "Color", style = AwanTheme.styles.bodyText)
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    listOf(
-                        "#FF6F91", "#7A64FF", "#2EAAFF",
-                        "#FF9838", "#FFC233", "#9A7BFF"
-                    ).forEach { hex ->
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color(android.graphics.Color.parseColor(hex)))
-                                .border(
-                                    width = if (color == hex) 2.dp else 0.dp,
-                                    color = if (color == hex) AwanTheme.colors.textPrimary else Color.Transparent,
-                                    shape = CircleShape
-                                )
-                                .clickable { color = hex }
-                        )
-                    }
-                }
-            }
+            ZoneColorPicker(
+                selectedColor = color,
+                onColorSelected = { color = it }
+            )
 
-            // ── Live Preview ───────────────────────────────
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                AwanText(
-                    text = stringResource(R.string.profile_daily_zones_zone_preview),
-                    style = AwanTheme.styles.bodyText.copy(
-                        textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
-                    )
-                )
-                ZoneCardBody(
-                    zone = previewZone,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                // Routine hint text
-                AwanText(
-                    text = if (zone == null) {
-                        stringResource(R.string.profile_daily_zones_zone_will_be_added)
-                    } else {
-                        stringResource(R.string.profile_daily_zones_zone_in_default)
-                    },
-                    style = AwanTheme.styles.captionText.copy(
-                        color = AwanTheme.colors.textSecondary
-                    )
-                )
-            }
+            AddEditZonePreview(
+                previewZone = previewZone,
+                isEdit = zone != null
+            )
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Confirm Button
-            AwanButton(
-                onClick = {
-                    onConfirm(
-                        DailyZone(
-                            id = zone?.id,
-                            name = name,
-                            startTime = startTime,
-                            endTime = endTime,
-                            color = color
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                AwanButton(
+                    onClick = {
+                        onConfirm(
+                            DailyZone(
+                                id = zone?.id,
+                                name = name,
+                                startTime = startTime,
+                                endTime = endTime,
+                                color = color
+                            )
                         )
-                    )
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = name.isNotBlank() && !isSaving,
-                isLoading = isSaving
-            ) {
-                AwanText(text = if (zone == null) "Add zone" else "Save changes")
-            }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = name.isNotBlank() && !isSaving,
+                    isLoading = isSaving
+                ) {
+                    AwanText(text = if (zone == null) stringResource(R.string.profile_zone_add) else stringResource(R.string.profile_zone_save_changes))
+                }
 
-            // Cancel
-            AwanButton(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-                variant = AwanButtonVariant.Secondary,
-                enabled = !isSaving
-            ) {
-                AwanText(text = "Cancel")
+                AwanButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    variant = AwanButtonVariant.Secondary,
+                    enabled = !isSaving
+                ) {
+                    AwanText(text = stringResource(R.string.profile_cancel))
+                }
             }
         }
-    }
-}
-
-@Composable
-fun TimeField(time: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(AwanTheme.colors.background)
-            .border(1.5.dp, AwanTheme.colors.line, RoundedCornerShape(12.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        AwanText(text = time, style = AwanTheme.styles.bodyText)
     }
 }

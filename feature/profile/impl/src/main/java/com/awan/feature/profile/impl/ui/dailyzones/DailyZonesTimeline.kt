@@ -14,11 +14,11 @@ import com.awan.feature.profile.impl.ui.components.ZoneTimelineItem
 @Composable
 fun DailyZonesTimeline(
     zones: List<DailyZone>,
-    onReorder: (Int, Int) -> Unit,
-    onEditZone: (DailyZone) -> Unit
+    onEditZone: (DailyZone) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {

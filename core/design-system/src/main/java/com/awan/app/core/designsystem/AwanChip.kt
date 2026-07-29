@@ -24,8 +24,8 @@ fun AwanChip(
     val colors = AwanTheme.colors
     val (fg, bg) = when (tone) {
         AwanChipTone.Sky -> colors.skyPressed to colors.sky.copy(alpha = 0.12f)
-        AwanChipTone.Violet -> colors.zoneVioletPressed to colors.zoneViolet.copy(alpha = 0.14f)
-        AwanChipTone.Tangerine -> colors.zoneTangerinePressed to colors.zoneTangerine.copy(alpha = 0.14f)
+        AwanChipTone.Violet -> colors.zoneViolet to colors.zoneViolet.copy(alpha = 0.14f)
+        AwanChipTone.Tangerine -> colors.zoneTangerine to colors.zoneTangerine.copy(alpha = 0.14f)
         AwanChipTone.Neutral -> colors.textSecondary to colors.disabledSurface
     }
     Row(
