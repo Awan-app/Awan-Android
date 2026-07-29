@@ -2,14 +2,14 @@ package com.awan.app.core.data.task.remote
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.TaskApiService
-import com.awan.app.core.network.dto.CreateAiTaskRequest
 import com.awan.app.core.network.dto.CreateTaskRequest
 import com.awan.app.core.network.dto.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.ScheduleTaskRequest
-import com.awan.app.core.network.dto.ScheduledSessionDto
+import com.awan.app.core.network.dto.ScheduledSessionResponse
 import com.awan.app.core.network.dto.TaskInfoResponse
 import com.awan.app.core.network.dto.TaskScheduleResponse
+import com.awan.app.core.network.dto.TaskWithSessionsDto
 import com.awan.app.core.network.dto.TaskWithSessionsResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -29,6 +29,8 @@ private open class FakeTaskApiService : TaskApiService {
 
     override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest): TaskInfoResponse =
         error("not used")
+
+    override suspend fun getTasksByDate(date: String): List<TaskWithSessionsDto> = error("not used")
 
     override suspend fun scheduleTask(request: ScheduleTaskRequest): TaskScheduleResponse =
         error("not used")
@@ -101,7 +103,7 @@ class TaskRemoteDataSourceTest {
             override suspend fun scheduleTask(request: ScheduleTaskRequest) = TaskScheduleResponse(
                 taskId = request.taskId,
                 scheduledSessions = listOf(
-                    ScheduledSessionDto(
+                    ScheduledSessionResponse(
                         sessionId = "s-1",
                         start = "2026-07-25T09:00:00",
                         end = "2026-07-25T10:30:00",

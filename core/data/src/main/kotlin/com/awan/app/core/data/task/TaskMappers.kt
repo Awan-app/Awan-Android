@@ -11,7 +11,7 @@ import com.awan.app.core.model.TaskStatus
 import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.network.dto.CreateTaskRequest
 import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
-import com.awan.app.core.network.dto.ScheduledSessionDto
+import com.awan.app.core.network.dto.ScheduledSessionResponse
 import com.awan.app.core.network.dto.SessionDraftDto
 import com.awan.app.core.network.dto.SessionDto
 import com.awan.app.core.network.dto.TaskInfoResponse
@@ -79,11 +79,12 @@ internal fun TaskScheduleResponse.toModel(): TaskSchedule {
 
 private const val UNKNOWN_REFUSAL = "UNSCHEDULED"
 
-internal fun ScheduledSessionDto.toModel(): TaskSession? {
-    val parsedStart = start.toLocalDateTimeOrNull() ?: return null
-    val parsedEnd = end.toLocalDateTimeOrNull() ?: return null
+internal fun ScheduledSessionResponse.toModel(): TaskSession? {
+    val parsedStart = start?.toLocalDateTimeOrNull() ?: return null
+    val parsedEnd = end?.toLocalDateTimeOrNull() ?: return null
+    val id = sessionId ?: return null
     return TaskSession(
-        id = sessionId,
+        id = id,
         start = parsedStart,
         end = parsedEnd,
         status = SessionStatus.SCHEDULED,

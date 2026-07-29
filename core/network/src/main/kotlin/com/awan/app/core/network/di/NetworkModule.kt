@@ -4,9 +4,10 @@ import android.content.Context
 import com.awan.app.core.network.BuildConfig
 import com.awan.app.core.network.api.AuthApiService
 import com.awan.app.core.network.api.CategoryApiService
+import com.awan.app.core.network.api.GoalApiService
 import com.awan.app.core.network.api.OnboardingApiService
 import com.awan.app.core.network.api.TaskApiService
-import com.awan.app.core.network.api.ZoneApiService
+import com.awan.app.core.network.api.ZonesApiService
 import com.awan.app.core.network.api.TemplateApiService
 import com.awan.app.core.network.device.AndroidDeviceIdProvider
 import com.awan.app.core.network.device.DeviceIdProvider
@@ -127,8 +128,8 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun providesZoneApiService(retrofit: Retrofit): ZoneApiService =
-        retrofit.create(ZoneApiService::class.java)
+    fun providesZonesApiService(retrofit: Retrofit): ZonesApiService =
+        retrofit.create(ZonesApiService::class.java)
 
     @Provides
     @Singleton
@@ -149,6 +150,12 @@ object NetworkModule {
     @Singleton
     fun providesTemplateApiService(retrofit: Retrofit): TemplateApiService =
         retrofit.create(TemplateApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesGoalApiService(retrofit: Retrofit): GoalApiService =
+        retrofit.create(GoalApiService::class.java)
+
 
     @Provides
     @Singleton

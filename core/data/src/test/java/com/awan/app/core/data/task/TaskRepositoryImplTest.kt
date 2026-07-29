@@ -9,7 +9,7 @@ import com.awan.app.core.network.dto.CreateTaskRequest
 import com.awan.app.core.network.dto.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.ScheduleTaskRequest
-import com.awan.app.core.network.dto.ScheduledSessionDto
+import com.awan.app.core.network.dto.ScheduledSessionResponse
 import com.awan.app.core.network.dto.SessionDto
 import com.awan.app.core.network.dto.TaskInfoResponse
 import com.awan.app.core.network.dto.TaskScheduleResponse
@@ -90,7 +90,7 @@ class TaskRepositoryImplTest {
                 TaskScheduleResponse(
                     taskId = request.taskId,
                     scheduledSessions = listOf(
-                        ScheduledSessionDto(
+                        ScheduledSessionResponse(
                             sessionId = "s-ai",
                             zoneId = "zone-1",
                             start = "2026-07-25T09:00:00",

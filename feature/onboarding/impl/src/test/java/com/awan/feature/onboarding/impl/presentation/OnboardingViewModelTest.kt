@@ -1,6 +1,7 @@
 package com.awan.feature.onboarding.impl.presentation
 
 import com.awan.app.core.common.error.AppError
+import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.OnboardingData
 import com.awan.app.core.domain.onboarding.DayBoundsValidation
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase

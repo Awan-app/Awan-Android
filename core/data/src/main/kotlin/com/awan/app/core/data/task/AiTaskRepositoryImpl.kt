@@ -8,7 +8,7 @@ import com.awan.app.core.data.util.minutesOfDay
 import com.awan.app.core.data.util.parseIsoDateTime
 import com.awan.app.core.domain.task.repository.AiTaskRepository
 import com.awan.app.core.model.FirstTask
-import com.awan.app.core.network.dto.CreateAiTaskRequest
+import com.awan.app.core.network.dto.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.ScheduleTaskRequest
 import com.awan.app.core.network.dto.ScheduledSessionResponse
 import kotlinx.coroutines.CoroutineDispatcher
@@ -24,7 +24,7 @@ class AiTaskRepositoryImpl @Inject constructor(
 ) : AiTaskRepository {
 
     override suspend fun createAndScheduleTask(title: String): Result<FirstTask?> = withContext(ioDispatcher) {
-        val created = when (val result = remoteDataSource.createTaskWithAi(CreateAiTaskRequest(title = title))) {
+        val created = when (val result = remoteDataSource.createTaskWithAi(CreateTaskWithAiRequest(title = title))) {
             is Result.Success -> result.data
             is Result.Error -> return@withContext Result.Error(result.error)
             Result.Loading -> return@withContext Result.Loading

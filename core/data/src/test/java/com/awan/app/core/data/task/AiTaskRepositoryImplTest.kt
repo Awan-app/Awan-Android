@@ -3,12 +3,14 @@ package com.awan.app.core.data.task
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
-import com.awan.app.core.network.dto.CreateAiTaskRequest
 import com.awan.app.core.network.dto.CreateTaskRequest
+import com.awan.app.core.network.dto.CreateTaskWithAiRequest
+import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.ScheduleTaskRequest
 import com.awan.app.core.network.dto.ScheduledSessionResponse
 import com.awan.app.core.network.dto.TaskInfoResponse
 import com.awan.app.core.network.dto.TaskScheduleResponse
+import com.awan.app.core.network.dto.TaskWithSessionsResponse
 import com.awan.app.core.network.dto.UnscheduledTaskResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -30,13 +32,17 @@ class AiTaskRepositoryImplTest {
     private val remoteDataSource = object : TaskRemoteDataSource {
         override suspend fun createTask(request: CreateTaskRequest) = error("not used")
 
-        override suspend fun createTaskWithAi(request: CreateAiTaskRequest) = createResult
+        override suspend fun createTaskWithSessions(request: CreateTaskWithSessionsRequest): Result<TaskWithSessionsResponse> = error("not used")
+
+        override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest) = createResult
 
         override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> {
             scheduleRequest = request
             scheduleCalls++
             return scheduleResult
         }
+
+        override suspend fun deleteTask(taskId: String): Result<Unit> = error("not used")
     }
 
     private val repository = AiTaskRepositoryImpl(remoteDataSource, UnconfinedTestDispatcher())

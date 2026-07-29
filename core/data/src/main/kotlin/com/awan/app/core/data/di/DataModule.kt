@@ -23,9 +23,6 @@ import com.awan.app.core.domain.category.repository.CategoryRepository
 import com.awan.app.core.domain.task.repository.TaskRepository
 import com.awan.app.core.domain.zone.repository.ZoneRepository
 import com.awan.app.core.data.task.AiTaskRepositoryImpl
-import com.awan.app.core.data.task.TaskRepository
-import com.awan.app.core.data.task.remote.TaskRemoteDataSource
-import com.awan.app.core.data.task.remote.TaskRemoteDataSourceImpl
 import com.awan.app.core.data.template.TemplateRepositoryImpl
 import com.awan.app.core.data.template.remote.TemplateRemoteDataSource
 import com.awan.app.core.data.template.remote.TemplateRemoteDataSourceImpl
@@ -91,6 +88,8 @@ internal abstract class DataModule {
         impl: CategoryRepositoryImpl,
     ): CategoryRepository
   
+    @Binds
+    @Singleton
     abstract fun bindAiTaskRepository(
         impl: AiTaskRepositoryImpl,
     ): AiTaskRepository
@@ -131,5 +130,17 @@ internal abstract class DataModule {
     abstract fun bindHomeRepository(
         impl: HomeRepositoryImpl,
     ): HomeRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGoalRemoteDataSource(
+        impl: com.awan.app.core.data.goal.remote.GoalRemoteDataSourceImpl,
+    ): com.awan.app.core.data.goal.remote.GoalRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindGoalRepository(
+        impl: com.awan.app.core.data.goal.GoalRepositoryImpl,
+    ): com.awan.app.core.domain.goal.repository.GoalRepository
 }
 
