@@ -32,7 +32,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.painterResource
+
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -60,7 +60,11 @@ import com.awan.feature.addtask.presentation.AddTaskAction
 import com.awan.feature.addtask.presentation.AddTaskMode
 import com.awan.feature.addtask.presentation.AddTaskState
 import com.awan.feature.addtask.presentation.GoalStep
-import com.composables.icons.lucide.R as LucideR
+import com.composables.icons.lucide.Calendar
+import com.composables.icons.lucide.Check
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Mic
+import com.composables.icons.lucide.MicOff
 import java.time.LocalDate
 
 @Composable
@@ -332,7 +336,7 @@ private fun MultipleChoiceStepContent(
                         )
                         if (isSelected) {
                             Icon(
-                                painter = painterResource(LucideR.drawable.lucide_ic_check),
+                                imageVector = Lucide.Check,
                                 contentDescription = null,
                                 tint = AwanTheme.colors.sky,
                                 modifier = Modifier.size(20.dp),
@@ -578,7 +582,7 @@ private fun ProposalCard(proposal: GoalProposal) {
                     horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs),
                 ) {
                     Icon(
-                        painter = painterResource(LucideR.drawable.lucide_ic_calendar),
+                        imageVector = Lucide.Calendar,
                         contentDescription = null,
                         tint = AwanTheme.colors.sky,
                         modifier = Modifier.size(16.dp),
@@ -690,10 +694,7 @@ private fun GoalMicButton(
         },
     ) {
         Icon(
-            painter = painterResource(
-                if (isListening) LucideR.drawable.lucide_ic_mic_off
-                else LucideR.drawable.lucide_ic_mic,
-            ),
+            imageVector = if (isListening) Lucide.MicOff else Lucide.Mic,
             contentDescription = null,
             tint = if (isListening) AwanTheme.colors.sky else AwanTheme.colors.textSecondary,
             modifier = Modifier.size(20.dp),

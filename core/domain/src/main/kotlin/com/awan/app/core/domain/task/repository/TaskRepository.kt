@@ -1,6 +1,7 @@
 package com.awan.app.core.domain.task.repository
 
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.Task
 import com.awan.app.core.model.TaskDraft
@@ -19,10 +20,12 @@ interface TaskRepository {
     ): Result<TaskWithSessions>
 
     /**
-     * Hands [title] and [description] to the backend's model, which fills in duration, points,
-     * mandatory, splitting and category. The task is **already persisted** when this returns.
+     * Hands [title] and [description] to the backend's model, which proposes duration, points,
+     * mandatory, splitting and category. This is a preview — nothing is persisted, so there is no
+     * task id and nothing to clean up if the user backs out. Confirming it goes through [createTask]
+     * or [createTaskWithSessions] instead.
      */
-    suspend fun createTaskWithAi(title: String, description: String?): Result<Task>
+    suspend fun previewTaskWithAi(title: String, description: String?): Result<AiTaskSuggestion>
 
     /** Asks the scheduling engine to place an existing task. */
     suspend fun scheduleTask(taskId: String): Result<TaskSchedule>

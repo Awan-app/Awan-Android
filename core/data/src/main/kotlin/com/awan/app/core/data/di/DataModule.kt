@@ -3,13 +3,22 @@ package com.awan.app.core.data.di
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSource
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSourceImpl
 import com.awan.app.core.data.auth.repository.AuthRepositoryImpl
+import com.awan.app.core.domain.calendar.repository.CalendarRepository
+import com.awan.app.core.data.calendar.CalendarRepositoryImpl
+import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSource
+import com.awan.app.core.data.calendar.local.CalendarLocalDataSource
+import com.awan.app.core.data.calendar.local.CalendarLocalDataSourceImpl
+import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSourceImpl
 import com.awan.app.core.data.category.CategoryRepositoryImpl
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSourceImpl
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
 import com.awan.app.core.data.home.remote.HomeRemoteDataSourceImpl
 import com.awan.app.core.data.home.repository.HomeRepositoryImpl
-import com.awan.app.core.data.onboarding.OnboardingRepository
+import com.awan.app.core.domain.onboarding.repository.OnboardingRepository
+import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
+import com.awan.app.core.data.profile.remote.ProfileRemoteDataSourceImpl
+import com.awan.app.core.data.profile.repository.ProfileRepositoryImpl
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSourceImpl
@@ -27,6 +36,7 @@ import com.awan.app.core.data.template.TemplateRepositoryImpl
 import com.awan.app.core.data.template.remote.TemplateRemoteDataSource
 import com.awan.app.core.data.template.remote.TemplateRemoteDataSourceImpl
 import com.awan.app.core.domain.auth.repository.AuthRepository
+import com.awan.app.core.domain.profile.repository.ProfileRepository
 import com.awan.app.core.domain.task.repository.AiTaskRepository
 import com.awan.app.core.domain.template.repository.TemplateRepository
 import com.awan.app.core.domain.home.repository.HomeRepository
@@ -39,6 +49,24 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class DataModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindCalendarRemoteDataSource(
+        impl: CalendarRemoteDataSourceImpl,
+    ): CalendarRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindCalendarLocalDataSource(
+        impl: CalendarLocalDataSourceImpl,
+    ): CalendarLocalDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindCalendarRepository(
+        impl: CalendarRepositoryImpl,
+    ): CalendarRepository
 
     @Binds
     @Singleton
@@ -87,7 +115,6 @@ internal abstract class DataModule {
     abstract fun bindCategoryRepository(
         impl: CategoryRepositoryImpl,
     ): CategoryRepository
-  
     @Binds
     @Singleton
     abstract fun bindAiTaskRepository(
@@ -118,6 +145,17 @@ internal abstract class DataModule {
         impl: AuthRepositoryImpl,
     ): AuthRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindProfileRemoteDataSource(
+        impl: ProfileRemoteDataSourceImpl,
+    ): ProfileRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindProfileRepository(
+        impl: ProfileRepositoryImpl,
+    ): ProfileRepository
 
     @Binds
     @Singleton
@@ -143,4 +181,3 @@ internal abstract class DataModule {
         impl: com.awan.app.core.data.goal.GoalRepositoryImpl,
     ): com.awan.app.core.domain.goal.repository.GoalRepository
 }
-

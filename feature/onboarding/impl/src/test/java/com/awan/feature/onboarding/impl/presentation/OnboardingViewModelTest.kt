@@ -2,14 +2,15 @@ package com.awan.feature.onboarding.impl.presentation
 
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.data.onboarding.OnboardingData
-import com.awan.app.core.domain.onboarding.DayBoundsValidation
-import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
-import com.awan.app.core.domain.onboarding.ValidateDayBounds
+import com.awan.app.core.domain.onboarding.model.OnboardingData
+import com.awan.app.core.domain.onboarding.usecase.CompleteOnboardingUseCase
+import com.awan.app.core.domain.onboarding.utils.DayBoundsValidation
+import com.awan.app.core.domain.onboarding.usecase.SuggestZoneScheduleUseCase
+import com.awan.app.core.domain.onboarding.utils.ValidateDayBounds
 import com.awan.app.core.domain.task.repository.TaskRepository
-import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
 import com.awan.app.core.domain.zone.repository.ZoneRepository
 import com.awan.app.core.domain.zone.usecase.GetZonesForDateUseCase
+import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.model.DayZone
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.Task
@@ -64,7 +65,7 @@ class OnboardingViewModelTest {
             sessions: List<SessionDraft>,
         ): Result<TaskWithSessions> = error("onboarding never schedules its first task")
 
-        override suspend fun createTaskWithAi(title: String, description: String?): Result<Task> =
+        override suspend fun previewTaskWithAi(title: String, description: String?): Result<AiTaskSuggestion> =
             error("onboarding never asks the AI")
 
         override suspend fun scheduleTask(taskId: String): Result<TaskSchedule> =
@@ -86,7 +87,7 @@ class OnboardingViewModelTest {
         fakeAiTaskRepository = FakeAiTaskRepository()
         fakeTemplateRepository = FakeTemplateRepository()
         viewModel = OnboardingViewModel(
-            repository = repository,
+            completeOnboarding = CompleteOnboardingUseCase(repository),
             suggestZoneSchedule = SuggestZoneScheduleUseCase(),
             validateDayBounds = ValidateDayBounds(),
             createAndScheduleFirstTask = CreateAndScheduleFirstTaskUseCase(fakeAiTaskRepository),

@@ -72,7 +72,7 @@ fun AwanScheduleTimeline(
     val coroutineScope = rememberCoroutineScope()
 
     val contentTopPadding = 16.dp
-    val contentBottomPadding = 64.dp
+    val contentBottomPadding = 160.dp
     var viewportHeightPx by remember { mutableFloatStateOf(0f) }
 
     val minZoom = 0.35f

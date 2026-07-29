@@ -6,6 +6,7 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.result.map
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.domain.task.repository.TaskRepository
+import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.Task
 import com.awan.app.core.model.TaskDraft
@@ -35,9 +36,9 @@ class TaskRepositoryImpl @Inject constructor(
         remoteDataSource.createTaskWithSessions(draft.toRequest(sessions)).map { it.toModel() }
     }
 
-    override suspend fun createTaskWithAi(title: String, description: String?): Result<Task> =
+    override suspend fun previewTaskWithAi(title: String, description: String?): Result<AiTaskSuggestion> =
         withContext(ioDispatcher) {
-            remoteDataSource.createTaskWithAi(CreateTaskWithAiRequest(title, description))
+            remoteDataSource.previewTaskWithAi(CreateTaskWithAiRequest(title, description))
                 .map { it.toModel() }
         }
 

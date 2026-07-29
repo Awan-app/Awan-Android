@@ -12,9 +12,6 @@ dependencies {
     implementation(project(":feature:calendar:api"))
     implementation(project(":core:common"))
     implementation(project(":core:domain"))
-    implementation(project(":core:data"))
-    implementation(project(":core:network"))
+    implementation(project(":core:model"))
     implementation(project(":core:design-system"))
-
-    implementation(libs.kotlinx.serialization.json)
 }

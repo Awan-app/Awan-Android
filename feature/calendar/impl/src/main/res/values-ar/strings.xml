@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calendar_title">التقويم</string>
+    <string name="calendar_refresh_error">تعذّر تحديث التقويم. يتم عرض البيانات المحفوظة.</string>
+    <string name="calendar_back">رجوع</string>
+    <string name="calendar_prev_month">الشهر السابق</string>
+    <string name="calendar_next_month">الشهر التالي</string>
+    <string name="calendar_upcoming_deadlines">المواعيد النهائية القادمة</string>
+    <string name="calendar_retry">إعادة المحاولة</string>
+    <string name="calendar_no_deadlines">لا توجد مواعيد نهائية قادمة.</string>
+    <string name="calendar_streak_title">سلسلة %d يوم متتالي</string>
+    <string name="calendar_streak_subtitle">أيام نشطة متتالية تنتهي اليوم</string>
+    <string name="calendar_target_date">المستهدف: %s</string>
+    <string name="calendar_badge_today">اليوم</string>
+    <string name="calendar_badge_tomorrow">غداً</string>
+    <string name="calendar_badge_in_days">خلال %d أيام</string>
+    <string name="calendar_badge_past">سابق</string>
+    <string name="calendar_streak_day">يوم متتالي</string>
+    <string name="calendar_has_deadline">لديه موعد نهائي</string>
+    <string name="calendar_weekday_sun">&#x627;&#x644;&#x623;&#x62D;&#x62F;</string>
+    <string name="calendar_weekday_mon">&#x627;&#x644;&#x627;&#x62B;&#x646;&#x64A;&#x646;</string>
+    <string name="calendar_weekday_tue">&#x627;&#x644;&#x62B;&#x644;&#x627;&#x62B;&#x627;&#x621;</string>
+    <string name="calendar_weekday_wed">&#x627;&#x644;&#x623;&#x631;&#x628;&#x639;&#x627;&#x621;</string>
+    <string name="calendar_weekday_thu">&#x627;&#x644;&#x62E;&#x645;&#x64A;&#x633;</string>
+    <string name="calendar_weekday_fri">&#x627;&#x644;&#x62C;&#x645;&#x639;&#x629;</string>
+    <string name="calendar_weekday_sat">&#x627;&#x644;&#x633;&#x628;&#x62A;</string>
+</resources>
+

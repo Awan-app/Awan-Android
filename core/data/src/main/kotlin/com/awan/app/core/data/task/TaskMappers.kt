@@ -1,6 +1,7 @@
 package com.awan.app.core.data.task
 
 import com.awan.app.core.data.category.toModel
+import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.Task
@@ -9,6 +10,7 @@ import com.awan.app.core.model.TaskSchedule
 import com.awan.app.core.model.TaskSession
 import com.awan.app.core.model.TaskStatus
 import com.awan.app.core.model.TaskWithSessions
+import com.awan.app.core.network.dto.AiTaskPreviewResponse
 import com.awan.app.core.network.dto.CreateTaskRequest
 import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.ScheduledSessionResponse
@@ -16,7 +18,7 @@ import com.awan.app.core.network.dto.SessionDraftDto
 import com.awan.app.core.network.dto.SessionDto
 import com.awan.app.core.network.dto.TaskInfoResponse
 import com.awan.app.core.network.dto.TaskScheduleResponse
-import com.awan.app.core.network.dto.TaskWithSessionsResponse
+import com.awan.app.core.network.dto.TaskWithSessionsDto
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -52,13 +54,27 @@ internal fun TaskInfoResponse.toModel(): Task = Task(
     description = description,
     estimatedDurationMinutes = estimatedDuration,
     status = status.toTaskStatus(),
-    mandatory = mandatory ?: false,
+    mandatory = mandatory ?: true,
     estimatedPoints = estimatedPoints ?: 0,
     allowTaskSplitting = allowTaskSplitting ?: false,
     goalId = goalId,
     dependsOnTaskIds = dependsOnTaskIds.orEmpty(),
     category = category?.toModel(),
 )
+
+internal fun AiTaskPreviewResponse.toModel(): AiTaskSuggestion {
+    val proposed = task
+    return AiTaskSuggestion(
+        title = proposed?.title.orEmpty(),
+        description = proposed?.description,
+        estimatedDurationMinutes = proposed?.estimatedDuration,
+        mandatory = proposed?.mandatory ?: true,
+        estimatedPoints = proposed?.estimatedPoints ?: 0,
+        allowTaskSplitting = proposed?.allowTaskSplitting ?: false,
+        categoryId = proposed?.category?.id ?: proposed?.categoryId,
+        categoryName = proposed?.category?.name,
+    )
+}
 
 /**
  * An empty `scheduledSessions` with nothing in `unscheduledTasks` still means nothing was placed, so
@@ -82,9 +98,8 @@ private const val UNKNOWN_REFUSAL = "UNSCHEDULED"
 internal fun ScheduledSessionResponse.toModel(): TaskSession? {
     val parsedStart = start?.toLocalDateTimeOrNull() ?: return null
     val parsedEnd = end?.toLocalDateTimeOrNull() ?: return null
-    val id = sessionId ?: return null
     return TaskSession(
-        id = id,
+        id = sessionId.orEmpty(),
         start = parsedStart,
         end = parsedEnd,
         status = SessionStatus.SCHEDULED,
@@ -93,7 +108,7 @@ internal fun ScheduledSessionResponse.toModel(): TaskSession? {
     )
 }
 
-internal fun TaskWithSessionsResponse.toModel(): TaskWithSessions = TaskWithSessions(
+internal fun TaskWithSessionsDto.toModel(): TaskWithSessions = TaskWithSessions(
     task = task.toModel(),
     sessions = sessions.mapNotNull { it.toModel() },
 )

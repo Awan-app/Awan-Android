@@ -57,8 +57,8 @@ include(":feature:goals:api")
 include(":feature:goals:impl")
 include(":feature:profile:api")
 include(":feature:profile:impl")
-include(":feature:profile-setup:api")
-include(":feature:profile-setup:impl")
+include(":feature:marketplace:api")
+include(":feature:marketplace:impl")
 // No api/impl split: the add-task sheet is state-driven, not a navigation destination, so it has
 // no Route to export and only :app consumes it.
 include(":feature:add-task")

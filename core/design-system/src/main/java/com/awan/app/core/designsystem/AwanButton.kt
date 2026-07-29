@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -39,17 +38,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-
 
 /**
  * [style] and [rimStyle] are applied last onto the variant's face and rim, so a caller can retint a
  * variant without redefining its geometry — which is how one [AwanButtonVariant.Chip] serves a whole
  * row of differently-toned attribute chips.
+ *
+ * Sizing follows the same fix as [AwanCard]: the rim used to be sized with `matchParentSize()` while
+ * the outer container relied on `propagateMinConstraints` to end up the right size — which does not
+ * reliably hug the face for every content width/variant combination. Here the face is measured first
+ * and the rim is then forced into exactly that size, so it can never drift from the face's edges.
  */
 @Composable
 fun AwanButton(
@@ -111,7 +116,7 @@ fun AwanButton(
         label = "AwanButtonRimStartInset",
     ).value
 
-    Box(
+    Layout(
         modifier = modifier
             // clickable() withholds its press interaction for TapIndicationDelay inside a scrollable
             // container, so a quick tap only presses once the finger is already up. Own the press.
@@ -140,46 +145,75 @@ fun AwanButton(
                 },
             )
             .focusable(enabled = effectiveEnabled, interactionSource = interactionSource)
-            .styleable(styleState, AwanTheme.styles.buttonFocus)
-            .defaultMinSize(minWidth = minTouchSize, minHeight = minTouchSize),
-        contentAlignment = Alignment.TopCenter,
-        propagateMinConstraints = true,
-    ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .padding(top = rimTopInset, end = rimStartInset)
-                .styleable(styleState, variantRim, rimStyle)
-        )
-        CompositionLocalProvider(
-            LocalContentColor provides contentColor,
-            LocalAwanTextStyle provides AwanTheme.styles.buttonLabel,
-        ) {
-            Row(
+            .styleable(styleState, AwanTheme.styles.buttonFocus),
+        content = {
+            // Rim (index 0). No matchParentSize here — the custom measure policy below forces
+            // it to exactly the face's resolved size, whatever that ends up being.
+            Box(
                 modifier = Modifier
-                    .padding(bottom = rimDepth, start = rimSide)
-                    .styleable(styleState, faceStyle, style),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
+                    .padding(top = rimTopInset, end = rimStartInset)
+                    .styleable(styleState, variantRim, rimStyle)
+            )
+            // Face (index 1). Its own padding(bottom/start) reserves the strip the rim peeks
+            // through, and its measured size becomes the button's true size.
+            CompositionLocalProvider(
+                LocalContentColor provides contentColor,
+                LocalAwanTextStyle provides AwanTheme.styles.buttonLabel,
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(AwanTheme.spacing.md),
-                        color = LocalContentColor.current,
-                        strokeWidth = 2.dp,
-                    )
-                    Spacer(modifier = Modifier.width(AwanTheme.spacing.xs))
-                } else if (icon != null) {
-                    Box(
-                        modifier = Modifier.size(AwanTheme.spacing.xl),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        icon()
+                Row(
+                    modifier = Modifier
+                        .padding(bottom = rimDepth, start = rimSide)
+                        .styleable(styleState, faceStyle, style),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(AwanTheme.spacing.md),
+                            color = LocalContentColor.current,
+                            strokeWidth = 2.dp,
+                        )
+                        Spacer(modifier = Modifier.width(AwanTheme.spacing.xs))
+                    } else if (icon != null) {
+                        Box(
+                            modifier = Modifier.size(AwanTheme.spacing.xl),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            icon()
+                        }
+                        Spacer(modifier = Modifier.width(AwanTheme.spacing.xs))
                     }
-                    Spacer(modifier = Modifier.width(AwanTheme.spacing.xs))
+                    content()
                 }
-                content()
             }
+        },
+    ) { measurables, constraints ->
+        // Same fix as AwanCard: measure the face first (honouring the touch-target minimum),
+        // then force the rim into exactly that size. No reliance on matchParentSize/propagation.
+        val minTouchPx = minTouchSize.roundToPx()
+        val safeMaxWidth = constraints.maxWidth.coerceAtLeast(0)
+        val safeMaxHeight = constraints.maxHeight.coerceAtLeast(0)
+        val minW = maxOf(constraints.minWidth, minTouchPx).coerceIn(0, safeMaxWidth)
+        val minH = maxOf(constraints.minHeight, minTouchPx).coerceIn(0, safeMaxHeight)
+
+        val safeConstraints = Constraints(
+            minWidth = minW,
+            maxWidth = safeMaxWidth,
+            minHeight = minH,
+            maxHeight = safeMaxHeight,
+        )
+
+        val facePlaceable = measurables[1].measure(safeConstraints)
+        val width = facePlaceable.width.coerceAtLeast(0)
+        val height = facePlaceable.height.coerceAtLeast(0)
+
+        // Rim gets fixed constraints equal to the face's resolved size — it can never be
+        // bigger, smaller, or misaligned relative to the face, regardless of content width.
+        val rimPlaceable = measurables[0].measure(Constraints.fixed(width, height))
+
+        layout(width, height) {
+            rimPlaceable.placeRelative(0, 0)
+            facePlaceable.placeRelative(0, 0)
         }
     }
 }
@@ -244,7 +278,7 @@ private fun DarkButtonsPreview() {
 
 @Composable
 private fun ButtonsPreview(darkTheme: Boolean) {
-    AwanTheme(darkTheme = darkTheme) {
+    AwanTheme(dark = darkTheme) {
         androidx.compose.foundation.layout.Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -252,6 +286,13 @@ private fun ButtonsPreview(darkTheme: Boolean) {
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            // Full-width "SEND CODE"-style primary button, narrow content in a wide button —
+            // this is exactly the case the old matchParentSize rim used to get wrong.
+            AwanButton(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth(),
+                variant = AwanButtonVariant.Primary,
+            ) { AwanText("SEND CODE") }
             AwanButton(
                 onClick = {},
                 modifier = Modifier.wrapContentWidth(),

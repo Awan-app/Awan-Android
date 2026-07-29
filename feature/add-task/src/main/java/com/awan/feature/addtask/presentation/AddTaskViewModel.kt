@@ -9,11 +9,12 @@ import com.awan.app.core.domain.goal.usecase.ContinueGoalDecompositionUseCase
 import com.awan.app.core.domain.task.parser.ParsedTaskInput
 import com.awan.app.core.domain.task.usecase.ApplyTaskAttributeUseCase
 import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
-import com.awan.app.core.domain.task.usecase.CreateTaskWithAiUseCase
 import com.awan.app.core.domain.task.usecase.DeleteTaskUseCase
 import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
+import com.awan.app.core.domain.task.usecase.PreviewTaskWithAiUseCase
 import com.awan.app.core.domain.task.usecase.ScheduleTaskWithAiUseCase
 import com.awan.app.core.domain.task.usecase.TaskAttribute
+import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.model.Category
 import com.awan.app.core.model.GoalDecompositionBlock
 import com.awan.app.core.model.Task
@@ -39,7 +40,7 @@ class AddTaskViewModel @Inject constructor(
     private val applyTaskAttribute: ApplyTaskAttributeUseCase,
     private val getCategories: GetCategoriesUseCase,
     private val createTask: CreateTaskUseCase,
-    private val createTaskWithAi: CreateTaskWithAiUseCase,
+    private val previewTaskWithAi: PreviewTaskWithAiUseCase,
     private val scheduleTaskWithAi: ScheduleTaskWithAiUseCase,
     private val deleteTask: DeleteTaskUseCase,
     private val continueGoalDecomposition: ContinueGoalDecompositionUseCase,
@@ -258,7 +259,8 @@ class AddTaskViewModel @Inject constructor(
         }
         when (current.aiStage) {
             AddTaskAiStage.COMPOSING -> askAwan()
-            AddTaskAiStage.MANUAL -> replaceAiTaskWithScheduledOne()
+            // MANUAL is the same plain create as OFF: scheduleWithAi() never leaves a task behind
+            // for a failed attempt to inherit, so picking a time by hand always starts from scratch.
             else -> createDirectly()
         }
     }
@@ -387,7 +389,7 @@ class AddTaskViewModel @Inject constructor(
             _state.update {
                 it.copy(aiStage = AddTaskAiStage.WORKING, isSubmitting = true, errorMessage = null)
             }
-            when (val result = createTaskWithAi(current.input, current.description)) {
+            when (val result = previewTaskWithAi(current.input, current.description)) {
                 is Result.Success -> _state.update { it.intoReview(result.data) }
                 is Result.Error -> _state.update {
                     it.copy(
@@ -406,43 +408,63 @@ class AddTaskViewModel @Inject constructor(
      * Awan's answer is folded back into the sentence rather than held beside it, so the review stage
      * is the ordinary form with ordinary chips — one path from text to draft, as before.
      */
-    private fun AddTaskState.intoReview(task: Task): AddTaskState {
-        var sentence = task.title
+    private fun AddTaskState.intoReview(suggestion: AiTaskSuggestion): AddTaskState {
+        var sentence = suggestion.title.ifBlank { input }
         var parsed = parseTaskInput(sentence)
-        task.estimatedDurationMinutes?.let {
+        suggestion.estimatedDurationMinutes?.let {
             sentence = applyTaskAttribute(sentence, parsed, TaskAttribute.Lasting(it))
             parsed = parseTaskInput(sentence)
         }
-        task.category?.let {
-            sentence = applyTaskAttribute(sentence, parsed, TaskAttribute.In(it.name))
+        // The preview may only echo a categoryId, not a name — fall back to our own list for that.
+        val categoryName = suggestion.categoryName
+            ?: suggestion.categoryId?.let { id -> availableCategories.firstOrNull { it.id == id }?.name }
+        categoryName?.let {
+            sentence = applyTaskAttribute(sentence, parsed, TaskAttribute.In(it))
             parsed = parseTaskInput(sentence)
         }
         return copy(
             aiStage = AddTaskAiStage.REVIEW,
-            aiTaskId = task.id,
-            aiPoints = task.estimatedPoints,
-            aiSplittable = task.allowTaskSplitting,
+            aiPoints = suggestion.estimatedPoints,
+            aiSplittable = suggestion.allowTaskSplitting,
             input = sentence,
             parsed = parsed,
-            description = task.description.orEmpty(),
-            mandatory = task.mandatory,
-            // Awan's category may not be one of ours; fall back to the id it actually returned.
-            resolvedCategory = availableCategories.matching(parsed.categoryToken) ?: task.category,
+            description = suggestion.description.orEmpty(),
+            mandatory = suggestion.mandatory,
+            // Awan's category may not be one of ours — keep the id with whatever name we resolved,
+            // but never fall back to the raw id as a display name (it's usually a UUID).
+            resolvedCategory = availableCategories.matching(parsed.categoryToken)
+                ?: categoryName?.let { name ->
+                    suggestion.categoryId?.let { id -> Category(id = id, name = name) }
+                },
             isSubmitting = false,
             errorMessage = null,
         )
     }
 
     /**
-     * The one path that keeps Awan's task. A 200 here can still mean "no slot found", which is not an
-     * error to bounce off — the sheet stays put so the user can pick a time instead.
+     * Nothing exists on the backend yet at REVIEW, so this creates the task itself — with whatever
+     * the user edited through the chips — before asking the engine to place it. `startAt` is forced
+     * out: the composed sentence may still carry a time phrase typed before Awan was switched on, and
+     * "let Awan schedule it" has to mean the engine picks the slot, not whatever the parser found.
+     * Anything short of a placed session deletes what was just created, so a retry (or switching to
+     * "I'll pick a time") never has a stray task to inherit.
      */
     private fun scheduleWithAi() {
         val current = _state.value
-        val taskId = current.aiTaskId ?: return
         viewModelScope.launch {
             _state.update { it.copy(isSubmitting = true, errorMessage = null) }
-            when (val result = scheduleTaskWithAi(taskId)) {
+            val created = when (val result = createTask(current.toDraft().copy(startAt = null))) {
+                is Result.Success -> result.data
+                is Result.Error -> {
+                    _state.update {
+                        it.copy(isSubmitting = false, errorMessage = R.string.add_task_error_create_failed)
+                    }
+                    return@launch
+                }
+
+                Result.Loading -> return@launch
+            }
+            when (val result = scheduleTaskWithAi(created.id)) {
                 is Result.Success -> when {
                     // The engine chose the slot, so the receipt reports its answer, not the request.
                     result.data.isScheduled -> confirm(
@@ -453,43 +475,23 @@ class AddTaskViewModel @Inject constructor(
                         ),
                     )
 
-                    else -> _state.update {
-                        it.copy(
-                            aiStage = AddTaskAiStage.REVIEW,
-                            isSubmitting = false,
-                            errorMessage = R.string.add_task_error_ai_schedule_failed,
-                        )
+                    else -> {
+                        deleteTask(created.id)
+                        _state.update {
+                            it.copy(
+                                aiStage = AddTaskAiStage.REVIEW,
+                                isSubmitting = false,
+                                errorMessage = R.string.add_task_error_ai_schedule_failed,
+                            )
+                        }
                     }
                 }
 
-                is Result.Error -> _state.update {
-                    it.copy(isSubmitting = false, errorMessage = R.string.add_task_error_ai_schedule_failed)
-                }
-
-                Result.Loading -> Unit
-            }
-        }
-    }
-
-    /**
-     * There is no endpoint that adds a session to an existing task, so placing Awan's task by hand
-     * means replacing it. Delete first: if the create then fails the sheet still holds every field
-     * and a retry rebuilds it, whereas create-first would leave a duplicate nothing cleans up.
-     */
-    private fun replaceAiTaskWithScheduledOne() {
-        val current = _state.value
-        viewModelScope.launch {
-            _state.update { it.copy(isSubmitting = true, errorMessage = null) }
-            current.aiTaskId?.let { deleteTask(it) }
-            when (createTask(current.toDraft())) {
-                is Result.Success -> confirm(current.plannedConfirmation())
-                is Result.Error -> _state.update {
-                    // The AI task is gone, so a retry has to go through create, not delete-then-create.
-                    it.copy(
-                        aiTaskId = null,
-                        isSubmitting = false,
-                        errorMessage = R.string.add_task_error_create_failed,
-                    )
+                is Result.Error -> {
+                    deleteTask(created.id)
+                    _state.update {
+                        it.copy(isSubmitting = false, errorMessage = R.string.add_task_error_ai_schedule_failed)
+                    }
                 }
 
                 Result.Loading -> Unit
@@ -535,13 +537,12 @@ class AddTaskViewModel @Inject constructor(
     }
 
     /**
-     * Walking away after Awan has already saved a task has to take that task with it, or the Inbox
-     * collects a row for every abandoned attempt.
+     * Nothing is ever persisted while the sheet is open — a preview never saves, and `scheduleWithAi`
+     * cleans up after itself on anything short of a placed session — so walking away has nothing to
+     * take with it.
      */
     private fun discard() {
-        val abandoned = _state.value.aiTaskId
         _state.update { it.copy(showDiscardConfirm = false) }
-        viewModelScope.launch { abandoned?.let { deleteTask(it) } }
         close(AddTaskEvent.Dismissed)
     }
 

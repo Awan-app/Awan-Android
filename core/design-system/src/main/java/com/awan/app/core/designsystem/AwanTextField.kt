@@ -58,19 +58,14 @@ fun AwanTextField(
         Modifier
     }
 
-    val baseModifier = if (isError) {
-        Modifier.styleable(styleState, AwanTheme.styles.textField, AwanTheme.styles.textFieldError)
-    } else {
-        Modifier.styleable(styleState, AwanTheme.styles.textField)
-    }
+    val baseStyle = if (isError) AwanTheme.styles.textFieldError else Style
 
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier
             .then(semanticsModifier)
-            .then(baseModifier)
-            .styleable(styleState, style),
+            .styleable(styleState, AwanTheme.styles.textField, baseStyle, style),
         enabled = enabled,
         textStyle = resolvedTextStyle,
         keyboardOptions = keyboardOptions,
@@ -152,18 +147,18 @@ fun AwanTextField(
 @Preview(name = "AwanTextField · Light", showBackground = true)
 @Composable
 private fun LightTextFieldPreview() {
-    TextFieldPreview(darkTheme = false)
+    TextFieldPreview(dark = false)
 }
 
 @Preview(name = "AwanTextField · Dark", showBackground = true)
 @Composable
 private fun DarkTextFieldPreview() {
-    TextFieldPreview(darkTheme = true)
+    TextFieldPreview(dark = true)
 }
 
 @Composable
-private fun TextFieldPreview(darkTheme: Boolean) {
-    AwanTheme(darkTheme = darkTheme) {
+private fun TextFieldPreview(dark: Boolean) {
+    AwanTheme(dark = dark) {
         androidx.compose.foundation.layout.Column(
             modifier = Modifier
                 .fillMaxWidth()

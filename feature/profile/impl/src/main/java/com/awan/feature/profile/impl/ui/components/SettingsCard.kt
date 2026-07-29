@@ -1,0 +1,49 @@
+package com.awan.feature.profile.impl.ui.components
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.awan.app.core.designsystem.*
+import com.awan.feature.profile.impl.R as ProfileR
+
+@Composable
+fun SettingsCard(
+    onSettingsClick: (String) -> Unit,
+    onLogoutClick: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionTitle(stringResource(ProfileR.string.profile_section_settings))
+        AwanCard(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(0.dp)
+        ) {
+            PreferenceRow(
+                icon = Icons.Default.NotificationsActive,
+                title = stringResource(ProfileR.string.profile_notifications),
+                value = stringResource(ProfileR.string.profile_enabled),
+                onClick = { onSettingsClick("notifications") },
+                showDivider = true,
+                iconColor = AwanTheme.colors.zoneTangerine
+            )
+            PreferenceRow(
+                icon = Icons.AutoMirrored.Filled.Help,
+                title = stringResource(ProfileR.string.profile_help_center),
+                onClick = { onSettingsClick("help") },
+                showDivider = true,
+                iconColor = AwanTheme.colors.meta
+            )
+            PreferenceRow(
+                icon = Icons.AutoMirrored.Filled.Logout,
+                title = stringResource(ProfileR.string.profile_logout),
+                onClick = onLogoutClick,
+                iconColor = AwanTheme.colors.destructive,
+                titleColor = AwanTheme.colors.destructive
+            )
+        }
+    }
+}

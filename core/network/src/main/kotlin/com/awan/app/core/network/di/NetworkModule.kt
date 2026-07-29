@@ -6,11 +6,13 @@ import com.awan.app.core.network.api.AuthApiService
 import com.awan.app.core.network.api.CategoryApiService
 import com.awan.app.core.network.api.GoalApiService
 import com.awan.app.core.network.api.OnboardingApiService
+import com.awan.app.core.network.api.ProfileApiService
 import com.awan.app.core.network.api.TaskApiService
-import com.awan.app.core.network.api.ZonesApiService
+import com.awan.app.core.network.api.ZoneApiService
 import com.awan.app.core.network.api.TemplateApiService
 import com.awan.app.core.network.device.AndroidDeviceIdProvider
 import com.awan.app.core.network.device.DeviceIdProvider
+import com.awan.app.core.network.interceptor.AiTimeoutInterceptor
 import com.awan.app.core.network.interceptor.AuthInterceptor
 import com.awan.app.core.network.interceptor.TokenAuthenticator
 import dagger.Binds
@@ -67,6 +69,7 @@ object NetworkModule {
     fun providesNoAuthOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(AiTimeoutInterceptor())
         .addInterceptor(loggingInterceptor)
         .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -81,6 +84,7 @@ object NetworkModule {
         loggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
+        .addInterceptor(AiTimeoutInterceptor())
         .addInterceptor(loggingInterceptor)
         .authenticator(tokenAuthenticator)
         .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -123,13 +127,18 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun providesProfileApiService(retrofit: Retrofit): ProfileApiService =
+        retrofit.create(ProfileApiService::class.java)
+
+    @Provides
+    @Singleton
     fun providesTaskApiService(retrofit: Retrofit): TaskApiService =
         retrofit.create(TaskApiService::class.java)
 
     @Provides
     @Singleton
-    fun providesZonesApiService(retrofit: Retrofit): ZonesApiService =
-        retrofit.create(ZonesApiService::class.java)
+    fun providesZoneApiService(retrofit: Retrofit): ZoneApiService =
+        retrofit.create(ZoneApiService::class.java)
 
     @Provides
     @Singleton

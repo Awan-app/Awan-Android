@@ -87,7 +87,7 @@ internal object HomeMapper {
         }
     }
 
-    private fun parseSessionStatus(raw: String): SessionStatus = when (raw.uppercase()) {
+    private fun parseSessionStatus(raw: String?): SessionStatus = when (raw?.uppercase()) {
         "COMPLETED"   -> SessionStatus.COMPLETED
         "IN_PROGRESS" -> SessionStatus.IN_PROGRESS
         "CANCELLED"   -> SessionStatus.CANCELLED

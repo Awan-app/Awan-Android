@@ -25,7 +25,7 @@ class AiTaskRepositoryImpl @Inject constructor(
 
     override suspend fun createAndScheduleTask(title: String): Result<FirstTask?> = withContext(ioDispatcher) {
         val created = when (val result = remoteDataSource.createTaskWithAi(CreateTaskWithAiRequest(title = title))) {
-            is Result.Success -> result.data
+            is Result.Success -> result.data.task
             is Result.Error -> return@withContext Result.Error(result.error)
             Result.Loading -> return@withContext Result.Loading
         }
