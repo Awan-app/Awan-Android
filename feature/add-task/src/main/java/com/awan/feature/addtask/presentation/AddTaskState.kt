@@ -5,6 +5,8 @@ import com.awan.app.core.designsystem.MascotExpression
 import com.awan.app.core.domain.task.parser.ParsedTaskInput
 import com.awan.app.core.domain.task.parser.TaskInputParser
 import com.awan.app.core.model.Category
+import com.awan.app.core.model.GoalDecompositionBlock
+import com.awan.app.core.model.GoalProposal
 import com.awan.app.core.model.TaskDraft
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -14,6 +16,26 @@ private const val MINUTES_PER_HOUR = 60
 enum class AddTaskMode { TASK, GOAL }
 
 enum class AddTaskPicker { DATE, TIME, DURATION, CATEGORY }
+
+/**
+ * The four user-visible steps of the AI goal-decomposition flow.
+ */
+sealed interface GoalStep {
+    data object Initial : GoalStep
+    data class MultipleChoice(
+        val question: String,
+        val options: List<String>,
+        val selectedOption: String? = null,
+    ) : GoalStep
+
+    data class WritingQuestion(
+        val question: String,
+    ) : GoalStep
+
+    data class Preview(
+        val proposal: GoalProposal,
+    ) : GoalStep
+}
 
 /**
  * How far through the hand-over to Awan the sheet is. [OFF] is the sheet as it has always been —
@@ -77,6 +99,9 @@ data class AddTaskState(
     /** Awan's own estimates, held aside because the sentence has no syntax for them. */
     val aiPoints: Int = 0,
     val aiSplittable: Boolean = false,
+    val goalStep: GoalStep = GoalStep.Initial,
+    val goalSessionId: String? = null,
+    val goalReplyBlocks: List<GoalDecompositionBlock> = emptyList(),
     val isSubmitting: Boolean = false,
     /** True for one beat after a successful create, so the mascot can cheer. */
     val isCelebrating: Boolean = false,
@@ -92,13 +117,26 @@ data class AddTaskState(
      * day defaults its hour, which is not a time anyone chose, so it does not count as one.
      */
     val canSubmit: Boolean
-        get() = mode == AddTaskMode.TASK && !isSubmitting && when (aiStage) {
-            AddTaskAiStage.COMPOSING, AddTaskAiStage.WORKING -> input.isNotBlank()
-            AddTaskAiStage.OFF ->
-                parsed.title.isNotBlank() && parsed.hasExplicitTime && parsed.durationMinutes != null
+        get() = if (mode == AddTaskMode.GOAL) {
+            !isSubmitting && when (val step = goalStep) {
+                GoalStep.Initial, is GoalStep.WritingQuestion, is GoalStep.Preview -> input.isNotBlank()
+                is GoalStep.MultipleChoice -> !step.selectedOption.isNullOrBlank()
+            }
+        } else {
+            !isSubmitting && when (aiStage) {
+                AddTaskAiStage.COMPOSING, AddTaskAiStage.WORKING -> input.isNotBlank()
+                AddTaskAiStage.OFF ->
+                    parsed.title.isNotBlank() && parsed.hasExplicitTime && parsed.durationMinutes != null
 
-            else -> parsed.title.isNotBlank()
+                else -> parsed.title.isNotBlank()
+            }
         }
+
+    val canAcceptGoal: Boolean
+        get() = mode == AddTaskMode.GOAL &&
+            goalStep is GoalStep.Preview &&
+            goalSessionId != null &&
+            !isSubmitting
 
     /**
      * The switch is a way *into* the flow only: once Awan has answered there is no going back, and
@@ -112,7 +150,12 @@ data class AddTaskState(
             aiStage != AddTaskAiStage.WORKING
 
     /** Same reason: the mode selector would offer a way out of a task that already exists. */
-    val showsModeSelector: Boolean get() = !aiStage.isReviewing && confirmation == null
+    val showsModeSelector: Boolean
+        get() = confirmation == null && !isSubmitting && aiStage != AddTaskAiStage.WORKING && if (mode == AddTaskMode.TASK) {
+            !aiStage.isReviewing
+        } else {
+            goalSessionId == null && goalStep == GoalStep.Initial
+        }
 
     /** The chips are a readout of the parser, so they go quiet while it is stood down. */
     val showsAttributeChips: Boolean get() = !aiStage.isComposing
@@ -122,8 +165,12 @@ data class AddTaskState(
 
     /** Nothing is at risk once the task is saved, so the receipt closes without an argument. */
     val isDirty: Boolean
-        get() = confirmation == null &&
-            (input.isNotBlank() || description.isNotBlank() || aiStage != AddTaskAiStage.OFF)
+        get() = confirmation == null && (
+            input.isNotBlank() ||
+            description.isNotBlank() ||
+            aiStage != AddTaskAiStage.OFF ||
+            (mode == AddTaskMode.GOAL && (goalSessionId != null || goalStep != GoalStep.Initial))
+        )
 
     /** Opens the calendar on whatever day the sentence already says, or on today. */
     val pickerInitialDate: LocalDate

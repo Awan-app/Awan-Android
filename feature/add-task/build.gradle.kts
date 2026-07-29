@@ -13,12 +13,13 @@ dependencies {
     implementation(project(":core:model"))
 
     implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.icons.lucide.android)
 
     testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }

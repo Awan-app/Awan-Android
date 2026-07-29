@@ -58,7 +58,7 @@ import com.awan.feature.addtask.presentation.AddTaskViewModel
 import com.awan.feature.addtask.presentation.TaskConfirmation
 import com.awan.feature.addtask.ui.components.AddTaskModeSelector
 import com.awan.feature.addtask.ui.components.AiToggle
-import com.awan.feature.addtask.ui.components.GoalPlaceholder
+import com.awan.feature.addtask.ui.components.GoalForm
 import com.awan.feature.addtask.ui.components.TaskAttributeChips
 import com.awan.feature.addtask.ui.components.TaskConfirmationPanel
 import com.awan.feature.addtask.ui.components.rememberTokenHighlight
@@ -78,6 +78,7 @@ fun AddTaskSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     onTaskCreated: (String) -> Unit = {},
+    onGoalCreated: (String) -> Unit = {},
     viewModel: AddTaskViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -100,6 +101,11 @@ fun AddTaskSheet(
         when (event) {
             is AddTaskEvent.TaskCreated -> {
                 onTaskCreated(event.title)
+                onDismiss()
+            }
+
+            is AddTaskEvent.GoalCreated -> {
+                onGoalCreated(event.title)
                 onDismiss()
             }
 
@@ -207,9 +213,10 @@ private fun AddTaskSheetContent(
                     )
 
                     AddTaskMode.TASK -> TaskForm(state = state, onAction = onAction)
-                    AddTaskMode.GOAL -> GoalPlaceholder()
+                    AddTaskMode.GOAL -> GoalForm(state = state, onAction = onAction)
                     else -> Unit
                 }
+
             }
         }
     }

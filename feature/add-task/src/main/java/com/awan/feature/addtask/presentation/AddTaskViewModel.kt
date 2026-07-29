@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
+import com.awan.app.core.domain.goal.usecase.ConfirmGoalDecompositionUseCase
+import com.awan.app.core.domain.goal.usecase.ContinueGoalDecompositionUseCase
 import com.awan.app.core.domain.task.parser.ParsedTaskInput
 import com.awan.app.core.domain.task.usecase.ApplyTaskAttributeUseCase
 import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
@@ -13,11 +15,14 @@ import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
 import com.awan.app.core.domain.task.usecase.ScheduleTaskWithAiUseCase
 import com.awan.app.core.domain.task.usecase.TaskAttribute
 import com.awan.app.core.model.Category
+import com.awan.app.core.model.GoalDecompositionBlock
 import com.awan.app.core.model.Task
 import com.awan.feature.addtask.R
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +42,8 @@ class AddTaskViewModel @Inject constructor(
     private val createTaskWithAi: CreateTaskWithAiUseCase,
     private val scheduleTaskWithAi: ScheduleTaskWithAiUseCase,
     private val deleteTask: DeleteTaskUseCase,
+    private val continueGoalDecomposition: ContinueGoalDecompositionUseCase,
+    private val confirmGoalDecomposition: ConfirmGoalDecompositionUseCase,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -45,6 +52,8 @@ class AddTaskViewModel @Inject constructor(
 
     private val _events = Channel<AddTaskEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
+
+    private var activeGoalJob: Job? = null
 
     init {
         loadCategories()
@@ -58,7 +67,7 @@ class AddTaskViewModel @Inject constructor(
 
     fun onAction(action: AddTaskAction) {
         when (action) {
-            is AddTaskAction.ModeChanged -> _state.update { it.copy(mode = action.mode, errorMessage = null) }
+            is AddTaskAction.ModeChanged -> onModeChanged(action.mode)
             is AddTaskAction.InputChanged -> onInputChanged(action.input)
             is AddTaskAction.DescriptionChanged -> _state.update { it.copy(description = action.description) }
             AddTaskAction.MandatoryToggled -> _state.update { it.copy(mandatory = !it.mandatory) }
@@ -76,10 +85,61 @@ class AddTaskViewModel @Inject constructor(
                 _state.update { it.copy(aiStage = AddTaskAiStage.MANUAL, errorMessage = null) }
 
             AddTaskAction.Submit -> submit()
+            is AddTaskAction.GoalOptionSelected -> selectGoalOption(action.option)
+            AddTaskAction.AcceptGoalProposal -> acceptGoalProposal()
             AddTaskAction.DismissRequested -> requestDismiss()
             AddTaskAction.DiscardConfirmed -> discard()
             AddTaskAction.DiscardCancelled -> _state.update { it.copy(showDiscardConfirm = false) }
             AddTaskAction.Dismiss -> close(AddTaskEvent.Dismissed)
+        }
+    }
+
+    private fun onModeChanged(newMode: AddTaskMode) {
+        val current = _state.value
+        if (current.mode == newMode) return
+
+        val isBlocked = current.isSubmitting ||
+            current.confirmation != null ||
+            (current.mode == AddTaskMode.TASK && (current.aiStage.isReviewing || current.aiStage == AddTaskAiStage.WORKING)) ||
+            (current.mode == AddTaskMode.GOAL && (current.goalSessionId != null || current.goalStep != GoalStep.Initial))
+        if (isBlocked) return
+
+        if (newMode == AddTaskMode.GOAL) {
+            _state.update {
+                it.copy(
+                    mode = AddTaskMode.GOAL,
+                    aiStage = AddTaskAiStage.OFF,
+                    openPicker = null,
+                    parsed = ParsedTaskInput.Empty,
+                    resolvedCategory = null,
+                    errorMessage = null,
+                )
+            }
+        } else {
+            val parsed = parseTaskInput(current.input)
+            _state.update {
+                it.copy(
+                    mode = AddTaskMode.TASK,
+                    parsed = parsed,
+                    resolvedCategory = it.availableCategories.matching(parsed.categoryToken),
+                    errorMessage = null,
+                )
+            }
+        }
+    }
+
+    private fun selectGoalOption(option: String) {
+        _state.update { state ->
+            if (state.mode != AddTaskMode.GOAL || state.isSubmitting) return@update state
+            val currentStep = state.goalStep
+            if (currentStep is GoalStep.MultipleChoice && currentStep.options.contains(option)) {
+                state.copy(
+                    goalStep = currentStep.copy(selectedOption = option),
+                    errorMessage = null,
+                )
+            } else {
+                state
+            }
         }
     }
 
@@ -119,7 +179,9 @@ class AddTaskViewModel @Inject constructor(
      * anything having to hide them one by one.
      */
     private fun onInputChanged(input: String) {
-        if (_state.value.aiStage.isComposing) {
+        val current = _state.value
+        if (current.mode == AddTaskMode.GOAL && current.isSubmitting) return
+        if (current.mode == AddTaskMode.GOAL || current.aiStage.isComposing) {
             _state.update { it.copy(input = input, errorMessage = null) }
             return
         }
@@ -189,12 +251,119 @@ class AddTaskViewModel @Inject constructor(
 
     private fun submit() {
         val current = _state.value
-        if (!current.canSubmit) return
+        if (!current.canSubmit || current.isSubmitting) return
+        if (current.mode == AddTaskMode.GOAL) {
+            submitGoalContinuation()
+            return
+        }
         when (current.aiStage) {
             AddTaskAiStage.COMPOSING -> askAwan()
             AddTaskAiStage.MANUAL -> replaceAiTaskWithScheduledOne()
             else -> createDirectly()
         }
+    }
+
+    private fun submitGoalContinuation() {
+        val current = _state.value
+        val (sessionId, message) = when (val step = current.goalStep) {
+            GoalStep.Initial -> null to current.input.trim()
+            is GoalStep.MultipleChoice -> {
+                val selected = step.selectedOption ?: return
+                current.goalSessionId to selected.trim()
+            }
+
+            is GoalStep.WritingQuestion -> current.goalSessionId to current.input.trim()
+            is GoalStep.Preview -> current.goalSessionId to current.input.trim()
+        }
+
+        _state.update { it.copy(isSubmitting = true, errorMessage = null) }
+
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            try {
+                when (val result = continueGoalDecomposition(sessionId = sessionId, message = message)) {
+                    is Result.Success -> {
+                        val reply = result.data
+                        val proposalBlock = reply.blocks.filterIsInstance<GoalDecompositionBlock.Proposal>().firstOrNull()
+                        val questionBlock = reply.blocks.filterIsInstance<GoalDecompositionBlock.Question>().firstOrNull()
+
+                        val nextStep = when {
+                            proposalBlock != null -> GoalStep.Preview(proposalBlock.proposal)
+                            questionBlock != null -> {
+                                if (questionBlock.options.isNotEmpty()) {
+                                    GoalStep.MultipleChoice(
+                                        question = questionBlock.text,
+                                        options = questionBlock.options,
+                                        selectedOption = null,
+                                    )
+                                } else {
+                                    GoalStep.WritingQuestion(question = questionBlock.text)
+                                }
+                            }
+
+                            else -> GoalStep.WritingQuestion(question = "")
+                        }
+
+                        _state.update {
+                            it.copy(
+                                goalStep = nextStep,
+                                goalSessionId = reply.sessionId,
+                                goalReplyBlocks = reply.blocks,
+                                input = "",
+                                isSubmitting = false,
+                                errorMessage = null,
+                            )
+                        }
+                    }
+
+                    is Result.Error -> {
+                        _state.update {
+                            it.copy(
+                                isSubmitting = false,
+                                errorMessage = R.string.add_task_error_goal_continuation_failed,
+                            )
+                        }
+                    }
+
+                    Result.Loading -> Unit
+                }
+            } finally {
+                if (activeGoalJob === coroutineContext[Job]) {
+                    activeGoalJob = null
+                }
+            }
+        }
+        activeGoalJob = job
+        job.start()
+    }
+
+    private fun acceptGoalProposal() {
+        val current = _state.value
+        if (!current.canAcceptGoal || current.isSubmitting) return
+        val sessionId = current.goalSessionId ?: return
+
+        _state.update { it.copy(isSubmitting = true, errorMessage = null) }
+
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            try {
+                when (val result = confirmGoalDecomposition(sessionId)) {
+                    is Result.Success -> close(AddTaskEvent.GoalCreated(result.data.title))
+                    is Result.Error -> _state.update {
+                        it.copy(
+                            isSubmitting = false,
+                            errorMessage = R.string.add_task_error_goal_confirm_failed,
+                        )
+                    }
+
+                    Result.Loading -> Unit
+                }
+            } finally {
+                if (activeGoalJob === coroutineContext[Job]) {
+                    activeGoalJob = null
+                }
+            }
+        }
+        activeGoalJob = job
+        job.start()
     }
 
     private fun createDirectly() {
@@ -382,6 +551,8 @@ class AddTaskViewModel @Inject constructor(
      * tap on `+` reopens whatever the last one left behind, receipt and all.
      */
     private fun close(event: AddTaskEvent) {
+        activeGoalJob?.cancel()
+        activeGoalJob = null
         _state.value = AddTaskState(today = LocalDate.now(clock))
         loadCategories()
         viewModelScope.launch { _events.send(event) }

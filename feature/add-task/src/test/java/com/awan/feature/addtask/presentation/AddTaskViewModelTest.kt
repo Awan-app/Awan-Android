@@ -5,6 +5,9 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.designsystem.MascotExpression
 import com.awan.app.core.domain.category.repository.CategoryRepository
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
+import com.awan.app.core.domain.goal.repository.GoalRepository
+import com.awan.app.core.domain.goal.usecase.ConfirmGoalDecompositionUseCase
+import com.awan.app.core.domain.goal.usecase.ContinueGoalDecompositionUseCase
 import com.awan.app.core.domain.task.parser.TaskInputParser
 import com.awan.app.core.domain.task.repository.TaskRepository
 import com.awan.app.core.domain.task.usecase.ApplyTaskAttributeUseCase
@@ -17,6 +20,11 @@ import com.awan.app.core.domain.zone.repository.ZoneRepository
 import com.awan.app.core.domain.zone.usecase.GetZonesForDateUseCase
 import com.awan.app.core.model.Category
 import com.awan.app.core.model.DayZone
+import com.awan.app.core.model.Goal
+import com.awan.app.core.model.GoalDecompositionBlock
+import com.awan.app.core.model.GoalDecompositionReply
+import com.awan.app.core.model.GoalProposal
+import com.awan.app.core.model.ProposedTask
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.Task
 import com.awan.app.core.model.TaskDraft
@@ -24,6 +32,7 @@ import com.awan.app.core.model.TaskSchedule
 import com.awan.app.core.model.TaskSession
 import com.awan.app.core.model.TaskWithSessions
 import com.awan.feature.addtask.R
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -127,6 +136,29 @@ class AddTaskViewModelTest {
         }
     }
 
+    private class FakeGoalRepository : GoalRepository {
+        var nextContinueReply: Result<GoalDecompositionReply>? = null
+        var nextConfirmResult: Result<Goal>? = null
+
+        val continueCalls = mutableListOf<Pair<String?, String>>()
+        val confirmCalls = mutableListOf<String>()
+
+        override suspend fun getGoals(): Result<List<Goal>> = Result.Success(emptyList())
+
+        override suspend fun continueDecomposition(
+            sessionId: String?,
+            message: String,
+        ): Result<GoalDecompositionReply> {
+            continueCalls += Pair(sessionId, message)
+            return nextContinueReply ?: Result.Error(AppError.Network)
+        }
+
+        override suspend fun confirmDecomposition(sessionId: String): Result<Goal> {
+            confirmCalls += sessionId
+            return nextConfirmResult ?: Result.Error(AppError.Network)
+        }
+    }
+
     private class FakeZoneRepository(private val zones: List<DayZone>) : ZoneRepository {
         var requestedDate: LocalDate? = null
 
@@ -151,6 +183,7 @@ class AddTaskViewModelTest {
     )
 
     private lateinit var taskRepository: FakeTaskRepository
+    private lateinit var goalRepository: FakeGoalRepository
     private lateinit var zoneRepository: FakeZoneRepository
     private lateinit var categoryRepository: FakeCategoryRepository
 
@@ -162,6 +195,8 @@ class AddTaskViewModelTest {
         createTaskWithAi = CreateTaskWithAiUseCase(taskRepository),
         scheduleTaskWithAi = ScheduleTaskWithAiUseCase(taskRepository),
         deleteTask = DeleteTaskUseCase(taskRepository),
+        continueGoalDecomposition = ContinueGoalDecompositionUseCase(goalRepository),
+        confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(goalRepository),
         clock = clock,
     )
 
@@ -181,6 +216,7 @@ class AddTaskViewModelTest {
         Locale.setDefault(Locale.ENGLISH)
         Dispatchers.setMain(testDispatcher)
         taskRepository = FakeTaskRepository()
+        goalRepository = FakeGoalRepository()
         zoneRepository = FakeZoneRepository(listOf(playZone))
         categoryRepository = FakeCategoryRepository(listOf(playCategory))
     }
@@ -213,13 +249,13 @@ class AddTaskViewModelTest {
     }
 
     @Test
-    fun `goal mode cannot be submitted`() = runTest(testDispatcher) {
+    fun `initial goal mode with non-blank input can be submitted`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 
-        viewModel.onAction(AddTaskAction.InputChanged("Gym session"))
         viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+        viewModel.onAction(AddTaskAction.InputChanged("Gym session"))
 
-        assertFalse(viewModel.state.value.canSubmit)
+        assertTrue(viewModel.state.value.canSubmit)
     }
 
     @Test
@@ -877,4 +913,569 @@ class AddTaskViewModelTest {
         assertTrue(taskRepository.deleted.isEmpty())
         assertNotNull(viewModel.events.first())
     }
+
+    // ── AI Goal Creation Flow ────────────────────────────────────────────────
+
+    @Test
+    fun `Initial to MCQ transition stores session id options question reply blocks and clears input`() =
+        runTest(testDispatcher) {
+            val reply = GoalDecompositionReply(
+                sessionId = "session-123",
+                blocks = listOf(
+                    GoalDecompositionBlock.Text("Let's break this down."),
+                    GoalDecompositionBlock.Question(
+                        text = "What is your deadline?",
+                        options = listOf("1 month", "3 months"),
+                    ),
+                ),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(reply)
+            val viewModel = viewModel()
+
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            viewModel.onAction(AddTaskAction.InputChanged(" Learn Spanish "))
+            viewModel.onAction(AddTaskAction.Submit)
+
+            // exact (null, trimmedMessage) call
+            assertEquals(listOf(Pair(null, "Learn Spanish")), goalRepository.continueCalls)
+
+            val state = viewModel.state.value
+            assertEquals("session-123", state.goalSessionId)
+            assertEquals("", state.input)
+            assertEquals(reply.blocks, state.goalReplyBlocks)
+
+            val mcq = state.goalStep as GoalStep.MultipleChoice
+            assertEquals("What is your deadline?", mcq.question)
+            assertEquals(listOf("1 month", "3 months"), mcq.options)
+            assertNull(mcq.selectedOption)
+            assertFalse(state.canSubmit)
+        }
+
+    @Test
+    fun `MCQ selection does not trigger submit and submit sends selected option with session id`() =
+        runTest(testDispatcher) {
+            val initialReply = GoalDecompositionReply(
+                sessionId = "session-123",
+                blocks = listOf(
+                    GoalDecompositionBlock.Question(
+                        text = "Choose timeframe",
+                        options = listOf("1 month", "3 months"),
+                    ),
+                ),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(initialReply)
+            val viewModel = viewModel()
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            viewModel.onAction(AddTaskAction.InputChanged("Learn Spanish"))
+            viewModel.onAction(AddTaskAction.Submit)
+
+            viewModel.onAction(AddTaskAction.GoalOptionSelected("1 month"))
+
+            // Selection alone does not call the usecase
+            assertEquals(1, goalRepository.continueCalls.size)
+            assertTrue(viewModel.state.value.canSubmit)
+
+            val writingReply = GoalDecompositionReply(
+                sessionId = "session-123",
+                blocks = listOf(
+                    GoalDecompositionBlock.Question(
+                        text = "What is your main focus area?",
+                        options = emptyList(),
+                    ),
+                ),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(writingReply)
+            viewModel.onAction(AddTaskAction.Submit)
+
+            assertEquals(
+                listOf(
+                    Pair(null, "Learn Spanish"),
+                    Pair("session-123", "1 month"),
+                ),
+                goalRepository.continueCalls,
+            )
+            val writingStep = viewModel.state.value.goalStep as GoalStep.WritingQuestion
+            assertEquals("What is your main focus area?", writingStep.question)
+        }
+
+    @Test
+    fun `Writing to Preview transition uses authoritative proposal block over hasProposal flag`() =
+        runTest(testDispatcher) {
+            val mcqReply = GoalDecompositionReply(
+                sessionId = "sess-1",
+                blocks = listOf(
+                    GoalDecompositionBlock.Question("Any focus?", emptyList()),
+                ),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(mcqReply)
+            val viewModel = viewModel()
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            viewModel.onAction(AddTaskAction.InputChanged("Goal title"))
+            viewModel.onAction(AddTaskAction.Submit)
+
+            val proposal = GoalProposal(
+                title = "Learn Spanish for travel",
+                description = "Plan for trip",
+                targetDate = "2026-09-01",
+                tasks = listOf(ProposedTask("Study basic vocabulary", 30, 5)),
+            )
+            // hasProposal is false but actual Proposal block exists -> Proposal wins!
+            val proposalReply = GoalDecompositionReply(
+                sessionId = "sess-1",
+                blocks = listOf(
+                    GoalDecompositionBlock.Text("Here is your plan"),
+                    GoalDecompositionBlock.Proposal(proposal),
+                ),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(proposalReply)
+
+            viewModel.onAction(AddTaskAction.InputChanged(" Grammar and vocab "))
+            viewModel.onAction(AddTaskAction.Submit)
+
+            assertEquals(
+                listOf(
+                    Pair(null, "Goal title"),
+                    Pair("sess-1", "Grammar and vocab"),
+                ),
+                goalRepository.continueCalls,
+            )
+            val previewStep = viewModel.state.value.goalStep as GoalStep.Preview
+            assertEquals(proposal, previewStep.proposal)
+            assertTrue(viewModel.state.value.canAcceptGoal)
+        }
+
+    @Test
+    fun `Text-only response remains usable Writing state with blocks retained`() =
+        runTest(testDispatcher) {
+            val textReply = GoalDecompositionReply(
+                sessionId = "sess-text",
+                blocks = listOf(
+                    GoalDecompositionBlock.Text("Tell me more about your goal."),
+                ),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(textReply)
+            val viewModel = viewModel()
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            viewModel.onAction(AddTaskAction.InputChanged("Goal title"))
+            viewModel.onAction(AddTaskAction.Submit)
+
+            val state = viewModel.state.value
+            val writingStep = state.goalStep as GoalStep.WritingQuestion
+            assertEquals("", writingStep.question)
+            assertEquals(textReply.blocks, state.goalReplyBlocks)
+        }
+
+    @Test
+    fun `Preview revision sends modification prompt on same session and updates proposal`() =
+        runTest(testDispatcher) {
+            val initialProposal = GoalProposal(
+                title = "Initial Plan",
+                description = null,
+                targetDate = null,
+                tasks = emptyList(),
+            )
+            val previewReply = GoalDecompositionReply(
+                sessionId = "sess-rev",
+                blocks = listOf(GoalDecompositionBlock.Proposal(initialProposal)),
+                hasProposal = true,
+            )
+            goalRepository.nextContinueReply = Result.Success(previewReply)
+            val viewModel = viewModel()
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            viewModel.onAction(AddTaskAction.InputChanged("Goal"))
+            viewModel.onAction(AddTaskAction.Submit)
+
+            val updatedProposal = GoalProposal(
+                title = "Revised Plan",
+                description = "Updated desc",
+                targetDate = "2026-10-01",
+                tasks = listOf(ProposedTask("Task 1", 60, 10)),
+            )
+            val updatedReply = GoalDecompositionReply(
+                sessionId = "sess-rev",
+                blocks = listOf(GoalDecompositionBlock.Proposal(updatedProposal)),
+                hasProposal = true,
+            )
+            goalRepository.nextContinueReply = Result.Success(updatedReply)
+
+            viewModel.onAction(AddTaskAction.InputChanged(" Add more practice "))
+            viewModel.onAction(AddTaskAction.Submit)
+
+            assertEquals(
+                listOf(
+                    Pair(null, "Goal"),
+                    Pair("sess-rev", "Add more practice"),
+                ),
+                goalRepository.continueCalls,
+            )
+            val previewStep = viewModel.state.value.goalStep as GoalStep.Preview
+            assertEquals(updatedProposal, previewStep.proposal)
+        }
+
+    @Test
+    fun `Accept success confirms exact session and emits GoalCreated once ignoring duplicate accepts`() =
+        runTest(testDispatcher) {
+            val proposal = GoalProposal("Goal Title", null, null, emptyList())
+            val previewReply = GoalDecompositionReply(
+                sessionId = "sess-confirm",
+                blocks = listOf(GoalDecompositionBlock.Proposal(proposal)),
+                hasProposal = true,
+            )
+            goalRepository.nextContinueReply = Result.Success(previewReply)
+
+            val confirmGate = CompletableDeferred<Result<Goal>>()
+            val gateRepository = object : GoalRepository by goalRepository {
+                override suspend fun confirmDecomposition(sessionId: String): Result<Goal> {
+                    goalRepository.confirmCalls += sessionId
+                    return confirmGate.await()
+                }
+            }
+            val customViewModel = AddTaskViewModel(
+                parseTaskInput = ParseTaskInputUseCase(clock),
+                applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
+                getCategories = GetCategoriesUseCase(categoryRepository),
+                createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+                createTaskWithAi = CreateTaskWithAiUseCase(taskRepository),
+                scheduleTaskWithAi = ScheduleTaskWithAiUseCase(taskRepository),
+                deleteTask = DeleteTaskUseCase(taskRepository),
+                continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
+                confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
+                clock = clock,
+            )
+
+            customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            customViewModel.onAction(AddTaskAction.InputChanged("Goal"))
+            customViewModel.onAction(AddTaskAction.Submit)
+
+            customViewModel.onAction(AddTaskAction.AcceptGoalProposal)
+            customViewModel.onAction(AddTaskAction.AcceptGoalProposal)
+
+            assertEquals(listOf("sess-confirm"), goalRepository.confirmCalls)
+            assertTrue(customViewModel.state.value.isSubmitting)
+
+            val createdGoal = Goal(id = "g-1", title = "Goal Title", description = null, emoji = "🎯")
+            confirmGate.complete(Result.Success(createdGoal))
+
+            assertEquals(AddTaskEvent.GoalCreated("Goal Title"), customViewModel.events.first())
+        }
+
+    @Test
+    fun `invalid MCQ option selection is ignored`() = runTest(testDispatcher) {
+        val initialReply = GoalDecompositionReply(
+            sessionId = "session-123",
+            blocks = listOf(
+                GoalDecompositionBlock.Question(
+                    text = "Choose timeframe",
+                    options = listOf("1 month", "3 months"),
+                ),
+            ),
+            hasProposal = false,
+        )
+        goalRepository.nextContinueReply = Result.Success(initialReply)
+        val viewModel = viewModel()
+        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+        viewModel.onAction(AddTaskAction.InputChanged("Learn Spanish"))
+        viewModel.onAction(AddTaskAction.Submit)
+
+        viewModel.onAction(AddTaskAction.GoalOptionSelected("1 year"))
+
+        val mcqStep = viewModel.state.value.goalStep as GoalStep.MultipleChoice
+        assertNull(mcqStep.selectedOption)
+        assertFalse(viewModel.state.value.canSubmit)
+    }
+
+    @Test
+    fun `mode changes are blocked during task AI working or review stages`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+        viewModel.onAction(AddTaskAction.AiToggled)
+        viewModel.onAction(AddTaskAction.InputChanged("Build login page"))
+        viewModel.onAction(AddTaskAction.Submit)
+
+        assertEquals(AddTaskAiStage.REVIEW, viewModel.state.value.aiStage)
+
+        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+        assertEquals(AddTaskMode.TASK, viewModel.state.value.mode)
+    }
+
+    @Test
+    fun `switching from task AI composing into goal mode resets aiStage to off and closes pickers`() =
+        runTest(testDispatcher) {
+            val viewModel = viewModel()
+            viewModel.onAction(AddTaskAction.InputChanged("Build login page"))
+            viewModel.onAction(AddTaskAction.AiToggled)
+            viewModel.onAction(AddTaskAction.PickerOpened(AddTaskPicker.DATE))
+
+            assertEquals(AddTaskAiStage.COMPOSING, viewModel.state.value.aiStage)
+            assertEquals(AddTaskPicker.DATE, viewModel.state.value.openPicker)
+
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+
+            val goalState = viewModel.state.value
+            assertEquals(AddTaskMode.GOAL, goalState.mode)
+            assertEquals(AddTaskAiStage.OFF, goalState.aiStage)
+            assertNull(goalState.openPicker)
+            assertEquals("Build login page", goalState.input)
+
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.TASK))
+            assertEquals(AddTaskMode.TASK, viewModel.state.value.mode)
+            assertEquals("Build login page", viewModel.state.value.parsed.title)
+        }
+
+    @Test
+    fun `discarding an in-flight goal continuation cancels the job and prevents late state updates`() =
+        runTest(testDispatcher) {
+            val gate = CompletableDeferred<Result<GoalDecompositionReply>>()
+            val gateRepository = object : GoalRepository by goalRepository {
+                override suspend fun continueDecomposition(
+                    sessionId: String?,
+                    message: String,
+                ): Result<GoalDecompositionReply> {
+                    return gate.await()
+                }
+            }
+            val customViewModel = AddTaskViewModel(
+                parseTaskInput = ParseTaskInputUseCase(clock),
+                applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
+                getCategories = GetCategoriesUseCase(categoryRepository),
+                createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+                createTaskWithAi = CreateTaskWithAiUseCase(taskRepository),
+                scheduleTaskWithAi = ScheduleTaskWithAiUseCase(taskRepository),
+                deleteTask = DeleteTaskUseCase(taskRepository),
+                continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
+                confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
+                clock = clock,
+            )
+
+            customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            customViewModel.onAction(AddTaskAction.InputChanged("In-flight Goal"))
+            customViewModel.onAction(AddTaskAction.Submit)
+
+            assertTrue(customViewModel.state.value.isSubmitting)
+
+            customViewModel.onAction(AddTaskAction.DismissRequested)
+            customViewModel.onAction(AddTaskAction.DiscardConfirmed)
+
+            val resetState = customViewModel.state.value
+            assertEquals(AddTaskMode.TASK, resetState.mode)
+            assertEquals(GoalStep.Initial, resetState.goalStep)
+            assertNull(resetState.goalSessionId)
+
+            gate.complete(
+                Result.Success(
+                    GoalDecompositionReply(
+                        sessionId = "sess-late",
+                        blocks = listOf(GoalDecompositionBlock.Question("Late Q", emptyList())),
+                        hasProposal = false,
+                    ),
+                ),
+            )
+
+            val finalState = customViewModel.state.value
+            assertEquals(AddTaskMode.TASK, finalState.mode)
+            assertEquals(GoalStep.Initial, finalState.goalStep)
+            assertNull(finalState.goalSessionId)
+            assertEquals(AddTaskEvent.Dismissed, customViewModel.events.first())
+        }
+
+    @Test
+    fun `Continuation and confirm failures preserve full retryable state and input`() =
+        runTest(testDispatcher) {
+            goalRepository.nextContinueReply = Result.Error(AppError.Network)
+            val viewModel = viewModel()
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            viewModel.onAction(AddTaskAction.InputChanged("My Goal"))
+            viewModel.onAction(AddTaskAction.Submit)
+
+            val failedState = viewModel.state.value
+            assertEquals("My Goal", failedState.input)
+            assertEquals(GoalStep.Initial, failedState.goalStep)
+            assertNull(failedState.goalSessionId)
+            assertFalse(failedState.isSubmitting)
+            assertEquals(R.string.add_task_error_goal_continuation_failed, failedState.errorMessage)
+
+            val proposal = GoalProposal("Goal", null, null, emptyList())
+            val previewReply = GoalDecompositionReply(
+                sessionId = "sess-fail",
+                blocks = listOf(GoalDecompositionBlock.Proposal(proposal)),
+                hasProposal = true,
+            )
+            goalRepository.nextContinueReply = Result.Success(previewReply)
+            viewModel.onAction(AddTaskAction.Submit)
+
+            assertEquals(GoalStep.Preview(proposal), viewModel.state.value.goalStep)
+
+            goalRepository.nextConfirmResult = Result.Error(AppError.Network)
+            viewModel.onAction(AddTaskAction.AcceptGoalProposal)
+
+            val confirmFailedState = viewModel.state.value
+            assertEquals(GoalStep.Preview(proposal), confirmFailedState.goalStep)
+            assertEquals("sess-fail", confirmFailedState.goalSessionId)
+            assertFalse(confirmFailedState.isSubmitting)
+            assertEquals(R.string.add_task_error_goal_confirm_failed, confirmFailedState.errorMessage)
+        }
+
+    @Test
+    fun `Duplicate submit while in flight causes one continuation call`() =
+        runTest(testDispatcher) {
+            val gate = CompletableDeferred<Result<GoalDecompositionReply>>()
+            val gateRepository = object : GoalRepository by goalRepository {
+                override suspend fun continueDecomposition(
+                    sessionId: String?,
+                    message: String,
+                ): Result<GoalDecompositionReply> {
+                    goalRepository.continueCalls += Pair(sessionId, message)
+                    return gate.await()
+                }
+            }
+            val customViewModel = AddTaskViewModel(
+                parseTaskInput = ParseTaskInputUseCase(clock),
+                applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
+                getCategories = GetCategoriesUseCase(categoryRepository),
+                createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+                createTaskWithAi = CreateTaskWithAiUseCase(taskRepository),
+                scheduleTaskWithAi = ScheduleTaskWithAiUseCase(taskRepository),
+                deleteTask = DeleteTaskUseCase(taskRepository),
+                continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
+                confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
+                clock = clock,
+            )
+
+            customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            customViewModel.onAction(AddTaskAction.InputChanged("My Goal"))
+            customViewModel.onAction(AddTaskAction.Submit)
+            customViewModel.onAction(AddTaskAction.Submit)
+
+            assertEquals(1, goalRepository.continueCalls.size)
+
+            gate.complete(
+                Result.Success(
+                    GoalDecompositionReply(
+                        sessionId = "sess-gate",
+                        blocks = listOf(GoalDecompositionBlock.Question("Q", emptyList())),
+                        hasProposal = false,
+                    ),
+                ),
+            )
+        }
+
+    @Test
+    fun `Mode switching parsing before session works and switching is blocked during active session`() =
+        runTest(testDispatcher) {
+            val viewModel = viewModel()
+            viewModel.onAction(AddTaskAction.InputChanged("Gym tomorrow 6pm"))
+            assertEquals("Gym", viewModel.state.value.parsed.title)
+
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            assertEquals(AddTaskMode.GOAL, viewModel.state.value.mode)
+
+            viewModel.onAction(AddTaskAction.InputChanged("Gym tomorrow 6pm for 45m"))
+            assertTrue(viewModel.state.value.parsed.tokens.isEmpty())
+
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.TASK))
+            assertEquals(AddTaskMode.TASK, viewModel.state.value.mode)
+            assertEquals("Gym", viewModel.state.value.parsed.title)
+
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            val reply = GoalDecompositionReply(
+                sessionId = "active-sess",
+                blocks = listOf(GoalDecompositionBlock.Question("Question?", emptyList())),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(reply)
+            viewModel.onAction(AddTaskAction.Submit)
+
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.TASK))
+            assertEquals(AddTaskMode.GOAL, viewModel.state.value.mode)
+            assertFalse(viewModel.state.value.showsModeSelector)
+        }
+
+    @Test
+    fun `Dirty-dismiss behavior includes goal input and active empty-input goal sessions`() =
+        runTest(testDispatcher) {
+            val viewModel = viewModel()
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+
+            assertFalse(viewModel.state.value.isDirty)
+
+            viewModel.onAction(AddTaskAction.InputChanged("Learn guitar"))
+            assertTrue(viewModel.state.value.isDirty)
+            viewModel.onAction(AddTaskAction.DismissRequested)
+            assertTrue(viewModel.state.value.showDiscardConfirm)
+            viewModel.onAction(AddTaskAction.DiscardCancelled)
+
+            viewModel.onAction(AddTaskAction.InputChanged(""))
+            val reply = GoalDecompositionReply(
+                sessionId = "sess-dirty",
+                blocks = listOf(GoalDecompositionBlock.Question("Which genre?", emptyList())),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(reply)
+            viewModel.onAction(AddTaskAction.InputChanged("Goal"))
+            viewModel.onAction(AddTaskAction.Submit)
+
+            assertEquals("", viewModel.state.value.input)
+            assertTrue(viewModel.state.value.isDirty)
+
+            viewModel.onAction(AddTaskAction.DismissRequested)
+            assertTrue(viewModel.state.value.showDiscardConfirm)
+
+            viewModel.onAction(AddTaskAction.DiscardConfirmed)
+            assertFalse(viewModel.state.value.showDiscardConfirm)
+            assertEquals(AddTaskMode.TASK, viewModel.state.value.mode)
+            assertEquals(GoalStep.Initial, viewModel.state.value.goalStep)
+            assertNull(viewModel.state.value.goalSessionId)
+        }
+
+    @Test
+    fun `InputChanged ignored during goal submission in-flight gate`() =
+        runTest(testDispatcher) {
+            val gate = CompletableDeferred<Result<GoalDecompositionReply>>()
+            val gateRepository = object : GoalRepository by goalRepository {
+                override suspend fun continueDecomposition(
+                    sessionId: String?,
+                    message: String,
+                ): Result<GoalDecompositionReply> {
+                    return gate.await()
+                }
+            }
+            val customViewModel = AddTaskViewModel(
+                parseTaskInput = ParseTaskInputUseCase(clock),
+                applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
+                getCategories = GetCategoriesUseCase(categoryRepository),
+                createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+                createTaskWithAi = CreateTaskWithAiUseCase(taskRepository),
+                scheduleTaskWithAi = ScheduleTaskWithAiUseCase(taskRepository),
+                deleteTask = DeleteTaskUseCase(taskRepository),
+                continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
+                confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
+                clock = clock,
+            )
+
+            customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            customViewModel.onAction(AddTaskAction.InputChanged("Captured input"))
+            customViewModel.onAction(AddTaskAction.Submit)
+
+            assertTrue(customViewModel.state.value.isSubmitting)
+
+            // Late input action while submitting
+            customViewModel.onAction(AddTaskAction.InputChanged("Late transcript text"))
+            assertEquals("Captured input", customViewModel.state.value.input)
+
+            gate.complete(
+                Result.Success(
+                    GoalDecompositionReply(
+                        sessionId = "sess-in-flight",
+                        blocks = listOf(GoalDecompositionBlock.Question("Q", emptyList())),
+                        hasProposal = false,
+                    ),
+                ),
+            )
+            assertEquals("", customViewModel.state.value.input)
+        }
 }

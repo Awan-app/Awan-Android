@@ -54,10 +54,40 @@
     <string name="add_task_discard_confirm">Discard</string>
     <string name="add_task_discard_cancel">Keep editing</string>
 
-    <string name="add_task_goal_title">Goals are coming</string>
-    <string name="add_task_goal_body">Soon you\'ll be able to hand Awan a goal and get a whole plan back. For now, add tasks one at a time.</string>
+    <string name="add_task_goal_initial_title">What goal are you aiming for?</string>
+    <string name="add_task_goal_initial_subtitle">Describe your goal and Awan will break it down into actionable tasks.</string>
+    <string name="add_task_goal_input_placeholder">e.g., Learn Spanish for a 2-week trip</string>
+    <string name="add_task_goal_input_description">Goal description input</string>
+    <string name="add_task_goal_submit_initial">Break down goal</string>
+
+    <string name="add_task_goal_mcq_continue">Continue</string>
+    <string name="add_task_goal_mcq_option_description">Option: %1$s</string>
+
+    <string name="add_task_goal_writing_placeholder">Type or dictate your answer…</string>
+    <string name="add_task_goal_writing_description">Answer to question</string>
+    <string name="add_task_goal_writing_fallback_prompt">Provide more detail about your goal</string>
+    <string name="add_task_goal_writing_continue">Continue</string>
+
+    <string name="add_task_goal_preview_accept">Accept goal</string>
+    <string name="add_task_goal_preview_tasks_header">Proposed tasks (%1$d)</string>
+    <string name="add_task_goal_preview_task_item_title">%1$d. %2$s</string>
+    <string name="add_task_goal_preview_revision_placeholder">Request changes or refine plan…</string>
+    <string name="add_task_goal_preview_revision_description">Plan revision request</string>
+    <string name="add_task_goal_preview_revision_submit">Update plan</string>
+    <string name="add_task_goal_preview_target_date">Target date: %1$s</string>
+    <string name="add_task_goal_preview_duration">Est. %1$s</string>
+    <string name="add_task_goal_preview_points">%1$d pts</string>
+
+    <string name="add_task_goal_mic_idle">Dictate text</string>
+    <string name="add_task_goal_mic_listening">Listening… tap to stop</string>
+    <string name="add_task_goal_speech_permission_denied">Microphone permission is required for speech recognition.</string>
+    <string name="add_task_goal_speech_unavailable">Speech recognition is unavailable on this device.</string>
+    <string name="add_task_goal_speech_no_match">Didn\'t catch that. Try speaking again.</string>
+    <string name="add_task_goal_speech_error">Speech recognition error. Please try again.</string>
 
     <string name="add_task_error_create_failed">Couldn\'t add that task. Check your connection and try again.</string>
     <string name="add_task_error_ai_failed">Awan couldn\'t build that one. Check your connection and try again.</string>
     <string name="add_task_error_ai_schedule_failed">Awan couldn\'t find a slot for this. Try picking a time yourself.</string>
+    <string name="add_task_error_goal_continuation_failed">Awan couldn\'t break down that goal. Check your connection and try again.</string>
+    <string name="add_task_error_goal_confirm_failed">Couldn\'t save this goal. Check your connection and try again.</string>
 </resources>
