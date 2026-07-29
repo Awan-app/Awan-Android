@@ -113,7 +113,7 @@ class TaskRemoteDataSourceTest {
         val result = dataSource(api).previewTaskWithAi(CreateTaskWithAiRequest(title = "Build login page"))
 
         assertTrue(result is Result.Success)
-        assertEquals(90, (result as Result.Success).data.task.estimatedDuration)
+        assertEquals(90, (result as Result.Success).data.task?.estimatedDuration)
     }
 
     @Test
