@@ -484,8 +484,8 @@ private fun DayCell(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         val bodyTextStyle = AwanTheme.typography.body
-        val selectionModifier = if (dayState.isSelected && !dayState.isToday) {
         val selectionOutline = AwanTheme.colors.sky
+        val selectionModifier = if (dayState.isSelected && !dayState.isToday) {
             Modifier
                 .size(36.dp)
                 .clip(CircleShape)
