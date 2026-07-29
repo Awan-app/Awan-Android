@@ -74,7 +74,10 @@ fun AwanApp(
                 onLogout = { navigator.replaceAll(LoginRoute) },
                 onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute) },
             )
-            calendarEntry()
+            calendarEntry(
+                onDateSelected = { /* consumed within calendar screen */ },
+                onBack = { navigator.goBack() },
+            )
             chatEntry()
             goalsEntry()
             profileEntry(
