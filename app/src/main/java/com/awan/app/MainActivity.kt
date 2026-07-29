@@ -37,7 +37,6 @@ class MainActivity : AppCompatActivity() {
 
         var uiState: MainActivityUiState by mutableStateOf(Loading)
 
-        // Update the uiState
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collectLatest { state ->

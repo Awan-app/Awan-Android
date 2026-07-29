@@ -1,6 +1,7 @@
 package com.awan.feature.profile.impl.ui
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,19 +21,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
+import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import com.awan.feature.profile.impl.presentation.EditRoutineAction
 import com.awan.feature.profile.impl.presentation.EditRoutineState
 import com.awan.feature.profile.impl.ui.components.DailyZoneReorderList
+import com.awan.feature.profile.impl.ui.components.DaySelector
 import com.awan.feature.profile.impl.ui.components.ZoneEditSheet
-import com.awan.feature.profile.impl.ui.dailyzones.AwanErrorSnackbar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,15 +100,15 @@ fun EditRoutineScreen(
 
     if (showDeleteConfirm) {
         AwanDialog(
-            title = "Delete Routine",
-            body = "Are you sure you want to delete this routine? This action cannot be undone.",
-            primaryLabel = "Delete",
+            title = stringResource(R.string.profile_routine_delete_confirm_title),
+            body = stringResource(R.string.profile_routine_delete_confirm_message),
+            primaryLabel = stringResource(R.string.profile_routine_delete),
             primaryVariant = AwanButtonVariant.Destructive,
             onPrimary = {
                 onAction(EditRoutineAction.DeleteRoutine)
                 showDeleteConfirm = false
             },
-            secondaryLabel = "Cancel",
+            secondaryLabel = stringResource(R.string.profile_cancel),
             onSecondary = { showDeleteConfirm = false },
             onDismiss = { showDeleteConfirm = false }
         )
@@ -122,17 +128,17 @@ fun EditRoutineScreen(
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         AwanText(
-                            text = if (uiState.templateId == null) "Create Routine" else "Edit Routine",
+                            text = if (uiState.templateId == null) stringResource(R.string.profile_routine_create) else stringResource(R.string.profile_routine_edit),
                             style = AwanTheme.styles.titleText
                         )
                         AwanText(
-                            text = "Templates for your recurring schedule",
+                            text = stringResource(R.string.profile_routine_summary_subtitle),
                             style = AwanTheme.styles.metaText
                         )
                     }
                 },
                 navigationIcon = {
-                    AwanIconButton(onClick = onBackClick, contentDescription = "Back") {
+                    AwanIconButton(onClick = onBackClick, contentDescription = stringResource(R.string.profile_back)) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = AwanTheme.colors.textPrimary)
                     }
                 },
@@ -140,7 +146,7 @@ fun EditRoutineScreen(
                     if (uiState.templateId != null) {
                         AwanIconButton(
                             onClick = { showDeleteConfirm = true },
-                            contentDescription = "Delete Routine"
+                            contentDescription = stringResource(R.string.profile_routine_delete)
                         ) {
                             Icon(Icons.Default.Delete, null, tint = AwanTheme.colors.destructive)
                         }
@@ -160,7 +166,7 @@ fun EditRoutineScreen(
                     isLoading = uiState.isSaving,
                     icon = Icons.Default.Check
                 ) {
-                    AwanText(text = "Save Routine")
+                    AwanText(text = stringResource(R.string.profile_routine_save))
                 }
             }
         }
@@ -176,7 +182,7 @@ fun EditRoutineScreen(
             // Routine Name
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 AwanText(
-                    text = "Routine Name",
+                    text = stringResource(R.string.profile_routine_name),
                     style = AwanTheme.styles.bodyText.copy(
                         textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
                     )
@@ -184,7 +190,7 @@ fun EditRoutineScreen(
                 AwanTextField(
                     value = uiState.name,
                     onValueChange = { onAction(EditRoutineAction.NameChange(it)) },
-                    placeholder = "e.g. Workday, Weekend, Vacation",
+                    placeholder = stringResource(R.string.profile_routine_name_placeholder),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -192,57 +198,17 @@ fun EditRoutineScreen(
             // Days Selection
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 AwanText(
-                    text = "Apply to Days",
+                    text = stringResource(R.string.profile_routine_apply_to_days),
                     style = AwanTheme.styles.bodyText.copy(
                         textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
                     )
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    DayOfWeek.entries.forEach { day ->
-                        val isSelected = uiState.selectedDays.contains(day)
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { onAction(EditRoutineAction.ToggleDay(day)) }
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(if (isSelected) AwanTheme.colors.sky else AwanTheme.colors.surface)
-                                    .border(
-                                        width = 1.dp,
-                                        color = if (isSelected) AwanTheme.colors.sky else AwanTheme.colors.line,
-                                        shape = RoundedCornerShape(12.dp)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                AwanText(
-                                    text = DailyZonesHelper.abbreviation(day).take(1),
-                                    style = AwanTheme.styles.bodyText.copy(
-                                        textStyle = AwanTheme.styles.bodyText.textStyle.copy(
-                                            fontWeight = FontWeight.ExtraBold,
-                                            fontSize = 14.sp
-                                        ),
-                                        color = if (isSelected) Color.White else AwanTheme.colors.textPrimary
-                                    )
-                                )
-                            }
-                            AwanText(
-                                text = DailyZonesHelper.abbreviation(day),
-                                style = AwanTheme.styles.captionText.copy(
-                                    textStyle = AwanTheme.styles.captionText.textStyle.copy(fontSize = 10.sp),
-                                    color = if (isSelected) AwanTheme.colors.sky else AwanTheme.colors.textSecondary
-                                )
-                            )
-                        }
-                    }
-                }
+                DaySelector(
+                    selectedDays = uiState.selectedDays,
+                    assignedDays = uiState.assignedDays,
+                    onDaySelected = { onAction(EditRoutineAction.ToggleDay(it)) },
+                    showTodayIndicator = false // Don't show "today" dot in routine creator
+                )
             }
 
             // Zones
@@ -253,7 +219,7 @@ fun EditRoutineScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AwanText(
-                        text = "Zones",
+                        text = stringResource(R.string.profile_routine_zones),
                         style = AwanTheme.styles.bodyText.copy(
                             textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
                         )
@@ -264,25 +230,57 @@ fun EditRoutineScreen(
                     }) {
                         Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        AwanText(text = "Add Zone", style = AwanTheme.styles.bodyText.copy(color = AwanTheme.colors.sky))
+                        AwanText(text = stringResource(R.string.profile_routine_add_zone), style = AwanTheme.styles.bodyText.copy(color = AwanTheme.colors.sky))
                     }
                 }
 
                 if (uiState.zones.isEmpty()) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        color = AwanTheme.colors.surface,
-                        border = BorderStroke(1.dp, AwanTheme.colors.line)
+                    val infiniteTransition = rememberInfiniteTransition(label = "mascot_float_edit")
+                    val animY by infiniteTransition.animateFloat(
+                        initialValue = -6f,
+                        targetValue = 6f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(1500, easing = LinearOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "float"
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Column(
-                            modifier = Modifier.padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(Icons.Default.Add, null, tint = AwanTheme.colors.line, modifier = Modifier.size(48.dp))
-                            AwanText(text = "No zones yet", style = AwanTheme.styles.bodySecondaryText)
-                        }
+                        Icon(
+                            painter = painterResource(id = com.awan.app.core.designsystem.R.drawable.awan_mascot_idle),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(100.dp)
+                                .graphicsLayer { translationY = animY },
+                            tint = Color.Unspecified
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        AwanText(
+                            text = stringResource(R.string.profile_routine_no_zones),
+                            style = AwanTheme.styles.titleText.copy(
+                                textStyle = AwanTheme.styles.titleText.textStyle.copy(
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center
+                                )
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        AwanText(
+                            text = stringResource(R.string.profile_routine_no_zones_hint),
+                            style = AwanTheme.styles.bodyText.copy(
+                                color = AwanTheme.colors.textSecondary,
+                                textStyle = AwanTheme.styles.bodyText.textStyle.copy(textAlign = TextAlign.Center)
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 } else {
                     DailyZoneReorderList(

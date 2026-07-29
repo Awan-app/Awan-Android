@@ -47,40 +47,6 @@ object DailyZonesHelper {
         }
     }
 
-    fun getDateForDayOfWeek(day: DayOfWeek): String {
-        val calendar = Calendar.getInstance()
-        val currentDayNum = calendar.get(Calendar.DAY_OF_WEEK)
-        val currentDay = when (currentDayNum) {
-            Calendar.MONDAY -> DayOfWeek.MONDAY
-            Calendar.TUESDAY -> DayOfWeek.TUESDAY
-            Calendar.WEDNESDAY -> DayOfWeek.WEDNESDAY
-            Calendar.THURSDAY -> DayOfWeek.THURSDAY
-            Calendar.FRIDAY -> DayOfWeek.FRIDAY
-            Calendar.SATURDAY -> DayOfWeek.SATURDAY
-            Calendar.SUNDAY -> DayOfWeek.SUNDAY
-            else -> DayOfWeek.MONDAY
-        }
-
-        val diff = day.ordinal - currentDay.ordinal
-        calendar.add(Calendar.DAY_OF_YEAR, diff)
-
-        return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(calendar.time)
-    }
-
-    fun getTodayDayOfWeek(): DayOfWeek {
-        val calendar = Calendar.getInstance()
-        return when (calendar.get(Calendar.DAY_OF_WEEK)) {
-            Calendar.MONDAY -> DayOfWeek.MONDAY
-            Calendar.TUESDAY -> DayOfWeek.TUESDAY
-            Calendar.WEDNESDAY -> DayOfWeek.WEDNESDAY
-            Calendar.THURSDAY -> DayOfWeek.THURSDAY
-            Calendar.FRIDAY -> DayOfWeek.FRIDAY
-            Calendar.SATURDAY -> DayOfWeek.SATURDAY
-            Calendar.SUNDAY -> DayOfWeek.SUNDAY
-            else -> DayOfWeek.MONDAY
-        }
-    }
-
     fun zonesErrorToUiText(error: AppError): UiText = when {
         error is AppError.Api && error.errorCode == "ZONE_OVERLAP" ->
             UiText.StringResource(R.string.profile_daily_zones_error_overlap)
@@ -110,29 +76,15 @@ object DailyZonesHelper {
         }
     }
 
+    fun getCurrentDay(): DayOfWeek {
+        val calendar = Calendar.getInstance()
+        return calendarDayToDayOfWeek(calendar.get(Calendar.DAY_OF_WEEK))
+    }
+
     fun isToday(day: DayOfWeek): Boolean {
-        val calendar = Calendar.getInstance()
-        val today = calendarDayToDayOfWeek(calendar.get(Calendar.DAY_OF_WEEK))
-        return day == today
+        return day == getCurrentDay()
     }
 
-    fun getDateForDay(day: DayOfWeek): String {
-        val calendar = Calendar.getInstance()
-        val currentDay = calendarDayToDayOfWeek(calendar.get(Calendar.DAY_OF_WEEK))
-        val diff = day.ordinal - currentDay.ordinal
-        calendar.add(Calendar.DAY_OF_YEAR, diff)
-        return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(calendar.time)
-    }
-
-    fun dateStringToDayOfWeek(dateString: String): DayOfWeek? {
-        return try {
-            val target = SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(dateString) ?: return null
-            val cal = Calendar.getInstance().apply { time = target }
-            calendarDayToDayOfWeek(cal.get(Calendar.DAY_OF_WEEK))
-        } catch (e: Exception) {
-            null
-        }
-    }
 
     private fun calendarDayToDayOfWeek(calendarDay: Int): DayOfWeek = when (calendarDay) {
         Calendar.MONDAY -> DayOfWeek.MONDAY

@@ -9,6 +9,7 @@ import com.awan.app.core.datastore.UserPreferencesDataSource
 import com.awan.app.core.domain.auth.usecase.LogoutUseCase
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.repository.ProfileRepository
+import com.awan.feature.profile.impl.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -141,7 +142,7 @@ class ProfileViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = UiText.StringResource(com.awan.feature.profile.impl.R.string.profile_error_logout)
+                            errorMessage = UiText.StringResource(R.string.profile_error_logout)
                         )
                     }
                 }

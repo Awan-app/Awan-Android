@@ -8,6 +8,7 @@ data class EditRoutineState(
     val templateId: String? = null,
     val name: String = "",
     val selectedDays: Set<DayOfWeek> = emptySet(),
+    val assignedDays: Set<DayOfWeek> = emptySet(),
     val zones: List<DailyZone> = emptyList(),
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,

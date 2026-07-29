@@ -28,6 +28,10 @@ class EditRoutineViewModel @Inject constructor(
     private val _events = Channel<EditRoutineEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
+    init {
+        loadAssignedDays()
+    }
+
     fun onAction(action: EditRoutineAction) {
         when (action) {
             is EditRoutineAction.LoadTemplate -> loadTemplate(action.templateId)
@@ -42,14 +46,40 @@ class EditRoutineViewModel @Inject constructor(
         }
     }
 
+    private fun loadAssignedDays() {
+        viewModelScope.launch {
+            when (val result = zonesRepository.getTemplates()) {
+                is Result.Success -> {
+                    val allAssigned = result.data.flatMap { template ->
+                        if (template.id != _uiState.value.templateId) {
+                            template.daysOfWeek
+                        } else {
+                            emptyList()
+                        }
+                    }.toSet()
+                    _uiState.update { it.copy(assignedDays = allAssigned) }
+                }
+                is Result.Error -> Unit
+                Result.Loading -> Unit
+            }
+        }
+    }
+
     private fun loadTemplate(templateId: String?) {
         if (templateId == null) {
-            _uiState.update { EditRoutineState() }
+            _uiState.update { EditRoutineState(assignedDays = it.assignedDays) }
             return
         }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, templateId = templateId) }
+
+            // Reload assigned days to exclude current template correctly
+            val templatesResult = zonesRepository.getTemplates()
+            val otherAssigned = if (templatesResult is Result.Success) {
+                templatesResult.data.filter { it.id != templateId }.flatMap { it.daysOfWeek }.toSet()
+            } else emptySet()
+
             when (val result = zonesRepository.getTemplate(templateId)) {
                 is Result.Success -> {
                     val template = result.data
@@ -58,11 +88,12 @@ class EditRoutineViewModel @Inject constructor(
                         isLoading = false,
                         name = template.name,
                         selectedDays = template.daysOfWeek.toSet(),
+                        assignedDays = otherAssigned,
                         zones = sortedZones
                     ) }
                 }
                 is Result.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
+                    _uiState.update { it.copy(isLoading = false, assignedDays = otherAssigned, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
                 }
                 Result.Loading -> Unit
             }
@@ -75,6 +106,7 @@ class EditRoutineViewModel @Inject constructor(
 
     private fun toggleDay(day: DayOfWeek) {
         _uiState.update { state ->
+            if (state.assignedDays.contains(day)) return@update state
             val newDays = if (state.selectedDays.contains(day)) {
                 state.selectedDays - day
             } else {
@@ -106,18 +138,29 @@ class EditRoutineViewModel @Inject constructor(
     private fun reorderZones(from: Int, to: Int) {
         _uiState.update { state ->
             val list = state.zones.toMutableList()
-            if (from in list.indices && to in list.indices) {
-                val item = list.removeAt(from)
-                list.add(to, item)
+            if (from !in list.indices || to !in list.indices) return@update state
+            
+            val item = list.removeAt(from)
+            list.add(to, item)
+            
+            // Recalculate times to stay sequential
+            val updated = mutableListOf<DailyZone>()
+            list.forEachIndexed { index, zone ->
+                val duration = DailyZonesHelper.parseTimeToMinutes(zone.endTime) - 
+                             DailyZonesHelper.parseTimeToMinutes(zone.startTime)
+                val newStart = if (index == 0) "09:00" else updated[index - 1].endTime
+                val newEnd = DailyZonesHelper.formatMinutesToTime(
+                    DailyZonesHelper.parseTimeToMinutes(newStart) + duration
+                )
+                updated.add(zone.copy(startTime = newStart, endTime = newEnd))
             }
-            state.copy(zones = list)
+            state.copy(zones = updated)
         }
     }
 
     private fun saveRoutine() {
         val state = _uiState.value
-
-        // Local Validation
+        
         if (state.name.isBlank()) {
             _uiState.update { it.copy(validationError = "Routine name cannot be empty") }
             return
@@ -126,8 +169,7 @@ class EditRoutineViewModel @Inject constructor(
             _uiState.update { it.copy(validationError = "Select at least one day") }
             return
         }
-
-        // Zone Validation
+        
         state.zones.forEach { zone ->
             if (zone.name.isBlank()) {
                 _uiState.update { it.copy(validationError = "Zone name cannot be empty") }
@@ -142,7 +184,6 @@ class EditRoutineViewModel @Inject constructor(
             }
         }
 
-        // Overlap Validation
         if (DailyZonesHelper.hasOverlappingZones(state.zones)) {
             _uiState.update { it.copy(validationError = "Zones cannot overlap") }
             return
@@ -154,7 +195,6 @@ class EditRoutineViewModel @Inject constructor(
             val result = if (templateId == null) {
                 zonesRepository.createTemplate(state.name, state.selectedDays.toList(), state.zones)
             } else {
-                // Update Template Name and Days first, then Zones
                 val updateRes = zonesRepository.updateTemplate(templateId, state.name, state.selectedDays.toList())
                 if (updateRes is Result.Success) {
                     zonesRepository.updateTemplateZones(templateId, state.zones)

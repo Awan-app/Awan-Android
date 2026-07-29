@@ -90,4 +90,44 @@
     <string name="profile_pm">PM</string>
     <string name="profile_user_placeholder">User</string>
     <string name="profile_error_logout">Failed to logout</string>
+
+    <!-- Routines -->
+    <string name="profile_routine_create">Create Routine</string>
+    <string name="profile_routine_edit">Edit Routine</string>
+    <string name="profile_routine_summary_subtitle">Templates for your recurring schedule</string>
+    <string name="profile_routine_name">Routine Name</string>
+    <string name="profile_routine_name_placeholder">e.g. Workday, Weekend, Vacation</string>
+    <string name="profile_routine_apply_to_days">Apply to Days</string>
+    <string name="profile_routine_zones">Zones</string>
+    <string name="profile_routine_add_zone">Add Zone</string>
+    <string name="profile_routine_no_zones">No zones yet</string>
+    <string name="profile_routine_no_zones_hint">Add zones to define your routine.</string>
+    <string name="profile_routine_save">Save Routine</string>
+    <string name="profile_routine_delete_confirm_title">Delete Routine</string>
+    <string name="profile_routine_delete_confirm_message">Are you sure you want to delete this routine? This action cannot be undone.</string>
+    <string name="profile_routine_delete">Delete</string>
+    <string name="profile_routine_select">Select Routine</string>
+    <string name="profile_routine_create_new">+ Create new routine</string>
+    <string name="profile_routine_new_chip">New</string>
+    <string name="profile_routine_edit_summary">Editing Routine — applies to all days using it</string>
+    <string name="profile_routine_detail_applies_to">Applies to:</string>
+    <string name="profile_routine_detail_change_hint">Changes will apply to all days using this routine.</string>
+    <string name="profile_routine_delete_this_confirm_title">Delete this routine?</string>
+    <string name="profile_routine_delete_this_confirm_message">This will remove this routine and all zones inside it from the days using it.</string>
+    <string name="profile_routine_no_routine_set">No routine set for this day</string>
+    <string name="profile_routine_connect_hint">Connect a routine to start scheduling zones.</string>
+    <string name="profile_routine_create_for_day">Create Routine for this Day</string>
+
+    <!-- Zone Editing -->
+    <string name="profile_zone_add">Add Zone</string>
+    <string name="profile_zone_edit">Edit Zone</string>
+    <string name="profile_zone_name">Zone Name</string>
+    <string name="profile_zone_name_placeholder">e.g. Deep Work, Workout</string>
+    <string name="profile_zone_start_time">Start Time</string>
+    <string name="profile_zone_end_time">End Time</string>
+    <string name="profile_zone_label_color">Label Color</string>
+    <string name="profile_zone_save_changes">Save Changes</string>
+    <string name="profile_zone_delete">Delete Zone</string>
+    <string name="profile_zone_confirm">Confirm</string>
+    <string name="profile_zone_new_placeholder">New Zone</string>
 </resources>

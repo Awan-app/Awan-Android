@@ -7,7 +7,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.awan.feature.profile.impl.presentation.DailyZonesAction
 import com.awan.feature.profile.impl.presentation.DailyZonesViewModel
-import com.awan.feature.profile.impl.ui.dailyzones.DailyZonesScreen
+import com.awan.feature.profile.impl.ui.DailyZonesScreen
 
 @Composable
 fun DailyZonesRouteScreen(

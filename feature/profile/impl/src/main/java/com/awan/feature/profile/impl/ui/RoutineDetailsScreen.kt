@@ -11,12 +11,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.*
+import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.presentation.RoutineDetailsAction
 import com.awan.feature.profile.impl.presentation.RoutineDetailsState
-import com.awan.feature.profile.impl.ui.components.RoutineSummaryCard
 import com.awan.feature.profile.impl.ui.components.ZoneDetailItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,15 +32,15 @@ fun RoutineDetailsScreen(
 
     if (showDeleteDialog) {
         AwanDialog(
-            title = "Delete this routine?",
-            body = "This will remove this routine and all zones inside it from the days using it.",
-            primaryLabel = "Delete",
+            title = stringResource(R.string.profile_routine_delete_this_confirm_title),
+            body = stringResource(R.string.profile_routine_delete_this_confirm_message),
+            primaryLabel = stringResource(R.string.profile_routine_delete),
             primaryVariant = AwanButtonVariant.Destructive,
             onPrimary = {
                 showDeleteDialog = false
                 uiState.template?.id?.let { onAction(RoutineDetailsAction.DeleteRoutine(it)) }
             },
-            secondaryLabel = "Cancel",
+            secondaryLabel = stringResource(R.string.profile_cancel),
             onSecondary = { showDeleteDialog = false },
             onDismiss = { showDeleteDialog = false }
         )
@@ -48,15 +49,15 @@ fun RoutineDetailsScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { AwanText(text = uiState.template?.name ?: "Routine", style = AwanTheme.styles.titleText) },
+                title = { AwanText(text = uiState.template?.name ?: stringResource(R.string.profile_routine_select), style = AwanTheme.styles.titleText) },
                 navigationIcon = {
-                    AwanIconButton(onClick = onBackClick, contentDescription = "Back") {
+                    AwanIconButton(onClick = onBackClick, contentDescription = stringResource(R.string.profile_back)) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = AwanTheme.colors.textPrimary)
                     }
                 },
                 actions = {
                     if (uiState.template?.name?.equals("Default", ignoreCase = true) == false) {
-                        AwanIconButton(onClick = { showDeleteDialog = true }, contentDescription = "Delete") {
+                        AwanIconButton(onClick = { showDeleteDialog = true }, contentDescription = stringResource(R.string.profile_routine_delete)) {
                             Icon(Icons.Default.Delete, null, tint = AwanTheme.colors.destructive)
                         }
                     }
@@ -74,7 +75,7 @@ fun RoutineDetailsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Edit
                 ) {
-                    AwanText(text = "Edit routine")
+                    AwanText(text = stringResource(R.string.profile_routine_edit))
                 }
             }
         }
@@ -92,10 +93,9 @@ fun RoutineDetailsScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Info Section
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     AwanText(
-                        text = "Applies to:",
+                        text = stringResource(R.string.profile_routine_detail_applies_to),
                         style = AwanTheme.styles.bodyText.copy(
                             textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
                         )
@@ -105,15 +105,14 @@ fun RoutineDetailsScreen(
                         style = AwanTheme.styles.bodyText.copy(color = AwanTheme.colors.textSecondary)
                     )
                     AwanText(
-                        text = "Changes will apply to all days using this routine.",
+                        text = stringResource(R.string.profile_routine_detail_change_hint),
                         style = AwanTheme.styles.metaText
                     )
                 }
 
-                // Zones Section
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     AwanText(
-                        text = "Zones",
+                        text = stringResource(R.string.profile_routine_zones),
                         style = AwanTheme.styles.bodyText.copy(
                             textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
                         )
@@ -121,7 +120,7 @@ fun RoutineDetailsScreen(
 
                     if (uiState.template?.zones?.isEmpty() == true) {
                         AwanText(
-                            text = "No zones added yet",
+                            text = stringResource(R.string.profile_routine_no_zones),
                             style = AwanTheme.styles.bodyText.copy(color = AwanTheme.colors.textSecondary)
                         )
                     } else {

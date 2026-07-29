@@ -25,7 +25,7 @@ class DailyZonesViewModel @Inject constructor(
     private val zonesRepository: ZonesRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(DailyZonesState())
+    private val _uiState = MutableStateFlow(DailyZonesState(selectedDay = DailyZonesHelper.getCurrentDay()))
     val uiState: StateFlow<DailyZonesState> = _uiState.asStateFlow()
 
     init {
@@ -50,30 +50,29 @@ class DailyZonesViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            val templatesResult = getWeeklyTemplatesUseCase()
+            when (val result = getWeeklyTemplatesUseCase()) {
+                is Result.Success -> {
+                    val templates = result.data
+                    _uiState.update { state ->
+                        val defaultTemplate = templates.find { it.name.equals("Default", ignoreCase = true) }
+                            ?: templates.find { it.name.equals("My Week", ignoreCase = true) }
+                            ?: templates.firstOrNull()
 
-            if (templatesResult is Result.Success) {
-                val templates = templatesResult.data
-
-                _uiState.update { state ->
-                    val defaultTemplate = templates.find { it.name.equals("Default", ignoreCase = true) }
-                        ?: templates.find { it.name.equals("My Week", ignoreCase = true) }
-                        ?: templates.firstOrNull()
-                    val newSelectedTemplateId = state.selectedTemplateId ?: defaultTemplate?.id
-
-                    state.copy(
-                        isLoading = false,
-                        templates = templates,
-                        selectedTemplateId = newSelectedTemplateId
-                    )
+                        state.copy(
+                            isLoading = false,
+                            templates = templates,
+                            selectedTemplateId = state.selectedTemplateId ?: defaultTemplate?.id
+                        )
+                    }
+                    updateSelectedDayData()
                 }
-                updateSelectedDayData()
-            } else {
-                val error = (templatesResult as? Result.Error)?.error
-                _uiState.update { it.copy(
-                    isLoading = false,
-                    error = error?.let { DailyZonesHelper.zonesErrorToUiText(it) } ?: UiText.DynamicString("Failed to load data")
-                ) }
+                is Result.Error -> {
+                    _uiState.update { it.copy(
+                        isLoading = false,
+                        error = DailyZonesHelper.zonesErrorToUiText(result.error)
+                    ) }
+                }
+                Result.Loading -> Unit
             }
         }
     }

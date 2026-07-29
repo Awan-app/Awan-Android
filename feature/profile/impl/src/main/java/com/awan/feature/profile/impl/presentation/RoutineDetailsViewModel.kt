@@ -3,6 +3,7 @@ package com.awan.feature.profile.impl.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.domain.zones.model.WeeklyTemplate
 import com.awan.app.core.domain.zones.repository.ZonesRepository
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import dagger.hilt.android.lifecycle.HiltViewModel

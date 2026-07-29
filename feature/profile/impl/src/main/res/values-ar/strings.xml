@@ -90,4 +90,44 @@
     <string name="profile_pm">م</string>
     <string name="profile_user_placeholder">مستخدم</string>
     <string name="profile_error_logout">فشل تسجيل الخروج</string>
+
+    <!-- Routines -->
+    <string name="profile_routine_create">إنشاء روتين</string>
+    <string name="profile_routine_edit">تعديل الروتين</string>
+    <string name="profile_routine_summary_subtitle">قوالب لجدولك المتكرر</string>
+    <string name="profile_routine_name">اسم الروتين</string>
+    <string name="profile_routine_name_placeholder">مثال: يوم عمل، عطلة نهاية الأسبوع، إجازة</string>
+    <string name="profile_routine_apply_to_days">تطبيق على الأيام</string>
+    <string name="profile_routine_zones">المناطق</string>
+    <string name="profile_routine_add_zone">إضافة منطقة</string>
+    <string name="profile_routine_no_zones">لا توجد مناطق بعد</string>
+    <string name="profile_routine_no_zones_hint">أضف مناطق لتحديد روتينك.</string>
+    <string name="profile_routine_save">حفظ الروتين</string>
+    <string name="profile_routine_delete_confirm_title">حذف الروتين</string>
+    <string name="profile_routine_delete_confirm_message">هل أنت متأكد من رغبتك في حذف هذا الروتين؟ لا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="profile_routine_delete">حذف</string>
+    <string name="profile_routine_select">اختر روتينًا</string>
+    <string name="profile_routine_create_new">+ إنشاء روتين جديد</string>
+    <string name="profile_routine_new_chip">جديد</string>
+    <string name="profile_routine_edit_summary">تعديل الروتين — سيتم تطبيقه على جميع الأيام التي تستخدمه</string>
+    <string name="profile_routine_detail_applies_to">ينطبق على:</string>
+    <string name="profile_routine_detail_change_hint">التغييرات ستنطبق على جميع الأيام التي تستخدم هذا الروتين.</string>
+    <string name="profile_routine_delete_this_confirm_title">حذف هذا الروتين؟</string>
+    <string name="profile_routine_delete_this_confirm_message">سيؤدي هذا إلى إزالة هذا الروتين وجميع المناطق الموجودة بداخله من الأيام التي تستخدمه.</string>
+    <string name="profile_routine_no_routine_set">لم يتم تعيين روتين لهذا اليوم</string>
+    <string name="profile_routine_connect_hint">قم بربط روتين لبدء جدولة المناطق.</string>
+    <string name="profile_routine_create_for_day">إنشاء روتين لهذا اليوم</string>
+
+    <!-- Zone Editing -->
+    <string name="profile_zone_add">إضافة منطقة</string>
+    <string name="profile_zone_edit">تعديل المنطقة</string>
+    <string name="profile_zone_name">اسم المنطقة</string>
+    <string name="profile_zone_name_placeholder">مثال: عمل عميق، تمارين</string>
+    <string name="profile_zone_start_time">وقت البدء</string>
+    <string name="profile_zone_end_time">وقت الانتهاء</string>
+    <string name="profile_zone_label_color">لون التسمية</string>
+    <string name="profile_zone_save_changes">حفظ التغييرات</string>
+    <string name="profile_zone_delete">حذف المنطقة</string>
+    <string name="profile_zone_confirm">تأكيد</string>
+    <string name="profile_zone_new_placeholder">منطقة جديدة</string>
 </resources>
