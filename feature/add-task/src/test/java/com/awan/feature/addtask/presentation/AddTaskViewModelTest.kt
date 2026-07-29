@@ -9,12 +9,13 @@ import com.awan.app.core.domain.task.parser.TaskInputParser
 import com.awan.app.core.domain.task.repository.TaskRepository
 import com.awan.app.core.domain.task.usecase.ApplyTaskAttributeUseCase
 import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
-import com.awan.app.core.domain.task.usecase.CreateTaskWithAiUseCase
 import com.awan.app.core.domain.task.usecase.DeleteTaskUseCase
 import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
+import com.awan.app.core.domain.task.usecase.PreviewTaskWithAiUseCase
 import com.awan.app.core.domain.task.usecase.ScheduleTaskWithAiUseCase
 import com.awan.app.core.domain.zone.repository.ZoneRepository
 import com.awan.app.core.domain.zone.usecase.GetZonesForDateUseCase
+import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.model.Category
 import com.awan.app.core.model.DayZone
 import com.awan.app.core.model.SessionDraft
@@ -60,17 +61,17 @@ class AddTaskViewModelTest {
         var lastSessions: List<SessionDraft> = emptyList()
         var failWith: AppError? = null
 
-        var aiTask: Task = Task(
-            id = "ai-1",
+        var aiSuggestion: AiTaskSuggestion = AiTaskSuggestion(
             title = "Build login page",
             description = "Design and implement a login page.",
             estimatedDurationMinutes = 90,
             mandatory = true,
             estimatedPoints = 8,
             allowTaskSplitting = true,
-            category = Category(id = "cat-play", name = "Play"),
+            categoryId = "cat-play",
+            categoryName = "Play",
         )
-        var aiFailWith: AppError? = null
+        var previewFailWith: AppError? = null
         var schedule: TaskSchedule = TaskSchedule(
             sessions = listOf(
                 TaskSession(
@@ -109,10 +110,10 @@ class AddTaskViewModelTest {
             )
         }
 
-        override suspend fun createTaskWithAi(title: String, description: String?): Result<Task> {
-            calls += "ai"
-            aiFailWith?.let { return Result.Error(it) }
-            return Result.Success(aiTask)
+        override suspend fun previewTaskWithAi(title: String, description: String?): Result<AiTaskSuggestion> {
+            calls += "preview"
+            previewFailWith?.let { return Result.Error(it) }
+            return Result.Success(aiSuggestion)
         }
 
         override suspend fun scheduleTask(taskId: String): Result<TaskSchedule> {
@@ -159,7 +160,7 @@ class AddTaskViewModelTest {
         applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
         getCategories = GetCategoriesUseCase(categoryRepository),
         createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-        createTaskWithAi = CreateTaskWithAiUseCase(taskRepository),
+        previewTaskWithAi = PreviewTaskWithAiUseCase(taskRepository),
         scheduleTaskWithAi = ScheduleTaskWithAiUseCase(taskRepository),
         deleteTask = DeleteTaskUseCase(taskRepository),
         clock = clock,
@@ -313,7 +314,7 @@ class AddTaskViewModelTest {
     @Test
     fun `a scheduled task with no duration falls back to the default length`() = runTest(testDispatcher) {
         // The form now insists on a length, so only Awan's own task can reach the create without one.
-        taskRepository.aiTask = taskRepository.aiTask.copy(estimatedDurationMinutes = null)
+        taskRepository.aiSuggestion = taskRepository.aiSuggestion.copy(estimatedDurationMinutes = null)
         val viewModel = reviewingViewModel()
 
         viewModel.onAction(AddTaskAction.ScheduleManually)
@@ -390,7 +391,6 @@ class AddTaskViewModelTest {
 
         val state = viewModel.state.value
         assertNull(state.confirmation)
-        assertNull(state.aiTaskId)
         assertEquals("", state.input)
         assertEquals("", state.description)
         assertEquals(AddTaskAiStage.OFF, state.aiStage)
@@ -409,7 +409,6 @@ class AddTaskViewModelTest {
         val state = viewModel.state.value
         assertEquals("", state.input)
         assertEquals(AddTaskAiStage.OFF, state.aiStage)
-        assertNull(state.aiTaskId)
         assertFalse(state.showDiscardConfirm)
         assertEquals(listOf(playCategory), state.availableCategories)
     }
@@ -677,7 +676,6 @@ class AddTaskViewModelTest {
 
         val state = viewModel.state.value
         assertEquals(AddTaskAiStage.REVIEW, state.aiStage)
-        assertEquals("ai-1", state.aiTaskId)
         assertEquals("Build login page for 1h30 @Play", state.input)
         assertEquals("Build login page", state.parsed.title)
         assertEquals(90, state.parsed.durationMinutes)
@@ -710,24 +708,24 @@ class AddTaskViewModelTest {
 
     @Test
     fun `a failed AI call returns to composing with the text intact`() = runTest(testDispatcher) {
-        taskRepository.aiFailWith = AppError.Network
+        taskRepository.previewFailWith = AppError.Network
         val viewModel = reviewingViewModel("Build a login page")
 
         val state = viewModel.state.value
         assertEquals(AddTaskAiStage.COMPOSING, state.aiStage)
         assertEquals("Build a login page", state.input)
-        assertNull(state.aiTaskId)
         assertEquals(R.string.add_task_error_ai_failed, state.errorMessage)
     }
 
     @Test
-    fun `scheduling with Awan keeps its task rather than replacing it`() = runTest(testDispatcher) {
+    fun `scheduling with Awan creates the task itself, then places it`() = runTest(testDispatcher) {
         val viewModel = reviewingViewModel()
 
         viewModel.onAction(AddTaskAction.ScheduleWithAi)
 
-        assertEquals(listOf("ai", "schedule"), taskRepository.calls)
+        assertEquals(listOf("preview", "create", "schedule"), taskRepository.calls)
         assertTrue(taskRepository.deleted.isEmpty())
+        assertNull(taskRepository.lastDraft?.startAt)
 
         // The receipt reports the slot the engine chose, not the one the sentence asked for.
         val confirmation = requireNotNull(viewModel.state.value.confirmation)
@@ -736,17 +734,36 @@ class AddTaskViewModelTest {
     }
 
     @Test
-    fun `a schedule that found no slot stays on review and says so`() = runTest(testDispatcher) {
+    fun `a schedule that found no slot deletes what it just created and says so`() = runTest(testDispatcher) {
         taskRepository.schedule = TaskSchedule(unscheduledReason = "NO_CAPACITY")
         val viewModel = reviewingViewModel()
 
         viewModel.onAction(AddTaskAction.ScheduleWithAi)
 
+        assertEquals(listOf("preview", "create", "schedule", "delete"), taskRepository.calls)
+        assertEquals(listOf("t-1"), taskRepository.deleted)
+
         val state = viewModel.state.value
         assertEquals(AddTaskAiStage.REVIEW, state.aiStage)
-        assertEquals("ai-1", state.aiTaskId)
         assertFalse(state.isSubmitting)
         assertEquals(R.string.add_task_error_ai_schedule_failed, state.errorMessage)
+    }
+
+    @Test
+    fun `switching to manual after a failed schedule attempt still creates fresh`() = runTest(testDispatcher) {
+        taskRepository.schedule = TaskSchedule(unscheduledReason = "NO_CAPACITY")
+        val viewModel = reviewingViewModel()
+        viewModel.onAction(AddTaskAction.ScheduleWithAi)
+        taskRepository.calls.clear()
+        taskRepository.deleted.clear()
+
+        viewModel.onAction(AddTaskAction.ScheduleManually)
+        viewModel.onAction(AddTaskAction.TimePicked(18 * 60))
+        viewModel.onAction(AddTaskAction.Submit)
+
+        // Nothing survived the failed schedule attempt, so there is nothing to inherit or delete.
+        assertEquals(listOf("create"), taskRepository.calls)
+        assertTrue(taskRepository.deleted.isEmpty())
     }
 
     @Test
@@ -762,7 +779,7 @@ class AddTaskViewModelTest {
     }
 
     @Test
-    fun `confirming a manual time deletes Awan's task before creating the scheduled one`() =
+    fun `confirming a manual time creates the task directly since nothing was persisted yet`() =
         runTest(testDispatcher) {
             val viewModel = reviewingViewModel()
 
@@ -770,8 +787,8 @@ class AddTaskViewModelTest {
             viewModel.onAction(AddTaskAction.TimePicked(18 * 60))
             viewModel.onAction(AddTaskAction.Submit)
 
-            assertEquals(listOf("ai", "delete", "create"), taskRepository.calls)
-            assertEquals(listOf("ai-1"), taskRepository.deleted)
+            assertEquals(listOf("preview", "create"), taskRepository.calls)
+            assertTrue(taskRepository.deleted.isEmpty())
 
             val draft = taskRepository.lastDraft
             assertEquals("Build login page", draft?.title)
@@ -784,7 +801,7 @@ class AddTaskViewModelTest {
         }
 
     @Test
-    fun `a manual create that fails does not offer to delete an already-deleted task`() =
+    fun `a manual create that fails surfaces an error without deleting anything`() =
         runTest(testDispatcher) {
             val viewModel = reviewingViewModel()
             viewModel.onAction(AddTaskAction.ScheduleManually)
@@ -792,8 +809,8 @@ class AddTaskViewModelTest {
 
             viewModel.onAction(AddTaskAction.Submit)
 
+            assertTrue(taskRepository.deleted.isEmpty())
             val state = viewModel.state.value
-            assertNull(state.aiTaskId)
             assertEquals("Build login page for 1h30 @Play", state.input)
             assertEquals(R.string.add_task_error_create_failed, state.errorMessage)
         }
@@ -854,7 +871,7 @@ class AddTaskViewModelTest {
     }
 
     @Test
-    fun `discarding from review takes Awan's saved task with it`() = runTest(testDispatcher) {
+    fun `discarding from review deletes nothing since nothing was persisted yet`() = runTest(testDispatcher) {
         val viewModel = reviewingViewModel()
 
         viewModel.onAction(AddTaskAction.DismissRequested)
@@ -862,7 +879,7 @@ class AddTaskViewModelTest {
 
         viewModel.onAction(AddTaskAction.DiscardConfirmed)
 
-        assertEquals(listOf("ai-1"), taskRepository.deleted)
+        assertTrue(taskRepository.deleted.isEmpty())
         assertEquals(AddTaskEvent.Dismissed, viewModel.events.first())
     }
 

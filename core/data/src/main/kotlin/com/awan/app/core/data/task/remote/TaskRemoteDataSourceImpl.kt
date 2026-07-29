@@ -4,6 +4,7 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.TaskApiService
+import com.awan.app.core.network.dto.AiTaskPreviewResponse
 import com.awan.app.core.network.dto.CreateTaskRequest
 import com.awan.app.core.network.dto.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
@@ -37,6 +38,11 @@ class TaskRemoteDataSourceImpl @Inject constructor(
     override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest): Result<TaskWithSessionsDto> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             taskApiService.createTaskWithAi(request)
+        }
+
+    override suspend fun previewTaskWithAi(request: CreateTaskWithAiRequest): Result<AiTaskPreviewResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.previewTaskWithAi(request)
         }
 
     override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> =

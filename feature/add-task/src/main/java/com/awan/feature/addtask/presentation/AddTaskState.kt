@@ -69,11 +69,6 @@ data class AddTaskState(
     /** Chosen on the date step, held until the clock step commits both into the sentence. */
     val pendingDate: LocalDate? = null,
     val aiStage: AddTaskAiStage = AddTaskAiStage.OFF,
-    /**
-     * The task Awan already saved. Non-null from [AddTaskAiStage.REVIEW] onwards, and every way out
-     * of the sheet that doesn't keep this task has to delete it.
-     */
-    val aiTaskId: String? = null,
     /** Awan's own estimates, held aside because the sentence has no syntax for them. */
     val aiPoints: Int = 0,
     val aiSplittable: Boolean = false,
