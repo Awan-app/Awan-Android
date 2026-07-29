@@ -292,7 +292,7 @@ class AddTaskViewModel @Inject constructor(
                     return@launch
                 }
 
-                Result.Loading -> Unit
+                Result.Loading -> return@launch
             }
             when (val result = scheduleTaskWithAi(created.id)) {
                 is Result.Success -> when {
