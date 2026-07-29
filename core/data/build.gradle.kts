@@ -14,11 +14,10 @@ dependencies {
     implementation(project(":core:database"))
     api(project(":core:network"))
     implementation(project(":core:datastore"))
-    implementation(project(":core:database"))
+    implementation(libs.room.ktx)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }
-

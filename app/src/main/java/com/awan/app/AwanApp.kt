@@ -32,7 +32,6 @@ import com.awan.feature.onboarding.api.OnboardingRoute
 import com.awan.feature.onboarding.impl.navigation.onboardingEntry
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.splash.impl.navigation.splashEntry
-
 import com.awan.feature.splash.impl.ui.SplashDestination
 
 @Suppress("LongMethod")
