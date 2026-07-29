@@ -6,4 +6,7 @@ enum class AwanButtonVariant {
     Destructive,
     Quiet,
     Google,
+
+    /** Compact pill for a row of attributes. Tint it per instance through `style` + `rimStyle`. */
+    Chip,
 }
