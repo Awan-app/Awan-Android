@@ -317,13 +317,11 @@ object AwanStyles {
             }
         }
 
-<<<<<<< HEAD
     val authDivider: Style
         @Composable get() = remember(LocalAwanTheme.current) {
             Style {
                 background(colors.line)
                 minHeight(1.dp)
-=======
     val secondaryButtonRim = Style {
         background(colors.line)
         shape(shapes.button)
@@ -424,41 +422,32 @@ object AwanStyles {
         pressed {
             animate(tween(durationMillis = 120, easing = LinearOutSlowInEasing)) {
                 translationY(2.dp.toPx())
->>>>>>> origin/develop
             }
         }
+    }
 
-    val socialButtonGoogleRim: Style
-        @Composable get() = remember(LocalAwanTheme.current) {
-            Style {
-                background(colors.line)
-                shape(shapes.button)
-            }
-        }
+    val socialButtonGoogleRim = Style {
+        background(colors.line)
+        shape(shapes.button)
+    }
 
-    val socialButtonGoogleFace: Style
-        @Composable get() = remember(LocalAwanTheme.current) {
-            Style {
-                background(colors.surface)
-                border(InputStrokeWidth, colors.line)
-                shape(shapes.button)
-                minHeight(48.dp)
-                contentPadding(horizontal = 16.dp, vertical = 12.dp)
-                contentColor(colors.textPrimary)
-                textStyle(typography.button)
-                fontFamily(typography.button.fontFamily!!)
-                buttonPressedTransform()
-            }
-        }
+    val socialButtonGoogleFace = Style {
+        background(colors.surface)
+        border(InputStrokeWidth, colors.line)
+        shape(shapes.button)
+        minHeight(48.dp)
+        contentPadding(horizontal = 16.dp, vertical = 12.dp)
+        contentColor(colors.textPrimary)
+        textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
+        buttonPressedTransform()
+    }
 
-    val iconButtonFace: Style
-        @Composable get() = remember(LocalAwanTheme.current) {
-            Style {
-                background(colors.surface)
-                border(2.dp, colors.line)
-                shape(androidx.compose.foundation.shape.RoundedCornerShape(percent = 30))
-                buttonPressedTransform()
-            }
-        }
+    val iconButtonFace = Style {
+        background(colors.surface)
+        border(2.dp, colors.line)
+        shape(androidx.compose.foundation.shape.RoundedCornerShape(percent = 30))
+        buttonPressedTransform()
+    }
 }
 
