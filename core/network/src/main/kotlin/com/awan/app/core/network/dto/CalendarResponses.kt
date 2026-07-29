@@ -16,15 +16,6 @@ data class UserProfileResponse(
     @SerialName("preferences") val preferences: UserPreferencesResponse? = null,
 )
 
-@Serializable
-data class UserPreferencesResponse(
-    @SerialName("timezone") val timezone: String? = null,
-    @SerialName("preferredSessionDuration") val preferredSessionDuration: Int = 0,
-    @SerialName("bufferBetweenSessions") val bufferBetweenSessions: Int = 0,
-    @SerialName("wakeupTime") val wakeupTime: String = "",
-    @SerialName("sleepTime") val sleepTime: String = "",
-    @SerialName("schedulingType") val schedulingType: String = "BALANCED",
-)
 
 @Serializable
 data class GoalResponse(
