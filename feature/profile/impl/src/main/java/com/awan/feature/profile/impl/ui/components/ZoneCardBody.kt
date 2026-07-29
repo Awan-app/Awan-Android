@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -25,6 +26,7 @@ fun ZoneCardBody(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null
 ) {
+    val context = LocalContext.current
     val zoneColor = zone.color.toColor()
     val backgroundColor = zoneColor
         .copy(alpha = AwanTheme.colors.zoneCardAlpha)
@@ -70,7 +72,7 @@ fun ZoneCardBody(
                         tint = AwanTheme.colors.textSecondary
                     )
                     AwanText(
-                        text = "${DailyZonesHelper.formatTime12h(zone.startTime)} - ${DailyZonesHelper.formatTime12h(zone.endTime)}",
+                        text = "${DailyZonesHelper.formatTime12h(context, zone.startTime)} - ${DailyZonesHelper.formatTime12h(context, zone.endTime)}",
                         style = AwanTheme.styles.captionText.copy(color = AwanTheme.colors.textSecondary)
                     )
                 }

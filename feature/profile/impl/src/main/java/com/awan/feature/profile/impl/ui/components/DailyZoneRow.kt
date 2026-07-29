@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.*
@@ -32,6 +33,7 @@ fun DailyZoneRow(
     modifier: Modifier = Modifier,
     dragHandle: @Composable () -> Unit,
 ) {
+    val context = LocalContext.current
     val zoneColor = zone.color.toColor()
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -80,8 +82,10 @@ fun DailyZoneRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = TimeIndent),
         ) {
+            val startTime = DailyZonesHelper.formatTime12h(context, zone.startTime)
+            val endTime = DailyZonesHelper.formatTime12h(context, zone.endTime)
             AwanText(
-                text = "${DailyZonesHelper.formatTime12h(zone.startTime)} - ${DailyZonesHelper.formatTime12h(zone.endTime)}",
+                text = "$startTime - $endTime",
                 style = AwanTheme.styles.skipLink,
             )
             Icon(

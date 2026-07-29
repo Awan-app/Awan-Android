@@ -58,7 +58,8 @@ fun RoutineDetailsScreen(
                     }
                 },
                 actions = {
-                    if (uiState.template?.name?.equals("Default", ignoreCase = true) == false) {
+                    val defaultName = stringResource(R.string.profile_routine_default_name)
+                    if (uiState.template?.name?.equals(defaultName, ignoreCase = true) == false) {
                         Box(modifier = Modifier.padding(end = 12.dp)) {
                             AwanIconButton(onClick = { showDeleteDialog = true }, contentDescription = stringResource(R.string.profile_routine_delete)) {
                                 Icon(Icons.Default.Delete, null, tint = AwanTheme.colors.destructive)
@@ -102,8 +103,9 @@ fun RoutineDetailsScreen(
                             textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
                         )
                     )
+                    val appliedDays = uiState.template?.daysOfWeek?.map { stringResource(DailyZonesHelper.getDayNameRes(it)) }?.joinToString(", ") ?: ""
                     AwanText(
-                        text = uiState.template?.daysOfWeek?.joinToString(", ") { it.name.lowercase().replaceFirstChar { char -> char.uppercase() } } ?: "",
+                        text = appliedDays,
                         style = AwanTheme.styles.bodyText.copy(color = AwanTheme.colors.textSecondary)
                     )
                     AwanText(

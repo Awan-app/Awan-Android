@@ -60,7 +60,7 @@ fun DailyZonesScreen(
     if (showAddZoneSheet) {
         AddEditZoneSheet(
             zone = editingZone,
-            templateName = uiState.currentTemplate?.name ?: "Default",
+            templateName = uiState.currentTemplate?.name ?: stringResource(R.string.profile_routine_default_name),
             defaultStartTime = uiState.selectedDayZones.lastOrNull()?.endTime,
             onDismiss = {
                 showAddZoneSheet = false
@@ -83,13 +83,13 @@ fun DailyZonesScreen(
         AwanDialog(
             title = stringResource(R.string.profile_daily_zones_delete_zone_title),
             body = stringResource(R.string.profile_daily_zones_delete_zone_message),
-            primaryLabel = "Delete",
+            primaryLabel = stringResource(R.string.profile_routine_delete),
             primaryVariant = AwanButtonVariant.Destructive,
             onPrimary = {
                 onAction(DailyZonesAction.DeleteZone(showDeleteConfirm!!))
                 showDeleteConfirm = null
             },
-            secondaryLabel = "Cancel",
+            secondaryLabel = stringResource(R.string.profile_cancel),
             onSecondary = { showDeleteConfirm = null },
             onDismiss = { showDeleteConfirm = null }
         )

@@ -7,10 +7,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
+import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.presentation.DailyZonesAction
 import com.awan.feature.profile.impl.presentation.DailyZonesState
 import com.awan.feature.profile.impl.ui.components.*
@@ -47,7 +49,7 @@ fun DailyZonesContent(
         val currentTemplateId = uiState.currentTemplate?.id
         RoutineSummaryCard(
             day = uiState.selectedDay,
-            templateName = uiState.currentTemplate?.name ?: "Default",
+            templateName = uiState.currentTemplate?.name ?: stringResource(R.string.profile_routine_default_name),
             zoneCount = uiState.selectedDayZones.size,
             onEditRoutineClick = if (!uiState.isLoading && currentTemplateId != null) {
                 { onNavigateToRoutineDetails(currentTemplateId) }

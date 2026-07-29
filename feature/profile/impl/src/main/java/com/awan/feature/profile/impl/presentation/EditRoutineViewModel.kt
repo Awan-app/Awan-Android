@@ -3,6 +3,7 @@ package com.awan.feature.profile.impl.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.usecase.CreateWeeklyTemplateUseCase
@@ -11,6 +12,7 @@ import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplateUseCase
 import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplatesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateWeeklyTemplateUseCase
+import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -170,35 +172,40 @@ class EditRoutineViewModel @Inject constructor(
         val state = _uiState.value
         
         if (state.name.isBlank()) {
-            _uiState.update { it.copy(validationError = "Routine name cannot be empty") }
+            _uiState.update { it.copy(validationError = UiText.StringResource(R.string.profile_validation_routine_name_empty)) }
             return
         }
         if (state.selectedDays.isEmpty()) {
-            _uiState.update { it.copy(validationError = "Select at least one day") }
+            _uiState.update { it.copy(validationError = UiText.StringResource(R.string.profile_validation_select_day)) }
             return
         }
         
         if (state.zones.isEmpty()) {
-            _uiState.update { it.copy(validationError = "At least one zone is required") }
+            _uiState.update { it.copy(validationError = UiText.StringResource(R.string.profile_validation_at_least_one_zone)) }
             return
         }
         
         state.zones.forEach { zone ->
             if (zone.name.isBlank()) {
-                _uiState.update { it.copy(validationError = "Zone name cannot be empty") }
+                _uiState.update { it.copy(validationError = UiText.StringResource(R.string.profile_validation_zone_name_empty)) }
                 return
             }
             val startMins = DailyZonesHelper.parseTimeToMinutes(zone.startTime)
             val endMins = DailyZonesHelper.parseTimeToMinutes(zone.endTime)
             
             if (startMins >= endMins) {
-                _uiState.update { it.copy(validationError = "Start time must be before end time for ${zone.name}") }
+                _uiState.update { it.copy(
+                    validationError = UiText.StringResource(
+                        R.string.profile_validation_time_order,
+                        zone.name
+                    )
+                ) }
                 return
             }
         }
 
         if (DailyZonesHelper.hasOverlappingZones(state.zones)) {
-            _uiState.update { it.copy(validationError = "Zones cannot overlap") }
+            _uiState.update { it.copy(validationError = UiText.StringResource(R.string.profile_daily_zones_error_overlap)) }
             return
         }
 

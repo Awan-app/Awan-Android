@@ -130,4 +130,28 @@
     <string name="profile_zone_delete">حذف المنطقة</string>
     <string name="profile_zone_confirm">تأكيد</string>
     <string name="profile_zone_new_placeholder">منطقة جديدة</string>
+
+    <string name="profile_validation_routine_name_empty">اسم الروتين لا يمكن أن يكون فارغاً</string>
+    <string name="profile_validation_select_day">اختر يوماً واحداً على الأقل</string>
+    <string name="profile_validation_at_least_one_zone">مطلوب منطقة واحدة على الأقل</string>
+    <string name="profile_validation_zone_name_empty">اسم المنطقة لا يمكن أن يكون فارغاً</string>
+    <string name="profile_validation_time_order">وقت البدء يجب أن يكون قبل وقت الانتهاء لـ %1$s</string>
+    <string name="profile_daily_zones_tagline">شكل أسبوعك على طريقتك.</string>
+    <string name="profile_routine_default_name">افتراضي</string>
+
+    <string name="profile_day_monday">الاثنين</string>
+    <string name="profile_day_tuesday">الثلاثاء</string>
+    <string name="profile_day_wednesday">الأربعاء</string>
+    <string name="profile_day_thursday">الخميس</string>
+    <string name="profile_day_friday">الجمعة</string>
+    <string name="profile_day_saturday">السبت</string>
+    <string name="profile_day_sunday">الأحد</string>
+
+    <string name="profile_day_monday_short">ن</string>
+    <string name="profile_day_tuesday_short">ث</string>
+    <string name="profile_day_wednesday_short">ر</string>
+    <string name="profile_day_thursday_short">خ</string>
+    <string name="profile_day_friday_short">ج</string>
+    <string name="profile_day_saturday_short">س</string>
+    <string name="profile_day_sunday_short">ح</string>
 </resources>

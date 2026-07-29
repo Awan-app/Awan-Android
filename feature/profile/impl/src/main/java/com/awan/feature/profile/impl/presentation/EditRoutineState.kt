@@ -14,5 +14,5 @@ data class EditRoutineState(
     val isSaving: Boolean = false,
     val isDeleting: Boolean = false,
     val error: UiText? = null,
-    val validationError: String? = null
+    val validationError: UiText? = null
 )

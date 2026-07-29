@@ -9,6 +9,7 @@ import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.usecase.DeleteWeeklyTemplateUseCase
 import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplatesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
+import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -130,7 +131,7 @@ class DailyZonesViewModel @Inject constructor(
     private fun addZone(zone: DailyZone) {
         val currentZones = _uiState.value.selectedDayZones
         if (DailyZonesHelper.isOverlapping(zone, currentZones)) {
-            _uiState.update { it.copy(error = UiText.DynamicString("Zones cannot overlap")) }
+            _uiState.update { it.copy(error = UiText.StringResource(R.string.profile_daily_zones_error_overlap)) }
             return
         }
 
@@ -143,7 +144,7 @@ class DailyZonesViewModel @Inject constructor(
         val currentZones = _uiState.value.selectedDayZones
         val otherZones = currentZones.filter { it.id != zone.id }
         if (DailyZonesHelper.isOverlapping(zone, otherZones)) {
-            _uiState.update { it.copy(error = UiText.DynamicString("Zones cannot overlap")) }
+            _uiState.update { it.copy(error = UiText.StringResource(R.string.profile_daily_zones_error_overlap)) }
             return
         }
 

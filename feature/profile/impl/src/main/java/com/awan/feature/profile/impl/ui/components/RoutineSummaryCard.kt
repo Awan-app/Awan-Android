@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,7 +36,7 @@ fun RoutineSummaryCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     AwanText(
-                        text = DailyZonesHelper.displayName(day),
+                        text = stringResource(DailyZonesHelper.getDayNameRes(day)),
                         style = AwanTheme.styles.bodyText.copy(
                             textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
                         )
@@ -51,7 +52,7 @@ fun RoutineSummaryCard(
                     )
 
                     AwanText(
-                        text = "$zoneCount zones",
+                        text = pluralStringResource(R.plurals.profile_zone_count, zoneCount, zoneCount),
                         style = AwanTheme.styles.captionText.copy(color = AwanTheme.colors.textSecondary)
                     )
                 }

@@ -20,12 +20,13 @@ import com.awan.feature.profile.impl.ui.components.ZoneColorPicker
 @Composable
 fun AddEditZoneSheet(
     zone: DailyZone?,
-    templateName: String = "Default",
+    templateName: String? = null,
     defaultStartTime: String? = null,
     onDismiss: () -> Unit,
     onConfirm: (DailyZone) -> Unit,
     isSaving: Boolean = false
 ) {
+    val displayTemplateName = templateName ?: stringResource(R.string.profile_routine_default_name)
     var name by remember { mutableStateOf(zone?.name ?: "") }
     
     val initialStartTime = remember(zone, defaultStartTime) {

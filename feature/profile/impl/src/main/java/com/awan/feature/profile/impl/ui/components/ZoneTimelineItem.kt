@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,6 +23,7 @@ fun ZoneTimelineItem(
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -32,7 +34,7 @@ fun ZoneTimelineItem(
             modifier = Modifier.width(64.dp)
         ) {
             AwanText(
-                text = DailyZonesHelper.formatTime12h(zone.startTime),
+                text = DailyZonesHelper.formatTime12h(context, zone.startTime),
                 style = AwanTheme.styles.captionText.copy(
                     textStyle = AwanTheme.styles.captionText.textStyle.copy(
                         fontSize = 11.sp,
@@ -61,7 +63,7 @@ fun ZoneTimelineItem(
 
             if (isLast) {
                 AwanText(
-                    text = DailyZonesHelper.formatTime12h(zone.endTime),
+                    text = DailyZonesHelper.formatTime12h(context, zone.endTime),
                     style = AwanTheme.styles.captionText.copy(
                         textStyle = AwanTheme.styles.captionText.textStyle.copy(
                             fontSize = 11.sp,

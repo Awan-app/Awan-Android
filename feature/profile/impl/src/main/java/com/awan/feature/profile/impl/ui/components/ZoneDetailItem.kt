@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.*
@@ -17,6 +18,7 @@ import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 
 @Composable
 fun ZoneDetailItem(zone: DailyZone) {
+    val context = LocalContext.current
     val zoneColor = zone.color.toColor()
 
     Row(
@@ -43,7 +45,7 @@ fun ZoneDetailItem(zone: DailyZone) {
                 )
             )
             AwanText(
-                text = "${DailyZonesHelper.formatTime12h(zone.startTime)} - ${DailyZonesHelper.formatTime12h(zone.endTime)}",
+                text = "${DailyZonesHelper.formatTime12h(context, zone.startTime)} - ${DailyZonesHelper.formatTime12h(context, zone.endTime)}",
                 style = AwanTheme.styles.captionText.copy(color = AwanTheme.colors.textSecondary)
             )
         }

@@ -50,6 +50,8 @@ object DailyZonesHelper {
     fun zonesErrorToUiText(error: AppError): UiText = when {
         error is AppError.Api && error.errorCode == "ZONE_OVERLAP" ->
             UiText.StringResource(R.string.profile_daily_zones_error_overlap)
+        error is AppError.Api && error.errorCode == "DAY_ALREADY_ASSIGNED" ->
+            UiText.StringResource(R.string.profile_daily_zones_error_day_assigned)
         error is AppError.Network || error is AppError.Timeout ->
             UiText.StringResource(R.string.profile_daily_zones_error_network)
         error is AppError.Api ->
@@ -57,20 +59,32 @@ object DailyZonesHelper {
         else -> error.toUiText()
     }
 
-    fun displayName(day: DayOfWeek): String =
-        day.name.lowercase().replaceFirstChar { it.uppercase() }
+    fun getDayNameRes(day: DayOfWeek): Int = when (day) {
+        DayOfWeek.MONDAY -> R.string.profile_day_monday
+        DayOfWeek.TUESDAY -> R.string.profile_day_tuesday
+        DayOfWeek.WEDNESDAY -> R.string.profile_day_wednesday
+        DayOfWeek.THURSDAY -> R.string.profile_day_thursday
+        DayOfWeek.FRIDAY -> R.string.profile_day_friday
+        DayOfWeek.SATURDAY -> R.string.profile_day_saturday
+        DayOfWeek.SUNDAY -> R.string.profile_day_sunday
+    }
 
-    fun abbreviation(day: DayOfWeek): String =
-        day.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
+    fun getDayAbbreviationRes(day: DayOfWeek): Int = when (day) {
+        DayOfWeek.MONDAY -> R.string.profile_day_monday_short
+        DayOfWeek.TUESDAY -> R.string.profile_day_tuesday_short
+        DayOfWeek.WEDNESDAY -> R.string.profile_day_wednesday_short
+        DayOfWeek.THURSDAY -> R.string.profile_day_thursday_short
+        DayOfWeek.FRIDAY -> R.string.profile_day_friday_short
+        DayOfWeek.SATURDAY -> R.string.profile_day_saturday_short
+        DayOfWeek.SUNDAY -> R.string.profile_day_sunday_short
+    }
 
-    fun formatTime12h(time: String): String {
+    fun formatTime12h(context: android.content.Context, time: String): String {
         return try {
             val parts = time.split(":")
             val hours = parts[0].toInt()
             val minutes = parts[1].toInt()
-            val amPm = if (hours < 12) "AM" else "PM"
-            val displayHours = if (hours == 0) 12 else if (hours > 12) hours - 12 else hours
-            String.format(Locale.US, "%d:%02d %s", displayHours, minutes, amPm)
+            ProfileHelper.formatDisplayTime(context, hours, minutes)
         } catch (e: Exception) {
             time
         }

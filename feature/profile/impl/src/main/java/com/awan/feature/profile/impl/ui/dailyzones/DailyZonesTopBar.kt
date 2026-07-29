@@ -9,10 +9,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanIconButton
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.profile.impl.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,16 +27,16 @@ fun DailyZonesTopBar(
                 modifier = Modifier.padding(vertical = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                AwanText(text = "Daily zones", style = AwanTheme.styles.titleText)
+                AwanText(text = stringResource(R.string.profile_daily_zones), style = AwanTheme.styles.titleText)
                 AwanText(
-                    text = "Shape your week your way.",
+                    text = stringResource(R.string.profile_daily_zones_tagline),
                     style = AwanTheme.styles.metaText
                 )
             }
         },
         navigationIcon = {
             Box(modifier = Modifier.padding(start = 12.dp)) {
-                AwanIconButton(onClick = onBackClick, contentDescription = "Back") {
+                AwanIconButton(onClick = onBackClick, contentDescription = stringResource(R.string.profile_back)) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = null,

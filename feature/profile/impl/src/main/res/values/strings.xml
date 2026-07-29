@@ -130,4 +130,28 @@
     <string name="profile_zone_delete">Delete Zone</string>
     <string name="profile_zone_confirm">Confirm</string>
     <string name="profile_zone_new_placeholder">New Zone</string>
+
+    <string name="profile_validation_routine_name_empty">Routine name cannot be empty</string>
+    <string name="profile_validation_select_day">Select at least one day</string>
+    <string name="profile_validation_at_least_one_zone">At least one zone is required</string>
+    <string name="profile_validation_zone_name_empty">Zone name cannot be empty</string>
+    <string name="profile_validation_time_order">Start time must be before end time for %1$s</string>
+    <string name="profile_daily_zones_tagline">Shape your week your way.</string>
+    <string name="profile_routine_default_name">Default</string>
+
+    <string name="profile_day_monday">Monday</string>
+    <string name="profile_day_tuesday">Tuesday</string>
+    <string name="profile_day_wednesday">Wednesday</string>
+    <string name="profile_day_thursday">Thursday</string>
+    <string name="profile_day_friday">Friday</string>
+    <string name="profile_day_saturday">Saturday</string>
+    <string name="profile_day_sunday">Sunday</string>
+
+    <string name="profile_day_monday_short">Mon</string>
+    <string name="profile_day_tuesday_short">Tue</string>
+    <string name="profile_day_wednesday_short">Wed</string>
+    <string name="profile_day_thursday_short">Thu</string>
+    <string name="profile_day_friday_short">Fri</string>
+    <string name="profile_day_saturday_short">Sat</string>
+    <string name="profile_day_sunday_short">Sun</string>
 </resources>

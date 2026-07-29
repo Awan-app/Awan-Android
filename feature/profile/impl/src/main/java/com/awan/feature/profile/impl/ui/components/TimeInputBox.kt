@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.AwanText
@@ -25,6 +26,7 @@ fun TimeInputBox(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         AwanText(
             text = label,
@@ -53,7 +55,7 @@ fun TimeInputBox(
                     modifier = Modifier.size(18.dp)
                 )
                 AwanText(
-                    text = DailyZonesHelper.formatTime12h(time),
+                    text = DailyZonesHelper.formatTime12h(context, time),
                     style = AwanTheme.styles.bodyText.copy(
                         textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontSize = 14.sp)
                     )

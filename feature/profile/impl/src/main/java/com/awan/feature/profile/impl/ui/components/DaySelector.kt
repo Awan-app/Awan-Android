@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,6 +41,7 @@ fun DaySelector(
             val isAssigned = assignedDays.contains(day)
             val isToday = if (showTodayIndicator) DailyZonesHelper.isToday(day) else false
             val templateColor = dayColors[day]
+            val abbreviation = stringResource(DailyZonesHelper.getDayAbbreviationRes(day))
 
             val interactionSource = remember { MutableInteractionSource() }
             val isPressed by interactionSource.collectIsPressedAsState()
@@ -100,7 +102,7 @@ fun DaySelector(
                         contentAlignment = Alignment.Center
                     ) {
                         AwanText(
-                            text = DailyZonesHelper.abbreviation(day).take(1),
+                            text = abbreviation.take(1),
                             style = AwanTheme.styles.bodyText.copy(
                                 textStyle = AwanTheme.styles.bodyText.textStyle.copy(
                                     fontWeight = FontWeight.Bold,
@@ -128,7 +130,7 @@ fun DaySelector(
                 }
 
                 AwanText(
-                    text = DailyZonesHelper.abbreviation(day),
+                    text = abbreviation,
                     style = AwanTheme.styles.captionText.copy(
                         textStyle = AwanTheme.styles.captionText.textStyle.copy(fontSize = 10.sp),
                         color = when {
