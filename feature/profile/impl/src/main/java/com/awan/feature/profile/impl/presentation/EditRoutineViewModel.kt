@@ -88,7 +88,7 @@ class EditRoutineViewModel @Inject constructor(
                 when (val result = getWeeklyTemplateUseCase(templateId)) {
                     is Result.Success -> {
                         val template = result.data
-                        val sortedZones = template.zones.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
+                        val sortedZones = template.zones.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
                         _uiState.update { it.copy(
                             isLoading = false,
                             name = template.name,
@@ -128,7 +128,7 @@ class EditRoutineViewModel @Inject constructor(
 
     private fun addZone(zone: DailyZone) {
         _uiState.update { state ->
-            val updatedZones = (state.zones + zone).sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
+            val updatedZones = (state.zones + zone).sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
             state.copy(zones = updatedZones, validationError = null, error = null)
         }
     }
@@ -136,7 +136,7 @@ class EditRoutineViewModel @Inject constructor(
     private fun updateZone(oldZone: DailyZone, newZone: DailyZone) {
         _uiState.update { state ->
             val updatedZones = state.zones.map { if (it == oldZone) newZone else it }
-                .sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
+                .sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
             state.copy(zones = updatedZones, validationError = null, error = null)
         }
     }
@@ -156,11 +156,12 @@ class EditRoutineViewModel @Inject constructor(
             // Recalculate times to stay sequential
             val updated = mutableListOf<DailyZone>()
             list.forEachIndexed { index, zone ->
-                val duration = DailyZonesHelper.parseTimeToMinutes(zone.endTime) - 
-                             DailyZonesHelper.parseTimeToMinutes(zone.startTime)
+                val startMins = DailyZonesHelper.parseTimeToMinutes(zone.startTime) ?: 0
+                val endMins = DailyZonesHelper.parseTimeToMinutes(zone.endTime) ?: 0
+                val duration = endMins - startMins
                 val newStart = if (index == 0) "09:00" else updated[index - 1].endTime
                 val newEnd = DailyZonesHelper.formatMinutesToTime(
-                    DailyZonesHelper.parseTimeToMinutes(newStart) + duration
+                    (DailyZonesHelper.parseTimeToMinutes(newStart) ?: 0) + duration
                 )
                 updated.add(zone.copy(startTime = newStart, endTime = newEnd))
             }
@@ -193,7 +194,7 @@ class EditRoutineViewModel @Inject constructor(
             val startMins = DailyZonesHelper.parseTimeToMinutes(zone.startTime)
             val endMins = DailyZonesHelper.parseTimeToMinutes(zone.endTime)
             
-            if (startMins >= endMins) {
+            if (startMins == null || endMins == null || startMins >= endMins) {
                 _uiState.update { it.copy(
                     validationError = UiText.StringResource(
                         R.string.profile_validation_time_order,

@@ -33,11 +33,11 @@ fun DailyZone.toDto(): ZoneDto = ZoneDto(
 fun WeeklyTemplateDto.toDomain(): WeeklyTemplate = WeeklyTemplate(
     id = id,
     name = name,
-    daysOfWeek = daysOfWeek.map { 
+    daysOfWeek = daysOfWeek.mapNotNull { 
         try {
             DayOfWeek.valueOf(it.uppercase()) 
         } catch (e: Exception) {
-            DayOfWeek.MONDAY // Fallback or handle error
+            null // Handle invalid data explicitly by skipping it instead of defaulting to MONDAY
         }
     },
     zones = zones.map { it.toDomain() }

@@ -54,8 +54,8 @@ fun PreferencesCard(
             ExpandableTimePickerItem(
                 icon = Icons.Default.WbSunny,
                 title = stringResource(ProfileR.string.profile_wakeup_time),
-                hour = ProfileHelper.parseHour(profile.preferences?.wakeupTime),
-                minute = ProfileHelper.parseMinute(profile.preferences?.wakeupTime),
+                hour = ProfileHelper.parseHour(profile.preferences?.wakeupTime) ?: 7,
+                minute = ProfileHelper.parseMinute(profile.preferences?.wakeupTime) ?: 30,
                 isExpanded = expandedItem == "wakeup",
                 onExpandClick = { expandedItem = if (expandedItem == "wakeup") null else "wakeup" },
                 onSaveClick = { h, m ->
@@ -70,8 +70,8 @@ fun PreferencesCard(
             ExpandableTimePickerItem(
                 icon = Icons.Default.NightsStay,
                 title = stringResource(ProfileR.string.profile_sleep_time),
-                hour = ProfileHelper.parseHour(profile.preferences?.sleepTime),
-                minute = ProfileHelper.parseMinute(profile.preferences?.sleepTime),
+                hour = ProfileHelper.parseHour(profile.preferences?.sleepTime) ?: 23,
+                minute = ProfileHelper.parseMinute(profile.preferences?.sleepTime) ?: 0,
                 isExpanded = expandedItem == "sleep",
                 onExpandClick = { expandedItem = if (expandedItem == "sleep") null else "sleep" },
                 onSaveClick = { h, m ->

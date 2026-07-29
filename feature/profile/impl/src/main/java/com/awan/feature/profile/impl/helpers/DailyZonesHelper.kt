@@ -6,22 +6,22 @@ import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.feature.profile.impl.R
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.LocalDate
+import java.util.Locale
 
 object DailyZonesHelper {
 
     fun isOverlapping(newZone: DailyZone, existingZones: List<DailyZone>): Boolean {
-        val newStart = parseTimeToMinutes(newZone.startTime)
-        val newEnd = parseTimeToMinutes(newZone.endTime)
+        val newStart = parseTimeToMinutes(newZone.startTime) ?: return true
+        val newEnd = parseTimeToMinutes(newZone.endTime) ?: return true
 
         if (newStart >= newEnd) return true
 
         return existingZones.any { existing ->
             if (existing.id != null && newZone.id != null && existing.id == newZone.id) return@any false
 
-            val existStart = parseTimeToMinutes(existing.startTime)
-            val existEnd = parseTimeToMinutes(existing.endTime)
+            val existStart = parseTimeToMinutes(existing.startTime) ?: return@any false
+            val existEnd = parseTimeToMinutes(existing.endTime) ?: return@any false
 
             (newStart < existEnd && newEnd > existStart)
         }
@@ -29,21 +29,28 @@ object DailyZonesHelper {
 
     fun hasOverlappingZones(zones: List<DailyZone>): Boolean {
         if (zones.isEmpty()) return false
-        val sorted = zones.sortedBy { parseTimeToMinutes(it.startTime) }
+        val sorted = zones.mapNotNull { zone ->
+            val start = parseTimeToMinutes(zone.startTime)
+            val end = parseTimeToMinutes(zone.endTime)
+            if (start != null && end != null) zone to (start to end) else null
+        }.sortedBy { it.second.first }
+
+        if (sorted.size < zones.size) return true // Some were unparseable
+
         for (i in 0 until sorted.size - 1) {
-            val currentEnd = parseTimeToMinutes(sorted[i].endTime)
-            val nextStart = parseTimeToMinutes(sorted[i + 1].startTime)
+            val currentEnd = sorted[i].second.second
+            val nextStart = sorted[i + 1].second.first
             if (currentEnd > nextStart) return true
         }
         return false
     }
 
-    fun parseTimeToMinutes(time: String): Int {
+    fun parseTimeToMinutes(time: String): Int? {
         return try {
             val parts = time.split(":")
             parts[0].toInt() * 60 + parts[1].toInt()
         } catch (e: Exception) {
-            0
+            null
         }
     }
 
@@ -91,24 +98,21 @@ object DailyZonesHelper {
     }
 
     fun getCurrentDay(): DayOfWeek {
-        val calendar = Calendar.getInstance()
-        return calendarDayToDayOfWeek(calendar.get(Calendar.DAY_OF_WEEK))
+        val javaDay = LocalDate.now().dayOfWeek
+        return when (javaDay) {
+            java.time.DayOfWeek.MONDAY -> DayOfWeek.MONDAY
+            java.time.DayOfWeek.TUESDAY -> DayOfWeek.TUESDAY
+            java.time.DayOfWeek.WEDNESDAY -> DayOfWeek.WEDNESDAY
+            java.time.DayOfWeek.THURSDAY -> DayOfWeek.THURSDAY
+            java.time.DayOfWeek.FRIDAY -> DayOfWeek.FRIDAY
+            java.time.DayOfWeek.SATURDAY -> DayOfWeek.SATURDAY
+            java.time.DayOfWeek.SUNDAY -> DayOfWeek.SUNDAY
+            else -> DayOfWeek.MONDAY // Should not happen with java.time
+        }
     }
 
     fun isToday(day: DayOfWeek): Boolean {
         return day == getCurrentDay()
-    }
-
-
-    private fun calendarDayToDayOfWeek(calendarDay: Int): DayOfWeek = when (calendarDay) {
-        Calendar.MONDAY -> DayOfWeek.MONDAY
-        Calendar.TUESDAY -> DayOfWeek.TUESDAY
-        Calendar.WEDNESDAY -> DayOfWeek.WEDNESDAY
-        Calendar.THURSDAY -> DayOfWeek.THURSDAY
-        Calendar.FRIDAY -> DayOfWeek.FRIDAY
-        Calendar.SATURDAY -> DayOfWeek.SATURDAY
-        Calendar.SUNDAY -> DayOfWeek.SUNDAY
-        else -> DayOfWeek.MONDAY
     }
 
     fun formatMinutesToTime(minutes: Int): String {

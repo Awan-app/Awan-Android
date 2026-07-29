@@ -95,7 +95,7 @@ class DailyZonesViewModel @Inject constructor(
             ?: state.templates.find { it.daysOfWeek.contains(state.selectedDay) }
 
         val zones = (template?.zones ?: emptyList())
-            .sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
+            .sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
 
         _uiState.update { it.copy(
             selectedDayZones = zones,
@@ -135,7 +135,7 @@ class DailyZonesViewModel @Inject constructor(
             return
         }
 
-        val newZones = (currentZones + zone).sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
+        val newZones = (currentZones + zone).sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
         _uiState.update { it.copy(selectedDayZones = newZones) }
         saveZones(newZones)
     }
@@ -149,7 +149,7 @@ class DailyZonesViewModel @Inject constructor(
         }
 
         val newZones = currentZones.map { if (it.id == zone.id) zone else it }
-            .sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
+            .sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
         _uiState.update { it.copy(selectedDayZones = newZones) }
         saveZones(newZones)
     }
@@ -168,7 +168,7 @@ class DailyZonesViewModel @Inject constructor(
             when (result) {
                 is Result.Success -> {
                     // Replace local zones with server response to preserve generated IDs
-                    val updatedZones = result.data.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
+                    val updatedZones = result.data.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
                     _uiState.update { state ->
                         val updatedTemplates = state.templates.map { template ->
                             if (template.id == templateId) {
