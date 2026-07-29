@@ -21,4 +21,9 @@ class OnboardingRemoteDataSourceImpl @Inject constructor(
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             onboardingApiService.completeOnboarding(request)
         }
+
+    override suspend fun isNewUser(): Result<Boolean> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            onboardingApiService.isNewUser().isNew
+        }
 }

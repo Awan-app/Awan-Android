@@ -6,4 +6,5 @@ import com.awan.app.core.network.dto.onboarding.CompleteOnboardingResponse
 
 interface OnboardingRemoteDataSource {
     suspend fun completeOnboarding(request: CompleteOnboardingRequest): Result<CompleteOnboardingResponse>
+    suspend fun isNewUser(): Result<Boolean>
 }

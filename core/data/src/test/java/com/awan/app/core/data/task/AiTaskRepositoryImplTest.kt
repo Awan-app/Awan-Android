@@ -3,6 +3,7 @@ package com.awan.app.core.data.task
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
+import com.awan.app.core.network.dto.AiTaskPreviewResponse
 import com.awan.app.core.network.dto.task.CreateTaskRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
@@ -37,6 +38,9 @@ class AiTaskRepositoryImplTest {
         ): Result<TaskWithSessionsDto> = error("not used")
 
         override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest) = createResult
+
+        override suspend fun previewTaskWithAi(request: CreateTaskWithAiRequest): Result<AiTaskPreviewResponse> =
+            error("not used")
 
         override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> {
             scheduleRequest = request

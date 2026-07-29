@@ -5,6 +5,7 @@ import com.awan.app.core.network.api.OnboardingApiService
 import com.awan.app.core.network.dto.onboarding.CompleteOnboardingRequest
 import com.awan.app.core.network.dto.onboarding.CompleteOnboardingResponse
 import com.awan.app.core.network.dto.onboarding.OnboardingPreferencesDto
+import com.awan.app.core.network.dto.IsNewResponse
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -69,12 +70,20 @@ class OnboardingRemoteDataSourceTest {
     private class FakeOnboardingApiService : OnboardingApiService {
         var responseToReturn: CompleteOnboardingResponse = CompleteOnboardingResponse(id = "default-id")
         var shouldThrowError: Boolean = false
+        var isNewToReturn: Boolean = true
 
         override suspend fun completeOnboarding(request: CompleteOnboardingRequest): CompleteOnboardingResponse {
             if (shouldThrowError) {
                 throw IOException("Network error")
             }
             return responseToReturn
+        }
+
+        override suspend fun isNewUser(): IsNewResponse {
+            if (shouldThrowError) {
+                throw IOException("Network error")
+            }
+            return IsNewResponse(isNew = isNewToReturn)
         }
     }
 }

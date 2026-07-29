@@ -11,6 +11,7 @@ import com.awan.app.core.network.api.ZoneApiService
 import com.awan.app.core.network.api.TemplateApiService
 import com.awan.app.core.network.device.AndroidDeviceIdProvider
 import com.awan.app.core.network.device.DeviceIdProvider
+import com.awan.app.core.network.interceptor.AiTimeoutInterceptor
 import com.awan.app.core.network.interceptor.AuthInterceptor
 import com.awan.app.core.network.interceptor.TokenAuthenticator
 import dagger.Module
@@ -66,6 +67,7 @@ object NetworkModule {
     fun providesNoAuthOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(AiTimeoutInterceptor())
         .addInterceptor(loggingInterceptor)
         .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -80,6 +82,7 @@ object NetworkModule {
         loggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
+        .addInterceptor(AiTimeoutInterceptor())
         .addInterceptor(loggingInterceptor)
         .authenticator(tokenAuthenticator)
         .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)

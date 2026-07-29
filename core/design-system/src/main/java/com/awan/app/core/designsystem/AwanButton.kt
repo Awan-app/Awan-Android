@@ -47,6 +47,16 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 
+/**
+ * [style] and [rimStyle] are applied last onto the variant's face and rim, so a caller can retint a
+ * variant without redefining its geometry — which is how one [AwanButtonVariant.Chip] serves a whole
+ * row of differently-toned attribute chips.
+ *
+ * Sizing follows the same fix as [AwanCard]: the rim used to be sized with `matchParentSize()` while
+ * the outer container relied on `propagateMinConstraints` to end up the right size — which does not
+ * reliably hug the face for every content width/variant combination. Here the face is measured first
+ * and the rim is then forced into exactly that size, so it can never drift from the face's edges.
+ */
 @Composable
 fun AwanButton(
     onClick: () -> Unit,

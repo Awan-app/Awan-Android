@@ -6,9 +6,19 @@ import com.awan.app.core.data.onboarding.OnboardingData
 import com.awan.app.core.domain.onboarding.DayBoundsValidation
 import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.ValidateDayBounds
+import com.awan.app.core.domain.task.repository.TaskRepository
+import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
+import com.awan.app.core.domain.zone.repository.ZoneRepository
+import com.awan.app.core.domain.zone.usecase.GetZonesForDateUseCase
+import com.awan.app.core.model.DayZone
+import com.awan.app.core.model.SessionDraft
+import com.awan.app.core.model.Task
+import com.awan.app.core.model.TaskDraft
+import com.awan.app.core.model.TaskSchedule
+import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.domain.task.usecase.CreateAndScheduleFirstTaskUseCase
-import com.awan.app.core.domain.onboarding.model.DayBounds
-import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.domain.template.usecase.CreateWeeklyTemplateUseCase
+import com.awan.app.core.model.DayBounds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -33,6 +43,40 @@ class OnboardingViewModelTest {
     private lateinit var repository: FakeOnboardingRepository
     private lateinit var fakeAiTaskRepository: FakeAiTaskRepository
     private lateinit var viewModel: OnboardingViewModel
+
+    private class FakeTaskRepository : TaskRepository {
+        var createdTaskTitle: String? = null
+
+        override suspend fun createTask(draft: TaskDraft): Result<Task> {
+            createdTaskTitle = draft.title
+            return Result.Success(
+                Task(
+                    id = "task-123",
+                    title = draft.title,
+                    estimatedDurationMinutes = draft.durationMinutes,
+                )
+            )
+        }
+
+        override suspend fun createTaskWithSessions(
+            draft: TaskDraft,
+            sessions: List<SessionDraft>,
+        ): Result<TaskWithSessions> = error("onboarding never schedules its first task")
+
+        override suspend fun previewTaskWithAi(title: String, description: String?): Result<AiTaskSuggestion> =
+            error("onboarding never asks the AI")
+
+        override suspend fun scheduleTask(taskId: String): Result<TaskSchedule> =
+            error("onboarding never schedules its first task")
+
+        override suspend fun deleteTask(taskId: String): Result<Unit> = error("onboarding never deletes")
+    }
+
+    /** Onboarding's first task is unscheduled, so the zone lookup is never reached. */
+    private class FakeZoneRepository : ZoneRepository {
+        override suspend fun getZonesForDate(date: LocalDate): Result<List<DayZone>> =
+            error("onboarding never schedules its first task")
+    }
 
     @Before
     fun setUp() {
@@ -177,7 +221,7 @@ class OnboardingViewModelTest {
         runTest(testDispatcher) {
             viewModel.onAction(OnboardingAction.SkipSetup)
 
-            // Note: In current architecture, templateZones are updated by a separate sync or 
+            // Note: In current architecture, templateZones are updated by a separate sync or
             // the repository should return them. For now we just verify the call landed.
             assertTrue(repository.isCompleted)
         }

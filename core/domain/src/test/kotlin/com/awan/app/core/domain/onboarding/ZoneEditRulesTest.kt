@@ -2,6 +2,7 @@ package com.awan.app.core.domain.onboarding
 
 import com.awan.app.core.domain.onboarding.model.DayBounds
 import com.awan.app.core.domain.zones.model.Zone
+import com.awan.app.core.domain.onboarding.utils.ZoneEditRules
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

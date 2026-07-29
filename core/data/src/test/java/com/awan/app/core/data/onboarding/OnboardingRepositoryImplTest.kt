@@ -4,6 +4,7 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.datastore.UserPreferencesDataSource
 import com.awan.app.core.datastore.model.UserPreferencesData
+import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.domain.onboarding.model.DayBounds
 import com.awan.app.core.domain.profile.model.UserProfile
 import com.awan.app.core.network.dto.onboarding.CompleteOnboardingRequest
@@ -23,7 +24,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.time.LocalDate
 
 class OnboardingRepositoryImplTest {
 
@@ -31,7 +31,6 @@ class OnboardingRepositoryImplTest {
     private lateinit var fakeRemoteDataSource: FakeOnboardingRemoteDataSource
     private lateinit var fakePreferencesDataSource: FakeUserPreferencesDataSource
     private lateinit var fakeUserDao: FakeUserDao
-    private lateinit var fakeZonesRepository: FakeZonesRepository
     private lateinit var repository: OnboardingRepositoryImpl
 
     @Before
@@ -39,10 +38,8 @@ class OnboardingRepositoryImplTest {
         fakeRemoteDataSource = FakeOnboardingRemoteDataSource()
         fakePreferencesDataSource = FakeUserPreferencesDataSource()
         fakeUserDao = FakeUserDao()
-        fakeZonesRepository = FakeZonesRepository()
         repository = OnboardingRepositoryImpl(
             remoteDataSource = fakeRemoteDataSource,
-            zonesRepository = fakeZonesRepository,
             userPreferencesDataSource = fakePreferencesDataSource,
             userDao = fakeUserDao,
             ioDispatcher = testDispatcher,
@@ -70,23 +67,97 @@ class OnboardingRepositoryImplTest {
         assertEquals("23:00:00", sentRequest?.sleepTime)
     }
 
+    @Test
+    fun `hasCompletedOnboarding trusts the local flag without hitting the backend`() = runTest(testDispatcher.scheduler) {
+        fakePreferencesDataSource.isOnboardingCompleted = true
+        fakeRemoteDataSource.isNew = true
+
+        assertTrue(repository.hasCompletedOnboarding())
+    }
+
+    @Test
+    fun `hasCompletedOnboarding caches completion when the backend says the user is not new`() =
+        runTest(testDispatcher.scheduler) {
+            fakeRemoteDataSource.isNew = false
+
+            assertTrue(repository.hasCompletedOnboarding())
+            assertTrue(fakePreferencesDataSource.isOnboardingCompleted)
+        }
+
+    @Test
+    fun `hasCompletedOnboarding is false for a new user and for a failing backend`() = runTest(testDispatcher.scheduler) {
+        fakeRemoteDataSource.isNew = true
+        assertFalse(repository.hasCompletedOnboarding())
+        assertFalse(fakePreferencesDataSource.isOnboardingCompleted)
+
+        fakeRemoteDataSource.failWith = AppError.Network
+        assertFalse(repository.hasCompletedOnboarding())
+    }
+
+    @Test
+    fun `completeOnboarding treats a 409 as already onboarded`() = runTest(testDispatcher.scheduler) {
+        fakeRemoteDataSource.failWith = AppError.Api(code = 409, body = "user already onboarded")
+
+        val result = repository.completeOnboarding(onboardingData())
+
+        assertTrue(result is Result.Success)
+        assertTrue(fakePreferencesDataSource.isOnboardingCompleted)
+    }
+
+    @Test
+    fun `completeOnboarding treats the documented 400 ONBOARDING_ALREADY_COMPLETED as already onboarded`() =
+        runTest(testDispatcher.scheduler) {
+            fakeRemoteDataSource.failWith = AppError.Api(
+                code = 400,
+                body = "user already onboarded",
+                errorCode = "ONBOARDING_ALREADY_COMPLETED",
+            )
+
+            val result = repository.completeOnboarding(onboardingData())
+
+            assertTrue(result is Result.Success)
+            assertTrue(fakePreferencesDataSource.isOnboardingCompleted)
+        }
+
+    @Test
+    fun `completeOnboarding still fails for unrelated errors`() = runTest(testDispatcher.scheduler) {
+        fakeRemoteDataSource.failWith = AppError.Api(code = 400, body = "bad request", errorCode = "INVALID_TIMEZONE")
+
+        assertTrue(repository.completeOnboarding(onboardingData()) is Result.Error)
+        assertFalse(fakePreferencesDataSource.isOnboardingCompleted)
+
+        fakeRemoteDataSource.failWith = AppError.Network
+        assertTrue(repository.completeOnboarding(onboardingData()) is Result.Error)
+        assertFalse(fakePreferencesDataSource.isOnboardingCompleted)
+    }
+
+    private fun onboardingData() = OnboardingData(
+        profile = UserProfile(firstName = "Sarah", lastName = "Connor"),
+        bounds = DayBounds(wakeMinutes = 7 * 60, sleepMinutes = 23 * 60),
+        preferredTaskLengthMinutes = 45,
+    )
+
     private class FakeOnboardingRemoteDataSource : OnboardingRemoteDataSource {
         var lastReceivedRequest: CompleteOnboardingRequest? = null
-        var shouldFail: Boolean = false
+        var failWith: AppError? = null
+        var isNew: Boolean = true
+
+        override suspend fun isNewUser(): Result<Boolean> =
+            failWith?.let { Result.Error(it) } ?: Result.Success(isNew)
 
         override suspend fun completeOnboarding(request: CompleteOnboardingRequest): Result<CompleteOnboardingResponse> {
             lastReceivedRequest = request
-            return if (shouldFail) {
-                Result.Error(com.awan.app.core.common.error.AppError.Network)
-            } else {
-                Result.Success(CompleteOnboardingResponse(id = "user-id-123"))
-            }
+            return failWith?.let { Result.Error(it) }
+                ?: Result.Success(CompleteOnboardingResponse(id = "user-id-123"))
         }
     }
 
     private class FakeUserPreferencesDataSource : UserPreferencesDataSource {
-        var isOnboardingCompleted: Boolean = false
         private val prefs = MutableStateFlow(UserPreferencesData())
+
+        var isOnboardingCompleted: Boolean
+            get() = prefs.value.onboardingCompleted
+            set(value) { prefs.value = prefs.value.copy(onboardingCompleted = value) }
 
         override val userPreferences: Flow<UserPreferencesData> = prefs
 

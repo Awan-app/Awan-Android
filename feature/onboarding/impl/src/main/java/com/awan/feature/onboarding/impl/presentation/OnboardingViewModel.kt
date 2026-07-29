@@ -5,15 +5,15 @@ import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.data.onboarding.OnboardingData
-import com.awan.app.core.data.onboarding.OnboardingRepository
+import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.common.text.UiText
-import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
-import com.awan.app.core.domain.onboarding.ValidateDayBounds
-import com.awan.app.core.domain.onboarding.ZoneEditRules
+import com.awan.app.core.domain.onboarding.usecase.SuggestZoneScheduleUseCase
+import com.awan.app.core.domain.onboarding.utils.ValidateDayBounds
+import com.awan.app.core.domain.onboarding.utils.ZoneEditRules
 import com.awan.app.core.domain.task.usecase.CreateAndScheduleFirstTaskUseCase
 import com.awan.feature.onboarding.impl.R
 import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.domain.onboarding.usecase.CompleteOnboardingUseCase
 import com.awan.app.core.domain.profile.model.UserProfile
 import com.awan.app.core.domain.zones.model.Zone
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,7 +28,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
-    private val repository: OnboardingRepository,
+    private val completeOnboarding: CompleteOnboardingUseCase,
     private val suggestZoneSchedule: SuggestZoneScheduleUseCase,
     private val validateDayBounds: ValidateDayBounds,
     private val createAndScheduleFirstTask: CreateAndScheduleFirstTaskUseCase,
@@ -146,7 +146,7 @@ class OnboardingViewModel @Inject constructor(
                 preferredTaskLengthMinutes = s.preferredTaskLengthMinutes,
                 firstTask = s.firstTask,
             )
-            when (val result = repository.completeOnboarding(data)) {
+            when (val result = completeOnboarding(data)) {
                 is Result.Success -> isBackendOnboarded = true
                 is Result.Error -> return failSetup(result.error)
                 Result.Loading -> return false

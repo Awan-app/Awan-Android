@@ -2,6 +2,8 @@ package com.awan.app.core.data.task.remote
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.TaskApiService
+import com.awan.app.core.network.dto.AiTaskPreviewResponse
+import com.awan.app.core.network.dto.AiTaskPreviewTaskResponse
 import com.awan.app.core.network.dto.task.CreateTaskRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
@@ -29,6 +31,9 @@ private open class FakeTaskApiService : TaskApiService {
     override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest): TaskWithSessionsDto =
         error("not used")
 
+    override suspend fun previewTaskWithAi(request: CreateTaskWithAiRequest): AiTaskPreviewResponse =
+        error("not used")
+
     override suspend fun scheduleTask(request: ScheduleTaskRequest): TaskScheduleResponse =
         error("not used")
 
@@ -37,7 +42,7 @@ private open class FakeTaskApiService : TaskApiService {
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Unit = error("not used")
 }
 
-private fun dataSource(api: TaskApiService, json: Json, dispatcher: kotlinx.coroutines.CoroutineDispatcher) = 
+private fun dataSource(api: TaskApiService, json: Json, dispatcher: kotlinx.coroutines.CoroutineDispatcher) =
     TaskRemoteDataSourceImpl(api, json, dispatcher)
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -97,6 +102,20 @@ class TaskRemoteDataSourceTest {
         assertTrue(result is Result.Success)
         assertEquals("task-ai", (result as Result.Success<TaskWithSessionsDto>).data.task.id)
         assertEquals(90, result.data.task.estimatedDuration)
+    }
+
+    @Test
+    fun `previewTaskWithAi returns Success when API call succeeds`() = runTest(testDispatcher) {
+        val api = object : FakeTaskApiService() {
+            override suspend fun previewTaskWithAi(request: CreateTaskWithAiRequest) =
+                AiTaskPreviewResponse(
+                    task = AiTaskPreviewTaskResponse(title = request.title, estimatedDuration = 90),
+                )
+        }
+        val result = dataSource(api).previewTaskWithAi(CreateTaskWithAiRequest(title = "Build login page"))
+
+        assertTrue(result is Result.Success)
+        assertEquals(90, (result as Result.Success).data.task?.estimatedDuration)
     }
 
     @Test

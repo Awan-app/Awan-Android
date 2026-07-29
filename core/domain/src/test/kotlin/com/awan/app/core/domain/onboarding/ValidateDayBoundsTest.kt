@@ -1,6 +1,8 @@
 package com.awan.app.core.domain.onboarding
 
 import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.domain.onboarding.utils.DayBoundsValidation
+import com.awan.app.core.domain.onboarding.utils.ValidateDayBounds
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

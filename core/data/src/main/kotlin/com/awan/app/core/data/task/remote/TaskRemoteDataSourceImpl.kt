@@ -11,6 +11,7 @@ import com.awan.app.core.network.dto.task.ScheduleTaskRequest
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
+import com.awan.app.core.network.dto.AiTaskPreviewResponse
 import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json
@@ -37,6 +38,11 @@ class TaskRemoteDataSourceImpl @Inject constructor(
     override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest): Result<TaskWithSessionsDto> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             taskApiService.createTaskWithAi(request)
+        }
+
+    override suspend fun previewTaskWithAi(request: CreateTaskWithAiRequest): Result<AiTaskPreviewResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.previewTaskWithAi(request)
         }
 
     override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> =

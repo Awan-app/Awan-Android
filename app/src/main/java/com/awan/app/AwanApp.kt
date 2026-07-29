@@ -1,7 +1,7 @@
 package com.awan.app
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -16,22 +16,28 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.AwanBottomNavBar
+import com.awan.app.core.designsystem.BottomNavItem
 import com.awan.core.navigation.Navigator
 import com.awan.feature.addtask.ui.AddTaskSheet
+import com.awan.feature.auth.api.LoginRoute
 import com.awan.feature.auth.impl.navigation.authEntry
 import com.awan.feature.calendar.impl.navigation.calendarEntry
 import com.awan.feature.chat.impl.navigation.chatEntry
 import com.awan.feature.goals.impl.navigation.goalsEntry
+import com.awan.feature.home.api.HomeRoute
 import com.awan.feature.home.impl.navigation.homeEntry
+import com.awan.feature.marketplace.impl.navigation.marketplaceEntry
+import com.awan.feature.auth.api.OtpRoute
+import com.awan.feature.onboarding.api.OnboardingRoute
 import com.awan.feature.onboarding.impl.navigation.onboardingEntry
 import com.awan.feature.profile.impl.navigation.profileEntry
-import com.awan.feature.profile_setup.impl.navigation.profileSetupEntry
 import com.awan.feature.splash.impl.navigation.splashEntry
-
 import com.awan.feature.splash.impl.ui.SplashDestination
 
 @Suppress("LongMethod")
@@ -116,6 +122,11 @@ fun AwanApp(
                 ) {
                     navigator.goBack()
                 }
+        BackHandler(
+            enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack
+        ) {
+            navigator.goBack()
+        }
 
                 NavDisplay(
                     modifier = Modifier.fillMaxSize(),
@@ -127,3 +138,26 @@ fun AwanApp(
         }
     }
 }
+        NavDisplay(
+            backStack = appState.navigationState.currentSubStack,
+            onBack = { navigator.goBack() },
+            entryProvider = entryProvider,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        val currentRoute = appState.navigationState.currentKey
+        val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route == currentRoute }
+
+        if (isTopLevel) {
+            val navItems = remember(appState.topLevelDestinations) {
+                appState.topLevelDestinations.map { dest ->
+                    BottomNavItem(
+                        id = dest.name,
+                        selectedIcon = dest.selectedIcon,
+                        unselectedIcon = dest.unselectedIcon,
+                        label = dest.label,
+                        isFab = dest.isFab
+                    )
+                }
+            }
+            val selectedDest = appState.topLevelDestinations.find { it.route == appState.navigationState.currentTopLevelKey }

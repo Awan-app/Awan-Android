@@ -1,6 +1,7 @@
 package com.awan.app.core.data.task
 
 import com.awan.app.core.data.category.toModel
+import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.Task
@@ -9,6 +10,7 @@ import com.awan.app.core.model.TaskSchedule
 import com.awan.app.core.model.TaskSession
 import com.awan.app.core.model.TaskStatus
 import com.awan.app.core.model.TaskWithSessions
+import com.awan.app.core.network.dto.AiTaskPreviewResponse
 import com.awan.app.core.network.dto.task.CreateTaskRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.task.ScheduledSessionResponse
@@ -52,13 +54,27 @@ internal fun TaskInfoResponse.toTaskModel(): Task = Task(
     description = description,
     estimatedDurationMinutes = estimatedDuration ?: 0,
     status = status.toTaskStatus(),
-    mandatory = mandatory ?: false,
+    mandatory = mandatory ?: true,
     estimatedPoints = estimatedPoints ?: 0,
     allowTaskSplitting = allowTaskSplitting ?: false,
     goalId = goalId,
     dependsOnTaskIds = dependsOnTaskIds.orEmpty(),
     category = category?.toModel(),
 )
+
+internal fun AiTaskPreviewResponse.toModel(): AiTaskSuggestion {
+    val proposed = task
+    return AiTaskSuggestion(
+        title = proposed?.title.orEmpty(),
+        description = proposed?.description,
+        estimatedDurationMinutes = proposed?.estimatedDuration,
+        mandatory = proposed?.mandatory ?: true,
+        estimatedPoints = proposed?.estimatedPoints ?: 0,
+        allowTaskSplitting = proposed?.allowTaskSplitting ?: false,
+        categoryId = proposed?.category?.id ?: proposed?.categoryId,
+        categoryName = proposed?.category?.name,
+    )
+}
 
 /**
  * An empty `scheduledSessions` with nothing in `unscheduledTasks` still means nothing was placed, so
