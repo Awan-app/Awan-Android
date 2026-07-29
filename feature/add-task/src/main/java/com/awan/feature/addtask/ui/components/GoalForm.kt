@@ -22,8 +22,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -109,14 +107,11 @@ fun GoalFormContent(
     modifier: Modifier = Modifier,
 ) {
     val isReduced = reducedMotion()
-    val scrollState = rememberScrollState()
     val standardMillis = AwanTheme.motion.standardMillis
     val fastMillis = AwanTheme.motion.fastMillis
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .verticalScroll(scrollState),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
     ) {
         AnimatedContent(
