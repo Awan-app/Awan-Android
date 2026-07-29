@@ -1,16 +1,18 @@
 package com.awan.app.core.network.api
 
-import com.awan.app.core.network.dto.task.CreateAiTaskRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import retrofit2.http.Body
-import retrofit2.http.GET
+import retrofit2.http.DELETE
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
+import retrofit2.http.GET
 
 interface TaskApiService {
 
@@ -19,24 +21,35 @@ interface TaskApiService {
         @Body request: CreateTaskRequest,
     ): TaskInfoResponse
 
-    @GET("v1/tasks/date/{date}")
-    suspend fun getTasksByDate(
-        @Path("date") date: String,
-    ): List<TaskWithSessionsDto>
-
     @POST("v1/tasks/with-sessions")
     suspend fun createTaskWithSessions(
         @Body request: CreateTaskWithSessionsRequest,
     ): TaskWithSessionsDto
 
-    /** Enriches a bare title into a full task — the AI estimates duration, points and category. */
+    /**
+     * Persists a task straight away with every field the model chose. This is not a preview — the
+     * returned id is a real task already sitting in the user's Inbox, so any path that abandons the
+     * flow it feeds has to delete it.
+     */
     @POST("v1/ai/task-create")
     suspend fun createTaskWithAi(
-        @Body request: CreateAiTaskRequest,
-    ): TaskInfoResponse
+        @Body request: CreateTaskWithAiRequest,
+    ): TaskWithSessionsDto
+
+    @GET("v1/tasks/date/{date}")
+    suspend fun getTasksByDate(
+        @Path("date") date: String,
+    ): List<TaskWithSessionsDto>
 
     @POST("v1/schedule/task")
     suspend fun scheduleTask(
         @Body request: ScheduleTaskRequest,
     ): TaskScheduleResponse
+
+    @DELETE("v1/tasks/{taskId}")
+    suspend fun deleteTask(
+        @Path("taskId") taskId: String,
+        @Query("cascade") cascade: Boolean = false,
+    )
 }
+

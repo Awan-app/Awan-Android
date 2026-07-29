@@ -6,8 +6,13 @@ import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.model.Session
 import com.awan.app.core.domain.zones.model.TemplateOverride
 import com.awan.app.core.domain.zones.model.WeeklyTemplate
+import com.awan.app.core.model.DayZone
+import java.time.LocalDate
 
 interface ZonesRepository {
+    // Current Effective Zones
+    suspend fun getZonesForDate(date: LocalDate): Result<List<DayZone>>
+
     // Templates
     suspend fun getTemplates(): Result<List<WeeklyTemplate>>
     suspend fun createTemplate(name: String, daysOfWeek: List<DayOfWeek>, zones: List<DailyZone>): Result<WeeklyTemplate>

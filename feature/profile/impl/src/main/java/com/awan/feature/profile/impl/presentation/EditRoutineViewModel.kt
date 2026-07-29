@@ -50,8 +50,9 @@ class EditRoutineViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = zonesRepository.getTemplates()) {
                 is Result.Success -> {
+                    val currentId = _uiState.value.templateId
                     val allAssigned = result.data.flatMap { template ->
-                        if (template.id != _uiState.value.templateId) {
+                        if (template.id != currentId) {
                             template.daysOfWeek
                         } else {
                             emptyList()
@@ -66,36 +67,53 @@ class EditRoutineViewModel @Inject constructor(
     }
 
     private fun loadTemplate(templateId: String?) {
-        if (templateId == null) {
-            _uiState.update { EditRoutineState(assignedDays = it.assignedDays) }
-            return
-        }
-
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, templateId = templateId) }
 
-            // Reload assigned days to exclude current template correctly
+            // 1. Fetch ALL templates to see which days are already assigned elsewhere
             val templatesResult = zonesRepository.getTemplates()
-            val otherAssigned = if (templatesResult is Result.Success) {
-                templatesResult.data.filter { it.id != templateId }.flatMap { it.daysOfWeek }.toSet()
-            } else emptySet()
+            val allTemplates = if (templatesResult is Result.Success) templatesResult.data else emptyList()
+            
+            val otherAssigned = allTemplates
+                .filter { it.id != templateId }
+                .flatMap { it.daysOfWeek }
+                .toSet()
 
-            when (val result = zonesRepository.getTemplate(templateId)) {
-                is Result.Success -> {
-                    val template = result.data
-                    val sortedZones = template.zones.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
-                    _uiState.update { it.copy(
+            if (templateId == null) {
+                // CREATE MODE: Clear everything but keep track of other routines' days
+                _uiState.update { 
+                    it.copy(
                         isLoading = false,
-                        name = template.name,
-                        selectedDays = template.daysOfWeek.toSet(),
+                        templateId = null,
+                        name = "",
+                        selectedDays = emptySet(),
                         assignedDays = otherAssigned,
-                        zones = sortedZones
-                    ) }
+                        zones = emptyList()
+                    ) 
                 }
-                is Result.Error -> {
-                    _uiState.update { it.copy(isLoading = false, assignedDays = otherAssigned, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
+            } else {
+                // EDIT MODE: Load specific template and calculate assigned days excluding this one
+                when (val result = zonesRepository.getTemplate(templateId)) {
+                    is Result.Success -> {
+                        val template = result.data
+                        val sortedZones = template.zones.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
+                        _uiState.update { it.copy(
+                            isLoading = false,
+                            name = template.name,
+                            selectedDays = template.daysOfWeek.toSet(),
+                            assignedDays = otherAssigned,
+                            zones = sortedZones
+                        ) }
+                    }
+                    is Result.Error -> {
+                        _uiState.update { it.copy(
+                            isLoading = false,
+                            assignedDays = otherAssigned,
+                            error = DailyZonesHelper.zonesErrorToUiText(result.error)
+                        ) }
+                    }
+                    Result.Loading -> Unit
                 }
-                Result.Loading -> Unit
             }
         }
     }
@@ -170,6 +188,11 @@ class EditRoutineViewModel @Inject constructor(
             return
         }
         
+        if (state.zones.isEmpty()) {
+            _uiState.update { it.copy(validationError = "At least one zone is required") }
+            return
+        }
+        
         state.zones.forEach { zone ->
             if (zone.name.isBlank()) {
                 _uiState.update { it.copy(validationError = "Zone name cannot be empty") }
@@ -192,26 +215,35 @@ class EditRoutineViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
             val templateId = state.templateId
-            val result = if (templateId == null) {
-                zonesRepository.createTemplate(state.name, state.selectedDays.toList(), state.zones)
-            } else {
-                val updateRes = zonesRepository.updateTemplate(templateId, state.name, state.selectedDays.toList())
-                if (updateRes is Result.Success) {
-                    zonesRepository.updateTemplateZones(templateId, state.zones)
-                } else {
-                    updateRes
-                }
-            }
 
-            when (result) {
-                is Result.Success -> {
-                    _uiState.update { it.copy(isSaving = false) }
-                    _events.send(EditRoutineEvent.SaveSuccess)
+            if (templateId == null) {
+                when (val result = zonesRepository.createTemplate(state.name, state.selectedDays.toList(), state.zones)) {
+                    is Result.Success -> {
+                        _uiState.update { it.copy(isSaving = false) }
+                        _events.send(EditRoutineEvent.SaveSuccess)
+                    }
+                    is Result.Error -> {
+                        _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
+                    }
+                    Result.Loading -> Unit
                 }
-                is Result.Error -> {
-                    _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
+            } else {
+                val updateNameRes = zonesRepository.updateTemplate(templateId, state.name, state.selectedDays.toList())
+                if (updateNameRes is Result.Error) {
+                    _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(updateNameRes.error)) }
+                    return@launch
                 }
-                Result.Loading -> Unit
+                
+                when (val updateZonesRes = zonesRepository.updateTemplateZones(templateId, state.zones)) {
+                    is Result.Success -> {
+                        _uiState.update { it.copy(isSaving = false) }
+                        _events.send(EditRoutineEvent.SaveSuccess)
+                    }
+                    is Result.Error -> {
+                        _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(updateZonesRes.error)) }
+                    }
+                    Result.Loading -> Unit
+                }
             }
         }
     }

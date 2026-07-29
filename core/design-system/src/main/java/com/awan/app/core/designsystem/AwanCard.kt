@@ -42,7 +42,7 @@ fun AwanCard(
     val colors = AwanTheme.colors
     val shape = AwanTheme.shapes.card
     val borderColor by animateColorAsState(if (selected) selectedColor else colors.line, label = "cardBorder")
-    
+
     val defaultRimColor = if (selected) selectedColor.copy(alpha = 0.35f) else colors.line
     val targetRimColor = customRimColor ?: defaultRimColor
     val rimColor by animateColorAsState(targetRimColor, label = "cardRim")
@@ -84,14 +84,14 @@ fun AwanCard(
         // Face is measured first. Coerce constraints to be valid.
         val minW = constraints.minWidth.coerceIn(0, constraints.maxWidth)
         val minH = constraints.minHeight.coerceIn(0, constraints.maxHeight)
-        
+
         val safeConstraints = Constraints(
             minWidth = minW,
             maxWidth = constraints.maxWidth,
             minHeight = minH,
             maxHeight = constraints.maxHeight
         )
-        
+
         val facePlaceable = measurables[1].measure(safeConstraints)
         val width = facePlaceable.width.coerceAtLeast(0)
         val height = facePlaceable.height.coerceAtLeast(0)

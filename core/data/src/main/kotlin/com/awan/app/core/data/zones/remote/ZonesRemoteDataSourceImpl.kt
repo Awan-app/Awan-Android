@@ -3,7 +3,7 @@ package com.awan.app.core.data.zones.remote
 import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.network.api.ZonesApiService
+import com.awan.app.core.network.api.ZoneApiService
 import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.zone.CreateOverrideRequest
 import com.awan.app.core.network.dto.zone.CreateTemplateRequest
@@ -21,7 +21,7 @@ import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 class ZonesRemoteDataSourceImpl @Inject constructor(
-    private val zonesApiService: ZonesApiService,
+    private val zonesApiService: ZoneApiService,
     private val json: Json,
     @Dispatcher(AwanDispatchers.IO)
     private val ioDispatcher: CoroutineDispatcher,

@@ -10,6 +10,7 @@ import com.awan.app.core.domain.onboarding.model.DayBounds
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.network.dto.onboarding.CompleteOnboardingRequest
+import com.awan.app.core.network.dto.onboarding.CompleteOnboardingResponse
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.util.Locale

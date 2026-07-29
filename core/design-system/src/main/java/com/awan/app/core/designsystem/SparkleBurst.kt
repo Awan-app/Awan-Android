@@ -1,4 +1,4 @@
-package com.awan.feature.onboarding.impl.ui.components
+package com.awan.app.core.designsystem
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -10,8 +10,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import com.awan.app.core.designsystem.AwanTheme
-import com.awan.app.core.designsystem.reducedMotion
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin

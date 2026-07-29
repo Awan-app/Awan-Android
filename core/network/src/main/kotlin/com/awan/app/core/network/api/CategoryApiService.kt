@@ -1,18 +1,10 @@
 package com.awan.app.core.network.api
 
 import com.awan.app.core.network.dto.category.CategoryDto
-import com.awan.app.core.network.dto.category.CategoryRequestDto
-import retrofit2.http.Body
 import retrofit2.http.GET
-import retrofit2.http.POST
-
 interface CategoryApiService {
 
-    @POST("v1/categories")
-    suspend fun createCategory(
-        @Body request: CategoryRequestDto,
-    ): CategoryDto
-
+    /** Every category the user owns, independent of any date. */
     @GET("v1/categories")
     suspend fun getCategories(): List<CategoryDto>
 }

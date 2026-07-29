@@ -8,7 +8,7 @@ data class SessionDto(
     @SerialName("id") val id: String,
     @SerialName("start") val start: String,
     @SerialName("end") val end: String,
-    @SerialName("status") val status: String = "SCHEDULED",
+    @SerialName("status") val status: String? = null,
     @SerialName("locked") val locked: Boolean = false,
     @SerialName("zoneId") val zoneId: String? = null,
     @SerialName("taskId") val taskId: String? = null

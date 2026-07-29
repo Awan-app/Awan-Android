@@ -21,8 +21,8 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class AiTaskRepositoryImplTest {
 
-    private var createResult: Result<TaskInfoResponse> =
-        Result.Success(TaskInfoResponse(id = "task-1", title = "Read Clean Code"))
+    private var createResult: Result<TaskWithSessionsDto> =
+        Result.Success(TaskWithSessionsDto(task = TaskInfoResponse(id = "task-1", title = "Read Clean Code")))
     private var scheduleResult: Result<TaskScheduleResponse> = Result.Success(TaskScheduleResponse())
     private var scheduleRequest: ScheduleTaskRequest? = null
     private var scheduleCalls = 0
@@ -30,13 +30,19 @@ class AiTaskRepositoryImplTest {
     private val remoteDataSource = object : TaskRemoteDataSource {
         override suspend fun createTask(request: CreateTaskRequest) = error("not used")
 
-        override suspend fun createTaskWithAi(request: CreateAiTaskRequest) = createResult
+        override suspend fun createTaskWithSessions(
+            request: CreateTaskWithSessionsRequest,
+        ): Result<TaskWithSessionsDto> = error("not used")
+
+        override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest) = createResult
 
         override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> {
             scheduleRequest = request
             scheduleCalls++
             return scheduleResult
         }
+
+        override suspend fun deleteTask(taskId: String): Result<Unit> = error("not used")
     }
 
     private val repository = AiTaskRepositoryImpl(remoteDataSource, UnconfinedTestDispatcher())

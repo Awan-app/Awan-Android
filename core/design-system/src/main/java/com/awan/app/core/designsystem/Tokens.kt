@@ -17,7 +17,9 @@ import androidx.compose.ui.unit.sp
 internal const val AWAN_BUTTON_ANIMATION_DURATION_MILLIS = 40
 internal val AwanButtonRimDepth = 4.dp
 internal val AwanButtonRimSide = 2.dp
-internal val AwanChipFaceHeight = 32.dp
+
+/** Face only; the pill is this plus [AwanButtonRimDepth], which is also its whole touch target. */
+internal val AwanChipFaceHeight = 40.dp
 
 private val Baloo2 = FontFamily(
     Font(R.font.baloo2_semibold, FontWeight.SemiBold),
@@ -74,6 +76,12 @@ data class AwanColors(
     val zoneTangerine: Color,
     val zoneSun: Color,
     val zoneLavender: Color,
+    val zoneSkyPressed: Color,
+    val zoneVioletPressed: Color,
+    val zoneCoralPressed: Color,
+    val zoneTangerinePressed: Color,
+    val zoneSunPressed: Color,
+    val zoneLavenderPressed: Color,
     val zoneCardAlpha: Float,
 )
 
@@ -131,6 +139,12 @@ internal val LightAwanColors = AwanColors(
     zoneTangerine = Color(0xFFF4A261),
     zoneSun = Color(0xFFF1D98A),
     zoneLavender = Color(0xFFB7A1E8),
+    zoneSkyPressed = Color(0xFF1D84CC),
+    zoneVioletPressed = Color(0xFF5A47CC),
+    zoneCoralPressed = Color(0xFFD94F72),
+    zoneTangerinePressed = Color(0xFFD9771C),
+    zoneSunPressed = Color(0xFFD99E14),
+    zoneLavenderPressed = Color(0xFF7659D9),
     zoneCardAlpha = 0.35f, // Increased for better visibility with pastels
 )
 
@@ -193,6 +207,12 @@ internal val DarkAwanColors = AwanColors(
     zoneTangerine = Color(0xFFF4A261),
     zoneSun = Color(0xFFF1D98A),
     zoneLavender = Color(0xFFB7A1E8),
+    zoneSkyPressed = Color(0xFF2D93D9),
+    zoneVioletPressed = Color(0xFF7659D9),
+    zoneCoralPressed = Color(0xFFD94F72),
+    zoneTangerinePressed = Color(0xFFD9771C),
+    zoneSunPressed = Color(0xFFD99E14),
+    zoneLavenderPressed = Color(0xFF7659D9),
     zoneCardAlpha = 0.45f,
 )
 

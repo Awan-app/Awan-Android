@@ -71,14 +71,15 @@ internal fun Project.configureKotlinAndroid(ext: ApplicationExtension) {
     }
 
     addCoreLibraryDesugaring()
+
     configureKotlinJvmTarget()
 }
 
-/** `java.time` is API 26+; minSdk is 24, so every module desugars it. */
+/** `java.time` is API 26+; minSdk is 24, so every Android module desugars it. */
 private fun Project.addCoreLibraryDesugaring() {
     val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
     dependencies {
-        add("coreLibraryDesugaring", libs.findLibrary("desugar-jdk-libs").get())
+        add("coreLibraryDesugaring", libs.findLibrary("android-desugarJdkLibs").get())
     }
 }
 

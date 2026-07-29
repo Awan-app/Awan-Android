@@ -1,10 +1,10 @@
 package com.awan.app.core.common.result
 
+import com.awan.app.core.common.error.AppError
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
-import com.awan.app.core.common.error.AppError
 
 sealed interface Result<out T> {
     data class Success<T>(val data: T) : Result<T>
@@ -12,12 +12,11 @@ sealed interface Result<out T> {
     data object Loading : Result<Nothing>
 }
 
-fun <T, R> Result<T>.map(transform: (T) -> R): Result<R> {
-    return when (this) {
-        is Result.Success -> Result.Success(transform(data))
-        is Result.Error -> Result.Error(error)
-        Result.Loading -> Result.Loading
-    }
+/** Maps a success payload, leaving [Result.Error] and [Result.Loading] untouched. */
+inline fun <T, R> Result<T>.map(transform: (T) -> R): Result<R> = when (this) {
+    is Result.Success -> Result.Success(transform(data))
+    is Result.Error -> this
+    Result.Loading -> Result.Loading
 }
 
 fun <T> Result<T>.onSuccess(action: (T) -> Unit): Result<T> {
