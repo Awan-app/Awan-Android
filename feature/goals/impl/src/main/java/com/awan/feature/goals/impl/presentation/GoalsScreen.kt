@@ -84,42 +84,48 @@ fun GoalsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            when {
-                state.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator(
-                            color = colors.sky,
-                            strokeWidth = 3.dp,
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                when {
+                    state.isLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator(
+                                color = colors.sky,
+                                strokeWidth = 3.dp,
+                            )
+                        }
+                    }
+
+                    state.isError -> {
+                        GoalsErrorState(
+                            onRetry = { onAction(GoalsAction.RetryClicked) },
                         )
                     }
-                }
 
-                state.isError -> {
-                    GoalsErrorState(
-                        onRetry = { onAction(GoalsAction.RetryClicked) },
-                    )
-                }
+                    else -> {
+                        val goals = when (state.tab) {
+                            GoalsTab.Active -> state.activeGoals
+                            GoalsTab.Completed -> state.completedGoals
+                        }
 
-                else -> {
-                    val goals = when (state.tab) {
-                        GoalsTab.Active -> state.activeGoals
-                        GoalsTab.Completed -> state.completedGoals
-                    }
-
-                    if (goals.isEmpty()) {
-                        GoalsEmptyState(tab = state.tab)
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            items(goals, key = { it.id }) { goal ->
-                                GoalCard(goal = goal)
+                        if (goals.isEmpty()) {
+                            GoalsEmptyState(tab = state.tab)
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                items(goals, key = { it.id }) { goal ->
+                                    GoalCard(goal = goal)
+                                }
                             }
                         }
                     }
