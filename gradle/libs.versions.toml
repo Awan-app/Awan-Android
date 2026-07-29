@@ -19,6 +19,7 @@ material3AdaptiveNav3 = "1.3.0-rc01"
 # New — DI
 ksp = "2.3.10"
 hilt = "2.60.1"
+icons-lucide-android = "2.2.1"
 androidxHiltNavigationCompose = "1.2.0"
 
 # New — Networking
@@ -128,6 +129,9 @@ lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", versio
 
 # Core library desugaring — java.time below API 26
 android-desugarJdkLibs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
+
+# Lucide Icons
+icons-lucide-android = { group = "com.composables", name = "icons-lucide-android", version.ref = "icons-lucide-android" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

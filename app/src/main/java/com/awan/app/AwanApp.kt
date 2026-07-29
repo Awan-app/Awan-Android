@@ -19,13 +19,13 @@ import com.awan.feature.addtask.ui.AddTaskSheet
 import com.awan.feature.auth.impl.navigation.authEntry
 import com.awan.feature.calendar.impl.navigation.calendarEntry
 import com.awan.feature.chat.impl.navigation.chatEntry
+import com.awan.feature.goals.api.GoalsRoute
 import com.awan.feature.goals.impl.navigation.goalsEntry
 import com.awan.feature.home.impl.navigation.homeEntry
 import com.awan.feature.onboarding.impl.navigation.onboardingEntry
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.profile_setup.impl.navigation.profileSetupEntry
 import com.awan.feature.splash.impl.navigation.splashEntry
-
 import com.awan.feature.splash.impl.ui.SplashDestination
 
 @Suppress("LongMethod")
@@ -38,7 +38,12 @@ fun AwanApp(
     var showAddTask by rememberSaveable { mutableStateOf(false) }
 
     if (showAddTask) {
-        AddTaskSheet(onDismiss = { showAddTask = false })
+        AddTaskSheet(
+            onDismiss = { showAddTask = false },
+            onGoalCreated = { _ ->
+                navigator.replaceAll(GoalsRoute)
+            },
+        )
     }
 
     Scaffold(
@@ -46,6 +51,7 @@ fun AwanApp(
         bottomBar = {
             val currentRoute = appState.navigationState.currentKey
             val isTopLevel = appState.topLevelDestinations.any { it.route == currentRoute }
+
             if (isTopLevel) {
                 AwanBottomBar(
                     destinations = appState.topLevelDestinations,
