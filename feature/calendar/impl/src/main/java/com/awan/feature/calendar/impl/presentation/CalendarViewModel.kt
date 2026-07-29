@@ -59,7 +59,11 @@ class CalendarViewModel @Inject constructor(
 
     private fun refresh() = viewModelScope.launch {
         _state.update { it.copy(isLoading = true) }
-        val result = repository.refresh()
+        val result = try {
+            repository.refresh()
+        } catch (e: Exception) {
+            Result.Error(com.awan.app.core.common.error.AppError.Unknown(e))
+        }
         _state.update { current ->
             if (result is Result.Error) {
                 current.copy(isLoading = false, errorMessage = R.string.calendar_refresh_error)
@@ -73,8 +77,8 @@ class CalendarViewModel @Inject constructor(
         val zone = CalendarDateMapper.parseZoneIdOrDefault(snapshot.user.timezone)
         val today = LocalDate.now(zone)
         val current = _state.value
-        val selected = current.selectedDate
-        val month = current.currentYearMonth
+        val selected = if (current.selectedDate == current.today) today else current.selectedDate
+        val month = if (current.currentYearMonth == YearMonth.from(current.today)) YearMonth.from(today) else current.currentYearMonth
         val goals = CalendarDateMapper.filterAndSortUpcomingGoals(snapshot.goals, today)
         val streakCount = snapshot.user.streak.coerceAtLeast(0)
         val streakDates = CalendarDateMapper.calculateStreakDates(streakCount, today)
@@ -100,12 +104,14 @@ class CalendarViewModel @Inject constructor(
 
     companion object {
         private fun createInitialState(): CalendarUiState {
-            val today = LocalDate.now()
+            val zone = java.time.ZoneId.systemDefault()
+            val today = LocalDate.now(zone)
             val month = YearMonth.from(today)
             return CalendarUiState(
                 isLoading = true,
                 errorMessage = null,
                 streak = 0,
+                timezone = zone,
                 today = today,
                 selectedDate = today,
                 currentYearMonth = month,
