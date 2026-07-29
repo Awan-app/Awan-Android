@@ -18,6 +18,7 @@ import com.awan.app.core.domain.onboarding.repository.OnboardingRepository
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSourceImpl
 import com.awan.app.core.data.profile.repository.ProfileRepositoryImpl
+import com.awan.app.core.data.profile.repository.UserDataRepositoryImpl
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSourceImpl
@@ -36,6 +37,7 @@ import com.awan.app.core.data.zones.repository.ZonesRepositoryImpl
 import com.awan.app.core.domain.auth.repository.AuthRepository
 import com.awan.app.core.domain.calendar.repository.CalendarRepository
 import com.awan.app.core.domain.profile.repository.ProfileRepository
+import com.awan.app.core.domain.profile.repository.UserDataRepository
 import com.awan.app.core.domain.task.repository.AiTaskRepository
 import com.awan.app.core.domain.template.repository.TemplateRepository
 import com.awan.app.core.domain.home.repository.HomeRepository
@@ -145,6 +147,12 @@ internal abstract class DataModule {
     abstract fun bindProfileRepository(
         impl: ProfileRepositoryImpl,
     ): ProfileRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserDataRepository(
+        impl: UserDataRepositoryImpl,
+    ): UserDataRepository
 
     @Binds
     @Singleton

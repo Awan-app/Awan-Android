@@ -6,9 +6,9 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
+import com.awan.app.core.domain.zones.usecase.DeleteWeeklyTemplateUseCase
 import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplatesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
-import com.awan.app.core.domain.zones.repository.ZonesRepository
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +22,7 @@ import javax.inject.Inject
 class DailyZonesViewModel @Inject constructor(
     private val getWeeklyTemplatesUseCase: GetWeeklyTemplatesUseCase,
     private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase,
-    private val zonesRepository: ZonesRepository
+    private val deleteWeeklyTemplateUseCase: DeleteWeeklyTemplateUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DailyZonesState(selectedDay = DailyZonesHelper.getCurrentDay()))
@@ -105,7 +105,7 @@ class DailyZonesViewModel @Inject constructor(
     private fun deleteTemplate(templateId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
-            val result = zonesRepository.deleteTemplate(templateId)
+            val result = deleteWeeklyTemplateUseCase(templateId)
             when (result) {
                 is Result.Success -> {
                     _uiState.update { it.copy(isSaving = false, selectedTemplateId = null) }

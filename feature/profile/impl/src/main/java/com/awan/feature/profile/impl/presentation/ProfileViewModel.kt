@@ -5,10 +5,18 @@ import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
-import com.awan.app.core.datastore.UserPreferencesDataSource
 import com.awan.app.core.domain.auth.usecase.LogoutUseCase
 import com.awan.app.core.domain.profile.model.Profile
-import com.awan.app.core.domain.profile.repository.ProfileRepository
+import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
+import com.awan.app.core.domain.profile.usecase.GetUserDataUseCase
+import com.awan.app.core.domain.profile.usecase.ObserveProfileUseCase
+import com.awan.app.core.domain.profile.usecase.SetDarkThemeUseCase
+import com.awan.app.core.domain.profile.usecase.SetLocaleUseCase
+import com.awan.app.core.domain.profile.usecase.UpdateBirthDateUseCase
+import com.awan.app.core.domain.profile.usecase.UpdateProfilePartialUseCase
+import com.awan.app.core.domain.profile.usecase.UpdateSessionSettingsUseCase
+import com.awan.app.core.domain.profile.usecase.UpdateSleepScheduleUseCase
+import com.awan.app.core.domain.profile.usecase.UpdateTimezoneUseCase
 import com.awan.feature.profile.impl.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -23,9 +31,17 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val profileRepository: ProfileRepository,
+    private val getProfileUseCase: GetProfileUseCase,
+    private val observeProfileUseCase: ObserveProfileUseCase,
+    private val updateSleepScheduleUseCase: UpdateSleepScheduleUseCase,
+    private val updateSessionSettingsUseCase: UpdateSessionSettingsUseCase,
+    private val updateTimezoneUseCase: UpdateTimezoneUseCase,
+    private val updateProfilePartialUseCase: UpdateProfilePartialUseCase,
+    private val updateBirthDateUseCase: UpdateBirthDateUseCase,
+    private val getUserDataUseCase: GetUserDataUseCase,
+    private val setDarkThemeUseCase: SetDarkThemeUseCase,
+    private val setLocaleUseCase: SetLocaleUseCase,
     private val logoutUseCase: LogoutUseCase,
-    private val userDataRepository: UserPreferencesDataSource,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileState())
@@ -59,7 +75,7 @@ class ProfileViewModel @Inject constructor(
 
     private fun observeProfile() {
         viewModelScope.launch {
-            profileRepository.observeProfile().collectLatest { profile ->
+            observeProfileUseCase().collectLatest { profile ->
                 if (profile != null) {
                     _uiState.update { it.copy(profile = profile) }
                 }
@@ -69,11 +85,11 @@ class ProfileViewModel @Inject constructor(
 
     private fun observePreferences() {
         viewModelScope.launch {
-            userDataRepository.userPreferences.collectLatest { prefs ->
+            getUserDataUseCase().collectLatest { userData ->
                 _uiState.update {
                     it.copy(
-                        useDarkTheme = prefs.darkThemeEnabled,
-                        language = prefs.locale
+                        useDarkTheme = userData.darkThemeEnabled,
+                        language = userData.locale
                     )
                 }
             }
@@ -82,40 +98,40 @@ class ProfileViewModel @Inject constructor(
 
     private fun setTheme(useDarkTheme: Boolean) {
         viewModelScope.launch {
-            userDataRepository.setDarkThemeEnabled(useDarkTheme)
+            setDarkThemeUseCase(useDarkTheme)
         }
     }
 
     private fun setLanguage(languageCode: String) {
         viewModelScope.launch {
-            userDataRepository.setLocale(languageCode)
+            setLocaleUseCase(languageCode)
         }
     }
 
     private fun updateSleepSchedule(wakeupTime: String, sleepTime: String) {
-        executeFieldUpdate { profileRepository.updateSleepSchedule(wakeupTime, sleepTime) }
+        executeFieldUpdate { updateSleepScheduleUseCase(wakeupTime, sleepTime) }
     }
 
     private fun updateSessionDuration(duration: Int) {
         val currentBuffer = _uiState.value.profile?.preferences?.bufferBetweenSessions ?: 5
-        executeFieldUpdate { profileRepository.updateSessionSettings(duration, currentBuffer) }
+        executeFieldUpdate { updateSessionSettingsUseCase(duration, currentBuffer) }
     }
 
     private fun updateTimezone(timezone: String) {
-        executeFieldUpdate { profileRepository.updateTimezone(timezone) }
+        executeFieldUpdate { updateTimezoneUseCase(timezone) }
     }
 
     private fun updatePersonalInfo(firstName: String, lastName: String, birthDate: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isUpdatingField = true, fieldError = null) }
 
-            val nameResult = profileRepository.updateProfilePartial(firstName = firstName, lastName = lastName)
+            val nameResult = updateProfilePartialUseCase(firstName = firstName, lastName = lastName)
             if (nameResult is Result.Error) {
                 _uiState.update { it.copy(isUpdatingField = false, fieldError = nameResult.error.toUiText()) }
                 return@launch
             }
 
-            val birthDateResult = profileRepository.updateBirthDate(birthDate)
+            val birthDateResult = updateBirthDateUseCase(birthDate)
             if (birthDateResult is Result.Error) {
                 _uiState.update { it.copy(isUpdatingField = false, fieldError = birthDateResult.error.toUiText()) }
                 return@launch
@@ -180,7 +196,7 @@ class ProfileViewModel @Inject constructor(
     private fun loadProfile() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            when (val result = profileRepository.getProfile()) {
+            when (val result = getProfileUseCase()) {
                 is Result.Success -> {
                     _uiState.update {
                         it.copy(

@@ -5,7 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
-import com.awan.app.core.domain.zones.repository.ZonesRepository
+import com.awan.app.core.domain.zones.usecase.CreateWeeklyTemplateUseCase
+import com.awan.app.core.domain.zones.usecase.DeleteWeeklyTemplateUseCase
+import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplateUseCase
+import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplatesUseCase
+import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
+import com.awan.app.core.domain.zones.usecase.UpdateWeeklyTemplateUseCase
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -19,7 +24,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EditRoutineViewModel @Inject constructor(
-    private val zonesRepository: ZonesRepository
+    private val getWeeklyTemplatesUseCase: GetWeeklyTemplatesUseCase,
+    private val getWeeklyTemplateUseCase: GetWeeklyTemplateUseCase,
+    private val createWeeklyTemplateUseCase: CreateWeeklyTemplateUseCase,
+    private val updateWeeklyTemplateUseCase: UpdateWeeklyTemplateUseCase,
+    private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase,
+    private val deleteWeeklyTemplateUseCase: DeleteWeeklyTemplateUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditRoutineState())
@@ -48,7 +58,7 @@ class EditRoutineViewModel @Inject constructor(
 
     private fun loadAssignedDays() {
         viewModelScope.launch {
-            when (val result = zonesRepository.getTemplates()) {
+            when (val result = getWeeklyTemplatesUseCase()) {
                 is Result.Success -> {
                     val currentId = _uiState.value.templateId
                     val allAssigned = result.data.flatMap { template ->
@@ -71,7 +81,7 @@ class EditRoutineViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, templateId = templateId) }
 
             // 1. Fetch ALL templates to see which days are already assigned elsewhere
-            val templatesResult = zonesRepository.getTemplates()
+            val templatesResult = getWeeklyTemplatesUseCase()
             val allTemplates = if (templatesResult is Result.Success) templatesResult.data else emptyList()
             
             val otherAssigned = allTemplates
@@ -93,7 +103,7 @@ class EditRoutineViewModel @Inject constructor(
                 }
             } else {
                 // EDIT MODE: Load specific template and calculate assigned days excluding this one
-                when (val result = zonesRepository.getTemplate(templateId)) {
+                when (val result = getWeeklyTemplateUseCase(templateId)) {
                     is Result.Success -> {
                         val template = result.data
                         val sortedZones = template.zones.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) }
@@ -217,7 +227,7 @@ class EditRoutineViewModel @Inject constructor(
             val templateId = state.templateId
 
             if (templateId == null) {
-                when (val result = zonesRepository.createTemplate(state.name, state.selectedDays.toList(), state.zones)) {
+                when (val result = createWeeklyTemplateUseCase(state.name, state.selectedDays.toList(), state.zones)) {
                     is Result.Success -> {
                         _uiState.update { it.copy(isSaving = false) }
                         _events.send(EditRoutineEvent.SaveSuccess)
@@ -228,13 +238,13 @@ class EditRoutineViewModel @Inject constructor(
                     Result.Loading -> Unit
                 }
             } else {
-                val updateNameRes = zonesRepository.updateTemplate(templateId, state.name, state.selectedDays.toList())
+                val updateNameRes = updateWeeklyTemplateUseCase(templateId, state.name, state.selectedDays.toList())
                 if (updateNameRes is Result.Error) {
                     _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(updateNameRes.error)) }
                     return@launch
                 }
                 
-                when (val updateZonesRes = zonesRepository.updateTemplateZones(templateId, state.zones)) {
+                when (val updateZonesRes = updateTemplateZonesUseCase(templateId, state.zones)) {
                     is Result.Success -> {
                         _uiState.update { it.copy(isSaving = false) }
                         _events.send(EditRoutineEvent.SaveSuccess)
@@ -252,7 +262,7 @@ class EditRoutineViewModel @Inject constructor(
         val templateId = _uiState.value.templateId ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isDeleting = true, error = null) }
-            when (val result = zonesRepository.deleteTemplate(templateId)) {
+            when (val result = deleteWeeklyTemplateUseCase(templateId)) {
                 is Result.Success -> {
                     _uiState.update { it.copy(isDeleting = false) }
                     _events.send(EditRoutineEvent.DeleteSuccess)
