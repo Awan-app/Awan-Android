@@ -126,6 +126,16 @@
     <string name="profile_zone_start_time">Start Time</string>
     <string name="profile_zone_end_time">End Time</string>
     <string name="profile_zone_label_color">Label Color</string>
+    <string name="profile_color_melon">Melon</string>
+    <string name="profile_color_blue">Blue</string>
+    <string name="profile_color_purple">Purple</string>
+    <string name="profile_color_pink">Pink</string>
+    <string name="profile_color_green">Green</string>
+    <string name="profile_color_yellow">Yellow</string>
+    <string name="profile_color_orange">Orange</string>
+    <string name="profile_color_red">Red</string>
+    <string name="profile_color_cyan">Cyan</string>
+    <string name="profile_color_gray">Gray</string>
     <string name="profile_zone_save_changes">Save Changes</string>
     <string name="profile_zone_delete">Delete Zone</string>
     <string name="profile_zone_confirm">Confirm</string>
