@@ -300,5 +300,12 @@ object AwanStyles {
         fontFamily(typography.button.fontFamily!!)
         buttonPressedTransform()
     }
+
+    val iconButtonFace = Style {
+        background(colors.surface)
+        border(2.dp, colors.line)
+        shape(androidx.compose.foundation.shape.RoundedCornerShape(percent = 30))
+        buttonPressedTransform()
+    }
 }
 

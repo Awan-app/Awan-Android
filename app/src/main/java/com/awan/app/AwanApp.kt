@@ -29,7 +29,6 @@ import com.awan.feature.onboarding.impl.navigation.onboardingEntry
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.profile_setup.impl.navigation.profileSetupEntry
 import com.awan.feature.splash.impl.navigation.splashEntry
-
 import com.awan.feature.splash.impl.ui.SplashDestination
 
 @Suppress("LongMethod")
@@ -89,7 +88,10 @@ fun AwanApp(
                     onLogout = { navigator.replaceAll(LoginRoute) },
                     onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute) },
                 )
-                calendarEntry()
+                calendarEntry(
+                    onDateSelected = { _ -> },
+                    onBack = navigator::goBack,
+                )
                 chatEntry()
                 goalsEntry()
                 profileEntry(
