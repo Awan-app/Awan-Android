@@ -58,19 +58,14 @@ fun AwanTextField(
         Modifier
     }
 
-    val baseModifier = if (isError) {
-        Modifier.styleable(styleState, AwanTheme.styles.textField, AwanTheme.styles.textFieldError)
-    } else {
-        Modifier.styleable(styleState, AwanTheme.styles.textField)
-    }
+    val baseStyle = if (isError) AwanTheme.styles.textFieldError else Style
 
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier
             .then(semanticsModifier)
-            .then(baseModifier)
-            .styleable(styleState, style),
+            .styleable(styleState, AwanTheme.styles.textField, baseStyle, style),
         enabled = enabled,
         textStyle = resolvedTextStyle,
         keyboardOptions = keyboardOptions,
