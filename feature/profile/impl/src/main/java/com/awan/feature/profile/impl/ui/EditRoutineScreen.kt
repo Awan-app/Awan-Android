@@ -126,7 +126,10 @@ fun EditRoutineScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         AwanText(
                             text = if (uiState.templateId == null) stringResource(R.string.profile_routine_create) else stringResource(R.string.profile_routine_edit),
                             style = AwanTheme.styles.titleText
@@ -138,28 +141,30 @@ fun EditRoutineScreen(
                     }
                 },
                 navigationIcon = {
-                    AwanIconButton(onClick = onBackClick, contentDescription = stringResource(R.string.profile_back)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = AwanTheme.colors.textPrimary)
+                    Box(modifier = Modifier.padding(start = 12.dp)) {
+                        AwanIconButton(onClick = onBackClick, contentDescription = stringResource(R.string.profile_back)) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = AwanTheme.colors.textPrimary)
+                        }
                     }
                 },
                 actions = {
                     if (uiState.templateId != null) {
-                        AwanIconButton(
-                            onClick = { showDeleteConfirm = true },
-                            contentDescription = stringResource(R.string.profile_routine_delete)
-                        ) {
-                            Icon(Icons.Default.Delete, null, tint = AwanTheme.colors.destructive)
+                        Box(modifier = Modifier.padding(end = 12.dp)) {
+                            AwanIconButton(
+                                onClick = { showDeleteConfirm = true },
+                                contentDescription = stringResource(R.string.profile_routine_delete)
+                            ) {
+                                Icon(Icons.Default.Delete, null, tint = AwanTheme.colors.destructive)
+                            }
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = AwanTheme.colors.background),
-                windowInsets = WindowInsets(0, 0, 0, 0)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = AwanTheme.colors.background)
             )
         },
         containerColor = AwanTheme.colors.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            Box(modifier = Modifier.padding(20.dp)) {
+            Box(modifier = Modifier.padding(20.dp).navigationBarsPadding()) {
                 AwanButton(
                     onClick = { onAction(EditRoutineAction.SaveRoutine) },
                     modifier = Modifier.fillMaxWidth(),

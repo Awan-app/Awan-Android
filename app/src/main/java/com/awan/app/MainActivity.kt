@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity() {
             val appState = rememberAwanAppState(
                 startKey = SplashRoute,
                 topLevelKeys = listOf(
-                    HomeRoute,
+                    HomeRoute(),
                     GoalsRoute,
                     MarketplaceRoute,
                     ProfileRoute

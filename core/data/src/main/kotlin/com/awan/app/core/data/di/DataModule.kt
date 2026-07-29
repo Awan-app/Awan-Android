@@ -3,6 +3,11 @@ package com.awan.app.core.data.di
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSource
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSourceImpl
 import com.awan.app.core.data.auth.repository.AuthRepositoryImpl
+import com.awan.app.core.data.calendar.CalendarRepositoryImpl
+import com.awan.app.core.data.calendar.local.CalendarLocalDataSource
+import com.awan.app.core.data.calendar.local.CalendarLocalDataSourceImpl
+import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSource
+import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSourceImpl
 import com.awan.app.core.data.category.CategoryRepositoryImpl
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSourceImpl
@@ -29,6 +34,7 @@ import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
 import com.awan.app.core.data.zones.remote.ZonesRemoteDataSourceImpl
 import com.awan.app.core.data.zones.repository.ZonesRepositoryImpl
 import com.awan.app.core.domain.auth.repository.AuthRepository
+import com.awan.app.core.domain.calendar.repository.CalendarRepository
 import com.awan.app.core.domain.profile.repository.ProfileRepository
 import com.awan.app.core.domain.task.repository.AiTaskRepository
 import com.awan.app.core.domain.template.repository.TemplateRepository

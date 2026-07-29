@@ -21,7 +21,10 @@ fun DailyZonesTopBar(
 ) {
     CenterAlignedTopAppBar(
         title = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                modifier = Modifier.padding(vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 AwanText(text = "Daily zones", style = AwanTheme.styles.titleText)
                 AwanText(
                     text = "Shape your week your way.",
@@ -30,16 +33,18 @@ fun DailyZonesTopBar(
             }
         },
         navigationIcon = {
-            AwanIconButton(onClick = onBackClick, contentDescription = "Back") {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = null,
-                    tint = AwanTheme.colors.textPrimary
-                )
+            Box(modifier = Modifier.padding(start = 12.dp)) {
+                AwanIconButton(onClick = onBackClick, contentDescription = "Back") {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null,
+                        tint = AwanTheme.colors.textPrimary
+                    )
+                }
             }
         },
         actions = {
-            Box(modifier = Modifier.padding(end = 16.dp)) {
+            Box(modifier = Modifier.padding(end = 12.dp)) {
                 Icon(
                     painter = painterResource(id = com.awan.app.core.designsystem.R.drawable.awan_mascot_idle),
                     contentDescription = null,
@@ -50,7 +55,6 @@ fun DailyZonesTopBar(
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = AwanTheme.colors.background
-        ),
-        windowInsets = WindowInsets(0, 0, 0, 0)
+        )
     )
 }

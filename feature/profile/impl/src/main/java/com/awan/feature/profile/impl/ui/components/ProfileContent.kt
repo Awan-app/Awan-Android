@@ -6,7 +6,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.AwanText
@@ -34,17 +33,13 @@ fun ProfileContent(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .statusBarsPadding()
             .padding(horizontal = 20.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         AwanText(
             text = stringResource(ProfileR.string.profile_title),
-            style = AwanTheme.styles.headingText.copy(
-                textStyle = AwanTheme.typography.heading.copy(
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-            ),
+            style = AwanTheme.styles.titleText,
             modifier = Modifier.padding(bottom = 4.dp)
         )
 
@@ -74,6 +69,6 @@ fun ProfileContent(
             onLogoutClick = onLogoutClick
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }

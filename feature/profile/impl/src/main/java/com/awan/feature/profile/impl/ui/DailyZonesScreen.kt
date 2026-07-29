@@ -98,8 +98,7 @@ fun DailyZonesScreen(
 
     Scaffold(
         topBar = { DailyZonesTopBar(onBackClick = onBackClick) },
-        containerColor = AwanTheme.colors.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        containerColor = AwanTheme.colors.background
     ) { padding ->
         DailyZonesContent(
             uiState = uiState,

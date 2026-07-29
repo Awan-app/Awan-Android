@@ -1,5 +1,6 @@
 package com.awan.app.core.data.onboarding
 
+import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.datastore.UserPreferencesDataSource
@@ -21,9 +22,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDate
 
 class OnboardingRepositoryImplTest {
 
@@ -40,6 +43,7 @@ class OnboardingRepositoryImplTest {
         fakeUserDao = FakeUserDao()
         repository = OnboardingRepositoryImpl(
             remoteDataSource = fakeRemoteDataSource,
+            zonesRepository = FakeZonesRepository(),
             userPreferencesDataSource = fakePreferencesDataSource,
             userDao = fakeUserDao,
             ioDispatcher = testDispatcher,

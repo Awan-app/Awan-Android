@@ -1,5 +1,6 @@
 package com.awan.app.core.network.dto
 
+import com.awan.app.core.network.dto.profile.UserPreferencesResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

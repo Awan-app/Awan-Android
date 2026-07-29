@@ -9,7 +9,6 @@ import com.awan.app.core.domain.task.parser.TaskInputParser
 import com.awan.app.core.domain.task.repository.TaskRepository
 import com.awan.app.core.domain.task.usecase.ApplyTaskAttributeUseCase
 import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
-import com.awan.app.core.domain.task.usecase.CreateTaskWithAiUseCase
 import com.awan.app.core.domain.task.usecase.DeleteTaskUseCase
 import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
 import com.awan.app.core.domain.task.usecase.PreviewTaskWithAiUseCase
@@ -188,7 +187,7 @@ class AddTaskViewModelTest {
         applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
         getCategories = GetCategoriesUseCase(categoryRepository),
         createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-        createTaskWithAi = CreateTaskWithAiUseCase(taskRepository),
+        previewTaskWithAi = PreviewTaskWithAiUseCase(taskRepository),
         scheduleTaskWithAi = ScheduleTaskWithAiUseCase(taskRepository),
         deleteTask = DeleteTaskUseCase(taskRepository),
         clock = clock,
@@ -342,7 +341,6 @@ class AddTaskViewModelTest {
     @Test
     fun `a scheduled task with no duration falls back to the default length`() = runTest(testDispatcher) {
         // The form now insists on a length, so only Awan's own task can reach the create without one.
-        taskRepository.aiTask = taskRepository.aiTask.copy(estimatedDurationMinutes = 0)
         taskRepository.aiSuggestion = taskRepository.aiSuggestion.copy(estimatedDurationMinutes = null)
         val viewModel = reviewingViewModel()
 
@@ -438,7 +436,6 @@ class AddTaskViewModelTest {
         val state = viewModel.state.value
         assertEquals("", state.input)
         assertEquals(AddTaskAiStage.OFF, state.aiStage)
-        assertNull(state.aiTaskId)
         assertFalse(state.showDiscardConfirm)
         assertEquals(listOf(playCategory), state.availableCategories)
     }

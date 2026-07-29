@@ -36,6 +36,7 @@ class TaskRepositoryImplTest {
         var lastCreateRequest: CreateTaskRequest? = null
         var lastWithSessionsRequest: CreateTaskWithSessionsRequest? = null
         var lastAiRequest: CreateTaskWithAiRequest? = null
+        var lastPreviewRequest: CreateTaskWithAiRequest? = null
         var deletedTaskId: String? = null
 
         override suspend fun createTask(request: CreateTaskRequest): Result<TaskInfoResponse> {
