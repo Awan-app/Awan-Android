@@ -1,4 +1,4 @@
-package com.awan.feature.calendar.impl.domain
+package com.awan.feature.calendar.impl.presentation
 
 import com.awan.app.core.model.Goal
 import org.junit.Assert.assertEquals

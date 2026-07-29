@@ -1,4 +1,4 @@
-package com.awan.app.core.data.calendar
+package com.awan.app.core.domain.calendar.repository
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.model.CalendarUser

@@ -3,9 +3,9 @@ package com.awan.feature.calendar.impl.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.data.calendar.CalendarRepository
+import com.awan.app.core.domain.calendar.repository.CalendarRepository
+import com.awan.app.core.domain.calendar.repository.CalendarSnapshot
 import com.awan.feature.calendar.impl.R
-import com.awan.feature.calendar.impl.domain.CalendarDateMapper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,11 +59,7 @@ class CalendarViewModel @Inject constructor(
 
     private fun refresh() = viewModelScope.launch {
         _state.update { it.copy(isLoading = true) }
-        val result = try {
-            repository.refresh()
-        } catch (e: Exception) {
-            Result.Error(com.awan.app.core.common.error.AppError.Unknown(e))
-        }
+        val result = repository.refresh()
         _state.update { current ->
             if (result is Result.Error) {
                 current.copy(isLoading = false, errorMessage = R.string.calendar_refresh_error)
@@ -73,7 +69,7 @@ class CalendarViewModel @Inject constructor(
         }
     }
 
-    private fun render(snapshot: com.awan.app.core.data.calendar.CalendarSnapshot) {
+    private fun render(snapshot: CalendarSnapshot) {
         val zone = CalendarDateMapper.parseZoneIdOrDefault(snapshot.user.timezone)
         val today = LocalDate.now(zone)
         val current = _state.value

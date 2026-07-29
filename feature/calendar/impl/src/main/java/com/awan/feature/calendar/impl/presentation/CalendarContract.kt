@@ -1,8 +1,6 @@
 package com.awan.feature.calendar.impl.presentation
 
 import androidx.annotation.StringRes
-import com.awan.feature.calendar.impl.model.CalendarGoal
-import com.awan.feature.calendar.impl.model.DayState
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -18,6 +16,21 @@ data class CalendarUiState(
     val streakDates: Set<LocalDate> = emptySet(),
     val upcomingGoals: List<CalendarGoal> = emptyList(),
     val monthDays: List<DayState> = emptyList(),
+)
+
+data class CalendarGoal(
+    val id: String,
+    val title: String,
+    val targetDate: LocalDate,
+)
+
+data class DayState(
+    val date: LocalDate,
+    val isCurrentMonth: Boolean,
+    val isToday: Boolean,
+    val isSelected: Boolean,
+    val isStreakDay: Boolean,
+    val hasDeadline: Boolean,
 )
 
 sealed interface CalendarAction {

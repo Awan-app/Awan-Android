@@ -1,8 +1,6 @@
-package com.awan.feature.calendar.impl.domain
+package com.awan.feature.calendar.impl.presentation
 
 import com.awan.app.core.model.Goal
-import com.awan.feature.calendar.impl.model.CalendarGoal
-import com.awan.feature.calendar.impl.model.DayState
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId

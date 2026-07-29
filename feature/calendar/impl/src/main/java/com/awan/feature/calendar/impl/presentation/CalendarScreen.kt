@@ -70,8 +70,6 @@ import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextStyle
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.calendar.impl.R
-import com.awan.feature.calendar.impl.model.CalendarGoal
-import com.awan.feature.calendar.impl.model.DayState
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -305,7 +303,15 @@ private fun MonthHeader(
 
 @Composable
 private fun WeekdayHeader() {
-    val weekdays = listOf("Su", "Mo", "Tu", "We", "Th", "Fr", "Sa")
+    val weekdays = listOf(
+        R.string.calendar_weekday_sun,
+        R.string.calendar_weekday_mon,
+        R.string.calendar_weekday_tue,
+        R.string.calendar_weekday_wed,
+        R.string.calendar_weekday_thu,
+        R.string.calendar_weekday_fri,
+        R.string.calendar_weekday_sat,
+    )
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceAround,
@@ -315,7 +321,7 @@ private fun WeekdayHeader() {
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.Center,
             ) {
-                AwanText(text = day, style = AwanTheme.styles.bodyText)
+                AwanText(text = stringResource(day), style = AwanTheme.styles.bodyText)
             }
         }
     }
@@ -479,12 +485,13 @@ private fun DayCell(
     ) {
         val bodyTextStyle = AwanTheme.typography.body
         val selectionModifier = if (dayState.isSelected && !dayState.isToday) {
+        val selectionOutline = AwanTheme.colors.sky
             Modifier
                 .size(36.dp)
                 .clip(CircleShape)
                 .background(AwanTheme.colors.surface)
                 .drawBehind {
-                    drawCircle(color = Color(0xFF38BDF8), radius = size.minDimension / 2f, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx()))
+                    drawCircle(color = selectionOutline, radius = size.minDimension / 2f, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx()))
                 }
         } else {
             Modifier.size(36.dp)

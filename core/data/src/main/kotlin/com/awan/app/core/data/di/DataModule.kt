@@ -3,9 +3,11 @@ package com.awan.app.core.data.di
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSource
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSourceImpl
 import com.awan.app.core.data.auth.repository.AuthRepositoryImpl
-import com.awan.app.core.data.calendar.CalendarRepository
+import com.awan.app.core.domain.calendar.repository.CalendarRepository
 import com.awan.app.core.data.calendar.CalendarRepositoryImpl
 import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSource
+import com.awan.app.core.data.calendar.local.CalendarLocalDataSource
+import com.awan.app.core.data.calendar.local.CalendarLocalDataSourceImpl
 import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSourceImpl
 import com.awan.app.core.data.category.CategoryRepositoryImpl
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
@@ -53,6 +55,12 @@ internal abstract class DataModule {
     abstract fun bindCalendarRemoteDataSource(
         impl: CalendarRemoteDataSourceImpl,
     ): CalendarRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindCalendarLocalDataSource(
+        impl: CalendarLocalDataSourceImpl,
+    ): CalendarLocalDataSource
 
     @Binds
     @Singleton
