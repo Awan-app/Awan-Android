@@ -104,7 +104,7 @@ private fun EmailOfflinePreview() {
 )
 @Composable
 private fun EmailDarkPreview() {
-    AwanTheme(darkTheme = true) {
+    AwanTheme(dark = true) {
         EmailScreen(
             state = EmailUiState(email = "sam@cloud.com", isEmailValid = true),
             onEmailChanged = {},

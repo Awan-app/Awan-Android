@@ -121,7 +121,7 @@ private fun OtpLockedPreview() {
 )
 @Composable
 private fun OtpDarkPreview() {
-    AwanTheme(darkTheme = true) {
+    AwanTheme(dark = true) {
         OtpScreen(
             state = OtpUiState(
                 email = "sam@cloud.com",

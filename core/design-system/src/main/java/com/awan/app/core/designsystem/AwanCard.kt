@@ -5,10 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -17,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 /**
@@ -47,7 +49,10 @@ fun AwanCard(
         Modifier
     }
 
-    Box(
+    // The rim is a background on the same node rather than a Box behind one: a sibling could only be
+    // told to match the card's *outer* size, which left the surface as narrow as its own content
+    // whenever the card was given a width of its own.
+    Column(
         modifier = modifier
             .then(clickModifier)
             .shadow(
@@ -55,19 +60,40 @@ fun AwanCard(
                 shape = shape,
                 spotColor = colors.sky,
                 ambientColor = colors.sky,
-            ),
-    ) {
-        Box(Modifier.matchParentSize().clip(shape).background(rimColor))
-        Column(
-            modifier = Modifier
-                .padding(bottom = AwanCardRimDepth)
-                .clip(shape)
-                .background(background)
-                .border(2.dp, borderColor, shape)
-                .padding(contentPadding),
-            content = content,
-        )
-    }
+            )
+            .background(rimColor, shape)
+            .padding(bottom = AwanCardRimDepth)
+            .clip(shape)
+            .background(background)
+            .border(2.dp, borderColor, shape)
+            .padding(contentPadding),
+        content = content,
+    )
 }
 
 internal val AwanCardRimDepth = 4.dp
+
+/** The rim must hug the surface on every edge, whatever the content width. */
+@Preview(name = "Card rim · narrow content in a full-width card", showBackground = true)
+@Composable
+private fun CardRimPreview() {
+    AwanTheme {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            AwanCard(modifier = Modifier.fillMaxWidth()) {
+                AwanText("Short line.", style = AwanTheme.styles.metaText)
+            }
+            AwanCard(modifier = Modifier.fillMaxWidth()) {
+                AwanText(
+                    "A line long enough to wrap onto a second row inside the card surface.",
+                    style = AwanTheme.styles.metaText,
+                )
+            }
+            AwanCard {
+                AwanText("Wrap-content card.", style = AwanTheme.styles.metaText)
+            }
+        }
+    }
+}

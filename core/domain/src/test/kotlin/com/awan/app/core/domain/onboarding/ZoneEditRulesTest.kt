@@ -1,5 +1,6 @@
 package com.awan.app.core.domain.onboarding
 
+import com.awan.app.core.domain.onboarding.utils.ZoneEditRules
 import com.awan.app.core.model.DayBounds
 import com.awan.app.core.model.Zone
 import org.junit.Assert.assertEquals
@@ -31,6 +32,17 @@ class ZoneEditRulesTest {
         val zone = Zone("z", "Z", 0, startMinutes = 450, endMinutes = 675)
         val edited = ZoneEditRules.editWindow(zone, newStartMinutes = 660, newEndMinutes = 670, bounds = bounds)
         assertEquals(ZoneEditRules.MIN_ZONE_MINUTES, edited.endMinutes - edited.startMinutes)
+    }
+
+    @Test
+    fun `editWindow never lets a window run past midnight`() {
+        val overnight = DayBounds(wakeMinutes = 22 * 60, sleepMinutes = 6 * 60)
+        val zone = Zone("z", "Z", 0, startMinutes = 23 * 60, endMinutes = 23 * 60 + 60)
+
+        val edited = ZoneEditRules.editWindow(zone, newStartMinutes = 23 * 60, newEndMinutes = 24 * 60 + 60, overnight)
+
+        assertEquals(23 * 60, edited.startMinutes)
+        assertEquals(DayBounds.MINUTES_PER_DAY, edited.endMinutes)
     }
 
     @Test

@@ -317,11 +317,114 @@ object AwanStyles {
             }
         }
 
+<<<<<<< HEAD
     val authDivider: Style
         @Composable get() = remember(LocalAwanTheme.current) {
             Style {
                 background(colors.line)
                 minHeight(1.dp)
+=======
+    val secondaryButtonRim = Style {
+        background(colors.line)
+        shape(shapes.button)
+    }
+
+    val secondaryButtonFace = Style {
+        background(colors.surface)
+        border(2.dp, colors.line)
+        shape(shapes.button)
+        minHeight(48.dp)
+        contentPadding(horizontal = 12.dp, vertical = 12.dp)
+        contentColor(colors.skyPressed)
+        textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
+        buttonPressedTransform()
+        disabled {
+            background(colors.disabledSurface)
+            borderColor(colors.line)
+            contentColor(colors.disabledContent)
+        }
+    }
+
+    val destructiveButtonRim = Style {
+        background(colors.destructivePressed)
+        shape(shapes.button)
+        disabled { background(colors.line) }
+    }
+
+    val destructiveButtonFace = Style {
+        background(colors.destructive)
+        shape(shapes.button)
+        minHeight(48.dp)
+        contentPadding(horizontal = 13.dp, vertical = 13.dp)
+        contentColor(colors.onDestructive)
+        textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
+        buttonPressedTransform()
+        disabled {
+            background(colors.disabledSurface)
+            contentColor(colors.disabledContent)
+        }
+    }
+
+    val quietButtonRim = Style {
+        background(Color.Transparent)
+        shape(shapes.button)
+    }
+
+    val quietButtonFace = Style {
+        background(Color.Transparent)
+        shape(shapes.button)
+        minHeight(48.dp)
+        contentPadding(horizontal = 4.dp, vertical = 4.dp)
+        contentColor(colors.skyPressed)
+        textStyle(typography.button)
+        fontFamily(typography.button.fontFamily!!)
+        disabled { contentColor(colors.disabledContent) }
+    }
+
+    /**
+     * The compact pill member of the button family. Same rim, same sink, sized to sit in a row of
+     * attributes rather than at the foot of a screen. Callers tint it per attribute through the
+     * face `style` and `rimStyle` slots, so only the geometry lives here.
+     */
+    val chipButtonRim = Style {
+        background(colors.line)
+        shape(shapes.pill)
+    }
+
+    val chipButtonFace = Style {
+        background(colors.surface)
+        border(2.dp, colors.line)
+        shape(shapes.pill)
+        minHeight(AwanChipFaceHeight)
+        contentPadding(horizontal = 12.dp, vertical = 8.dp)
+        contentColor(colors.textSecondary)
+        textStyle(typography.buttonCompact)
+        fontFamily(typography.buttonCompact.fontFamily!!)
+        buttonPressedTransform()
+    }
+
+    val navigationDivider = Style { background(colors.line); minHeight(2.dp) }
+
+    val navigationBar = Style {
+        background(colors.surface)
+        contentColor(colors.meta)
+        contentPadding(horizontal = 12.dp, vertical = 8.dp)
+    }
+
+    val navigationItem = Style {
+        shape(shapes.pill)
+        minHeight(48.dp)
+        contentPadding(4.dp)
+        contentColor(colors.meta)
+        textStyle(typography.caption)
+        fontFamily(typography.caption.fontFamily!!)
+        selected { contentColor(colors.sky) }
+        pressed {
+            animate(tween(durationMillis = 120, easing = LinearOutSlowInEasing)) {
+                translationY(2.dp.toPx())
+>>>>>>> origin/develop
             }
         }
 

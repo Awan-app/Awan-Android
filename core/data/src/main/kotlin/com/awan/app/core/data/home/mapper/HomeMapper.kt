@@ -1,0 +1,96 @@
+package com.awan.app.core.data.home.mapper
+
+import com.awan.app.core.domain.home.model.DaySchedule
+import com.awan.app.core.domain.home.model.DaySession
+import com.awan.app.core.domain.home.model.DayZone
+import com.awan.app.core.domain.home.model.SessionStatus
+import com.awan.app.core.network.dto.SessionDto
+import com.awan.app.core.network.dto.TaskInfoResponse
+import com.awan.app.core.network.dto.TaskWithSessionsDto
+import com.awan.app.core.network.dto.ZoneDto
+import java.time.LocalDate
+
+internal object HomeMapper {
+
+    fun toDaySchedule(
+        date: LocalDate,
+        zones: List<ZoneDto>,
+        taskEntries: List<TaskWithSessionsDto>,
+    ): DaySchedule {
+        val dayZones = zones.map { it.toDayZone() }
+        val daySessions = taskEntries.flatMap { entry ->
+            entry.sessions.map { session ->
+                session.toDaySession(
+                    task = entry.task,
+                )
+            }
+        }
+        return DaySchedule(date = date, zones = dayZones, sessions = daySessions)
+    }
+
+    // ── Zone ─────────────────────────────────────────────────────────────
+
+    private fun ZoneDto.toDayZone(): DayZone = DayZone(
+        id = id,
+        name = name,
+        categoryId = category?.id ?: id,
+        categoryName = category?.name ?: name,
+        startMinutes = parseTimeToMinutes(startTime),
+        endMinutes = parseTimeToMinutes(endTime),
+        color = color,
+    )
+
+    // ── Session ───────────────────────────────────────────────────────────
+
+    private fun SessionDto.toDaySession(task: TaskInfoResponse): DaySession {
+        val startMin = parseIsoTimeToMinutes(start)
+        val endMin   = parseIsoTimeToMinutes(end).let { if (it <= startMin) startMin + 30 else it }
+        val duration = (endMin - startMin).coerceAtLeast(1)
+
+        return DaySession(
+            id = id,
+            taskId = task.id,
+            taskTitle = task.title,
+            zoneId = zoneId,
+            startMinutes = startMin,
+            durationMinutes = duration,
+            status = parseSessionStatus(status),
+            locked = locked,
+            points = task.estimatedPoints,
+            categoryId = task.category?.id,
+            categoryName = task.category?.name,
+        )
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+
+    /**
+     * Parses "HH:mm:ss" (or "HH:mm") into total minutes since midnight.
+     * Returns 0 on parse failure.
+     */
+    private fun parseTimeToMinutes(time: String): Int {
+        val parts = time.split(":")
+        val hours   = parts.getOrNull(0)?.toIntOrNull() ?: return 0
+        val minutes = parts.getOrNull(1)?.toIntOrNull() ?: 0
+        return hours * 60 + minutes
+    }
+
+    private fun parseIsoTimeToMinutes(isoString: String): Int {
+        return try {
+            val timePart = if (isoString.contains("T")) isoString.substringAfter("T") else isoString
+            val parts = timePart.split(":")
+            val hours = parts.getOrNull(0)?.toIntOrNull() ?: 0
+            val minutes = parts.getOrNull(1)?.toIntOrNull() ?: 0
+            hours * 60 + minutes
+        } catch (_: Exception) {
+            0
+        }
+    }
+
+    private fun parseSessionStatus(raw: String?): SessionStatus = when (raw?.uppercase()) {
+        "COMPLETED"   -> SessionStatus.COMPLETED
+        "IN_PROGRESS" -> SessionStatus.IN_PROGRESS
+        "CANCELLED"   -> SessionStatus.CANCELLED
+        else          -> SessionStatus.SCHEDULED
+    }
+}

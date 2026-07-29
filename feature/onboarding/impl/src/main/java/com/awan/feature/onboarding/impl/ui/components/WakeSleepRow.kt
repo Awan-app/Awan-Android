@@ -13,7 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanText
+import androidx.compose.ui.res.stringResource
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.AwanTimePickerDialog
+import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.ui.formatClock
 
 /** "☀️ I usually wake up at … 7:00 AM ⌄" — a rim row that opens a native time picker. */
@@ -46,7 +49,9 @@ fun WakeSleepRow(
     }
 
     if (picking) {
-        TimePickerDialog(
+        AwanTimePickerDialog(
+            confirmLabel = stringResource(R.string.onboarding_time_picker_set),
+            cancelLabel = stringResource(R.string.onboarding_time_picker_cancel),
             initialMinutes = minutes,
             onDismiss = { picking = false },
             onConfirm = {
