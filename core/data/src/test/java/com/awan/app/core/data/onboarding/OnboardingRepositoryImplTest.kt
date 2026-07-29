@@ -175,5 +175,11 @@ class OnboardingRepositoryImplTest {
         override suspend fun upsertPreferences(preferences: com.awan.app.core.database.model.UserPreferencesEntity) {}
         override fun observePreferences(userId: String): Flow<com.awan.app.core.database.model.UserPreferencesEntity?> = MutableStateFlow(null)
         override suspend fun getPreferences(userId: String): com.awan.app.core.database.model.UserPreferencesEntity? = null
+
+        override fun observeUserWithPreferences(userId: String): Flow<com.awan.app.core.database.model.UserWithPreferences?> =
+            MutableStateFlow(null)
+
+        override suspend fun getUserWithPreferences(userId: String): com.awan.app.core.database.model.UserWithPreferences? =
+            null
     }
 }

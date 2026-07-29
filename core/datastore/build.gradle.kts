@@ -10,6 +10,7 @@ android {
 dependencies {
     // Proto-generated UserPreferences classes.
     implementation(project(":core:datastore-proto"))
+    implementation(project(":core:model"))
     // AppError, Result, Dispatcher qualifier.
     implementation(project(":core:common"))
 
