@@ -232,18 +232,18 @@ private fun buttonContentColor(variant: AwanButtonVariant, enabled: Boolean): Co
 @Preview(name = "Skyward buttons · Light", showBackground = true)
 @Composable
 private fun LightButtonsPreview() {
-    ButtonsPreview(darkTheme = false)
+    ButtonsPreview(dark = false)
 }
 
 @Preview(name = "Skyward buttons · Dark", showBackground = true)
 @Composable
 private fun DarkButtonsPreview() {
-    ButtonsPreview(darkTheme = true)
+    ButtonsPreview(dark = true)
 }
 
 @Composable
-private fun ButtonsPreview(darkTheme: Boolean) {
-    AwanTheme(darkTheme = darkTheme) {
+private fun ButtonsPreview(dark: Boolean) {
+    AwanTheme(dark = dark) {
         androidx.compose.foundation.layout.Column(
             modifier = Modifier
                 .fillMaxWidth()

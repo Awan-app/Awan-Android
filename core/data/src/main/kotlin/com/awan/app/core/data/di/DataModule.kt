@@ -9,7 +9,10 @@ import com.awan.app.core.data.category.remote.CategoryRemoteDataSourceImpl
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
 import com.awan.app.core.data.home.remote.HomeRemoteDataSourceImpl
 import com.awan.app.core.data.home.repository.HomeRepositoryImpl
-import com.awan.app.core.data.onboarding.OnboardingRepository
+import com.awan.app.core.domain.onboarding.repository.OnboardingRepository
+import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
+import com.awan.app.core.data.profile.remote.ProfileRemoteDataSourceImpl
+import com.awan.app.core.data.profile.repository.ProfileRepositoryImpl
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSourceImpl
@@ -27,6 +30,7 @@ import com.awan.app.core.data.template.TemplateRepositoryImpl
 import com.awan.app.core.data.template.remote.TemplateRemoteDataSource
 import com.awan.app.core.data.template.remote.TemplateRemoteDataSourceImpl
 import com.awan.app.core.domain.auth.repository.AuthRepository
+import com.awan.app.core.domain.profile.repository.ProfileRepository
 import com.awan.app.core.domain.task.repository.AiTaskRepository
 import com.awan.app.core.domain.template.repository.TemplateRepository
 import com.awan.app.core.domain.home.repository.HomeRepository
@@ -117,6 +121,18 @@ internal abstract class DataModule {
     abstract fun bindAuthRepository(
         impl: AuthRepositoryImpl,
     ): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindProfileRemoteDataSource(
+        impl: ProfileRemoteDataSourceImpl,
+    ): ProfileRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindProfileRepository(
+        impl: ProfileRepositoryImpl,
+    ): ProfileRepository
 
 
     @Binds

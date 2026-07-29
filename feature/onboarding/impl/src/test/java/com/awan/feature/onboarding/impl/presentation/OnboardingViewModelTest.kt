@@ -2,12 +2,12 @@ package com.awan.feature.onboarding.impl.presentation
 
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.data.onboarding.OnboardingData
-import com.awan.app.core.domain.onboarding.DayBoundsValidation
-import com.awan.app.core.domain.onboarding.SuggestZoneScheduleUseCase
-import com.awan.app.core.domain.onboarding.ValidateDayBounds
+import com.awan.app.core.domain.onboarding.model.OnboardingData
+import com.awan.app.core.domain.onboarding.usecase.CompleteOnboardingUseCase
+import com.awan.app.core.domain.onboarding.utils.DayBoundsValidation
+import com.awan.app.core.domain.onboarding.usecase.SuggestZoneScheduleUseCase
+import com.awan.app.core.domain.onboarding.utils.ValidateDayBounds
 import com.awan.app.core.domain.task.repository.TaskRepository
-import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
 import com.awan.app.core.domain.zone.repository.ZoneRepository
 import com.awan.app.core.domain.zone.usecase.GetZonesForDateUseCase
 import com.awan.app.core.model.AiTaskSuggestion
@@ -87,7 +87,7 @@ class OnboardingViewModelTest {
         fakeAiTaskRepository = FakeAiTaskRepository()
         fakeTemplateRepository = FakeTemplateRepository()
         viewModel = OnboardingViewModel(
-            repository = repository,
+            completeOnboarding = CompleteOnboardingUseCase(repository),
             suggestZoneSchedule = SuggestZoneScheduleUseCase(),
             validateDayBounds = ValidateDayBounds(),
             createAndScheduleFirstTask = CreateAndScheduleFirstTaskUseCase(fakeAiTaskRepository),

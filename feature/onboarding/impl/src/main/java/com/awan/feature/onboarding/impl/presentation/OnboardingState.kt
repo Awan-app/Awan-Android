@@ -1,11 +1,11 @@
 package com.awan.feature.onboarding.impl.presentation
 
 import com.awan.app.core.common.text.UiText
-import com.awan.app.core.data.onboarding.OnboardingData
+import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.model.DayBounds
 import com.awan.app.core.model.FirstTask
 import com.awan.app.core.model.Zone
-import com.awan.app.core.domain.onboarding.DayBoundsValidation
+import com.awan.app.core.domain.onboarding.utils.DayBoundsValidation
 
 data class OnboardingState(
     val step: OnboardingStep = OnboardingStep.Welcome,

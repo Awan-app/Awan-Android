@@ -113,18 +113,18 @@ private fun List<Color>.colourAt(at: Float): Color {
 @Preview(name = "AwanAiAura · Light", showBackground = true)
 @Composable
 private fun LightAiAuraPreview() {
-    AiAuraPreview(darkTheme = false)
+    AiAuraPreview(dark = false)
 }
 
 @Preview(name = "AwanAiAura · Dark", showBackground = true)
 @Composable
 private fun DarkAiAuraPreview() {
-    AiAuraPreview(darkTheme = true)
+    AiAuraPreview(dark = true)
 }
 
 @Composable
-private fun AiAuraPreview(darkTheme: Boolean) {
-    AwanTheme(darkTheme = darkTheme) {
+private fun AiAuraPreview(dark: Boolean) {
+    AwanTheme(dark = dark) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
