@@ -95,4 +95,9 @@
     <string name="add_task_error_ai_schedule_failed">لم يجد أوان وقتًا مناسبًا لها. جرّب اختيار الوقت بنفسك.</string>
     <string name="add_task_error_goal_continuation_failed">تعذّر على أوان تقسيم هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
     <string name="add_task_error_goal_confirm_failed">تعذّر حفظ هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
+
+    <string name="add_task_goal_permission_dialog_title">إذن الميكروفون مطلوب</string>
+    <string name="add_task_goal_permission_dialog_body">تم إيقاف إذن الميكروفون. يرجى تفعيله من إعدادات التطبيق لاستخدام الإملاء الصوتي.</string>
+    <string name="add_task_goal_permission_dialog_confirm">فتح الإعدادات</string>
+    <string name="add_task_goal_permission_dialog_cancel">إلغاء</string>
 </resources>

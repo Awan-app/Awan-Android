@@ -1,9 +1,14 @@
 package com.awan.feature.addtask.ui.components
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -16,18 +21,28 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.awan.app.core.designsystem.AwanConfirmDialog
 import com.awan.feature.addtask.R
 import java.util.Locale
 
 class SpeechRecognizerState internal constructor(
     val isListening: Boolean,
     val errorMessage: String?,
+    val isPermissionError: Boolean,
     private val startListeningAction: () -> Unit,
     private val stopListeningAction: () -> Unit,
 ) {
     fun startListening() = startListeningAction()
     fun stopListening() = stopListeningAction()
+}
+
+private fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 @Composable
@@ -37,6 +52,8 @@ fun rememberSpeechRecognizer(
     val context = LocalContext.current
     var isListening by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isPermissionError by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
     var recognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
 
     fun stopInternal() {
@@ -50,6 +67,7 @@ fun rememberSpeechRecognizer(
     fun startListeningNow() {
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
             errorMessage = context.getString(R.string.add_task_goal_speech_unavailable)
+            isPermissionError = false
             return
         }
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -67,6 +85,7 @@ fun rememberSpeechRecognizer(
         activeRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 errorMessage = null
+                isPermissionError = false
             }
 
             override fun onBeginningOfSpeech() {}
@@ -121,9 +140,20 @@ fun rememberSpeechRecognizer(
         contract = ActivityResultContracts.RequestPermission(),
     ) { isGranted ->
         if (isGranted) {
+            isPermissionError = false
+            errorMessage = null
             startListeningNow()
         } else {
+            isPermissionError = true
             errorMessage = context.getString(R.string.add_task_goal_speech_permission_denied)
+            val activity = context.findActivity()
+            val shouldShowRationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
+                activity,
+                Manifest.permission.RECORD_AUDIO,
+            )
+            if (!shouldShowRationale) {
+                showSettingsDialog = true
+            }
         }
     }
 
@@ -138,10 +168,28 @@ fun rememberSpeechRecognizer(
         }
     }
 
-    return remember(isListening, errorMessage) {
+    if (showSettingsDialog) {
+        AwanConfirmDialog(
+            title = stringResource(R.string.add_task_goal_permission_dialog_title),
+            body = stringResource(R.string.add_task_goal_permission_dialog_body),
+            confirmLabel = stringResource(R.string.add_task_goal_permission_dialog_confirm),
+            onConfirm = {
+                showSettingsDialog = false
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
+                }
+                context.startActivity(intent)
+            },
+            dismissLabel = stringResource(R.string.add_task_goal_permission_dialog_cancel),
+            onDismiss = { showSettingsDialog = false },
+        )
+    }
+
+    return remember(isListening, errorMessage, isPermissionError) {
         SpeechRecognizerState(
             isListening = isListening,
             errorMessage = errorMessage,
+            isPermissionError = isPermissionError,
             startListeningAction = {
                 val hasPermission = ContextCompat.checkSelfPermission(
                     context,
@@ -149,8 +197,23 @@ fun rememberSpeechRecognizer(
                 ) == PackageManager.PERMISSION_GRANTED
 
                 if (hasPermission) {
+                    isPermissionError = false
+                    errorMessage = null
                     startListeningNow()
                 } else {
+                    val activity = context.findActivity()
+                    val shouldShowRationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
+                        activity,
+                        Manifest.permission.RECORD_AUDIO,
+                    )
+                    isPermissionError = true
+                    errorMessage = context.getString(R.string.add_task_goal_speech_permission_denied)
+
+                    if (!shouldShowRationale && errorMessage != null) {
+                        // Note: If permission hasn't been requested yet, shouldShowRationale is false,
+                        // but launching permissionLauncher will show system dialog.
+                        // If launcher returns false and shouldShowRationale is false, showSettingsDialog will trigger in launcher callback.
+                    }
                     permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                 }
             },

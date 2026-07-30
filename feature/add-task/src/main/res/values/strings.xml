@@ -95,4 +95,9 @@
     <string name="add_task_error_ai_schedule_failed">Awan couldn\'t find a slot for this. Try picking a time yourself.</string>
     <string name="add_task_error_goal_continuation_failed">Awan couldn\'t break down that goal. Check your connection and try again.</string>
     <string name="add_task_error_goal_confirm_failed">Couldn\'t save this goal. Check your connection and try again.</string>
+
+    <string name="add_task_goal_permission_dialog_title">Microphone Permission Required</string>
+    <string name="add_task_goal_permission_dialog_body">Microphone access is turned off. Please enable it in device settings to use speech recognition.</string>
+    <string name="add_task_goal_permission_dialog_confirm">Open Settings</string>
+    <string name="add_task_goal_permission_dialog_cancel">Cancel</string>
 </resources>
