@@ -52,6 +52,11 @@ fun AwanApp(
     if (showAddTask) {
         AddTaskSheet(
             onDismiss = { showAddTask = false },
+            onNavigateToGoalPreview = {
+                showAddTask = false
+                navigator.navigate(GoalPreviewRoute)
+            },
+            viewModel = addTaskViewModel,
             onGoalCreated = { _ ->
                 navigator.replaceAll(GoalsRoute)
             },

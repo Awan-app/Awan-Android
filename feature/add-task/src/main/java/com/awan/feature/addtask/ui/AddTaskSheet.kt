@@ -57,6 +57,7 @@ import com.awan.feature.addtask.presentation.AddTaskMode
 import com.awan.feature.addtask.presentation.AddTaskPicker
 import com.awan.feature.addtask.presentation.AddTaskState
 import com.awan.feature.addtask.presentation.AddTaskViewModel
+import com.awan.feature.addtask.presentation.GoalStep
 import com.awan.feature.addtask.presentation.TaskConfirmation
 import com.awan.feature.addtask.ui.components.AddTaskModeSelector
 import com.awan.feature.addtask.ui.components.AiToggle
@@ -81,6 +82,7 @@ fun AddTaskSheet(
     modifier: Modifier = Modifier,
     onTaskCreated: (String) -> Unit = {},
     onGoalCreated: (String) -> Unit = {},
+    onNavigateToGoalPreview: () -> Unit = {},
     viewModel: AddTaskViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -93,11 +95,20 @@ fun AddTaskSheet(
      */
     val sheetState = rememberModalBottomSheetState(
         confirmValueChange = { target ->
-            val blocked = target == SheetValue.Hidden && viewModel.state.value.isDirty
+            val isPreviewStep = viewModel.state.value.goalStep is GoalStep.Preview
+            val blocked = target == SheetValue.Hidden && viewModel.state.value.isDirty && !isPreviewStep
             if (blocked) viewModel.onAction(AddTaskAction.DismissRequested)
             !blocked
         },
     )
+
+    LaunchedEffect(state.goalStep) {
+        if (state.goalStep is GoalStep.Preview) {
+            sheetState.hide()          // suspends until SheetValue.Hidden
+            onDismiss()                // sets showAddTask = false
+            onNavigateToGoalPreview()  // navigator.navigate(GoalPreviewRoute)
+        }
+    }
 
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {

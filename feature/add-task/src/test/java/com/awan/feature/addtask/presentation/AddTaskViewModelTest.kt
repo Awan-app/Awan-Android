@@ -1649,4 +1649,34 @@ class AddTaskViewModelTest {
             )
             assertEquals("", customViewModel.state.value.input)
         }
+
+    @Test
+    fun `goalStep transitions to Preview and isDirty is true so sheet dirty-gate must permit programmatic hide`() =
+        runTest(testDispatcher) {
+            val proposalReply = GoalDecompositionReply(
+                sessionId = "session-abc",
+                blocks = listOf(
+                    GoalDecompositionBlock.Proposal(
+                        GoalProposal(
+                            title = "Run a 10k marathon",
+                            description = null,
+                            targetDate = null,
+                            tasks = emptyList(),
+                        )
+                    )
+                ),
+                hasProposal = true,
+            )
+            goalRepository.nextContinueReply = Result.Success(proposalReply)
+            val viewModel = viewModel()
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            viewModel.onAction(AddTaskAction.InputChanged("Run a 10k marathon"))
+            viewModel.onAction(AddTaskAction.Submit)
+
+            val state = viewModel.state.value
+            assertTrue(state.goalStep is GoalStep.Preview)
+            // isDirty must be true so that the confirmValueChange block would normally block dismissal
+            // but the `!isPreviewStep` guard lifts it for programmatic hide
+            assertTrue(state.isDirty)
+        }
 }
