@@ -118,6 +118,7 @@ fun GoalPreviewScreen(
         // ── Scrollable content ───────────────────────────────────────────────
         val goalStep = state.goalStep
         val replyBlocks = state.goalReplyBlocks
+        val hasProposalBlock = replyBlocks.any { it is GoalDecompositionBlock.Proposal }
 
         LazyColumn(
             modifier = Modifier
@@ -132,6 +133,11 @@ fun GoalPreviewScreen(
                         is GoalDecompositionBlock.Text -> PreviewAssistantTextCard(text = block.text)
                         is GoalDecompositionBlock.Proposal -> PreviewProposalCard(proposal = block.proposal)
                         is GoalDecompositionBlock.Question -> Unit // ignored per spec
+                    }
+                }
+                if (!hasProposalBlock && goalStep is GoalStep.Preview) {
+                    item {
+                        PreviewProposalCard(proposal = goalStep.proposal)
                     }
                 }
             } else if (goalStep is GoalStep.Preview) {
