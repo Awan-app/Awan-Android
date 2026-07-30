@@ -3,11 +3,15 @@ package com.awan.app.core.network.di
 import android.content.Context
 import com.awan.app.core.network.BuildConfig
 import com.awan.app.core.network.api.AuthApiService
+import com.awan.app.core.network.api.CategoryApiService
 import com.awan.app.core.network.api.OnboardingApiService
+import com.awan.app.core.network.api.ProfileApiService
 import com.awan.app.core.network.api.TaskApiService
 import com.awan.app.core.network.api.ZoneApiService
+import com.awan.app.core.network.api.TemplateApiService
 import com.awan.app.core.network.device.AndroidDeviceIdProvider
 import com.awan.app.core.network.device.DeviceIdProvider
+import com.awan.app.core.network.interceptor.AiTimeoutInterceptor
 import com.awan.app.core.network.interceptor.AuthInterceptor
 import com.awan.app.core.network.interceptor.TokenAuthenticator
 import dagger.Binds
@@ -64,6 +68,7 @@ object NetworkModule {
     fun providesNoAuthOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(AiTimeoutInterceptor())
         .addInterceptor(loggingInterceptor)
         .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -78,6 +83,7 @@ object NetworkModule {
         loggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
+        .addInterceptor(AiTimeoutInterceptor())
         .addInterceptor(loggingInterceptor)
         .authenticator(tokenAuthenticator)
         .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -120,6 +126,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun providesProfileApiService(retrofit: Retrofit): ProfileApiService =
+        retrofit.create(ProfileApiService::class.java)
+
+    @Provides
+    @Singleton
     fun providesTaskApiService(retrofit: Retrofit): TaskApiService =
         retrofit.create(TaskApiService::class.java)
 
@@ -130,8 +141,23 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun providesGoalApiService(retrofit: Retrofit): com.awan.app.core.network.api.GoalApiService =
-        retrofit.create(com.awan.app.core.network.api.GoalApiService::class.java)
+    fun providesCategoryApiService(retrofit: Retrofit): CategoryApiService =
+        retrofit.create(CategoryApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesUserApiService(retrofit: Retrofit): com.awan.app.core.network.api.UserApiService =
+        retrofit.create(com.awan.app.core.network.api.UserApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesSessionApiService(retrofit: Retrofit): com.awan.app.core.network.api.SessionApiService =
+        retrofit.create(com.awan.app.core.network.api.SessionApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesTemplateApiService(retrofit: Retrofit): TemplateApiService =
+        retrofit.create(TemplateApiService::class.java)
 
     @Provides
     @Singleton

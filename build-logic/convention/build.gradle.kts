@@ -63,5 +63,10 @@ gradlePlugin {
             id = "awan.android.room"
             implementationClass = "AndroidRoomConventionPlugin"
         }
+        // Wires Navigation 3 + Kotlin Serialization for navigation modules.
+        register("androidNavigation") {
+            id = "awan.android.navigation"
+            implementationClass = "AndroidNavigationConventionPlugin"
+        }
     }
 }

@@ -13,4 +13,5 @@ data class ZoneDto(
     @SerialName("color") val color: String? = null,
     @SerialName("templateId") val templateId: String? = null,
     @SerialName("templateOverrideId") val templateOverrideId: String? = null,
+    @SerialName("category") val category: CategoryDto? = null,
 )

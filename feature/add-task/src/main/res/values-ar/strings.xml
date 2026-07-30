@@ -5,30 +5,59 @@
 
     <string name="add_task_title_placeholder">ما الذي تريد إنجازه؟</string>
     <string name="add_task_description_placeholder">أضف ملاحظة</string>
-    <string name="add_task_title_content_description">عنوان المهمة ووقتها ونطاقها</string>
+    <string name="add_task_title_content_description">عنوان المهمة ووقتها وفئتها</string>
     <string name="add_task_description_content_description">ملاحظة المهمة</string>
 
     <string name="add_task_hint">جرّب ‏“Gym session tomorrow 6pm @play”</string>
+    <string name="add_task_ai_hint">اكتبها بأسلوبك، وأوان يتكفّل بالباقي.</string>
 
-    <string name="add_task_chip_mandatory">إلزامية</string>
-    <string name="add_task_chip_optional">اختيارية</string>
-    <string name="add_task_chip_unscheduled">بلا وقت بعد</string>
-    <string name="add_task_chip_zone_unknown">النطاق ‏“%1$s” غير موجود</string>
-    <string name="add_task_chip_zone_resolving">جارٍ البحث عن النطاق…</string>
+    <string name="add_task_chip_mandatory">لا بد منها</string>
+    <string name="add_task_chip_optional">يمكن تخطيها</string>
+    <string name="add_task_chip_today_no_time">اليوم</string>
+    <string name="add_task_chip_no_duration">أي مدة</string>
+    <string name="add_task_chip_no_category">بلا فئة</string>
+    <string name="add_task_category_menu_empty">لا توجد فئات بعد</string>
+    <string name="add_task_chip_category_unknown">الفئة ‏“%1$s” غير موجودة</string>
+    <string name="add_task_chip_category_resolving">جارٍ البحث عن الفئة…</string>
 
     <string name="add_task_duration_minutes">%1$d دقيقة</string>
     <string name="add_task_duration_hours">%1$d ساعة</string>
     <string name="add_task_duration_hours_minutes">%1$d ساعة و%2$d دقيقة</string>
 
-    <string name="add_task_when_today">اليوم %1$s</string>
-    <string name="add_task_when_tomorrow">غدًا %1$s</string>
-    <string name="add_task_when_dated">%1$s %2$s</string>
+    <string name="add_task_day_today">اليوم</string>
+    <string name="add_task_day_tomorrow">غدًا</string>
+    <string name="add_task_day_at_time">%1$s في %2$s</string>
+
+    <string name="add_task_picker_set">تعيين</string>
+    <string name="add_task_picker_next">التالي</string>
+    <string name="add_task_picker_cancel">إلغاء</string>
 
     <string name="add_task_submit">أضف المهمة</string>
-    <string name="add_task_close">إغلاق</string>
+
+    <string name="add_task_ai_switch">دع أوان يكملها</string>
+    <string name="add_task_ai_switch_body">اذكر ما تريد إنجازه فقط، ويتولى أوان تقدير مدتها وفئتها وموعدها.</string>
+    <string name="add_task_ai_switch_content_description">دع أوان يستنتج تفاصيل المهمة</string>
+    <string name="add_task_ai_note_placeholder">هل من شيء آخر يحتاج أوان معرفته؟</string>
+    <string name="add_task_ai_submit">اسأل أوان</string>
+    <string name="add_task_ai_working">أوان يفكّر في الأمر…</string>
+    <string name="add_task_ai_review_hint">عدّل ما لا يعجبك، ثم اختر طريقة الجدولة.</string>
+    <string name="add_task_ai_schedule_with_ai">دع أوان يجدولها</string>
+    <string name="add_task_ai_schedule_manually">سأختار الوقت بنفسي</string>
+
+    <string name="add_task_confirm_title">تمّت الإضافة!</string>
+    <string name="add_task_confirm_first_session">تبدأ في</string>
+    <string name="add_task_confirm_inbox">في صندوق الوارد — بلا موعد بعد</string>
+    <string name="add_task_confirm_done">تمّ</string>
+
+    <string name="add_task_discard_title">هل تريد تجاهل هذه المهمة؟</string>
+    <string name="add_task_discard_body">سيضيع كل ما أدخلته هنا.</string>
+    <string name="add_task_discard_confirm">تجاهل</string>
+    <string name="add_task_discard_cancel">أكمل التعديل</string>
 
     <string name="add_task_goal_title">الأهداف قادمة</string>
     <string name="add_task_goal_body">قريبًا ستتمكن من إعطاء أوان هدفًا فيعيد لك خطة كاملة. أما الآن فأضف المهام واحدة تلو الأخرى.</string>
 
     <string name="add_task_error_create_failed">تعذّرت إضافة المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
+    <string name="add_task_error_ai_failed">تعذّر على أوان بناء هذه المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
+    <string name="add_task_error_ai_schedule_failed">لم يجد أوان وقتًا مناسبًا لها. جرّب اختيار الوقت بنفسك.</string>
 </resources>

@@ -1,185 +1,217 @@
 package com.awan.feature.home.impl.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.awan.app.core.domain.auth.model.User
+import com.awan.app.core.common.text.UiText
+import com.awan.app.core.designsystem.AwanButton
+import com.awan.app.core.designsystem.AwanButtonVariant
+import com.awan.app.core.designsystem.AwanHeaderBar
+import com.awan.app.core.designsystem.AwanScheduleAlertCard
+import com.awan.app.core.designsystem.AwanScheduleTimeline
+import com.awan.app.core.designsystem.AwanText
+import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.home.impl.R
+
+private sealed interface TimelineContentState {
+    data object Loading : TimelineContentState
+    data class Error(val message: UiText) : TimelineContentState
+    data object Ready : TimelineContentState
+}
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     onLogout: () -> Unit = {},
+    onNavigateToCalendar: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val timelineScrollState = rememberScrollState()
+    val isHeaderCollapsed by remember { derivedStateOf { timelineScrollState.value > 80 } }
+
+    val contentState: TimelineContentState = when {
+        uiState.isLoading                 -> TimelineContentState.Loading
+        uiState.errorMessage != null      -> TimelineContentState.Error(uiState.errorMessage!!)
+        else                              -> TimelineContentState.Ready
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.TopCenter
+            .background(AwanTheme.colors.background),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+                .statusBarsPadding(),
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Text(
-                text = "Welcome to Awan Home",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+            AwanHeaderBar(
+                userName = uiState.userName,
+                greetingPrefix = uiState.greetingPrefix,
+                streakCount = uiState.streakCount,
+                pointsCount = uiState.pointsCount,
+                mascotExpression = uiState.mascotExpression,
+                subtitleText = uiState.subtitleText,
+                selectedDateText = uiState.selectedDateText,
+                isCollapsed = isHeaderCollapsed,
+                totalSessionsCount = uiState.sessions.size,
+                completedSessionsCount = uiState.completedSessionsCount,
+                completedHours = uiState.completedHours,
+                totalHours = uiState.totalHours,
+                scheduledHoursText = uiState.scheduledHoursText,
+                progressSegments = uiState.progressSegments,
+                onPreviousDayClick = viewModel::previousDay,
+                onNextDayClick = viewModel::nextDay,
+                onDatePillClick = {
+                    if (uiState.isToday) onNavigateToCalendar() else viewModel.selectToday()
+                },
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = { viewModel.toggleShowData() },
-                modifier = Modifier.fillMaxWidth(0.9f)
-            ) {
-                Text(
-                    if (uiState.isDataVisible) "Hide User Info" else "🧪 Test: Inspect User Domain Object"
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(
-                onClick = { viewModel.logout(onLogout) },
-                modifier = Modifier.fillMaxWidth(0.9f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Text("🧪 Test: Logout / Clear Session")
-            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
-            }
+            Crossfade(
+                targetState = contentState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                label = "timeline_content",
+            ) { state ->
+                when (state) {
+                    TimelineContentState.Loading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(48.dp),
+                                    color = AwanTheme.colors.sky,
+                                    strokeWidth = 3.dp,
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                AwanText(
+                                    text = stringResource(R.string.loading_your_schedule),
+                                    style = AwanTheme.typography.body.copy(
+                                        fontSize = 14.sp,
+                                        color = AwanTheme.colors.textSecondary,
+                                    ),
+                                )
+                            }
+                        }
+                    }
 
-            AnimatedVisibility(
-                visible = uiState.isDataVisible && !uiState.isLoading,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
+                    is TimelineContentState.Error -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                                modifier = Modifier.padding(horizontal = 24.dp),
+                            ) {
+                                AwanText(text = "☁️", style = AwanTheme.typography.display.copy(fontSize = 48.sp))
+                                Spacer(modifier = Modifier.height(16.dp))
+                                AwanText(
+                                    text = state.message.asString(),
+                                    style = AwanTheme.typography.body.copy(
+                                        fontSize = 15.sp,
+                                        color = AwanTheme.colors.textPrimary,
+                                        fontWeight = FontWeight.Medium,
+                                        textAlign = TextAlign.Center,
+                                        lineHeight = 22.sp,
+                                    ),
+                                )
+                                Spacer(modifier = Modifier.height(20.dp))
+                                AwanButton(
+                                    onClick = viewModel::retryLoad,
+                                    variant = AwanButtonVariant.Primary,
+                                ) {
+                                    AwanText(
+                                        text = stringResource(R.string.retry),
+                                        style = AwanTheme.typography.button,
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    TimelineContentState.Ready -> {
+                        AwanScheduleTimeline(
+                            zones = uiState.zones,
+                            sessions = uiState.sessions,
+                            currentTimeFormatted = uiState.currentTimeFormatted,
+                            currentTimeMinutes = uiState.currentTimeMinutes,
+                            isToday = uiState.isToday,
+                            isPastDate = uiState.isPastDate,
+                            onToggleZoneCollapse = viewModel::toggleZoneCollapse,
+                            onAddSessionToZone = viewModel::addSessionToZone,
+                            onSessionStatusToggle = viewModel::toggleSessionStatus,
+                            onSessionMoved = viewModel::moveSession,
+                            onReorderSessionsInZone = viewModel::reorderSessionsInZone,
+                            scrollState = timelineScrollState,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
+            }
+        }
+
+        if (uiState.hasConflict) {
+            Dialog(
+                onDismissRequest = viewModel::dismissConflict,
+                properties = DialogProperties(usePlatformDefaultWidth = false),
             ) {
-                uiState.user?.let { user ->
-                    UserDataInspectionCard(
-                        user = user,
-                        onRefreshLocal = { viewModel.loadSavedAuthData() },
-                        onRefreshRemote = { viewModel.refreshUserData() },
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.35f))
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AwanScheduleAlertCard(
+                        message = uiState.conflictMessage,
+                        onFixItClick = viewModel::fixConflict,
+                        onLaterClick = viewModel::dismissConflict,
                     )
                 }
             }
-
-            uiState.errorMessage?.let { error ->
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun UserDataInspectionCard(
-    user: User,
-    onRefreshLocal: () -> Unit,
-    onRefreshRemote: () -> Unit,
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "🔒 User Domain Object",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    OutlinedButton(onClick = onRefreshLocal) {
-                        Text("Get")
-                    }
-                    Button(onClick = onRefreshRemote) {
-                        Text("Refresh API")
-                    }
-                }
-            }
-
-            HorizontalDivider()
-
-            DataRow(label = "Email", value = user.email ?: "Not Saved")
-            DataRow(label = "User ID", value = user.id ?: "Not Saved")
-
-            HorizontalDivider()
-
-            DataRow(
-                label = "Access Token",
-                value = user.accessToken ?: "Not Saved",
-                isMonospace = true
-            )
-            DataRow(
-                label = "Refresh Token",
-                value = user.refreshToken ?: "Not Saved",
-                isMonospace = true
-            )
         }
     }
 }
@@ -191,19 +223,25 @@ private fun DataRow(
     isMonospace: Boolean = false,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
+        AwanText(
             text = label,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            style = AwanTheme.typography.caption.copy(
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AwanTheme.colors.textSecondary,
+            ),
         )
         Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = value,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Normal,
-            fontFamily = if (isMonospace) FontFamily.Monospace else FontFamily.Default,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        SelectionContainer {
+            AwanText(
+                text = value,
+                style = AwanTheme.typography.body.copy(
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
+                    fontFamily = if (isMonospace) FontFamily.Monospace else AwanTheme.typography.body.fontFamily,
+                    color = AwanTheme.colors.textSecondary,
+                ),
+            )
+        }
     }
 }

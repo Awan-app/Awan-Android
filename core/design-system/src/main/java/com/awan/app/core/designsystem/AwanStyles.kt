@@ -184,6 +184,28 @@ object AwanStyles {
         disabled { contentColor(colors.disabledContent) }
     }
 
+    /**
+     * The compact pill member of the button family. Same rim, same sink, sized to sit in a row of
+     * attributes rather than at the foot of a screen. Callers tint it per attribute through the
+     * face `style` and `rimStyle` slots, so only the geometry lives here.
+     */
+    val chipButtonRim = Style {
+        background(colors.line)
+        shape(shapes.pill)
+    }
+
+    val chipButtonFace = Style {
+        background(colors.surface)
+        border(2.dp, colors.line)
+        shape(shapes.pill)
+        minHeight(AwanChipFaceHeight)
+        contentPadding(horizontal = 12.dp, vertical = 8.dp)
+        contentColor(colors.textSecondary)
+        textStyle(typography.buttonCompact)
+        fontFamily(typography.buttonCompact.fontFamily!!)
+        buttonPressedTransform()
+    }
+
     val navigationDivider = Style { background(colors.line); minHeight(2.dp) }
 
     val navigationBar = Style {
@@ -276,6 +298,13 @@ object AwanStyles {
         contentColor(colors.textPrimary)
         textStyle(typography.button)
         fontFamily(typography.button.fontFamily!!)
+        buttonPressedTransform()
+    }
+
+    val iconButtonFace = Style {
+        background(colors.surface)
+        border(2.dp, colors.line)
+        shape(androidx.compose.foundation.shape.RoundedCornerShape(percent = 30))
         buttonPressedTransform()
     }
 }

@@ -13,4 +13,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     compileOnly(libs.javax.inject)
     testImplementation(libs.junit)
+    // The parser's regexes run on Android's ICU engine, which the JVM suite cannot speak for.
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 }

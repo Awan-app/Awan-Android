@@ -22,17 +22,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanChip
-import com.awan.app.core.designsystem.AwanChipTone
+import com.awan.app.core.designsystem.AwanBadge
+import com.awan.app.core.designsystem.AwanBadgeTone
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.common.text.UiText
 import com.awan.app.core.designsystem.CascadeItem
+import com.awan.app.core.designsystem.SparkleBurst
 import com.awan.app.core.model.FirstTask
 import com.awan.app.core.model.Zone
 import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.OnboardingAction
 import com.awan.feature.onboarding.impl.presentation.OnboardingState
-import com.awan.feature.onboarding.impl.ui.components.SparkleBurst
 import com.awan.feature.onboarding.impl.ui.components.StepBody
 import com.awan.feature.onboarding.impl.ui.components.StepHeadline
 import com.awan.feature.onboarding.impl.ui.formatClock
@@ -41,7 +43,7 @@ private const val TITLE_MAX = 140
 
 @Composable
 fun FirstTaskStepBody(state: OnboardingState, onAction: (OnboardingAction) -> Unit) {
-    val landed = state.firstTask != null
+    val settled = state.firstTask != null || state.firstTaskError != null
     StepBody {
         CascadeItem(0) {
             StepHeadline(stringResource(R.string.onboarding_first_task_title))
@@ -59,36 +61,47 @@ fun FirstTaskStepBody(state: OnboardingState, onAction: (OnboardingAction) -> Un
         }
 
         AnimatedVisibility(
-            visible = landed,
+            visible = settled,
             enter = fadeIn() + slideInVertically(AwanTheme.motion.bouncy.spec()) { it / 2 },
         ) {
             val task = state.firstTask
-            val zone = state.zones.firstOrNull { it.id == task?.zoneId }
-            if (task != null && zone != null) {
+            if (task != null) {
                 Box(Modifier.fillMaxWidth()) {
-                    LandedTaskCard(task, zone)
+                    LandedTaskCard(task, state.templateZones.firstOrNull { it.id == task.zoneId })
                     SparkleBurst(celebrate = state.celebrateTask)
                 }
+            } else {
+                state.firstTaskError?.let { UnscheduledTaskCard(it) }
             }
         }
     }
 }
 
 @Composable
-private fun LandedTaskCard(task: FirstTask, zone: Zone) {
-    val zoneColor = Color(zone.colorArgb)
+private fun UnscheduledTaskCard(message: UiText) {
+    AwanCard(modifier = Modifier.fillMaxWidth()) {
+        AwanText(message.asString(), style = AwanTheme.styles.metaText)
+    }
+}
+
+/** [zone] is null when the scheduler placed the task in a zone this device never saw. */
+@Composable
+private fun LandedTaskCard(task: FirstTask, zone: Zone?) {
+    val zoneColor = zone?.let { Color(it.colorArgb) } ?: AwanTheme.colors.line
     AwanCard(modifier = Modifier.fillMaxWidth()) {
         AwanText(stringResource(R.string.onboarding_first_task_lands_label), style = AwanTheme.styles.metaText)
         Row(
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
         ) {
-            AwanText(zone.name, style = AwanTheme.styles.headingText)
+            if (zone != null) {
+                AwanText(zone.name, style = AwanTheme.styles.headingText)
+            }
             AwanText(
                 stringResource(
                     R.string.onboarding_time_range,
-                    formatClock(zone.startMinutes),
-                    formatClock(zone.endMinutes),
+                    formatClock(task.startMinutes),
+                    formatClock(task.startMinutes + task.durationMinutes),
                 ),
                 style = AwanTheme.styles.metaText,
             )
@@ -108,11 +121,19 @@ private fun LandedTaskCard(task: FirstTask, zone: Zone) {
             Column(modifier = Modifier.weight(1f)) {
                 AwanText(task.title, style = AwanTheme.styles.bodyText)
                 AwanText(
-                    stringResource(R.string.onboarding_first_task_duration_zone, task.durationMinutes, zone.name),
+                    if (zone != null) {
+                        stringResource(
+                            R.string.onboarding_first_task_duration_zone,
+                            task.durationMinutes,
+                            zone.name,
+                        )
+                    } else {
+                        stringResource(R.string.onboarding_first_task_duration_only, task.durationMinutes)
+                    },
                     style = AwanTheme.styles.metaText,
                 )
             }
-            AwanChip(text = stringResource(R.string.onboarding_first_task_new_badge), tone = AwanChipTone.Violet)
+            AwanBadge(text = stringResource(R.string.onboarding_first_task_new_badge), tone = AwanBadgeTone.Violet)
         }
     }
 }

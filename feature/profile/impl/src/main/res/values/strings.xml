@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_title">Profile</string>
+    <string name="profile_edit">Edit</string>
+    <string name="profile_streak">Streak</string>
+    <string name="profile_max_streak">Max Streak</string>
+    <string name="profile_total_points">Total Points</string>
+    <string name="profile_days">%1$s days</string>
+
+    <string name="profile_section_preferences">PREFERENCES</string>
+    <string name="profile_daily_zones">Daily zones</string>
+    <string name="profile_daily_zones_subtitle">Set the rhythm for each day</string>
+    <string name="profile_scheduling">Scheduling</string>
+    <string name="profile_session_time">Session time</string>
+    <string name="profile_session_time_value">%1$d min</string>
+    <string name="profile_time_zone">Time zone</string>
+    <string name="profile_sleep_schedule">Sleep schedule</string>
+    <string name="profile_wakeup_time">Wake-up time</string>
+    <string name="profile_sleep_time">Sleep time</string>
+    <string name="profile_save">Save</string>
+    <string name="profile_cancel">Cancel</string>
+
+    <string name="profile_section_appearance">LANGUAGE &amp; APPEARANCE</string>
+    <string name="profile_language">Language</string>
+    <string name="profile_theme">Theme</string>
+    <string name="profile_theme_light">Light</string>
+    <string name="profile_theme_system">System</string>
+    <string name="profile_theme_dark">Dark</string>
+
+    <string name="profile_section_settings">SETTINGS</string>
+    <string name="profile_notifications">Notifications</string>
+    <string name="profile_help_center">Help Center</string>
+    <string name="profile_how_to_earn_points">How to Earn Points</string>
+    <string name="profile_rate_awan">Rate Awan</string>
+    <string name="profile_edit_title">Edit Profile</string>
+    <string name="profile_save_changes">Save Changes</string>
+    <string name="profile_first_name">First Name</string>
+    <string name="profile_last_name">Last Name</string>
+    <string name="profile_birth_date">Birth Date</string>
+    <string name="profile_section_personal">PERSONAL INFORMATION</string>
+    <string name="profile_section_daily_schedule">DAILY SCHEDULE</string>
+    <string name="profile_timezone">Timezone</string>
+    <string name="profile_session_duration">Session Duration</string>
+    <string name="profile_scheduling_type">Scheduling Type</string>
+    <string name="profile_scheduling_type_smart">Smart</string>
+    <string name="profile_scheduling_type_manual">Manual</string>
+    <string name="profile_scheduling_type_fixed">Fixed</string>
+    <string name="profile_retry">Retry</string>
+    <string name="profile_logout">Log out</string>
+    <string name="profile_logout_confirm_title">Leaving so soon?</string>
+    <string name="profile_logout_confirm_subtitle">Are you sure you want to log out of your account?</string>
+
+    <string name="profile_select_language">Select Language</string>
+    <string name="profile_language_english">English</string>
+    <string name="profile_language_arabic">Arabic</string>
+    <string name="profile_select_timezone">Select Timezone</string>
+    <string name="profile_search_timezone">Search region or city...</string>
+    <string name="profile_close">Close</string>
+    <string name="profile_minutes">minutes</string>
+    <string name="profile_decrease">Decrease</string>
+    <string name="profile_increase">Increase</string>
+    <string name="profile_back">Back</string>
+    <string name="profile_select_date">Select Date</string>
+    <string name="profile_ok">OK</string>
+    <string name="profile_enabled">Enabled</string>
+
+    <string name="profile_am">AM</string>
+    <string name="profile_pm">PM</string>
+    <string name="profile_user_placeholder">User</string>
+    <string name="profile_error_logout">Failed to logout</string>
+</resources>

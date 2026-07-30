@@ -42,7 +42,7 @@ private fun DarkSurfacePreview() {
 
 @Composable
 private fun SurfacePreview(darkTheme: Boolean) {
-    AwanTheme(darkTheme = darkTheme) {
+    AwanTheme(dark = darkTheme, light = !darkTheme) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

@@ -42,16 +42,17 @@ object AwanTheme {
 
     @Composable
     operator fun invoke(
-        darkTheme: Boolean = isSystemInDarkTheme(),
-        highContrast: Boolean = false,
+        dark: Boolean = false,
+        light: Boolean = false,
         content: @Composable () -> Unit,
     ) {
-        val colors = when {
-            darkTheme -> DarkAwanColors
-            highContrast -> LightHighContrastAwanColors
-            else -> LightAwanColors
+        val isDark = when {
+            dark -> true
+            light -> false
+            else -> isSystemInDarkTheme()
         }
-        val colorScheme = if (darkTheme) {
+        val colors = if (isDark) DarkAwanColors else LightAwanColors
+        val colorScheme = if (isDark) {
             darkColorScheme(
                 primary = colors.filledControl,
                 onPrimary = colors.onFilledControl,
@@ -63,6 +64,23 @@ object AwanTheme {
                 onSurface = colors.textPrimary,
                 surfaceVariant = colors.surface,
                 onSurfaceVariant = colors.textSecondary,
+                // Material containers — pickers, menus, sheets — read these, not `surface`. Left
+                // unmapped they fall back to the baseline purple and land off-theme.
+                surfaceContainerLowest = colors.surface,
+                surfaceContainerLow = colors.surface,
+                surfaceContainer = colors.surface,
+                surfaceContainerHigh = colors.surface,
+                surfaceContainerHighest = colors.surface,
+                // Selected segments inside Material controls — a picker's hour field, its AM/PM
+                // switch — come from the container roles, which default to purple and pink.
+                primaryContainer = colors.line,
+                onPrimaryContainer = colors.textPrimary,
+                secondaryContainer = colors.line,
+                onSecondaryContainer = colors.textPrimary,
+                tertiary = colors.zoneViolet,
+                onTertiary = colors.onSky,
+                tertiaryContainer = colors.line,
+                onTertiaryContainer = colors.textPrimary,
                 error = colors.destructive,
                 onError = colors.onDestructive,
                 outline = colors.line,
@@ -79,6 +97,21 @@ object AwanTheme {
                 onSurface = colors.textPrimary,
                 surfaceVariant = colors.surface,
                 onSurfaceVariant = colors.textSecondary,
+                surfaceContainerLowest = colors.surface,
+                surfaceContainerLow = colors.surface,
+                surfaceContainer = colors.surface,
+                surfaceContainerHigh = colors.surface,
+                surfaceContainerHighest = colors.surface,
+                // Selected segments inside Material controls — a picker's hour field, its AM/PM
+                // switch — come from the container roles, which default to purple and pink.
+                primaryContainer = colors.line,
+                onPrimaryContainer = colors.textPrimary,
+                secondaryContainer = colors.line,
+                onSecondaryContainer = colors.textPrimary,
+                tertiary = colors.zoneViolet,
+                onTertiary = colors.onSky,
+                tertiaryContainer = colors.line,
+                onTertiaryContainer = colors.textPrimary,
                 error = colors.destructive,
                 onError = colors.onDestructive,
                 outline = colors.line,

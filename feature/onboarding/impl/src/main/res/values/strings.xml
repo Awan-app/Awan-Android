@@ -84,7 +84,9 @@
     <string name="onboarding_first_task_skip">Skip for now →</string>
     <string name="onboarding_first_task_lands_label">…AND IT LANDS IN YOUR DAY</string>
     <string name="onboarding_first_task_duration_zone">%1$d min · %2$s</string>
+    <string name="onboarding_first_task_duration_only">%1$d min</string>
     <string name="onboarding_first_task_new_badge">NEW</string>
+    <string name="onboarding_first_task_unscheduled">Added it — but there was no free slot in your day just yet. You can place it yourself later.</string>
 
     <string name="onboarding_notifications_turn_on">TURN ON NUDGES</string>
     <string name="onboarding_notifications_not_now">Not now</string>

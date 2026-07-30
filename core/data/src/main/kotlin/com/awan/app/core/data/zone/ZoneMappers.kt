@@ -1,5 +1,6 @@
 package com.awan.app.core.data.zone
 
+import com.awan.app.core.data.category.toModel
 import com.awan.app.core.model.DayZone
 import com.awan.app.core.network.dto.ZoneDto
 import java.time.LocalTime
@@ -17,6 +18,7 @@ internal fun ZoneDto.toModel(): DayZone? {
         startTime = start,
         endTime = end,
         colorHex = color,
+        category = category?.toModel(),
     )
 }
 

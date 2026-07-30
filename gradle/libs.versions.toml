@@ -43,11 +43,13 @@ room = "2.7.2"
 
 # New — Lottie
 lottie = "6.6.2"
+composeIcons = "2.2.1"
 
 # New — java.time on minSdk 24
 desugarJdkLibs = "2.1.5"
 
 [libraries]
+desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 androidx-compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
@@ -122,6 +124,9 @@ room-ktx      = { group = "androidx.room", name = "room-ktx",      version.ref =
 room-compiler = { group = "androidx.room", name = "room-compiler",  version.ref = "room" }
 room-testing  = { group = "androidx.room", name = "room-testing",   version.ref = "room" }
 
+# Lucide
+compose-icons-lucide-cmp = { group = "com.composables", name = "icons-lucide-cmp", version.ref = "composeIcons" }
+
 # Lottie
 lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", version.ref = "lottie" }
 
@@ -154,4 +159,4 @@ awan-android-feature = { id = "awan.android.feature" }
 awan-jvm-library = { id = "awan.jvm.library" }
 awan-feature = { id = "awan.feature" }
 awan-android-room = { id = "awan.android.room" }
-
+awan-android-navigation = { id = "awan.android.navigation" }

@@ -26,7 +26,7 @@ private val AddButtonSize = 52.dp
 @Composable
 fun AwanBottomBar(
     destinations: List<TopLevelDestination>,
-    currentTopLevelKey: Route,
+    currentTopLevelKey: Route?,
     onNavigate: (Route) -> Unit,
     onAddTask: () -> Unit,
     modifier: Modifier = Modifier,
@@ -42,14 +42,14 @@ fun AwanBottomBar(
 @Composable
 private fun RowScope.DestinationItem(
     destination: TopLevelDestination,
-    currentTopLevelKey: Route,
+    currentTopLevelKey: Route?,
     onNavigate: (Route) -> Unit,
 ) {
-    val label = stringResource(destination.labelRes)
+    val label = destination.label
     NavigationBarItem(
         selected = currentTopLevelKey == destination.route,
-        onClick = { onNavigate(destination.route) },
-        icon = { Icon(imageVector = destination.icon, contentDescription = label) },
+        onClick = { destination.route?.let(onNavigate) },
+        icon = { Icon(imageVector = destination.selectedIcon, contentDescription = label) },
         label = { Text(label) },
     )
 }

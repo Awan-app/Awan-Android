@@ -7,8 +7,12 @@ import com.awan.feature.home.impl.ui.HomeScreen
 
 fun EntryProviderScope<Route>.homeEntry(
     onLogout: () -> Unit,
+    onNavigateToCalendar: () -> Unit = {},
 ) {
     entry<HomeRoute> {
-        HomeScreen(onLogout = onLogout)
+        HomeScreen(
+            onLogout = onLogout,
+            onNavigateToCalendar = onNavigateToCalendar,
+        )
     }
 }

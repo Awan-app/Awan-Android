@@ -20,7 +20,7 @@ fun rememberTokenHighlight(tokens: List<TaskToken>): VisualTransformation {
         when (kind) {
             TaskTokenKind.DATE_TIME -> colors.zoneSkyPressed
             TaskTokenKind.DURATION -> colors.zoneVioletPressed
-            TaskTokenKind.ZONE -> colors.zoneTangerinePressed
+            TaskTokenKind.CATEGORY -> colors.zoneTangerinePressed
         }
     }
     return TokenHighlightTransformation(tokens, toneOf)
