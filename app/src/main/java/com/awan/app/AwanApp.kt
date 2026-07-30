@@ -18,6 +18,10 @@ import androidx.navigation3.ui.NavDisplay
 import com.awan.app.core.designsystem.AwanBottomNavBar
 import com.awan.app.core.designsystem.BottomNavItem
 import com.awan.core.navigation.Navigator
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.awan.feature.addtask.navigation.goalPreviewEntry
+import com.awan.feature.addtask.navigation.GoalPreviewRoute
+import com.awan.feature.addtask.presentation.AddTaskViewModel
 import com.awan.feature.addtask.ui.AddTaskSheet
 import com.awan.feature.auth.api.LoginRoute
 import com.awan.feature.auth.impl.navigation.authEntry
@@ -43,6 +47,7 @@ fun AwanApp(
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
+    val addTaskViewModel: AddTaskViewModel = hiltViewModel()
 
     if (showAddTask) {
         AddTaskSheet(
@@ -88,6 +93,10 @@ fun AwanApp(
             goalsEntry()
             profileEntry(
                 onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
+            )
+            goalPreviewEntry(
+                viewModel = addTaskViewModel,
+                onBack = { navigator.goBack() },
             )
         }
 
