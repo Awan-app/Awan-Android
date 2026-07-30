@@ -39,27 +39,6 @@ class GoalRepositoryImpl @Inject constructor(
                 Task(id = "2-2", title = "Day 2 — Run 1.5 miles", status = TaskStatus.SCHEDULED, goalId = "2"),
                 Task(id = "2-3", title = "Day 3 — Jog 15 min", status = TaskStatus.SCHEDULED, goalId = "2"),
             )
-        ),
-        Goal(
-            id = "3",
-            title = "Read 12 books this year",
-            emoji = "🎉",
-            status = GoalStatus.ACHIEVED,
-            tasks = listOf(
-                Task(id = "3-1", title = "Read book 1", status = TaskStatus.COMPLETED, goalId = "3"),
-                Task(id = "3-2", title = "Read book 2", status = TaskStatus.COMPLETED, goalId = "3"),
-                Task(id = "3-3", title = "Read book 3", status = TaskStatus.COMPLETED, goalId = "3"),
-            )
-        ),
-        Goal(
-            id = "4",
-            title = "Launch side project",
-            emoji = "🚀",
-            status = GoalStatus.ACHIEVED,
-            tasks = listOf(
-                Task(id = "4-1", title = "Write app code", status = TaskStatus.COMPLETED, goalId = "4"),
-                Task(id = "4-2", title = "Publish to Play Store", status = TaskStatus.COMPLETED, goalId = "4"),
-            )
         )
     )
 
