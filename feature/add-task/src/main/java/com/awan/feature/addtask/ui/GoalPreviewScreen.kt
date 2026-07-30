@@ -74,6 +74,7 @@ fun GoalPreviewScreen(
     onToggleMic: () -> Unit,
     isListening: Boolean,
     speechError: String?,
+    isPermissionError: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
@@ -205,15 +206,6 @@ fun GoalPreviewScreen(
                     )
                 }
             }
-            if (speechError != null) {
-                item {
-                    AwanText(
-                        text = speechError,
-                        style = AwanTheme.styles.errorText,
-                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                    )
-                }
-            }
         }
 
         // ── Bottom footer ────────────────────────────────────────────────────
@@ -234,6 +226,7 @@ fun GoalPreviewScreen(
                     contentDescriptionText = stringResource(R.string.add_task_goal_preview_revision_description),
                     enabled = !state.isSubmitting,
                     singleLine = false,
+                    isError = isPermissionError,
                     trailingContent = {
                         PreviewGoalMicButton(
                             isListening = isListening,
@@ -242,6 +235,16 @@ fun GoalPreviewScreen(
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            if (speechError != null) {
+                AwanText(
+                    text = speechError,
+                    style = AwanTheme.styles.errorText,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
 

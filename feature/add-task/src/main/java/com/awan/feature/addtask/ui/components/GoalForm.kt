@@ -93,6 +93,7 @@ fun GoalForm(
             }
         },
         speechError = speechState.errorMessage,
+        isPermissionError = speechState.isPermissionError,
         modifier = modifier,
     )
 }
@@ -104,6 +105,7 @@ fun GoalFormContent(
     isListening: Boolean,
     onToggleMic: () -> Unit,
     speechError: String?,
+    isPermissionError: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val isReduced = reducedMotion()
@@ -137,6 +139,8 @@ fun GoalFormContent(
                     onAction = onAction,
                     isListening = isListening,
                     onToggleMic = onToggleMic,
+                    speechError = speechError,
+                    isPermissionError = isPermissionError,
                 )
 
                 is GoalStep.MultipleChoice -> MultipleChoiceStepContent(
@@ -145,6 +149,8 @@ fun GoalFormContent(
                     onAction = onAction,
                     isListening = isListening,
                     onToggleMic = onToggleMic,
+                    speechError = speechError,
+                    isPermissionError = isPermissionError,
                 )
 
                 is GoalStep.WritingQuestion -> WritingStepContent(
@@ -153,6 +159,8 @@ fun GoalFormContent(
                     onAction = onAction,
                     isListening = isListening,
                     onToggleMic = onToggleMic,
+                    speechError = speechError,
+                    isPermissionError = isPermissionError,
                 )
 
                 is GoalStep.Preview -> PreviewStepContent(
@@ -161,16 +169,10 @@ fun GoalFormContent(
                     onAction = onAction,
                     isListening = isListening,
                     onToggleMic = onToggleMic,
+                    speechError = speechError,
+                    isPermissionError = isPermissionError,
                 )
             }
-        }
-
-        if (speechError != null) {
-            AwanText(
-                text = speechError,
-                style = AwanTheme.styles.errorText,
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            )
         }
 
         val errRes = state.errorMessage
@@ -190,6 +192,8 @@ private fun InitialStepContent(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    speechError: String?,
+    isPermissionError: Boolean,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
         CascadeItem(1, Modifier.fillMaxWidth()) {
@@ -207,23 +211,36 @@ private fun InitialStepContent(
         }
 
         CascadeItem(3, Modifier.fillMaxWidth()) {
-            AwanAiAura(active = state.isSubmitting, modifier = Modifier.fillMaxWidth()) {
-                AwanTextField(
-                    value = state.input,
-                    onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
-                    placeholder = stringResource(R.string.add_task_goal_input_placeholder),
-                    contentDescriptionText = stringResource(R.string.add_task_goal_input_description),
-                    enabled = !state.isSubmitting,
-                    singleLine = false,
-                    trailingContent = {
-                        GoalMicButton(
-                            isListening = isListening,
-                            onToggleMic = onToggleMic,
-                            enabled = !state.isSubmitting,
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            Column {
+                AwanAiAura(active = state.isSubmitting, modifier = Modifier.fillMaxWidth()) {
+                    AwanTextField(
+                        value = state.input,
+                        onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
+                        placeholder = stringResource(R.string.add_task_goal_input_placeholder),
+                        contentDescriptionText = stringResource(R.string.add_task_goal_input_description),
+                        enabled = !state.isSubmitting,
+                        singleLine = false,
+                        isError = isPermissionError,
+                        trailingContent = {
+                            GoalMicButton(
+                                isListening = isListening,
+                                onToggleMic = onToggleMic,
+                                enabled = !state.isSubmitting,
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                if (speechError != null) {
+                    AwanText(
+                        text = speechError,
+                        style = AwanTheme.styles.errorText,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = AwanTheme.spacing.xxs)
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
             }
         }
 
@@ -247,6 +264,8 @@ private fun MultipleChoiceStepContent(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    speechError: String?,
+    isPermissionError: Boolean,
 ) {
     val reduced = reducedMotion()
     val replyBlocks = state.goalReplyBlocks
@@ -347,23 +366,36 @@ private fun MultipleChoiceStepContent(
         }
 
         CascadeItem(baseIndex + step.options.size, Modifier.fillMaxWidth()) {
-            AwanAiAura(active = state.isSubmitting, modifier = Modifier.fillMaxWidth()) {
-                AwanTextField(
-                    value = state.input,
-                    onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
-                    placeholder = stringResource(R.string.add_task_goal_mcq_custom_placeholder),
-                    contentDescriptionText = stringResource(R.string.add_task_goal_mcq_custom_description),
-                    enabled = !state.isSubmitting,
-                    singleLine = false,
-                    trailingContent = {
-                        GoalMicButton(
-                            isListening = isListening,
-                            onToggleMic = onToggleMic,
-                            enabled = !state.isSubmitting,
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            Column {
+                AwanAiAura(active = state.isSubmitting, modifier = Modifier.fillMaxWidth()) {
+                    AwanTextField(
+                        value = state.input,
+                        onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
+                        placeholder = stringResource(R.string.add_task_goal_mcq_custom_placeholder),
+                        contentDescriptionText = stringResource(R.string.add_task_goal_mcq_custom_description),
+                        enabled = !state.isSubmitting,
+                        singleLine = false,
+                        isError = isPermissionError,
+                        trailingContent = {
+                            GoalMicButton(
+                                isListening = isListening,
+                                onToggleMic = onToggleMic,
+                                enabled = !state.isSubmitting,
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                if (speechError != null) {
+                    AwanText(
+                        text = speechError,
+                        style = AwanTheme.styles.errorText,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = AwanTheme.spacing.xxs)
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
             }
         }
 
@@ -387,6 +419,8 @@ private fun WritingStepContent(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    speechError: String?,
+    isPermissionError: Boolean,
 ) {
     val replyBlocks = state.goalReplyBlocks
 
@@ -442,23 +476,36 @@ private fun WritingStepContent(
         val baseIndex = if (replyBlocks.isNotEmpty()) replyBlocks.size + 2 else 2
 
         CascadeItem(baseIndex, Modifier.fillMaxWidth()) {
-            AwanAiAura(active = state.isSubmitting, modifier = Modifier.fillMaxWidth()) {
-                AwanTextField(
-                    value = state.input,
-                    onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
-                    placeholder = stringResource(R.string.add_task_goal_writing_placeholder),
-                    contentDescriptionText = stringResource(R.string.add_task_goal_writing_description),
-                    enabled = !state.isSubmitting,
-                    singleLine = false,
-                    trailingContent = {
-                        GoalMicButton(
-                            isListening = isListening,
-                            onToggleMic = onToggleMic,
-                            enabled = !state.isSubmitting,
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            Column {
+                AwanAiAura(active = state.isSubmitting, modifier = Modifier.fillMaxWidth()) {
+                    AwanTextField(
+                        value = state.input,
+                        onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
+                        placeholder = stringResource(R.string.add_task_goal_writing_placeholder),
+                        contentDescriptionText = stringResource(R.string.add_task_goal_writing_description),
+                        enabled = !state.isSubmitting,
+                        singleLine = false,
+                        isError = isPermissionError,
+                        trailingContent = {
+                            GoalMicButton(
+                                isListening = isListening,
+                                onToggleMic = onToggleMic,
+                                enabled = !state.isSubmitting,
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                if (speechError != null) {
+                    AwanText(
+                        text = speechError,
+                        style = AwanTheme.styles.errorText,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = AwanTheme.spacing.xxs)
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
             }
         }
 
@@ -482,6 +529,8 @@ private fun PreviewStepContent(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    speechError: String?,
+    isPermissionError: Boolean,
 ) {
     val replyBlocks = state.goalReplyBlocks
 
@@ -542,6 +591,7 @@ private fun PreviewStepContent(
                         contentDescriptionText = stringResource(R.string.add_task_goal_preview_revision_description),
                         enabled = !state.isSubmitting,
                         singleLine = false,
+                        isError = isPermissionError,
                         trailingContent = {
                             GoalMicButton(
                                 isListening = isListening,
@@ -550,6 +600,17 @@ private fun PreviewStepContent(
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+
+                if (speechError != null) {
+                    AwanText(
+                        text = speechError,
+                        style = AwanTheme.styles.errorText,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = AwanTheme.spacing.xxs)
+                            .semantics { liveRegion = LiveRegionMode.Polite },
                     )
                 }
 

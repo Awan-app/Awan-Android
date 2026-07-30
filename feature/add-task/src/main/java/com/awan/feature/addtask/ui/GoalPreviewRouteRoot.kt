@@ -69,5 +69,6 @@ fun GoalPreviewRouteRoot(
         },
         isListening = speechState.isListening,
         speechError = speechState.errorMessage,
+        isPermissionError = speechState.isPermissionError,
     )
 }
