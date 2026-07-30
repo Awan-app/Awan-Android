@@ -14,6 +14,13 @@
     <string name="home_schedule_alert_fix_it">إصلاح الآن</string>
     <string name="home_default_user_name">صديقي</string>
     <string name="home_greeting_prefix">مساء الخير</string>
+    <string name="home_greeting_morning">صباح الخير</string>
+    <string name="home_greeting_afternoon">مساء الخير</string>
+    <string name="home_greeting_evening">مساء الخير</string>
+    <string name="home_date_today_format">اليوم · %1$s</string>
+    <string name="home_date_yesterday_format">أمس · %1$s</string>
+    <string name="home_date_tomorrow_format">غداً · %1$s</string>
+    <string name="home_subtitle_scheduled">سماء صافية — %1$d جلسات مجدولة</string>
     <string name="home_error_network">لا يوجد اتصال بالإنترنت. تحقق من الاتصال وحاول مجدداً.</string>
     <string name="home_error_timeout">انتهت مهلة الطلب. يرجى المحاولة مرة أخرى.</string>
     <string name="home_error_unauthorized">انتهت الجلسة. يرجى تسجيل الدخول مجدداً.</string>

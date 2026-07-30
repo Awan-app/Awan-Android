@@ -9,27 +9,34 @@ import com.awan.app.core.designsystem.ScheduleCategory
 import com.awan.app.core.designsystem.ScheduleSession
 import com.awan.app.core.designsystem.ScheduleTask
 import com.awan.app.core.designsystem.ScheduleZone
+import com.awan.feature.home.impl.R
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-internal fun formatSelectedDate(date: LocalDate): String {
+internal fun formatSelectedDate(date: LocalDate): UiText {
     val today = LocalDate.now()
-    val pattern = DateTimeFormatter.ofPattern("EEE, MMM d", Locale.US)
-    return if (date == today) "Today · ${date.format(pattern)}" else date.format(pattern)
+    val pattern = DateTimeFormatter.ofPattern("EEE, MMM d", Locale.getDefault())
+    val formatted = date.format(pattern)
+    return when (date) {
+        today -> UiText.StringResource(R.string.home_date_today_format, formatted)
+        today.minusDays(1) -> UiText.StringResource(R.string.home_date_yesterday_format, formatted)
+        today.plusDays(1) -> UiText.StringResource(R.string.home_date_tomorrow_format, formatted)
+        else -> UiText.DynamicString(formatted)
+    }
 }
 
 data class HomeUiState(
     val userName: String = "",
-    val greetingPrefix: String = "Good afternoon",
+    val greetingPrefix: UiText = UiText.StringResource(R.string.home_greeting_afternoon),
     val streakCount: Int = 0,
     val pointsCount: Int = 0,
     val mascotExpression: MascotExpression = MascotExpression.Idle,
-    val subtitleText: String = "",
+    val subtitleText: UiText = UiText.DynamicString(""),
     val selectedDate: LocalDate = LocalDate.now(),
     val isToday: Boolean = true,
     val isPastDate: Boolean = false,
-    val selectedDateText: String = formatSelectedDate(LocalDate.now()),
+    val selectedDateText: UiText = formatSelectedDate(LocalDate.now()),
     val totalTasksCount: Int = 0,
     val completedSessionsCount: Int = 0,
     val completedHours: Double = 0.0,
