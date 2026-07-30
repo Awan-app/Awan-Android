@@ -409,16 +409,23 @@ private fun TaskRow(task: Task) {
 }
 
 @Composable
-private fun GoalsEmptyState(tab: GoalsTab) {
+private fun GoalsEmptyState(
+    tab: GoalsTab,
+    modifier: Modifier = Modifier,
+) {
     val colors = AwanTheme.colors
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        AwanMascot(expression = MascotExpression.Curious, width = 90.dp)
+        val expression = when (tab) {
+            GoalsTab.Active -> MascotExpression.Curious
+            GoalsTab.Completed -> MascotExpression.Celebrate
+        }
+        AwanMascot(expression = expression, width = 90.dp)
         Spacer(modifier = Modifier.height(16.dp))
         AwanText(
             text = when (tab) {
