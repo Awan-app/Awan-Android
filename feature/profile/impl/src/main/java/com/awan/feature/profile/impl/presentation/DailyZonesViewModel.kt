@@ -23,7 +23,6 @@ class DailyZonesViewModel @Inject constructor(
     private val getWeeklyTemplatesUseCase: GetWeeklyTemplatesUseCase,
     private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(DailyZonesState(selectedDay = DailyZonesHelper.getCurrentDay()))
     val uiState: StateFlow<DailyZonesState> = _uiState.asStateFlow()
 
