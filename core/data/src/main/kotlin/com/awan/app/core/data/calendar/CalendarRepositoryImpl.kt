@@ -10,6 +10,7 @@ import com.awan.app.core.datastore.auth.AuthTokenProvider
 import com.awan.app.core.domain.calendar.repository.CalendarRepository
 import com.awan.app.core.domain.calendar.repository.CalendarSnapshot
 import com.awan.app.core.model.Goal
+import com.awan.app.core.model.GoalStatus
 import com.awan.app.core.network.dto.GoalResponse
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -53,5 +54,11 @@ class CalendarRepositoryImpl @Inject constructor(
 }
 
 internal fun GoalResponse.asEntity() = GoalEntity(id, title, description, status, targetDate, createdAt, inbox)
-internal fun GoalEntity.asCalendarGoal() = Goal(id, title, targetDate, status, isInbox)
-
+internal fun GoalEntity.asCalendarGoal() = Goal(
+    id = id,
+    title = title,
+    targetDate = targetDate,
+    description = description,
+    status = if (status == "ACHIEVED") GoalStatus.ACHIEVED else GoalStatus.ACTIVE,
+    isInbox = isInbox
+)
