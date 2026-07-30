@@ -54,7 +54,7 @@ fun EditRoutineScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.validationError, uiState.error) {
-        val error = uiState.validationError ?: uiState.error?.asString(context)
+        val error = (uiState.validationError ?: uiState.error)?.asString(context)
         if (error != null) {
             snackbarHostState.showSnackbar(
                 message = error,
@@ -70,7 +70,9 @@ fun EditRoutineScreen(
                 name = "",
                 startTime = uiState.zones.lastOrNull()?.endTime ?: "09:00",
                 endTime = uiState.zones.lastOrNull()?.endTime?.let { 
-                    DailyZonesHelper.formatMinutesToTime(DailyZonesHelper.parseTimeToMinutes(it) + 60)
+                    DailyZonesHelper.parseTimeToMinutes(it)?.let { minutes ->
+                        DailyZonesHelper.formatMinutesToTime(minutes + 60)
+                    }
                 } ?: "10:00",
                 color = "#2EAAFF"
             ),

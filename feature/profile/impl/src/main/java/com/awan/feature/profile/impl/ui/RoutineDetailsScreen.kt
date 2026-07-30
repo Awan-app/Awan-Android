@@ -1,4 +1,4 @@
-package com.awan.feature.profile.impl.ui.routinedetails
+package com.awan.feature.profile.impl.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.*
 import com.awan.feature.profile.impl.R
+import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import com.awan.feature.profile.impl.presentation.RoutineDetailsAction
 import com.awan.feature.profile.impl.presentation.RoutineDetailsState
 import com.awan.feature.profile.impl.ui.components.ZoneDetailItem
@@ -103,7 +104,8 @@ fun RoutineDetailsScreen(
                             textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
                         )
                     )
-                    val appliedDays = uiState.template?.daysOfWeek?.map { stringResource(DailyZonesHelper.getDayNameRes(it)) }?.joinToString(", ") ?: ""
+                    val appliedDays = uiState.template?.daysOfWeek?.map { stringResource(
+                        DailyZonesHelper.getDayNameRes(it)) }?.joinToString(", ") ?: ""
                     AwanText(
                         text = appliedDays,
                         style = AwanTheme.styles.bodyText.copy(color = AwanTheme.colors.textSecondary)

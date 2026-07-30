@@ -136,7 +136,7 @@ fun ZoneEditSheet(
 
     if (showStartTimePicker) {
         AwanTimePickerDialog(
-            initialMinutes = startMins,
+            initialMinutes = startMins ?: 0,
             confirmLabel = stringResource(R.string.profile_zone_confirm),
             cancelLabel = stringResource(R.string.profile_cancel),
             onDismiss = { showStartTimePicker = false },
@@ -149,7 +149,7 @@ fun ZoneEditSheet(
 
     if (showEndTimePicker) {
         AwanTimePickerDialog(
-            initialMinutes = endMins,
+            initialMinutes = endMins ?: 0,
             confirmLabel = stringResource(R.string.profile_zone_confirm),
             cancelLabel = stringResource(R.string.profile_cancel),
             onDismiss = { showEndTimePicker = false },

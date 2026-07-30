@@ -35,7 +35,7 @@ fun AddEditZoneSheet(
     
     val initialEndTime = remember(zone, initialStartTime) {
         zone?.endTime ?: run {
-            val startMins = DailyZonesHelper.parseTimeToMinutes(initialStartTime)
+            val startMins = DailyZonesHelper.parseTimeToMinutes(initialStartTime) ?: 0
             DailyZonesHelper.formatMinutesToTime(startMins + 60)
         }
     }
@@ -49,7 +49,7 @@ fun AddEditZoneSheet(
 
     if (showStartTimePicker) {
         AwanTimePickerDialog(
-            initialMinutes = DailyZonesHelper.parseTimeToMinutes(startTime),
+            initialMinutes = DailyZonesHelper.parseTimeToMinutes(startTime) ?: 0,
             confirmLabel = stringResource(R.string.profile_zone_confirm),
             cancelLabel = stringResource(R.string.profile_cancel),
             onDismiss = { showStartTimePicker = false },
@@ -62,7 +62,7 @@ fun AddEditZoneSheet(
 
     if (showEndTimePicker) {
         AwanTimePickerDialog(
-            initialMinutes = DailyZonesHelper.parseTimeToMinutes(endTime),
+            initialMinutes = DailyZonesHelper.parseTimeToMinutes(endTime) ?: 0,
             confirmLabel = stringResource(R.string.profile_zone_confirm),
             cancelLabel = stringResource(R.string.profile_cancel),
             onDismiss = { showEndTimePicker = false },

@@ -19,7 +19,7 @@ import com.awan.app.core.domain.zones.model.Session
 import com.awan.app.core.domain.zones.model.TemplateOverride
 import com.awan.app.core.domain.zones.model.WeeklyTemplate
 import com.awan.app.core.domain.zones.repository.ZonesRepository
-import com.awan.app.core.domain.zone.usecase.GetZonesForDateUseCase
+import com.awan.app.core.domain.zones.usecase.GetZonesForDateUseCase
 import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.model.Category
 import com.awan.app.core.model.DayZone
