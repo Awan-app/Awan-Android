@@ -115,7 +115,7 @@ data class AddTaskState(
         get() = if (mode == AddTaskMode.GOAL) {
             !isSubmitting && when (val step = goalStep) {
                 GoalStep.Initial, is GoalStep.WritingQuestion, is GoalStep.Preview -> input.isNotBlank()
-                is GoalStep.MultipleChoice -> !step.selectedOption.isNullOrBlank()
+                is GoalStep.MultipleChoice -> !step.selectedOption.isNullOrBlank() || input.isNotBlank()
             }
         } else {
             !isSubmitting && when (aiStage) {

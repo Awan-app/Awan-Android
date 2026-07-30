@@ -62,6 +62,8 @@
 
     <string name="add_task_goal_mcq_continue">Continue</string>
     <string name="add_task_goal_mcq_option_description">Option: %1$s</string>
+    <string name="add_task_goal_mcq_custom_placeholder">Or type your own answer…</string>
+    <string name="add_task_goal_mcq_custom_description">Custom answer input</string>
 
     <string name="add_task_goal_writing_placeholder">Type or dictate your answer…</string>
     <string name="add_task_goal_writing_description">Answer to question</string>

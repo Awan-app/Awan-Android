@@ -143,6 +143,8 @@ fun GoalFormContent(
                     step = step,
                     state = state,
                     onAction = onAction,
+                    isListening = isListening,
+                    onToggleMic = onToggleMic,
                 )
 
                 is GoalStep.WritingQuestion -> WritingStepContent(
@@ -243,6 +245,8 @@ private fun MultipleChoiceStepContent(
     step: GoalStep.MultipleChoice,
     state: AddTaskState,
     onAction: (AddTaskAction) -> Unit,
+    isListening: Boolean,
+    onToggleMic: () -> Unit,
 ) {
     val reduced = reducedMotion()
     val replyBlocks = state.goalReplyBlocks
@@ -343,6 +347,27 @@ private fun MultipleChoiceStepContent(
         }
 
         CascadeItem(baseIndex + step.options.size, Modifier.fillMaxWidth()) {
+            AwanAiAura(active = state.isSubmitting, modifier = Modifier.fillMaxWidth()) {
+                AwanTextField(
+                    value = state.input,
+                    onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
+                    placeholder = stringResource(R.string.add_task_goal_mcq_custom_placeholder),
+                    contentDescriptionText = stringResource(R.string.add_task_goal_mcq_custom_description),
+                    enabled = !state.isSubmitting,
+                    singleLine = false,
+                    trailingContent = {
+                        GoalMicButton(
+                            isListening = isListening,
+                            onToggleMic = onToggleMic,
+                            enabled = !state.isSubmitting,
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
+        CascadeItem(baseIndex + step.options.size + 1, Modifier.fillMaxWidth()) {
             AwanButton(
                 onClick = { onAction(AddTaskAction.Submit) },
                 enabled = state.canSubmit,

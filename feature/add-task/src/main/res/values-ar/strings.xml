@@ -62,6 +62,8 @@
 
     <string name="add_task_goal_mcq_continue">متابعة</string>
     <string name="add_task_goal_mcq_option_description">الخيار: %1$s</string>
+    <string name="add_task_goal_mcq_custom_placeholder">أو اكتب إجابتك الخاصة…</string>
+    <string name="add_task_goal_mcq_custom_description">إدخال الإجابة المخصصة</string>
 
     <string name="add_task_goal_writing_placeholder">اكتب إجابتك أو أملِها…</string>
     <string name="add_task_goal_writing_description">إجابة السؤال</string>

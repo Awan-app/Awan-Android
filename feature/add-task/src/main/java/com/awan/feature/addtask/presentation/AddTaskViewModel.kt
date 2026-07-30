@@ -136,6 +136,7 @@ class AddTaskViewModel @Inject constructor(
             if (currentStep is GoalStep.MultipleChoice && currentStep.options.contains(option)) {
                 state.copy(
                     goalStep = currentStep.copy(selectedOption = option),
+                    input = "",
                     errorMessage = null,
                 )
             } else {
@@ -183,7 +184,22 @@ class AddTaskViewModel @Inject constructor(
         val current = _state.value
         if (current.mode == AddTaskMode.GOAL && current.isSubmitting) return
         if (current.mode == AddTaskMode.GOAL || current.aiStage.isComposing) {
-            _state.update { it.copy(input = input, errorMessage = null) }
+            _state.update { state ->
+                val updatedStep = if (state.mode == AddTaskMode.GOAL && state.goalStep is GoalStep.MultipleChoice) {
+                    if (input.isNotBlank()) {
+                        state.goalStep.copy(selectedOption = null)
+                    } else {
+                        state.goalStep
+                    }
+                } else {
+                    state.goalStep
+                }
+                state.copy(
+                    input = input,
+                    goalStep = updatedStep,
+                    errorMessage = null,
+                )
+            }
             return
         }
         val parsed = parseTaskInput(input)
@@ -270,8 +286,13 @@ class AddTaskViewModel @Inject constructor(
         val (sessionId, message) = when (val step = current.goalStep) {
             GoalStep.Initial -> null to current.input.trim()
             is GoalStep.MultipleChoice -> {
-                val selected = step.selectedOption ?: return
-                current.goalSessionId to selected.trim()
+                val customText = current.input.trim()
+                if (customText.isNotBlank()) {
+                    current.goalSessionId to customText
+                } else {
+                    val selected = step.selectedOption ?: return
+                    current.goalSessionId to selected.trim()
+                }
             }
 
             is GoalStep.WritingQuestion -> current.goalSessionId to current.input.trim()

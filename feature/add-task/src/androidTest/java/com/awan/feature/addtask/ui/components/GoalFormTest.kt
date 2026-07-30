@@ -10,6 +10,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.test.platform.app.InstrumentationRegistry
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.model.GoalDecompositionBlock
@@ -71,7 +72,7 @@ class GoalFormTest {
     }
 
     @Test
-    fun mcq_rendersQuestionAndOptions_dispatchesSelectionWithoutSubmit_continueDispatchesSubmit_micAbsent() {
+    fun mcq_rendersQuestionOptionsCustomFieldAndMic_dispatchesSelectionTypingAndSubmit() {
         val actions = mutableListOf<AddTaskAction>()
 
         composeTestRule.setContent {
@@ -99,22 +100,28 @@ class GoalFormTest {
         composeTestRule.onNodeWithContentDescription(selectedOptionDesc).assertIsDisplayed().assertIsSelected()
         composeTestRule.onNodeWithText("Grammar").assertIsDisplayed()
 
-        // Mic is absent
-        composeTestRule.onNodeWithContentDescription(getString(R.string.add_task_goal_mic_idle)).assertDoesNotExist()
+        // Assert custom field and idle mic are present
+        val customFieldDesc = getString(R.string.add_task_goal_mcq_custom_description)
+        composeTestRule.onNodeWithContentDescription(customFieldDesc).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(getString(R.string.add_task_goal_mic_idle)).assertIsDisplayed()
 
-        // Click non-selected option
-        composeTestRule.onNodeWithText("Grammar").performClick()
-
+        // Typing dispatches InputChanged
+        composeTestRule.onNodeWithContentDescription(customFieldDesc).performTextInput("Custom input")
         assertEquals(1, actions.size)
-        assertEquals(AddTaskAction.GoalOptionSelected("Grammar"), actions[0])
+        assertEquals(AddTaskAction.InputChanged("Custom input"), actions[0])
+
+        // Click non-selected option dispatches GoalOptionSelected
+        composeTestRule.onNodeWithText("Grammar").performClick()
+        assertEquals(2, actions.size)
+        assertEquals(AddTaskAction.GoalOptionSelected("Grammar"), actions[1])
 
         // Continue dispatches Submit
         val continueNode = composeTestRule.onNodeWithText(getString(R.string.add_task_goal_mcq_continue))
         continueNode.assertIsDisplayed().assertIsEnabled()
         continueNode.performClick()
 
-        assertEquals(2, actions.size)
-        assertEquals(AddTaskAction.Submit, actions[1])
+        assertEquals(3, actions.size)
+        assertEquals(AddTaskAction.Submit, actions[2])
     }
 
     @Test

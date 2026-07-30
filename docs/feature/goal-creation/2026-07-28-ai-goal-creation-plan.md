@@ -189,3 +189,15 @@ conversation, runs independent verification, and only then accepts the pass.
   microphone/permission behavior therefore remains a manual device smoke check.
 - The work remains uncommitted because the repository requires a known Jira issue ID before commit
   or push, and no matching ID was provided.
+
+- Follow-up user direction intentionally extends the original MCQ "tap-only" scope: proposed-answer
+  questions now also show a localized custom-answer text field with the existing native speech control.
+  It reuses the shared `AddTaskState.input`: typed nonblank text clears the card choice, choosing a
+  card clears the text, and continuation sends trimmed custom text before a selected card.
+- Fresh follow-up verification passed:
+  - `.\gradlew.bat :feature:add-task:testDebugUnitTest --tests '*AddTaskViewModelTest*' --rerun-tasks --no-daemon --console=plain`
+    (exit 0).
+  - `.\gradlew.bat :feature:add-task:compileDebugAndroidTestKotlin :app:assembleDebug --no-daemon --console=plain`
+    (exit 0).
+  - Connected instrumentation tests remain intentionally skipped per user direction; only their Kotlin
+    sources were compiled.

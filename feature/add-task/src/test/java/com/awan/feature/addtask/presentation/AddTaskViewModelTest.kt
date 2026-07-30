@@ -1019,6 +1019,160 @@ class AddTaskViewModelTest {
         }
 
     @Test
+    fun `custom MCQ input clears a selected card, enables Continue, and sends the exact session plus trimmed custom value`() =
+        runTest(testDispatcher) {
+            val initialReply = GoalDecompositionReply(
+                sessionId = "session-123",
+                blocks = listOf(
+                    GoalDecompositionBlock.Question(
+                        text = "Choose timeframe",
+                        options = listOf("1 month", "3 months"),
+                    ),
+                ),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(initialReply)
+            val viewModel = viewModel()
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            viewModel.onAction(AddTaskAction.InputChanged("Learn Spanish"))
+            viewModel.onAction(AddTaskAction.Submit)
+
+            viewModel.onAction(AddTaskAction.GoalOptionSelected("1 month"))
+            val mcqStep = viewModel.state.value.goalStep as GoalStep.MultipleChoice
+            assertEquals("1 month", mcqStep.selectedOption)
+
+            // Entering nonblank custom text clears selectedOption and enables submit
+            viewModel.onAction(AddTaskAction.InputChanged("  2 weeks  "))
+            val updatedMcq = viewModel.state.value.goalStep as GoalStep.MultipleChoice
+            assertNull(updatedMcq.selectedOption)
+            assertTrue(viewModel.state.value.canSubmit)
+
+            val writingReply = GoalDecompositionReply(
+                sessionId = "session-123",
+                blocks = listOf(
+                    GoalDecompositionBlock.Question(
+                        text = "Next question",
+                        options = emptyList(),
+                    ),
+                ),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(writingReply)
+            viewModel.onAction(AddTaskAction.Submit)
+
+            assertEquals(
+                listOf(
+                    Pair(null, "Learn Spanish"),
+                    Pair("session-123", "2 weeks"),
+                ),
+                goalRepository.continueCalls,
+            )
+        }
+
+    @Test
+    fun `selecting a card clears a prior custom answer and submits that card`() =
+        runTest(testDispatcher) {
+            val initialReply = GoalDecompositionReply(
+                sessionId = "session-123",
+                blocks = listOf(
+                    GoalDecompositionBlock.Question(
+                        text = "Choose timeframe",
+                        options = listOf("1 month", "3 months"),
+                    ),
+                ),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(initialReply)
+            val viewModel = viewModel()
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            viewModel.onAction(AddTaskAction.InputChanged("Learn Spanish"))
+            viewModel.onAction(AddTaskAction.Submit)
+
+            viewModel.onAction(AddTaskAction.InputChanged("Custom text"))
+            assertEquals("Custom text", viewModel.state.value.input)
+
+            viewModel.onAction(AddTaskAction.GoalOptionSelected("3 months"))
+            val mcqStep = viewModel.state.value.goalStep as GoalStep.MultipleChoice
+            assertEquals("3 months", mcqStep.selectedOption)
+            assertEquals("", viewModel.state.value.input)
+            assertTrue(viewModel.state.value.canSubmit)
+
+            val writingReply = GoalDecompositionReply(
+                sessionId = "session-123",
+                blocks = listOf(
+                    GoalDecompositionBlock.Question(
+                        text = "Next question",
+                        options = emptyList(),
+                    ),
+                ),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(writingReply)
+            viewModel.onAction(AddTaskAction.Submit)
+
+            assertEquals(
+                listOf(
+                    Pair(null, "Learn Spanish"),
+                    Pair("session-123", "3 months"),
+                ),
+                goalRepository.continueCalls,
+            )
+        }
+
+    @Test
+    fun `an MCQ custom answer survives a Result Error so retry remains possible`() =
+        runTest(testDispatcher) {
+            val initialReply = GoalDecompositionReply(
+                sessionId = "session-123",
+                blocks = listOf(
+                    GoalDecompositionBlock.Question(
+                        text = "Choose timeframe",
+                        options = listOf("1 month", "3 months"),
+                    ),
+                ),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(initialReply)
+            val viewModel = viewModel()
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            viewModel.onAction(AddTaskAction.InputChanged("Learn Spanish"))
+            viewModel.onAction(AddTaskAction.Submit)
+
+            viewModel.onAction(AddTaskAction.InputChanged("My custom timeframe"))
+            goalRepository.nextContinueReply = Result.Error(AppError.Network)
+
+            viewModel.onAction(AddTaskAction.Submit)
+
+            val failedState = viewModel.state.value
+            assertEquals("My custom timeframe", failedState.input)
+            assertEquals(R.string.add_task_error_goal_continuation_failed, failedState.errorMessage)
+            assertFalse(failedState.isSubmitting)
+
+            val successReply = GoalDecompositionReply(
+                sessionId = "session-123",
+                blocks = listOf(
+                    GoalDecompositionBlock.Question(
+                        text = "Next question",
+                        options = emptyList(),
+                    ),
+                ),
+                hasProposal = false,
+            )
+            goalRepository.nextContinueReply = Result.Success(successReply)
+
+            viewModel.onAction(AddTaskAction.Submit)
+
+            assertEquals(
+                listOf(
+                    Pair(null, "Learn Spanish"),
+                    Pair("session-123", "My custom timeframe"),
+                    Pair("session-123", "My custom timeframe"),
+                ),
+                goalRepository.continueCalls,
+            )
+        }
+
+    @Test
     fun `Writing to Preview transition uses authoritative proposal block over hasProposal flag`() =
         runTest(testDispatcher) {
             val mcqReply = GoalDecompositionReply(
