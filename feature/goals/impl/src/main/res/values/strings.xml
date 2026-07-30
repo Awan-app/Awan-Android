@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="goals_title">Goals</string>
+    <string name="goals_title">My Goals</string>
     <string name="goals_tab_active">Active</string>
-    <string name="goals_tab_completed">Completed</string>
-    <string name="goals_progress_format">%1$d / %2$d tasks</string>
+    <string name="goals_tab_completed">Done</string>
+    <string name="goals_progress_format">%1$d of %2$d tasks done</string>
     <string name="goals_progress_percentage">%1$d%%</string>
     <string name="goals_empty_active_title">No active goals yet</string>
     <string name="goals_empty_active_subtitle">Set your first goal to get started!</string>
