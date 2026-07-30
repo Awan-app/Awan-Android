@@ -9,31 +9,31 @@ import com.awan.app.core.network.dto.GoalStatusDto
 internal fun GoalStatusDto.toModel(): GoalStatus = when (this) {
     GoalStatusDto.ACTIVE -> GoalStatus.ACTIVE
     GoalStatusDto.ACHIEVED -> GoalStatus.ACHIEVED
+    GoalStatusDto.UNKNOWN -> GoalStatus.UNKNOWN
 }
 
 internal fun GoalInfoResponse.toModel(): Goal {
-    // If the title starts with an emoji, extract it, otherwise default to a target emoji
-    val emoji = if (title.isNotEmpty() && Character.isSurrogate(title[0])) {
-        title.take(2)
-    } else if (title.isNotEmpty() && Character.getType(title[0]) == Character.OTHER_SYMBOL.toInt()) {
-        title.take(1)
+    val (extractedEmoji, cleanTitle) = if (title.isNotEmpty()) {
+        val firstCodePoint = title.codePointAt(0)
+        val charCount = Character.charCount(firstCodePoint)
+        val type = Character.getType(firstCodePoint)
+        if (type == Character.OTHER_SYMBOL.toInt() || type == Character.SURROGATE.toInt()) {
+            val emojiStr = title.take(charCount)
+            val rest = title.substring(charCount).trim()
+            emojiStr to rest
+        } else {
+            "🎯" to title
+        }
     } else {
-        "🎯"
-    }
-
-    // Clean up the title if we extracted an emoji
-    val cleanTitle = if (emoji != "🎯" && title.startsWith(emoji)) {
-        title.removePrefix(emoji).trim()
-    } else {
-        title
+        "🎯" to title
     }
 
     return Goal(
         id = id,
         title = cleanTitle,
         description = description,
-        emoji = emoji,
+        emoji = extractedEmoji,
         status = status.toModel(),
-        tasks = tasks.map { it.toModel() }
+        tasks = tasks.map { it.toModel() },
     )
 }

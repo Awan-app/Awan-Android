@@ -3,7 +3,7 @@ package com.awan.feature.goals.impl.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.domain.goal.repository.GoalRepository
+import com.awan.app.core.domain.goal.usecase.GetGoalsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class GoalsViewModel @Inject constructor(
-    private val goalRepository: GoalRepository,
+    private val getGoalsUseCase: GetGoalsUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(GoalsState())
@@ -24,35 +24,36 @@ class GoalsViewModel @Inject constructor(
         loadGoals()
     }
 
+    fun onAction(action: GoalsAction) {
+        when (action) {
+            is GoalsAction.TabSelected -> _state.update { it.copy(tab = action.tab) }
+            GoalsAction.RetryClicked -> loadGoals()
+        }
+    }
+
     private fun loadGoals() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-            
-            when (val result = goalRepository.getGoals()) {
+            _state.update { it.copy(isLoading = true, isError = false) }
+
+            when (val result = getGoalsUseCase()) {
                 is Result.Success -> {
                     val goals = result.data
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            activeGoals = goals.filter { !it.isCompleted },
-                            completedGoals = goals.filter { it.isCompleted },
+                            isError = false,
+                            activeGoals = goals.filter { goal -> !goal.isCompleted },
+                            completedGoals = goals.filter { goal -> goal.isCompleted },
                         )
                     }
                 }
                 is Result.Error -> {
-                    // For now, just stop loading. Future: show error message
-                    _state.update { it.copy(isLoading = false) }
+                    _state.update { it.copy(isLoading = false, isError = true) }
                 }
-                is Result.Loading -> {
-                    // Not emitted by repository, but handled for exhaustiveness
+                Result.Loading -> {
+                    // Handled before invoke
                 }
             }
-        }
-    }
-
-    fun onAction(action: GoalsAction) {
-        when (action) {
-            is GoalsAction.TabSelected -> _state.update { it.copy(tab = action.tab) }
         }
     }
 }

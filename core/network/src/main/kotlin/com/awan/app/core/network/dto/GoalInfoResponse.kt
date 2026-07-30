@@ -8,7 +8,7 @@ data class GoalInfoResponse(
     @SerialName("id") val id: String,
     @SerialName("title") val title: String,
     @SerialName("description") val description: String? = null,
-    @SerialName("status") val status: GoalStatusDto,
+    @SerialName("status") val status: GoalStatusDto = GoalStatusDto.UNKNOWN,
     @SerialName("targetDate") val targetDate: String? = null,
     @SerialName("createdAt") val createdAt: String? = null,
     @SerialName("inbox") val inbox: Boolean = false,
