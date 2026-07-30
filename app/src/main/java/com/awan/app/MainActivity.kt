@@ -1,6 +1,9 @@
 package com.awan.app
 
+import android.content.res.Configuration
 import android.os.Bundle
+import android.text.TextUtils
+import android.view.View
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -8,10 +11,16 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.ComposeFoundationFlags
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.os.LocaleListCompat
+import java.util.Locale
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -57,26 +66,54 @@ class MainActivity : AppCompatActivity() {
         ComposeFoundationFlags.isInheritedTextStyleEnabled = false
         enableEdgeToEdge()
         setContent {
-            val appState = rememberAwanAppState(
-                startKey = SplashRoute,
-                topLevelKeys = listOf(
-                    HomeRoute(),
-                    GoalsRoute,
-                    MarketplaceRoute,
-                    ProfileRoute
-                )
-            )
-
-            val useDarkTheme = when (val state = uiState) {
-                Loading -> isSystemInDarkTheme()
-                is Success -> state.useDarkTheme
+            val currentLanguage = when (val state = uiState) {
+                Loading -> ""
+                is Success -> state.language
             }
 
-            AwanTheme(
-                dark = useDarkTheme,
-                light = !useDarkTheme
+            val locale = remember(currentLanguage) {
+                if (currentLanguage.isNotBlank()) Locale.forLanguageTag(currentLanguage) else Locale.getDefault()
+            }
+            val configuration = LocalConfiguration.current
+            val updatedConfiguration = remember(locale, configuration) {
+                Configuration(configuration).apply {
+                    setLocale(locale)
+                    setLayoutDirection(locale)
+                }
+            }
+            val layoutDirection = remember(locale) {
+                if (TextUtils.getLayoutDirectionFromLocale(locale) == View.LAYOUT_DIRECTION_RTL) {
+                    LayoutDirection.Rtl
+                } else {
+                    LayoutDirection.Ltr
+                }
+            }
+
+            CompositionLocalProvider(
+                LocalConfiguration provides updatedConfiguration,
+                LocalLayoutDirection provides layoutDirection,
             ) {
-                AwanApp(appState = appState)
+                val appState = rememberAwanAppState(
+                    startKey = SplashRoute,
+                    topLevelKeys = listOf(
+                        HomeRoute(),
+                        GoalsRoute,
+                        MarketplaceRoute,
+                        ProfileRoute
+                    )
+                )
+
+                val useDarkTheme = when (val state = uiState) {
+                    Loading -> isSystemInDarkTheme()
+                    is Success -> state.useDarkTheme
+                }
+
+                AwanTheme(
+                    dark = useDarkTheme,
+                    light = !useDarkTheme
+                ) {
+                    AwanApp(appState = appState)
+                }
             }
         }
     }

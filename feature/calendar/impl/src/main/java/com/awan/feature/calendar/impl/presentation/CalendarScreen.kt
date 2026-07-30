@@ -114,6 +114,7 @@ fun CalendarScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(AwanTheme.colors.background)
+            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = AwanTheme.spacing.md, vertical = AwanTheme.spacing.lg),
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
