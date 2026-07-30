@@ -1,6 +1,7 @@
 package com.awan.feature.calendar.impl.presentation
 
 import com.awan.app.core.model.Goal
+import com.awan.app.core.model.GoalStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
@@ -12,10 +13,10 @@ class CalendarDateMapperTest {
     fun keepsOnlyUpcomingActiveNonInboxDeadlines() {
         val today = LocalDate.of(2026, 7, 24)
         val goals = listOf(
-            Goal("active", "Active", "2026-07-26", "ACTIVE", false),
-            Goal("past", "Past", "2026-07-20", "ACTIVE", false),
-            Goal("inbox", "Inbox", "2026-07-27", "ACTIVE", true),
-            Goal("done", "Done", "2026-07-28", "ACHIEVED", false),
+            Goal(id = "active", title = "Active", targetDate = "2026-07-26", status = GoalStatus.ACTIVE, isInbox = false, emoji = "🎯"),
+            Goal(id = "past", title = "Past", targetDate = "2026-07-20", status = GoalStatus.ACTIVE, isInbox = false, emoji = "🎯"),
+            Goal(id = "inbox", title = "Inbox", targetDate = "2026-07-27", status = GoalStatus.ACTIVE, isInbox = true, emoji = "🎯"),
+            Goal(id = "done", title = "Done", targetDate = "2026-07-28", status = GoalStatus.ACHIEVED, isInbox = false, emoji = "🎯"),
         )
 
         assertEquals(listOf("active"), CalendarDateMapper.filterAndSortUpcomingGoals(goals, today).map { it.id })
@@ -39,4 +40,3 @@ class CalendarDateMapperTest {
         assertEquals(35, monthDays.size)
     }
 }
-
