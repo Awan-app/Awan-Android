@@ -70,6 +70,9 @@
     <string name="add_task_goal_writing_fallback_prompt">Provide more detail about your goal</string>
     <string name="add_task_goal_writing_continue">Continue</string>
 
+    <string name="add_task_goal_preview_title">Goal Plan</string>
+    <string name="add_task_goal_preview_close">Close goal preview</string>
+    <string name="add_task_goal_preview_accept_action">Accept goal plan</string>
     <string name="add_task_goal_preview_accept">Accept goal</string>
     <string name="add_task_goal_preview_tasks_header">Proposed tasks (%1$d)</string>
     <string name="add_task_goal_preview_task_item_title">%1$d. %2$s</string>

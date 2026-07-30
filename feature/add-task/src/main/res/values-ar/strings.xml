@@ -70,6 +70,9 @@
     <string name="add_task_goal_writing_fallback_prompt">أضف مزيدًا من التفاصيل حول هدفك</string>
     <string name="add_task_goal_writing_continue">متابعة</string>
 
+    <string name="add_task_goal_preview_title">خطة الهدف</string>
+    <string name="add_task_goal_preview_close">إغلاق معاينة الهدف</string>
+    <string name="add_task_goal_preview_accept_action">قبول خطة الهدف</string>
     <string name="add_task_goal_preview_accept">اعتماد الهدف</string>
     <string name="add_task_goal_preview_tasks_header">المهام المقترحة (%1$d)</string>
     <string name="add_task_goal_preview_task_item_title">%1$d. %2$s</string>
