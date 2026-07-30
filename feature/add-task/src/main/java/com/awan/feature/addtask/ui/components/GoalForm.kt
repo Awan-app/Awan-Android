@@ -81,9 +81,16 @@ fun GoalForm(
         }
     }
 
+    val handleAction: (AddTaskAction) -> Unit = { action ->
+        if (action is AddTaskAction.InputChanged || action is AddTaskAction.GoalOptionSelected) {
+            speechState.clearError()
+        }
+        onAction(action)
+    }
+
     GoalFormContent(
         state = state,
-        onAction = onAction,
+        onAction = handleAction,
         isListening = speechState.isListening,
         onToggleMic = {
             if (speechState.isListening) {

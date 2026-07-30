@@ -34,9 +34,11 @@ class SpeechRecognizerState internal constructor(
     val isPermissionError: Boolean,
     private val startListeningAction: () -> Unit,
     private val stopListeningAction: () -> Unit,
+    private val clearErrorAction: () -> Unit,
 ) {
     fun startListening() = startListeningAction()
     fun stopListening() = stopListeningAction()
+    fun clearError() = clearErrorAction()
 }
 
 private fun Context.findActivity(): Activity? = when (this) {
@@ -227,6 +229,10 @@ fun rememberSpeechRecognizer(
                 }
             },
             stopListeningAction = { stopInternal() },
+            clearErrorAction = {
+                errorMessage = null
+                isPermissionError = false
+            },
         )
     }
 }

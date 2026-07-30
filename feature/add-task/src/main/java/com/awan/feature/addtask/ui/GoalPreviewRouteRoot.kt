@@ -61,8 +61,14 @@ fun GoalPreviewRouteRoot(
         onAccept = { viewModel.onAction(AddTaskAction.AcceptGoalProposal) },
         onDismiss = { viewModel.onAction(AddTaskAction.DismissRequested) },
         onRevisionSubmit = { viewModel.onAction(AddTaskAction.Submit) },
-        onRevisionChanged = { viewModel.onAction(AddTaskAction.InputChanged(it)) },
-        onOptionSelected = { viewModel.onAction(AddTaskAction.GoalOptionSelected(it)) },
+        onRevisionChanged = { input ->
+            speechState.clearError()
+            viewModel.onAction(AddTaskAction.InputChanged(input))
+        },
+        onOptionSelected = { option ->
+            speechState.clearError()
+            viewModel.onAction(AddTaskAction.GoalOptionSelected(option))
+        },
         onToggleMic = {
             if (speechState.isListening) speechState.stopListening()
             else speechState.startListening()
