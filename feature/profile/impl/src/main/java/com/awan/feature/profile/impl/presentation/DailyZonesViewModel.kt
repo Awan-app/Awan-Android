@@ -6,7 +6,6 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
-import com.awan.app.core.domain.zones.usecase.DeleteWeeklyTemplateUseCase
 import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplatesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
 import com.awan.feature.profile.impl.R
@@ -22,24 +21,17 @@ import javax.inject.Inject
 @HiltViewModel
 class DailyZonesViewModel @Inject constructor(
     private val getWeeklyTemplatesUseCase: GetWeeklyTemplatesUseCase,
-    private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase,
-    private val deleteWeeklyTemplateUseCase: DeleteWeeklyTemplateUseCase
+    private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DailyZonesState(selectedDay = DailyZonesHelper.getCurrentDay()))
     val uiState: StateFlow<DailyZonesState> = _uiState.asStateFlow()
-
-    init {
-        // No initial load here, handled by LaunchedEffect in RouteScreen
-    }
 
     fun onAction(action: DailyZonesAction) {
         when (action) {
             DailyZonesAction.LoadData -> loadData()
             is DailyZonesAction.SelectDay -> selectDay(action.day)
             is DailyZonesAction.SelectTemplate -> selectTemplate(action.templateId)
-            is DailyZonesAction.DeleteTemplate -> deleteTemplate(action.templateId)
-            is DailyZonesAction.ReorderZones -> reorderZones(action.fromIndex, action.toIndex)
             is DailyZonesAction.AddZone -> addZone(action.zone)
             is DailyZonesAction.UpdateZone -> updateZone(action.zone)
             is DailyZonesAction.DeleteZone -> deleteZone(action.zone)
@@ -101,31 +93,6 @@ class DailyZonesViewModel @Inject constructor(
             selectedDayZones = zones,
             currentTemplate = template
         ) }
-    }
-
-    private fun deleteTemplate(templateId: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isSaving = true) }
-            val result = deleteWeeklyTemplateUseCase(templateId)
-            when (result) {
-                is Result.Success -> {
-                    _uiState.update { it.copy(isSaving = false, selectedTemplateId = null) }
-                    loadData()
-                }
-                is Result.Error -> {
-                    _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
-                }
-                Result.Loading -> Unit
-            }
-        }
-    }
-
-    private fun reorderZones(fromIndex: Int, toIndex: Int) {
-        val zones = _uiState.value.selectedDayZones.toMutableList()
-        val item = zones.removeAt(fromIndex)
-        zones.add(toIndex, item)
-        _uiState.update { it.copy(selectedDayZones = zones) }
-        saveZones(zones)
     }
 
     private fun addZone(zone: DailyZone) {

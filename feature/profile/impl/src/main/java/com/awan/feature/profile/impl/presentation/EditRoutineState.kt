@@ -12,7 +12,6 @@ data class EditRoutineState(
     val zones: List<DailyZone> = emptyList(),
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
-    val isDeleting: Boolean = false,
     val error: UiText? = null,
     val validationError: UiText? = null
 )

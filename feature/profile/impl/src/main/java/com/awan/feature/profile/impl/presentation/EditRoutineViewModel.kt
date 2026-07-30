@@ -40,10 +40,6 @@ class EditRoutineViewModel @Inject constructor(
     private val _events = Channel<EditRoutineEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
-    init {
-        // Handled by LoadTemplate action in RouteScreen
-    }
-
     fun onAction(action: EditRoutineAction) {
         when (action) {
             is EditRoutineAction.LoadTemplate -> loadTemplate(action.templateId)
@@ -249,14 +245,14 @@ class EditRoutineViewModel @Inject constructor(
     private fun deleteRoutine() {
         val templateId = _uiState.value.templateId ?: return
         viewModelScope.launch {
-            _uiState.update { it.copy(isDeleting = true, error = null) }
+            _uiState.update { it.copy(isSaving = true, error = null) }
             when (val result = deleteWeeklyTemplateUseCase(templateId)) {
                 is Result.Success -> {
-                    _uiState.update { it.copy(isDeleting = false) }
+                    _uiState.update { it.copy(isSaving = false) }
                     _events.send(EditRoutineEvent.DeleteSuccess)
                 }
                 is Result.Error -> {
-                    _uiState.update { it.copy(isDeleting = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
+                    _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
                 }
                 Result.Loading -> Unit
             }

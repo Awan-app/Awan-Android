@@ -1,6 +1,5 @@
 package com.awan.feature.profile.impl.ui
 
-import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -51,6 +50,7 @@ fun EditRoutineScreen(
     var showZoneSheet by remember { mutableStateOf(false) }
     var editingZone by remember { mutableStateOf<DailyZone?>(null) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showZoneDeleteConfirm by remember { mutableStateOf<DailyZone?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.validationError, uiState.error) {
@@ -92,10 +92,32 @@ fun EditRoutineScreen(
             },
             onDelete = editingZone?.let { zone ->
                 {
-                    onAction(EditRoutineAction.DeleteZone(zone))
+                    showZoneDeleteConfirm = zone
                     showZoneSheet = false
-                    editingZone = null
                 }
+            }
+        )
+    }
+
+    if (showZoneDeleteConfirm != null) {
+        AwanDialog(
+            title = stringResource(R.string.profile_daily_zones_delete_zone_title),
+            body = stringResource(R.string.profile_daily_zones_delete_zone_message),
+            primaryLabel = stringResource(R.string.profile_routine_delete),
+            primaryVariant = AwanButtonVariant.Destructive,
+            onPrimary = {
+                onAction(EditRoutineAction.DeleteZone(showZoneDeleteConfirm!!))
+                showZoneDeleteConfirm = null
+                editingZone = null
+            },
+            secondaryLabel = stringResource(R.string.profile_cancel),
+            onSecondary = { 
+                showZoneDeleteConfirm = null
+                editingZone = null
+            },
+            onDismiss = { 
+                showZoneDeleteConfirm = null
+                editingZone = null
             }
         )
     }

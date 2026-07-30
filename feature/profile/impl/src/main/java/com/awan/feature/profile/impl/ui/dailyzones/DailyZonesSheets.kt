@@ -3,6 +3,8 @@ package com.awan.feature.profile.impl.ui.dailyzones
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -20,13 +22,12 @@ import com.awan.feature.profile.impl.ui.components.ZoneColorPicker
 @Composable
 fun AddEditZoneSheet(
     zone: DailyZone?,
-    templateName: String? = null,
     defaultStartTime: String? = null,
     onDismiss: () -> Unit,
     onConfirm: (DailyZone) -> Unit,
+    onDelete: (DailyZone) -> Unit = {},
     isSaving: Boolean = false
 ) {
-    val displayTemplateName = templateName ?: stringResource(R.string.profile_routine_default_name)
     var name by remember { mutableStateOf(zone?.name ?: "") }
     
     val initialStartTime = remember(zone, defaultStartTime) {
@@ -169,6 +170,18 @@ fun AddEditZoneSheet(
                     enabled = !isSaving
                 ) {
                     AwanText(text = stringResource(R.string.profile_cancel))
+                }
+
+                if (zone != null) {
+                    AwanButton(
+                        onClick = { onDelete(zone) },
+                        modifier = Modifier.fillMaxWidth(),
+                        variant = AwanButtonVariant.Destructive,
+                        icon = Icons.Default.Delete,
+                        enabled = !isSaving
+                    ) {
+                        AwanText(text = stringResource(R.string.profile_zone_delete))
+                    }
                 }
             }
         }

@@ -60,7 +60,6 @@ fun DailyZonesScreen(
     if (showAddZoneSheet) {
         AddEditZoneSheet(
             zone = editingZone,
-            templateName = uiState.currentTemplate?.name ?: stringResource(R.string.profile_routine_default_name),
             defaultStartTime = uiState.selectedDayZones.lastOrNull()?.endTime,
             onDismiss = {
                 showAddZoneSheet = false
@@ -74,6 +73,11 @@ fun DailyZonesScreen(
                 }
                 showAddZoneSheet = false
                 editingZone = null
+            },
+            onDelete = { zone ->
+                showAddZoneSheet = false
+                editingZone = null
+                showDeleteConfirm = zone
             },
             isSaving = uiState.isSaving
         )
