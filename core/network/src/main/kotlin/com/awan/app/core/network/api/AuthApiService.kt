@@ -1,11 +1,11 @@
 package com.awan.app.core.network.api
 
-import com.awan.app.core.network.dto.AuthTokensDto
-import com.awan.app.core.network.dto.LogoutRequest
-import com.awan.app.core.network.dto.RefreshTokenRequest
-import com.awan.app.core.network.dto.RequestOtpRequest
-import com.awan.app.core.network.dto.VerifyOtpRequest
-import com.awan.app.core.network.dto.VerifyOtpResponse
+import com.awan.app.core.network.dto.auth.AuthTokensDto
+import com.awan.app.core.network.dto.auth.LogoutRequest
+import com.awan.app.core.network.dto.auth.RefreshTokenRequest
+import com.awan.app.core.network.dto.auth.RequestOtpRequest
+import com.awan.app.core.network.dto.auth.VerifyOtpRequest
+import com.awan.app.core.network.dto.auth.VerifyOtpResponse
 import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.POST

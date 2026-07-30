@@ -6,7 +6,7 @@ import com.awan.app.core.data.home.mapper.HomeMapper
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
 import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.domain.home.repository.HomeRepository
-import com.awan.app.core.network.dto.ZoneDto
+import com.awan.app.core.network.dto.zone.ZoneDto
 import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton

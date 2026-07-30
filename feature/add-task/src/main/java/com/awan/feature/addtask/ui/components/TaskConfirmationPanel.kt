@@ -11,6 +11,7 @@ import androidx.compose.ui.res.stringResource
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanChipDot
+import com.awan.app.core.designsystem.AwanChipTone
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.CascadeItem
@@ -58,7 +59,6 @@ fun TaskConfirmationPanel(
 /** Names the first session, or says plainly that there isn't one rather than inventing a time. */
 @Composable
 private fun ScheduleLine(confirmation: TaskConfirmation, today: LocalDate) {
-    val colors = AwanTheme.colors
     val start = confirmation.firstSession
 
     if (start == null) {
@@ -66,7 +66,7 @@ private fun ScheduleLine(confirmation: TaskConfirmation, today: LocalDate) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
         ) {
-            AwanChipDot(tone = colors.meta, active = false)
+            AwanChipDot(tone = AwanChipTone.Neutral, active = false)
             AwanText(
                 stringResource(R.string.add_task_confirm_inbox),
                 style = AwanTheme.styles.bodySecondaryText,
@@ -84,7 +84,7 @@ private fun ScheduleLine(confirmation: TaskConfirmation, today: LocalDate) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
         ) {
-            AwanChipDot(tone = colors.zoneSky)
+            AwanChipDot(tone = AwanChipTone.Sky)
             AwanText(
                 rememberWhenLabel(startAt = start, today = today),
                 style = AwanTheme.styles.bodyText,

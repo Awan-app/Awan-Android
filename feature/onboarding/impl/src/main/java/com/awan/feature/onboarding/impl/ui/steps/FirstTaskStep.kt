@@ -30,8 +30,8 @@ import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.designsystem.CascadeItem
 import com.awan.app.core.designsystem.SparkleBurst
-import com.awan.app.core.model.FirstTask
-import com.awan.app.core.model.Zone
+import com.awan.app.core.domain.onboarding.model.FirstTask
+import com.awan.app.core.domain.zones.model.Zone
 import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.presentation.OnboardingAction
 import com.awan.feature.onboarding.impl.presentation.OnboardingState

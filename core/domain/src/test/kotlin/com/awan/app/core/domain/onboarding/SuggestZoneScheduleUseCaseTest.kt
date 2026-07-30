@@ -1,8 +1,9 @@
 package com.awan.app.core.domain.onboarding
 
+import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.domain.zones.model.Zone
 import com.awan.app.core.domain.onboarding.usecase.SuggestZoneScheduleUseCase
-import com.awan.app.core.model.DayBounds
-import com.awan.app.core.model.Zone
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

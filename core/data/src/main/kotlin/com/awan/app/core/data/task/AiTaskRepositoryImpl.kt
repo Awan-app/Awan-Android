@@ -7,10 +7,11 @@ import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.data.util.minutesOfDay
 import com.awan.app.core.data.util.parseIsoDateTime
 import com.awan.app.core.domain.task.repository.AiTaskRepository
-import com.awan.app.core.model.FirstTask
-import com.awan.app.core.network.dto.CreateTaskWithAiRequest
-import com.awan.app.core.network.dto.ScheduleTaskRequest
-import com.awan.app.core.network.dto.ScheduledSessionResponse
+import com.awan.app.core.domain.onboarding.model.FirstTask
+import com.awan.app.core.network.dto.task.CreateTaskWithAiRequest
+import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.ScheduledSessionResponse
+import com.awan.app.core.network.dto.task.TaskInfoResponse
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.time.Duration
@@ -24,7 +25,11 @@ class AiTaskRepositoryImpl @Inject constructor(
 ) : AiTaskRepository {
 
     override suspend fun createAndScheduleTask(title: String): Result<FirstTask?> = withContext(ioDispatcher) {
-        val created = when (val result = remoteDataSource.createTaskWithAi(CreateTaskWithAiRequest(title = title))) {
+        val created = when (val result = remoteDataSource.createTaskWithAi(
+            CreateTaskWithAiRequest(
+                title = title
+            )
+        )) {
             is Result.Success -> result.data.task
             is Result.Error -> return@withContext Result.Error(result.error)
             Result.Loading -> return@withContext Result.Loading

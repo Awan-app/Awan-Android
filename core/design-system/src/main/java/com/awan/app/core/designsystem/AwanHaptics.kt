@@ -16,5 +16,5 @@ fun awanButtonHaptic(variant: AwanButtonVariant): HapticFeedbackType = when (var
     AwanButtonVariant.Destructive -> HapticFeedbackType.Reject
     AwanButtonVariant.Quiet -> HapticFeedbackType.SegmentTick
     AwanButtonVariant.Google -> HapticFeedbackType.Confirm
-    AwanButtonVariant.Chip -> HapticFeedbackType.TextHandleMove
+    AwanButtonVariant.Chip -> HapticFeedbackType.SegmentTick
 }

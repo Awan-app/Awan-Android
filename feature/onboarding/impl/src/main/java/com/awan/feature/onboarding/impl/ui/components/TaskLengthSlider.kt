@@ -114,7 +114,7 @@ fun TaskLengthSlider(
                 Box(
                     Modifier
                         .align(Alignment.CenterStart)
-                        .width(filledWidth)
+                        .width(filledWidth.coerceAtLeast(0.dp))
                         .height(TrackHeight)
                         .clip(RoundedCornerShape(99.dp))
                         .background(colors.sky),

@@ -25,7 +25,7 @@ enum class TopLevelDestination(
     val isFab: Boolean = false,
 ) {
     HOME(
-        route = HomeRoute,
+        route = HomeRoute(),
         selectedIcon = Icons.Rounded.Home,
         unselectedIcon = Icons.Outlined.Home,
         label = "Home",

@@ -1,6 +1,6 @@
 package com.awan.app.core.network.api
 
-import com.awan.app.core.network.dto.CompleteOnboardingResponse
+import com.awan.app.core.network.dto.onboarding.CompleteOnboardingResponse
 import retrofit2.http.GET
 
 interface UserApiService {

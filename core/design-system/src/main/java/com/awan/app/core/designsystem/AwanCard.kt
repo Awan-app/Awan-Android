@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -29,15 +32,20 @@ import androidx.compose.ui.unit.dp
 fun AwanCard(
     modifier: Modifier = Modifier,
     selected: Boolean = false,
+    selectedColor: Color = AwanTheme.colors.sky,
     onClick: (() -> Unit)? = null,
     background: Color = AwanTheme.colors.surface,
+    customRimColor: Color? = null,
     contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 13.dp),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = AwanTheme.colors
     val shape = AwanTheme.shapes.card
-    val borderColor by animateColorAsState(if (selected) colors.sky else colors.line, label = "cardBorder")
-    val rimColor by animateColorAsState(if (selected) colors.sky.copy(alpha = 0.35f) else colors.line, label = "cardRim")
+    val borderColor by animateColorAsState(if (selected) selectedColor else colors.line, label = "cardBorder")
+
+    val defaultRimColor = if (selected) selectedColor.copy(alpha = 0.35f) else colors.line
+    val targetRimColor = customRimColor ?: defaultRimColor
+    val rimColor by animateColorAsState(targetRimColor, label = "cardRim")
 
     val clickModifier = if (onClick != null) {
         Modifier.clickable(
@@ -49,26 +57,58 @@ fun AwanCard(
         Modifier
     }
 
-    // The rim is a background on the same node rather than a Box behind one: a sibling could only be
-    // told to match the card's *outer* size, which left the surface as narrow as its own content
-    // whenever the card was given a width of its own.
-    Column(
+    Layout(
         modifier = modifier
             .then(clickModifier)
             .shadow(
                 elevation = if (selected) 10.dp else 0.dp,
                 shape = shape,
-                spotColor = colors.sky,
-                ambientColor = colors.sky,
+                spotColor = selectedColor,
+                ambientColor = selectedColor,
+            ),
+        content = {
+            // Rim (index 0)
+            Box(Modifier.clip(shape).background(rimColor))
+            // Face (index 1)
+            Column(
+                modifier = Modifier
+                    .padding(bottom = AwanCardRimDepth)
+                    .clip(shape)
+                    .background(background)
+                    .border(2.dp, borderColor, shape)
+                    .padding(contentPadding),
+                content = content,
             )
-            .background(rimColor, shape)
-            .padding(bottom = AwanCardRimDepth)
-            .clip(shape)
-            .background(background)
-            .border(2.dp, borderColor, shape)
-            .padding(contentPadding),
-        content = content,
-    )
+        }
+    ) { measurables, constraints ->
+        // Face is measured first. Coerce constraints to be valid.
+        val minW = constraints.minWidth.coerceIn(0, constraints.maxWidth)
+        val minH = constraints.minHeight.coerceIn(0, constraints.maxHeight)
+
+        val safeConstraints = Constraints(
+            minWidth = minW,
+            maxWidth = constraints.maxWidth,
+            minHeight = minH,
+            maxHeight = constraints.maxHeight
+        )
+
+        val facePlaceable = measurables[1].measure(safeConstraints)
+        val width = facePlaceable.width.coerceAtLeast(0)
+        val height = facePlaceable.height.coerceAtLeast(0)
+
+        // Rim needs room for padding(bottom = AwanCardRimDepth)
+        val minRimHeight = AwanCardRimDepth.roundToPx().coerceAtLeast(0)
+        val rimConstraints = Constraints.fixed(
+            width,
+            height.coerceAtLeast(minRimHeight)
+        )
+        val rimPlaceable = measurables[0].measure(rimConstraints)
+
+        layout(width, height) {
+            rimPlaceable.placeRelative(0, 0)
+            facePlaceable.placeRelative(0, 0)
+        }
+    }
 }
 
 internal val AwanCardRimDepth = 4.dp

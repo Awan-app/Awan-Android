@@ -1,13 +1,13 @@
 package com.awan.app.core.network.api
 
 import com.awan.app.core.network.dto.AiTaskPreviewResponse
-import com.awan.app.core.network.dto.CreateTaskRequest
-import com.awan.app.core.network.dto.CreateTaskWithAiRequest
-import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
-import com.awan.app.core.network.dto.ScheduleTaskRequest
-import com.awan.app.core.network.dto.TaskInfoResponse
-import com.awan.app.core.network.dto.TaskScheduleResponse
-import com.awan.app.core.network.dto.TaskWithSessionsDto
+import com.awan.app.core.network.dto.task.CreateTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithAiRequest
+import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
+import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.POST
@@ -36,6 +36,7 @@ interface TaskApiService {
     suspend fun createTaskWithAi(
         @Body request: CreateTaskWithAiRequest,
     ): TaskWithSessionsDto
+
 
     /**
      * Asks Awan to propose a task from [request] without saving anything — no id, no Inbox row. The

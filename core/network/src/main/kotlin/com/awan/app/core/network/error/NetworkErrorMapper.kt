@@ -2,7 +2,7 @@ package com.awan.app.core.network.error
 
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.network.dto.ApiErrorResponse
+import com.awan.app.core.network.dto.common.ApiErrorResponse
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext

@@ -2,10 +2,10 @@ package com.awan.app.core.data.template
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.template.remote.TemplateRemoteDataSource
-import com.awan.app.core.model.Zone
-import com.awan.app.core.network.dto.CreateTemplateRequest
-import com.awan.app.core.network.dto.TemplateResponse
-import com.awan.app.core.network.dto.ZoneResponse
+import com.awan.app.core.domain.zones.model.Zone
+import com.awan.app.core.network.dto.zone.CreateTemplateRequest
+import com.awan.app.core.network.dto.zone.WeeklyTemplateDto as TemplateResponse
+import com.awan.app.core.network.dto.zone.ZoneDto as ZoneResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -17,7 +17,12 @@ import org.junit.Test
 class TemplateRepositoryImplTest {
 
     private var captured: CreateTemplateRequest? = null
-    private var response = TemplateResponse(id = "template-1")
+    private var response = TemplateResponse(
+        id = "template-1",
+        name = "My Week",
+        daysOfWeek = emptyList(),
+        zones = emptyList()
+    )
 
     private val remoteDataSource = object : TemplateRemoteDataSource {
         override suspend fun createTemplate(request: CreateTemplateRequest): Result<TemplateResponse> {
@@ -76,6 +81,8 @@ class TemplateRepositoryImplTest {
     fun `the created zones come back carrying the server ids a session refers to`() = runTest {
         response = TemplateResponse(
             id = "template-1",
+            name = "My Week",
+            daysOfWeek = emptyList(),
             zones = listOf(
                 ZoneResponse(
                     id = "server-zone-1",
