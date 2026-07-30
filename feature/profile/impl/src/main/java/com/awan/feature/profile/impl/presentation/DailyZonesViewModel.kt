@@ -1,3 +1,4 @@
+// Claude
 package com.awan.feature.profile.impl.presentation
 
 import androidx.lifecycle.ViewModel
@@ -130,8 +131,7 @@ class DailyZonesViewModel @Inject constructor(
         val templateId = _uiState.value.currentTemplate?.id ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
-            val result = updateTemplateZonesUseCase(templateId, zones)
-            when (result) {
+            when (val result = updateTemplateZonesUseCase(templateId, zones)) {
                 is Result.Success -> {
                     // Replace local zones with server response to preserve generated IDs
                     val updatedZones = result.data.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }

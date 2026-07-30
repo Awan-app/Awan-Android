@@ -31,7 +31,7 @@ class EditRoutineViewModel @Inject constructor(
     private val createWeeklyTemplateUseCase: CreateWeeklyTemplateUseCase,
     private val updateWeeklyTemplateUseCase: UpdateWeeklyTemplateUseCase,
     private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase,
-    private val deleteWeeklyTemplateUseCase: DeleteWeeklyTemplateUseCase
+    private val deleteWeeklyTemplateUseCase: DeleteWeeklyTemplateUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditRoutineState())
@@ -60,9 +60,10 @@ class EditRoutineViewModel @Inject constructor(
 
             // 1. Fetch ALL templates to see which days are already assigned elsewhere
             val templatesResult = getWeeklyTemplatesUseCase()
-            val allTemplates = if (templatesResult is Result.Success) templatesResult.data else emptyList()
+            val allTemplates = (templatesResult as? Result.Success)?.data ?: emptyList()
             
             val otherAssigned = allTemplates
+                .asSequence()
                 .filter { it.id != templateId }
                 .flatMap { it.daysOfWeek }
                 .toSet()
@@ -144,7 +145,7 @@ class EditRoutineViewModel @Inject constructor(
     private fun reorderZones(from: Int, to: Int) {
         _uiState.update { state ->
             val list = state.zones.toMutableList()
-            if (from !in list.indices || to !in list.indices) return@update state
+            if ((from !in list.indices) || (to !in list.indices)) return@update state
             
             val item = list.removeAt(from)
             list.add(to, item)
