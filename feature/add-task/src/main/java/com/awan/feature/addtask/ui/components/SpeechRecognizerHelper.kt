@@ -144,8 +144,6 @@ fun rememberSpeechRecognizer(
             errorMessage = null
             startListeningNow()
         } else {
-            isPermissionError = true
-            errorMessage = context.getString(R.string.add_task_goal_speech_permission_denied)
             val activity = context.findActivity()
             val shouldShowRationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
                 activity,
@@ -153,6 +151,11 @@ fun rememberSpeechRecognizer(
             )
             if (!shouldShowRationale) {
                 showSettingsDialog = true
+                isPermissionError = false
+                errorMessage = null
+            } else {
+                isPermissionError = true
+                errorMessage = context.getString(R.string.add_task_goal_speech_permission_denied)
             }
         }
     }
@@ -175,13 +178,19 @@ fun rememberSpeechRecognizer(
             confirmLabel = stringResource(R.string.add_task_goal_permission_dialog_confirm),
             onConfirm = {
                 showSettingsDialog = false
+                isPermissionError = false
+                errorMessage = null
                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                     data = Uri.fromParts("package", context.packageName, null)
                 }
                 context.startActivity(intent)
             },
             dismissLabel = stringResource(R.string.add_task_goal_permission_dialog_cancel),
-            onDismiss = { showSettingsDialog = false },
+            onDismiss = {
+                showSettingsDialog = false
+                isPermissionError = true
+                errorMessage = context.getString(R.string.add_task_goal_speech_permission_denied)
+            },
         )
     }
 
@@ -206,15 +215,15 @@ fun rememberSpeechRecognizer(
                         activity,
                         Manifest.permission.RECORD_AUDIO,
                     )
-                    isPermissionError = true
-                    errorMessage = context.getString(R.string.add_task_goal_speech_permission_denied)
-
-                    if (!shouldShowRationale && errorMessage != null) {
-                        // Note: If permission hasn't been requested yet, shouldShowRationale is false,
-                        // but launching permissionLauncher will show system dialog.
-                        // If launcher returns false and shouldShowRationale is false, showSettingsDialog will trigger in launcher callback.
+                    if (!shouldShowRationale) {
+                        showSettingsDialog = true
+                        isPermissionError = false
+                        errorMessage = null
+                    } else {
+                        isPermissionError = true
+                        errorMessage = context.getString(R.string.add_task_goal_speech_permission_denied)
+                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                     }
-                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                 }
             },
             stopListeningAction = { stopInternal() },
