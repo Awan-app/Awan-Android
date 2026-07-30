@@ -47,6 +47,9 @@ import com.awan.app.core.designsystem.reducedMotion
 import com.awan.app.core.model.GoalDecompositionBlock
 import com.awan.app.core.model.GoalProposal
 import com.awan.app.core.model.ProposedTask
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.platform.LocalFocusManager
 import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskMode
 import com.awan.feature.addtask.presentation.AddTaskState
@@ -73,8 +76,13 @@ fun GoalPreviewScreen(
     speechError: String?,
     modifier: Modifier = Modifier,
 ) {
+    val focusManager = LocalFocusManager.current
+
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .imePadding(),
     ) {
         // ── Top bar ──────────────────────────────────────────────────────────
         Row(
@@ -164,7 +172,10 @@ fun GoalPreviewScreen(
                             option = option,
                             isSelected = isSelected,
                             enabled = !state.isSubmitting,
-                            onOptionSelected = onOptionSelected,
+                            onOptionSelected = { selectedOption ->
+                                focusManager.clearFocus()
+                                onOptionSelected(selectedOption)
+                            },
                         )
                     }
                 }
