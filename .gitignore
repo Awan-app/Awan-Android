@@ -18,3 +18,5 @@ skills-lock.json
 .obsidian
 .gemini/
 .claude/
+build_output.txt
+*.log
