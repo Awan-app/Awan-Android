@@ -1,8 +1,10 @@
 package com.awan.feature.goals.impl.presentation
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,11 +29,13 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
@@ -195,6 +199,35 @@ private fun GoalsTabRow(
     }
 }
 
+
+
+// ── Chevron icon (canvas-drawn to avoid dependency issues) ───────────────────
+@Composable
+private fun ChevronIcon(
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val strokePx = (2.5f * density).coerceAtLeast(2f)
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(w * 0.25f, h * 0.38f)
+            lineTo(w * 0.5f, h * 0.63f)
+            lineTo(w * 0.75f, h * 0.38f)
+        }
+        drawPath(
+            path = path,
+            color = tint,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                width = strokePx,
+                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                join = androidx.compose.ui.graphics.StrokeJoin.Round
+            )
+        )
+    }
+}
+
 @Composable
 private fun GoalCard(goal: Goal) {
     val hasTasks = goal.tasks.isNotEmpty()
@@ -266,17 +299,33 @@ private fun GoalCard(goal: Goal) {
 
                 if (goal.totalTasks > 0) {
                     Spacer(modifier = Modifier.width(8.dp))
-                    AwanText(
-                        text = stringResource(
-                            R.string.goals_progress_percentage,
-                            (goal.progress * 100).toInt(),
-                        ),
-                        style = AwanTheme.typography.button.copy(
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.sky,
-                        ),
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AwanText(
+                            text = stringResource(
+                                R.string.goals_progress_percentage,
+                                (goal.progress * 100).toInt(),
+                            ),
+                            style = AwanTheme.typography.button.copy(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.sky,
+                            ),
+                        )
+                        
+                        val chevronRotation by animateFloatAsState(
+                            targetValue = if (expanded) 180f else 0f,
+                            label = "chevronRotation"
+                        )
+                        ChevronIcon(
+                            tint = colors.textSecondary,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .rotate(chevronRotation)
+                        )
+                    }
                 }
             }
 
@@ -293,6 +342,9 @@ private fun GoalCard(goal: Goal) {
             }
 
             AnimatedVisibility(visible = hasTasks && expanded) {
+                val sortedTasks = remember(goal.tasks) {
+                    goal.tasks.sortedBy { it.status == TaskStatus.COMPLETED }
+                }
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -300,7 +352,7 @@ private fun GoalCard(goal: Goal) {
                 ) {
                     HorizontalDivider(color = colors.line, thickness = 1.dp)
                     Spacer(modifier = Modifier.height(10.dp))
-                    goal.tasks.forEach { task ->
+                    sortedTasks.forEach { task ->
                         TaskRow(task = task)
                         Spacer(modifier = Modifier.height(8.dp))
                     }
