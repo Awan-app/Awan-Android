@@ -9,12 +9,13 @@ import java.time.LocalDate
 fun EntryProviderScope<Route>.homeEntry(
     onLogout: () -> Unit,
     onNavigateToCalendar: () -> Unit = {},
+    onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
 ) {
-    entry<HomeRoute> { route ->
+    entry<HomeRoute> {
         HomeScreen(
-            initialDate = route.date?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
             onLogout = onLogout,
             onNavigateToCalendar = onNavigateToCalendar,
+            onRegisterSelectDate = onRegisterSelectDate,
         )
     }
 }

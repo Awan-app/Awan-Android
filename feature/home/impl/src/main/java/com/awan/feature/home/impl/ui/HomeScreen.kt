@@ -54,15 +54,15 @@ private sealed interface TimelineContentState {
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    initialDate: LocalDate? = null,
     onLogout: () -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
+    onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(initialDate) {
-        initialDate?.let(viewModel::selectDate)
+    LaunchedEffect(Unit) {
+        onRegisterSelectDate(viewModel::selectDate)
     }
 
     val timelineScrollState = rememberScrollState()
@@ -219,36 +219,6 @@ fun HomeScreen(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun DataRow(
-    label: String,
-    value: String,
-    isMonospace: Boolean = false,
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        AwanText(
-            text = label,
-            style = AwanTheme.typography.caption.copy(
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = AwanTheme.colors.textSecondary,
-            ),
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        SelectionContainer {
-            AwanText(
-                text = value,
-                style = AwanTheme.typography.body.copy(
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Normal,
-                    fontFamily = if (isMonospace) FontFamily.Monospace else AwanTheme.typography.body.fontFamily,
-                    color = AwanTheme.colors.textSecondary,
-                ),
-            )
         }
     }
 }

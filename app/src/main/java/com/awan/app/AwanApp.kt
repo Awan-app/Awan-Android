@@ -35,6 +35,7 @@ import com.awan.feature.profile.api.EditRoutineRoute
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.splash.impl.navigation.splashEntry
 import com.awan.feature.splash.impl.ui.SplashDestination
+import java.time.LocalDate
 
 @Suppress("LongMethod")
 @Composable
@@ -44,6 +45,8 @@ fun AwanApp(
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
+    // Holds the live HomeViewModel's selectDate so Calendar can invoke it after popping.
+    val homeSelectDateRef = remember { arrayOf<((LocalDate) -> Unit)?>(null) }
 
     if (showAddTask) {
         AddTaskSheet(onDismiss = { showAddTask = false })
@@ -75,9 +78,13 @@ fun AwanApp(
             homeEntry(
                 onLogout = { navigator.replaceAll(LoginRoute) },
                 onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
+                onRegisterSelectDate = { fn -> homeSelectDateRef[0] = fn },
             )
             calendarEntry(
-                onDateSelected = { date -> navigator.replaceAll(HomeRoute(date.toString())) },
+                onDateSelected = { date ->
+                    navigator.goBack()
+                    homeSelectDateRef[0]?.invoke(date)
+                },
                 onBack = { navigator.goBack() },
             )
             chatEntry()
