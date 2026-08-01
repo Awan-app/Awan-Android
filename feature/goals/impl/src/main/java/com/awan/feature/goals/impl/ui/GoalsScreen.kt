@@ -21,8 +21,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.goals.impl.R
 import com.awan.feature.goals.impl.presentation.GoalsAction
 import com.awan.feature.goals.impl.presentation.GoalsState
 import com.awan.feature.goals.impl.presentation.GoalsTab
@@ -72,7 +74,7 @@ fun GoalsScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 AwanText(
-                    text = "My Goals",
+                    text = stringResource(R.string.goals_title),
                     style = AwanTheme.typography.title.copy(
                         fontSize = 22.sp,
                         fontWeight = FontWeight.ExtraBold,

@@ -18,9 +18,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.goals.impl.presentation.GoalsTab
+import com.awan.feature.goals.impl.R
 
 /**
  * Pill-shaped tab row that switches between Active and Completed goals.
@@ -50,8 +52,8 @@ internal fun GoalsTabRow(
                 GoalsTab.Completed -> completedCount
             }
             val label = when (tab) {
-                GoalsTab.Active -> "Active"
-                GoalsTab.Completed -> "Done"
+                GoalsTab.Active -> stringResource(R.string.goals_tab_active)
+                GoalsTab.Completed -> stringResource(R.string.goals_tab_completed)
             }
             val tabShape = RoundedCornerShape(99.dp)
 

@@ -42,10 +42,12 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.model.Goal
 import com.awan.app.core.model.TaskStatus
+import com.awan.feature.goals.impl.R
 
 /**
  * Card for a single goal.
@@ -187,7 +189,7 @@ internal fun GoalCard(
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         AwanText(
-                            text = "${(goal.progress * 100).toInt()}%",
+                            text = stringResource(R.string.goals_progress_percentage, (goal.progress * 100).toInt()),
                             style = AwanTheme.typography.caption.copy(
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -199,7 +201,7 @@ internal fun GoalCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     AwanText(
-                        text = "${goal.completedTasks} of ${goal.totalTasks} tasks done",
+                        text = stringResource(R.string.goals_progress_format, goal.completedTasks, goal.totalTasks),
                         style = AwanTheme.typography.caption.copy(
                             fontSize = 12.sp,
                             color = colors.textSecondary,

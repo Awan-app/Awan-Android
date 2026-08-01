@@ -9,6 +9,7 @@ import com.awan.app.core.network.api.ProfileApiService
 import com.awan.app.core.network.api.TaskApiService
 import com.awan.app.core.network.api.ZoneApiService
 import com.awan.app.core.network.api.TemplateApiService
+import com.awan.app.core.network.api.GoalApiService
 import com.awan.app.core.network.device.AndroidDeviceIdProvider
 import com.awan.app.core.network.device.DeviceIdProvider
 import com.awan.app.core.network.interceptor.AiTimeoutInterceptor
@@ -158,6 +159,11 @@ object NetworkModule {
     @Singleton
     fun providesTemplateApiService(retrofit: Retrofit): TemplateApiService =
         retrofit.create(TemplateApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesGoalApiService(retrofit: Retrofit): GoalApiService =
+        retrofit.create(GoalApiService::class.java)
 
     @Provides
     @Singleton
