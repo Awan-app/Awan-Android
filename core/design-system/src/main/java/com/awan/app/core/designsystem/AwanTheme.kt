@@ -1,5 +1,6 @@
 package com.awan.app.core.designsystem
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -8,7 +9,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalConfiguration
 
 internal data class AwanThemeValues(
     val colors: AwanColors,
@@ -117,9 +120,23 @@ object AwanTheme {
                 outline = colors.line,
             )
         }
+
+        val configuration = LocalConfiguration.current
+        val isArabic = remember(configuration) {
+            val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                configuration.locales.get(0)
+            } else {
+                @Suppress("DEPRECATION")
+                configuration.locale
+            }
+            locale?.language?.equals("ar", ignoreCase = true) == true
+        }
+
+        val typography = if (isArabic) AwanArabicTypographyTokens else AwanTypographyTokens
+
         val values = AwanThemeValues(
             colors = colors,
-            typography = AwanTypographyTokens,
+            typography = typography,
             shapes = AwanShapeTokens,
             spacing = AwanSpacingTokens,
             motion = AwanMotionTokens,
