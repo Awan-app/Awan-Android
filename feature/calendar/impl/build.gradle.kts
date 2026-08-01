@@ -14,4 +14,5 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(project(":core:model"))
     implementation(project(":core:design-system"))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }

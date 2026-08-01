@@ -82,6 +82,8 @@ data class AwanColors(
     val zoneTangerinePressed: Color,
     val zoneSunPressed: Color,
     val zoneLavenderPressed: Color,
+    val streakSurface: Color,
+    val streakIcon: Color,
     val zoneCardAlpha: Float,
 )
 
@@ -145,6 +147,8 @@ internal val LightAwanColors = AwanColors(
     zoneTangerinePressed = Color(0xFFD9771C),
     zoneSunPressed = Color(0xFFD99E14),
     zoneLavenderPressed = Color(0xFF7659D9),
+    streakSurface = Color(0xFFFFE7B3),
+    streakIcon = Color(0xFFB45309),
     zoneCardAlpha = 0.35f, // Increased for better visibility with pastels
 )
 
@@ -213,6 +217,8 @@ internal val DarkAwanColors = AwanColors(
     zoneTangerinePressed = Color(0xFFD9771C),
     zoneSunPressed = Color(0xFFD99E14),
     zoneLavenderPressed = Color(0xFF7659D9),
+    streakSurface = Color(0xFF3B2A20),
+    streakIcon = Color(0xFFFFB84D),
     zoneCardAlpha = 0.45f,
 )
 

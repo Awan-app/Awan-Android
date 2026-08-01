@@ -48,20 +48,24 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.lucide.ArrowLeft
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.ChevronRight
-import com.composables.icons.lucide.Flame
 import com.composables.icons.lucide.Lucide
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
@@ -76,6 +80,19 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration.Companion.milliseconds
+
+private val FilledLucideFlame = ImageVector.Builder(
+    name = "FilledLucideFlame",
+    defaultWidth = 24.dp,
+    defaultHeight = 24.dp,
+    viewportWidth = 24f,
+    viewportHeight = 24f,
+).addPath(
+    pathData = PathParser().parsePathString(
+        "M12,3q1,4 4,6.5t3,5.5a1,1 0 0,1 -14,0a5,5 0 0,1 1,-3a1,1 0 0,0 5,0c0,-2 -1.5,-3 -1.5,-5q0,-2 2.5,-4"
+    ).toNodes(),
+    fill = SolidColor(Color.White),
+).build()
 
 @Composable
 fun rememberIsReducedMotion(): Boolean {
@@ -137,7 +154,7 @@ fun CalendarScreen(
                 Spacer(modifier = Modifier.width(AwanTheme.spacing.sm))
                 AwanText(
                     text = stringResource(R.string.calendar_title),
-                    style = AwanTheme.styles.displayText,
+                    style = AwanTheme.styles.titleText,
                     modifier = Modifier.testTag("calendar_title"),
                 )
             }
@@ -231,10 +248,15 @@ private fun StreakSummaryCard(streak: Int) {
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(AwanTheme.colors.zoneSun),
+                    .background(AwanTheme.colors.streakSurface),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Lucide.Flame, contentDescription = null, tint = AwanTheme.colors.textPrimary)
+                Icon(
+                    imageVector = FilledLucideFlame,
+                    contentDescription = null,
+                    tint = AwanTheme.colors.streakIcon,
+                    modifier = Modifier.testTag("streak_flame_icon"),
+                )
             }
             Spacer(modifier = Modifier.width(AwanTheme.spacing.md))
             Column {
@@ -258,6 +280,7 @@ private fun MonthHeader(
     onNextMonth: () -> Unit,
 ) {
     val monthFormatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy") }
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -280,7 +303,7 @@ private fun MonthHeader(
                     .testTag("prev_month_button"),
             ) {
                 Icon(
-                    imageVector = Lucide.ChevronLeft,
+                    imageVector = if (isRtl) Lucide.ChevronRight else Lucide.ChevronLeft,
                     contentDescription = stringResource(R.string.calendar_prev_month),
                 )
             }
@@ -296,7 +319,7 @@ private fun MonthHeader(
                     .testTag("next_month_button"),
             ) {
                 Icon(
-                    imageVector = Lucide.ChevronRight,
+                    imageVector = if (isRtl) Lucide.ChevronLeft else Lucide.ChevronRight,
                     contentDescription = stringResource(R.string.calendar_next_month),
                 )
             }
@@ -482,6 +505,7 @@ private fun DayCell(
                 role = Role.Button,
                 onClick = { onSelectDate(dayState.date) }
             )
+            .testTag("calendar_day_${dayState.date}")
             .padding(vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
