@@ -1,6 +1,6 @@
 package com.awan.app.core.data.goal
 
-import com.awan.app.core.data.task.toModel
+import com.awan.app.core.data.task.toTaskModel
 import com.awan.app.core.model.Goal
 import com.awan.app.core.model.GoalStatus
 import com.awan.app.core.network.dto.GoalInfoResponse
@@ -34,6 +34,6 @@ internal fun GoalInfoResponse.toModel(): Goal {
         description = description,
         emoji = extractedEmoji,
         status = status.toModel(),
-        tasks = tasks.map { it.toModel() },
+        tasks = tasks.map { it.toTaskModel() },
     )
 }

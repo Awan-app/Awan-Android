@@ -2,7 +2,7 @@ package com.awan.app.core.network.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import com.awan.app.core.network.dto.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskInfoResponse
 
 @Serializable
 data class GoalInfoResponse(
