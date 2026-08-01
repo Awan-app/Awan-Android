@@ -77,7 +77,7 @@ fun AwanApp(
                 onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
             )
             calendarEntry(
-                onDateSelected = { /* consumed within calendar screen */ },
+                onDateSelected = { date -> navigator.replaceAll(HomeRoute(date.toString())) },
                 onBack = { navigator.goBack() },
             )
             chatEntry()
@@ -104,7 +104,12 @@ fun AwanApp(
         )
 
         val currentRoute = appState.navigationState.currentKey
-        val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route == currentRoute }
+        val isTopLevel = appState.topLevelDestinations.any { dest ->
+            when (val route = dest.route) {
+                is HomeRoute -> currentRoute is HomeRoute
+                else -> route != null && route == currentRoute
+            }
+        }
 
         if (isTopLevel) {
             val navItems = remember(appState.topLevelDestinations) {
@@ -118,7 +123,12 @@ fun AwanApp(
                     )
                 }
             }
-            val selectedDest = appState.topLevelDestinations.find { it.route == appState.navigationState.currentTopLevelKey }
+            val selectedDest = appState.topLevelDestinations.find { dest ->
+                when (val route = dest.route) {
+                    is HomeRoute -> appState.navigationState.currentTopLevelKey is HomeRoute
+                    else -> route != null && route == appState.navigationState.currentTopLevelKey
+                }
+            }
 
             AwanBottomNavBar(
                 items = navItems,

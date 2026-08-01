@@ -167,6 +167,7 @@ class HomeViewModel @Inject constructor(
 
     fun previousDay() = loadScheduleForDate(_uiState.value.selectedDate.minusDays(1))
     fun nextDay()     = loadScheduleForDate(_uiState.value.selectedDate.plusDays(1))
+    fun selectDate(date: LocalDate) = loadScheduleForDate(date)
     fun selectToday() = loadScheduleForDate(LocalDate.now())
 
     fun retryLoad() = loadScheduleForDate(_uiState.value.selectedDate)

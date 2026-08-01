@@ -1,6 +1,7 @@
 package com.awan.feature.home.impl.ui
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,6 +43,7 @@ import com.awan.app.core.designsystem.AwanScheduleTimeline
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.home.impl.R
+import java.time.LocalDate
 
 private sealed interface TimelineContentState {
     data object Loading : TimelineContentState
@@ -52,11 +54,16 @@ private sealed interface TimelineContentState {
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
+    initialDate: LocalDate? = null,
     onLogout: () -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(initialDate) {
+        initialDate?.let(viewModel::selectDate)
+    }
 
     val timelineScrollState = rememberScrollState()
     val isHeaderCollapsed by remember { derivedStateOf { timelineScrollState.value > 80 } }
