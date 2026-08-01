@@ -100,4 +100,13 @@
     <string name="add_task_goal_permission_dialog_body">تم إيقاف إذن الميكروفون. يرجى تفعيله من إعدادات التطبيق لاستخدام الإملاء الصوتي.</string>
     <string name="add_task_goal_permission_dialog_confirm">فتح الإعدادات</string>
     <string name="add_task_goal_permission_dialog_cancel">إلغاء</string>
+    <string name="add_task_goal_image_add">&#x623;&#x636;&#x641; &#x647;&#x62f;&#x641;&#x64b;&#x627; &#x628;&#x635;&#x648;&#x631;&#x629;</string>
+    <string name="add_task_goal_image_sources_expanded">&#x62e;&#x64a;&#x627;&#x631;&#x627;&#x62a; &#x627;&#x644;&#x635;&#x648;&#x631; &#x645;&#x641;&#x62a;&#x648;&#x62d;&#x629;</string>
+    <string name="add_task_goal_image_sources_collapsed">&#x62e;&#x64a;&#x627;&#x631;&#x627;&#x62a; &#x627;&#x644;&#x635;&#x648;&#x631; &#x645;&#x63a;&#x644;&#x642;&#x629;</string>
+    <string name="add_task_goal_image_camera">&#x627;&#x644;&#x643;&#x627;&#x645;&#x64a;&#x631;&#x627;</string>
+    <string name="add_task_goal_image_library">معرض الصور</string>
+    <string name="add_task_goal_image_selected">&#x62a;&#x645;&#x62a; &#x625;&#x636;&#x627;&#x641;&#x629; &#x635;&#x648;&#x631;&#x629; &#x627;&#x644;&#x647;&#x62f;&#x641;</string>
+    <string name="add_task_goal_image_preview_description">&#x635;&#x648;&#x631;&#x629; &#x627;&#x644;&#x647;&#x62f;&#x641; &#x627;&#x644;&#x645;&#x62d;&#x62f;&#x62f;&#x629;</string>
+    <string name="add_task_goal_image_remove">&#x625;&#x632;&#x627;&#x644;&#x629; &#x635;&#x648;&#x631;&#x629; &#x627;&#x644;&#x647;&#x62f;&#x641;</string>
+
 </resources>

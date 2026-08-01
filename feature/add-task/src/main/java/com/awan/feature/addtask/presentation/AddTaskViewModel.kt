@@ -70,6 +70,7 @@ class AddTaskViewModel @Inject constructor(
         when (action) {
             is AddTaskAction.ModeChanged -> onModeChanged(action.mode)
             is AddTaskAction.InputChanged -> onInputChanged(action.input)
+            is AddTaskAction.GoalImageChanged -> onGoalImageChanged(action.uri)
             is AddTaskAction.DescriptionChanged -> _state.update { it.copy(description = action.description) }
             AddTaskAction.MandatoryToggled -> _state.update { it.copy(mandatory = !it.mandatory) }
             is AddTaskAction.PickerOpened -> _state.update { it.copy(openPicker = action.picker) }
@@ -121,6 +122,7 @@ class AddTaskViewModel @Inject constructor(
             _state.update {
                 it.copy(
                     mode = AddTaskMode.TASK,
+                    goalImageUri = null,
                     parsed = parsed,
                     resolvedCategory = it.availableCategories.matching(parsed.categoryToken),
                     errorMessage = null,
@@ -173,6 +175,19 @@ class AddTaskViewModel @Inject constructor(
         val rewritten = applyTaskAttribute(current.input, current.parsed, attribute)
         _state.update { it.copy(openPicker = null) }
         onInputChanged(rewritten)
+    }
+
+    private fun onGoalImageChanged(uri: String?) {
+        _state.update { state ->
+            if (state.mode == AddTaskMode.GOAL &&
+                state.goalStep == GoalStep.Initial &&
+                !state.isSubmitting
+            ) {
+                state.copy(goalImageUri = uri)
+            } else {
+                state
+            }
+        }
     }
 
     /**
@@ -332,6 +347,7 @@ class AddTaskViewModel @Inject constructor(
                                 goalSessionId = reply.sessionId,
                                 goalReplyBlocks = reply.blocks,
                                 input = "",
+                                goalImageUri = null,
                                 isSubmitting = false,
                                 errorMessage = null,
                             )

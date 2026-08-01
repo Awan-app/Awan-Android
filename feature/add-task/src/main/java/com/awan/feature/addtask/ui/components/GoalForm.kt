@@ -252,6 +252,14 @@ private fun InitialStepContent(
         }
 
         CascadeItem(4, Modifier.fillMaxWidth()) {
+            GoalImagePicker(
+                imageUri = state.goalImageUri,
+                enabled = !state.isSubmitting,
+                onImageChanged = { onAction(AddTaskAction.GoalImageChanged(it)) },
+            )
+        }
+
+        CascadeItem(5, Modifier.fillMaxWidth()) {
             AwanButton(
                 onClick = { onAction(AddTaskAction.Submit) },
                 enabled = state.canSubmit,
