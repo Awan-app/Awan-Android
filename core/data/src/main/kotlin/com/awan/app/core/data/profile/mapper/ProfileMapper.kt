@@ -5,8 +5,8 @@ import com.awan.app.core.database.model.UserPreferencesEntity
 import com.awan.app.core.database.model.UserWithPreferences
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.model.UserPreferences
-import com.awan.app.core.network.dto.ProfileResponse
-import com.awan.app.core.network.dto.UserPreferencesResponse
+import com.awan.app.core.network.dto.profile.ProfileResponse
+import com.awan.app.core.network.dto.profile.UserPreferencesResponse
 
 @Suppress("UNCHECKED_CAST")
 internal fun ProfileResponse.toDomain(): Profile = Profile(

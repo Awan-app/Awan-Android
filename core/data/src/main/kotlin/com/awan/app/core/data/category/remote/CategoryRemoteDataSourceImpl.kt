@@ -4,7 +4,7 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.CategoryApiService
-import com.awan.app.core.network.dto.CategoryDto
+import com.awan.app.core.network.dto.category.CategoryDto
 import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json

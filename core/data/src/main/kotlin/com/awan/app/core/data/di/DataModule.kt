@@ -3,11 +3,10 @@ package com.awan.app.core.data.di
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSource
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSourceImpl
 import com.awan.app.core.data.auth.repository.AuthRepositoryImpl
-import com.awan.app.core.domain.calendar.repository.CalendarRepository
 import com.awan.app.core.data.calendar.CalendarRepositoryImpl
-import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSource
 import com.awan.app.core.data.calendar.local.CalendarLocalDataSource
 import com.awan.app.core.data.calendar.local.CalendarLocalDataSourceImpl
+import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSource
 import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSourceImpl
 import com.awan.app.core.data.category.CategoryRepositoryImpl
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
@@ -19,31 +18,34 @@ import com.awan.app.core.domain.onboarding.repository.OnboardingRepository
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSourceImpl
 import com.awan.app.core.data.profile.repository.ProfileRepositoryImpl
+import com.awan.app.core.data.profile.repository.UserDataRepositoryImpl
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSourceImpl
 import com.awan.app.core.data.task.TaskRepositoryImpl
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
-import com.awan.app.core.data.task.remote.TaskRemoteDataSourceImpl
-import com.awan.app.core.data.zone.ZoneRepositoryImpl
-import com.awan.app.core.data.zone.remote.ZoneRemoteDataSource
-import com.awan.app.core.data.zone.remote.ZoneRemoteDataSourceImpl
 import com.awan.app.core.domain.category.repository.CategoryRepository
 import com.awan.app.core.domain.task.repository.TaskRepository
-import com.awan.app.core.domain.zone.repository.ZoneRepository
 import com.awan.app.core.data.task.AiTaskRepositoryImpl
+import com.awan.app.core.data.task.remote.TaskRemoteDataSourceImpl
 import com.awan.app.core.data.template.TemplateRepositoryImpl
 import com.awan.app.core.data.template.remote.TemplateRemoteDataSource
 import com.awan.app.core.data.template.remote.TemplateRemoteDataSourceImpl
+import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
+import com.awan.app.core.data.zones.remote.ZonesRemoteDataSourceImpl
+import com.awan.app.core.data.zones.repository.ZonesRepositoryImpl
 import com.awan.app.core.domain.auth.repository.AuthRepository
 import com.awan.app.core.domain.goal.repository.GoalRepository
 import com.awan.app.core.data.goal.GoalRepositoryImpl
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSourceImpl
+import com.awan.app.core.domain.calendar.repository.CalendarRepository
 import com.awan.app.core.domain.profile.repository.ProfileRepository
+import com.awan.app.core.domain.profile.repository.UserDataRepository
 import com.awan.app.core.domain.task.repository.AiTaskRepository
 import com.awan.app.core.domain.template.repository.TemplateRepository
 import com.awan.app.core.domain.home.repository.HomeRepository
+import com.awan.app.core.domain.zones.repository.ZonesRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -95,18 +97,6 @@ internal abstract class DataModule {
     abstract fun bindTaskRepository(
         impl: TaskRepositoryImpl,
     ): TaskRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindZoneRemoteDataSource(
-        impl: ZoneRemoteDataSourceImpl,
-    ): ZoneRemoteDataSource
-
-    @Binds
-    @Singleton
-    abstract fun bindZoneRepository(
-        impl: ZoneRepositoryImpl,
-    ): ZoneRepository
 
     @Binds
     @Singleton
@@ -164,6 +154,25 @@ internal abstract class DataModule {
 
     @Binds
     @Singleton
+    abstract fun bindUserDataRepository(
+        impl: UserDataRepositoryImpl,
+    ): UserDataRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindZonesRemoteDataSource(
+        impl: ZonesRemoteDataSourceImpl,
+    ): ZonesRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindZonesRepository(
+        impl: ZonesRepositoryImpl,
+    ): ZonesRepository
+
+
+    @Binds
+    @Singleton
     abstract fun bindHomeRemoteDataSource(
         impl: HomeRemoteDataSourceImpl,
     ): HomeRemoteDataSource
@@ -186,3 +195,4 @@ internal abstract class DataModule {
         impl: GoalRepositoryImpl,
     ): GoalRepository
 }
+

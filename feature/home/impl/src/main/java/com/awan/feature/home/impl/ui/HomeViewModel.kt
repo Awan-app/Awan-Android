@@ -142,10 +142,7 @@ class HomeViewModel @Inject constructor(
 
         val completedCount = sessions.count { it.status == TaskStatus.Completed }
         val (completedHours, totalHours) = calculateSessionHours(sessions)
-        val subtitle = buildString {
-            append("Clear skies — ${sessions.size} sessions scheduled")
-            if (isToday) append(" today")
-        }
+        val subtitle = buildSubtitle(sessions.size, isToday)
         val progressSegments = buildProgressSegments(sessions)
 
         _uiState.update { state ->
@@ -385,9 +382,9 @@ class HomeViewModel @Inject constructor(
         val hour24 = cal.get(Calendar.HOUR_OF_DAY)
         val minute = cal.get(Calendar.MINUTE)
         val greeting = when (hour24) {
-            in 4..11 -> "Good morning"
-            in 12..17 -> "Good afternoon"
-            else -> "Good evening"
+            in 4..11 -> UiText.StringResource(R.string.home_greeting_morning)
+            in 12..17 -> UiText.StringResource(R.string.home_greeting_afternoon)
+            else -> UiText.StringResource(R.string.home_greeting_evening)
         }
         val currentMins = hour24 * 60 + minute
         val formattedTime = com.awan.app.core.designsystem.formatTime(currentMins) + " ."
@@ -410,8 +407,8 @@ class HomeViewModel @Inject constructor(
     }
 
 
-    private fun buildSubtitle(sessionCount: Int, isToday: Boolean) =
-        "Clear skies — $sessionCount sessions scheduled${if (isToday) " today" else ""}"
+    private fun buildSubtitle(sessionCount: Int, isToday: Boolean): UiText =
+        UiText.StringResource(R.string.home_subtitle_scheduled, sessionCount)
 
     private fun com.awan.app.core.common.error.AppError.toReadableMessage(): UiText = when (this) {
         is com.awan.app.core.common.error.AppError.Network    -> UiText.StringResource(R.string.home_error_network)

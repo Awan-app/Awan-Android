@@ -98,7 +98,7 @@ fun AwanProgressSummaryCard(
                             ),
                         )
                         AwanText(
-                            text = " / ${formatHoursValue(totalHours)} hrs",
+                            text = stringResource(R.string.ds_hrs_count, formatHoursValue(totalHours)),
                             style = AwanTheme.typography.caption.copy(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,

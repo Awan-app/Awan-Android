@@ -14,62 +14,38 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 
 val AwanChipDotSize = 8.dp
-private const val ACTIVE_TINT = 0.18f
 
-/**
- * A value as a pressable pill: a coloured dot, the value itself, and the button family's rim — the
- * face sinks into its own shelf on press exactly like a primary button, so a chip reads as something
- * you press rather than something you read. Pass no [onClick] and it becomes a plain readout.
- *
- * [active] is the difference between a value that was actually chosen and a default standing in for
- * one, which reads as a chip tinted in its tone versus a plain surface-coloured one.
- *
- * [leading] defaults to [AwanChipDot]; callers swap it for anything that carries the same weight —
- * a rail the dot slides along, an avatar, a count.
- */
+/** Small sky-tinted pill for reassurances / hints (optionally with a leading icon). */
 @Composable
 fun AwanChip(
     label: String,
-    tone: Color,
+    tone: AwanChipTone,
     modifier: Modifier = Modifier,
     active: Boolean = true,
     leading: @Composable () -> Unit = { AwanChipDot(tone = tone, active = active) },
     onClick: (() -> Unit)? = null,
 ) {
     val colors = AwanTheme.colors
-    val spec = AwanTheme.motion.settle.spec<Color>()
-    // Blended, never translucent: the face sits directly on its own tone-coloured rim, so an alpha
-    // tint would composite straight back to the rim and swallow the label.
-    val fill by animateColorAsState(
-        targetValue = if (active) lerp(colors.surface, tone, ACTIVE_TINT) else colors.surface,
-        animationSpec = spec,
-        label = "chipFill",
-    )
-    val edge by animateColorAsState(
-        targetValue = if (active) tone else colors.line,
-        animationSpec = spec,
-        label = "chipEdge",
-    )
-    // The tone is carried by the dot, the border and the rim; the label stays in reading ink.
-    val ink by animateColorAsState(
-        targetValue = if (active) colors.textPrimary else colors.textSecondary,
-        animationSpec = spec,
-        label = "chipInk",
-    )
+    val (ink, fill, edge) = when (tone) {
+        AwanChipTone.Sky -> Triple(colors.skyPressed, colors.sky.copy(alpha = 0.12f), colors.sky.copy(alpha = 0.24f))
+        AwanChipTone.Violet -> Triple(colors.zoneViolet, colors.zoneViolet.copy(alpha = 0.14f), colors.zoneViolet.copy(alpha = 0.28f))
+        AwanChipTone.Tangerine -> Triple(colors.zoneTangerine, colors.zoneTangerine.copy(alpha = 0.14f), colors.zoneTangerine.copy(alpha = 0.28f))
+        AwanChipTone.Neutral -> Triple(colors.textSecondary, colors.disabledSurface, colors.line)
+    }
 
-    val faceStyle = remember(fill, edge) {
+    val rimStyle = remember(edge) { Style { background(edge) } }
+    val faceStyle = remember(ink, fill, edge) {
         Style {
             background(fill)
             borderColor(edge)
+            contentColor(ink)
         }
     }
-    val rimStyle = remember(edge) { Style { background(edge) } }
 
     // A readout has nothing to press; clearing the semantics stops it being announced as a control.
     val staticSemantics = if (onClick == null) {
@@ -92,9 +68,17 @@ fun AwanChip(
 }
 
 @Composable
-fun AwanChipDot(tone: Color, active: Boolean = true) {
+fun AwanChipDot(tone: AwanChipTone, active: Boolean = true) {
+    val colors = AwanTheme.colors
+    val dotColor = when (tone) {
+        AwanChipTone.Sky -> colors.skyPressed
+        AwanChipTone.Violet -> colors.zoneViolet
+        AwanChipTone.Tangerine -> colors.zoneTangerine
+        AwanChipTone.Neutral -> colors.textSecondary
+    }
+
     val color by animateColorAsState(
-        targetValue = if (active) tone else AwanTheme.colors.line,
+        targetValue = if (active) dotColor else colors.line,
         animationSpec = AwanTheme.motion.settle.spec(),
         label = "chipDot",
     )

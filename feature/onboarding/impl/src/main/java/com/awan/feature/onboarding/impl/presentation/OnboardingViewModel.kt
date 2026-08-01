@@ -7,16 +7,15 @@ import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.common.text.UiText
-import com.awan.app.core.domain.onboarding.usecase.CompleteOnboardingUseCase
 import com.awan.app.core.domain.onboarding.usecase.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.utils.ValidateDayBounds
 import com.awan.app.core.domain.onboarding.utils.ZoneEditRules
 import com.awan.app.core.domain.task.usecase.CreateAndScheduleFirstTaskUseCase
-import com.awan.app.core.domain.template.usecase.CreateWeeklyTemplateUseCase
 import com.awan.feature.onboarding.impl.R
-import com.awan.app.core.model.DayBounds
-import com.awan.app.core.model.UserProfile
-import com.awan.app.core.model.Zone
+import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.domain.onboarding.usecase.CompleteOnboardingUseCase
+import com.awan.app.core.domain.profile.model.UserProfile
+import com.awan.app.core.domain.zones.model.Zone
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,12 +32,10 @@ class OnboardingViewModel @Inject constructor(
     private val suggestZoneSchedule: SuggestZoneScheduleUseCase,
     private val validateDayBounds: ValidateDayBounds,
     private val createAndScheduleFirstTask: CreateAndScheduleFirstTaskUseCase,
-    private val createWeeklyTemplate: CreateWeeklyTemplateUseCase,
 ) : ViewModel() {
 
     private var zonesUserEdited = false
     private var isBackendOnboarded = false
-    private var isTemplateCreated = false
 
     private val _state = MutableStateFlow(
         OnboardingState(zones = suggestZoneSchedule(DayBounds.Default))
@@ -151,16 +148,6 @@ class OnboardingViewModel @Inject constructor(
             )
             when (val result = completeOnboarding(data)) {
                 is Result.Success -> isBackendOnboarded = true
-                is Result.Error -> return failSetup(result.error)
-                Result.Loading -> return false
-            }
-        }
-        if (!isTemplateCreated) {
-            when (val result = createWeeklyTemplate(s.zones)) {
-                is Result.Success -> {
-                    isTemplateCreated = true
-                    _state.update { it.copy(templateZones = result.data) }
-                }
                 is Result.Error -> return failSetup(result.error)
                 Result.Loading -> return false
             }

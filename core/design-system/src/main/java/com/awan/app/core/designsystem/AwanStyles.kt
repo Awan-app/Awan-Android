@@ -204,6 +204,11 @@ object AwanStyles {
         textStyle(typography.buttonCompact)
         fontFamily(typography.buttonCompact.fontFamily!!)
         buttonPressedTransform()
+        disabled {
+            background(colors.disabledSurface)
+            borderColor(colors.line)
+            contentColor(colors.disabledContent)
+        }
     }
 
     val navigationDivider = Style { background(colors.line); minHeight(2.dp) }

@@ -1,7 +1,7 @@
 package com.awan.app.core.domain.template.repository
 
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.model.Zone
+import com.awan.app.core.domain.zones.model.Zone
 
 interface TemplateRepository {
 

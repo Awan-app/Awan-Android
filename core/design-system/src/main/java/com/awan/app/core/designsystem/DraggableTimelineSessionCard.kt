@@ -134,8 +134,8 @@ fun DraggableTimelineSessionCard(
                 if (isDragging) IntOffset(0, cumulativeDragPx.roundToInt())
                 else IntOffset.Zero
             }
-            .width(colWidthDp - 3.dp)
-            .height(sessionHeightDp)
+            .width((colWidthDp - 3.dp).coerceAtLeast(0.dp))
+            .height(sessionHeightDp.coerceAtLeast(0.dp))
             .zIndex(if (isDragging) 999f else 2f)
             .graphicsLayer {
                 alpha = moveAlpha

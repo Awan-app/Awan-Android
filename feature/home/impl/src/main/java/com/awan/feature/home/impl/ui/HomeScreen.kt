@@ -79,12 +79,12 @@ fun HomeScreen(
         ) {
             AwanHeaderBar(
                 userName = uiState.userName,
-                greetingPrefix = uiState.greetingPrefix,
+                greetingPrefix = uiState.greetingPrefix.asString(),
                 streakCount = uiState.streakCount,
                 pointsCount = uiState.pointsCount,
                 mascotExpression = uiState.mascotExpression,
-                subtitleText = uiState.subtitleText,
-                selectedDateText = uiState.selectedDateText,
+                subtitleText = uiState.subtitleText.asString(),
+                selectedDateText = uiState.selectedDateText.asString(),
                 isCollapsed = isHeaderCollapsed,
                 totalSessionsCount = uiState.sessions.size,
                 completedSessionsCount = uiState.completedSessionsCount,

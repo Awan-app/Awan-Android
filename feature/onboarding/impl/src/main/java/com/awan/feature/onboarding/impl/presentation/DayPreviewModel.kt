@@ -1,8 +1,8 @@
 package com.awan.feature.onboarding.impl.presentation
 
-import com.awan.app.core.model.DayBounds
-import com.awan.app.core.model.FirstTask
-import com.awan.app.core.model.Zone
+import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.domain.onboarding.model.FirstTask
+import com.awan.app.core.domain.zones.model.Zone
 
 /** A block positioned as fractions [0f,1f] along the waking window, for the live day timeline. */
 data class DayBlockUi(

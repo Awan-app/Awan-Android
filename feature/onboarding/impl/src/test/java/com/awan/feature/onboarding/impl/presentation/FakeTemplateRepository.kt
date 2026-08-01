@@ -3,7 +3,7 @@ package com.awan.feature.onboarding.impl.presentation
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.template.repository.TemplateRepository
-import com.awan.app.core.model.Zone
+import com.awan.app.core.domain.zones.model.Zone
 
 class FakeTemplateRepository : TemplateRepository {
     var createdZones: List<Zone>? = null
