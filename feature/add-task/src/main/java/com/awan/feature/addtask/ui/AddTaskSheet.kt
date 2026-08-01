@@ -94,6 +94,7 @@ fun AddTaskSheet(
      * animated away by the time anyone can object, and it never comes back.
      */
     val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
         confirmValueChange = { target ->
             val isPreviewStep = viewModel.state.value.goalStep is GoalStep.Preview
             val blocked = target == SheetValue.Hidden && viewModel.state.value.isDirty && !isPreviewStep

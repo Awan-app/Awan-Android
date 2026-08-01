@@ -272,7 +272,7 @@ fun GoalPreviewScreen(
 @Composable
 private fun PreviewAssistantTextCard(text: String) {
     AwanCard(
-        background = AwanTheme.colors.surface.copy(alpha = 0.6f),
+        background = AwanTheme.colors.surface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         AwanText(
@@ -342,7 +342,7 @@ private fun PreviewTaskProposalItem(index: Int, task: ProposedTask) {
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = AwanTheme.colors.line.copy(alpha = 0.3f),
+                color = AwanTheme.colors.background,
                 shape = AwanTheme.shapes.chip,
             )
             .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
@@ -485,8 +485,8 @@ private fun PreviewGoalMicButton(
 
 @Preview(name = "GoalPreviewScreen · Preview step", showBackground = true)
 @Composable
-private fun GoalPreviewScreenPreviewStepPreview() {
-    AwanTheme {
+private fun GoalPreviewScreenPreviewStepPreview(dark: Boolean = false) {
+    AwanTheme(dark = dark) {
         GoalPreviewScreen(
             state = AddTaskState(
                 today = LocalDate.of(2026, 7, 28),
@@ -514,6 +514,11 @@ private fun GoalPreviewScreenPreviewStepPreview() {
             speechError = null,
         )
     }
+}
+@Preview(name = "Goal preview dark", showBackground = true)
+@Composable
+private fun GoalPreviewScreenDarkPreview() {
+    GoalPreviewScreenPreviewStepPreview(dark = true)
 }
 
 @Preview(name = "GoalPreviewScreen · MCQ inline", showBackground = true)
