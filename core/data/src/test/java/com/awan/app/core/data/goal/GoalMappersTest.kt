@@ -4,7 +4,7 @@ import com.awan.app.core.model.GoalStatus
 import com.awan.app.core.model.TaskStatus
 import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.GoalStatusDto
-import com.awan.app.core.network.dto.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskInfoResponse
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

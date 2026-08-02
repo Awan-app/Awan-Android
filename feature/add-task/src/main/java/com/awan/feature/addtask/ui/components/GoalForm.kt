@@ -112,8 +112,8 @@ fun GoalFormContent(
     isListening: Boolean,
     onToggleMic: () -> Unit,
     speechError: String?,
-    isPermissionError: Boolean = false,
     modifier: Modifier = Modifier,
+    isPermissionError: Boolean = false,
 ) {
     val isReduced = reducedMotion()
     val standardMillis = AwanTheme.motion.standardMillis

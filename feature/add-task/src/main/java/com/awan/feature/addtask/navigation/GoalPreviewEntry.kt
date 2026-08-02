@@ -5,11 +5,13 @@ import com.awan.core.navigation.Route
 import com.awan.feature.addtask.presentation.AddTaskViewModel
 import com.awan.feature.addtask.ui.GoalPreviewRouteRoot
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 fun EntryProviderScope<Route>.goalPreviewEntry(
-    viewModel: AddTaskViewModel,
     onBack: () -> Unit,
 ) {
     entry<GoalPreviewRoute> {
+        val viewModel: AddTaskViewModel = hiltViewModel()
         GoalPreviewRouteRoot(
             viewModel = viewModel,
             onBack = onBack,

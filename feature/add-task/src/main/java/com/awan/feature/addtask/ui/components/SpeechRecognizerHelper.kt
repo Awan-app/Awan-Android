@@ -68,7 +68,7 @@ fun rememberSpeechRecognizer(
 
     fun startListeningNow() {
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            errorMessage = context.getString(R.string.add_task_goal_speech_unavailable)
+            errorMessage = context.resources.getString(R.string.add_task_goal_speech_unavailable)
             isPermissionError = false
             return
         }
@@ -103,10 +103,10 @@ fun rememberSpeechRecognizer(
                     }
                     SpeechRecognizer.ERROR_NO_MATCH,
                     SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
-                        errorMessage = context.getString(R.string.add_task_goal_speech_no_match)
+                        errorMessage = context.resources.getString(R.string.add_task_goal_speech_no_match)
                     }
                     else -> {
-                        errorMessage = context.getString(R.string.add_task_goal_speech_error)
+                        errorMessage = context.resources.getString(R.string.add_task_goal_speech_error)
                     }
                 }
             }
@@ -134,7 +134,7 @@ fun rememberSpeechRecognizer(
             activeRecognizer.startListening(intent)
         } catch (e: RuntimeException) {
             isListening = false
-            errorMessage = context.getString(R.string.add_task_goal_speech_error)
+            errorMessage = context.resources.getString(R.string.add_task_goal_speech_error)
         }
     }
 
@@ -157,7 +157,7 @@ fun rememberSpeechRecognizer(
                 errorMessage = null
             } else {
                 isPermissionError = true
-                errorMessage = context.getString(R.string.add_task_goal_speech_permission_denied)
+                errorMessage = context.resources.getString(R.string.add_task_goal_speech_permission_denied)
             }
         }
     }
@@ -191,7 +191,7 @@ fun rememberSpeechRecognizer(
             onDismiss = {
                 showSettingsDialog = false
                 isPermissionError = true
-                errorMessage = context.getString(R.string.add_task_goal_speech_permission_denied)
+                errorMessage = context.resources.getString(R.string.add_task_goal_speech_permission_denied)
             },
         )
     }
@@ -223,7 +223,7 @@ fun rememberSpeechRecognizer(
                         errorMessage = null
                     } else {
                         isPermissionError = true
-                        errorMessage = context.getString(R.string.add_task_goal_speech_permission_denied)
+                        errorMessage = context.resources.getString(R.string.add_task_goal_speech_permission_denied)
                         permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                     }
                 }

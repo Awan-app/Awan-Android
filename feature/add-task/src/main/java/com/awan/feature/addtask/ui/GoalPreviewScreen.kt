@@ -74,8 +74,8 @@ fun GoalPreviewScreen(
     onToggleMic: () -> Unit,
     isListening: Boolean,
     speechError: String?,
-    isPermissionError: Boolean = false,
     modifier: Modifier = Modifier,
+    isPermissionError: Boolean = false,
 ) {
     val focusManager = LocalFocusManager.current
 
