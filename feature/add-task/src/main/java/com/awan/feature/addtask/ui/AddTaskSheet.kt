@@ -299,15 +299,17 @@ private fun TaskForm(
             }
         }
 
-        CascadeItem(2, Modifier.fillMaxWidth()) {
-            NoteField(
-                value = state.description,
-                placeholder = stringResource(
-                    if (composing) R.string.add_task_ai_note_placeholder
-                    else R.string.add_task_description_placeholder,
-                ),
-                onValueChange = { onAction(AddTaskAction.DescriptionChanged(it)) },
-            )
+        if (!state.aiEnabled) {
+            CascadeItem(2, Modifier.fillMaxWidth()) {
+                NoteField(
+                    value = state.description,
+                    placeholder = stringResource(
+                        if (composing) R.string.add_task_ai_note_placeholder
+                        else R.string.add_task_description_placeholder,
+                    ),
+                    onValueChange = { onAction(AddTaskAction.DescriptionChanged(it)) },
+                )
+            }
         }
 
         // A photo is only worth offering once Awan is the one reading it.
