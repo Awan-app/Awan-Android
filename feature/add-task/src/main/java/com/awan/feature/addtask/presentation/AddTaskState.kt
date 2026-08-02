@@ -95,8 +95,6 @@ data class AddTaskState(
     val aiPoints: Int = 0,
     val aiSplittable: Boolean = false,
     val goalStep: GoalStep = GoalStep.Initial,
-    /** Local-only goal image draft. It is not persisted or sent to the backend. */
-    val goalImageUri: String? = null,
     val goalSessionId: String? = null,
     val goalReplyBlocks: List<GoalDecompositionBlock> = emptyList(),
     val isSubmitting: Boolean = false,
@@ -116,7 +114,7 @@ data class AddTaskState(
     val canSubmit: Boolean
         get() = if (mode == AddTaskMode.GOAL) {
             !isSubmitting && when (val step = goalStep) {
-                GoalStep.Initial -> input.isNotBlank() || goalImageUri != null
+                GoalStep.Initial -> input.isNotBlank()
                 is GoalStep.MultipleChoice -> !step.selectedOption.isNullOrBlank() || input.isNotBlank()
                 is GoalStep.WritingQuestion, is GoalStep.Preview -> input.isNotBlank()
             }
@@ -166,7 +164,6 @@ data class AddTaskState(
         get() = confirmation == null && (
             input.isNotBlank() ||
             description.isNotBlank() ||
-            goalImageUri != null ||
             aiStage != AddTaskAiStage.OFF ||
             (mode == AddTaskMode.GOAL && (goalSessionId != null || goalStep != GoalStep.Initial))
         )

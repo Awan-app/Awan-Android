@@ -283,42 +283,6 @@ class GoalFormTest {
         composeTestRule.onNodeWithContentDescription(getString(R.string.add_task_goal_mic_idle)).assertIsDisplayed().assertIsNotEnabled()
 
     }
-    @Test
-    fun imageSourceDisclosure_opensHorizontallyAndTogglesClosed() {
-        composeTestRule.setContent {
-            AwanTheme {
-                GoalFormContent(
-                    state = AddTaskState(
-                        today = today,
-                        mode = AddTaskMode.GOAL,
-                        goalStep = GoalStep.Initial,
-                    ),
-                    onAction = {},
-                    isListening = false,
-                    onToggleMic = {},
-                    speechError = null,
-                )
-            }
-        }
-
-        val trigger = composeTestRule.onNodeWithText(getString(R.string.add_task_goal_image_add))
-        trigger.performClick()
-
-        val camera = composeTestRule.onNodeWithText(getString(R.string.add_task_goal_image_camera))
-        val library = composeTestRule.onNodeWithText(getString(R.string.add_task_goal_image_library))
-        camera.assertIsDisplayed()
-        library.assertIsDisplayed()
-
-        val cameraBounds = camera.getUnclippedBoundsInRoot()
-        val libraryBounds = library.getUnclippedBoundsInRoot()
-        assertTrue(kotlin.math.abs(cameraBounds.top.value - libraryBounds.top.value) <= 1f)
-        assertTrue(cameraBounds.left < libraryBounds.left)
-
-        trigger.performClick()
-        composeTestRule.onAllNodesWithText(getString(R.string.add_task_goal_image_camera)).assertCountEquals(0)
-        composeTestRule.onAllNodesWithText(getString(R.string.add_task_goal_image_library)).assertCountEquals(0)
-    }
-
 
     @Test
     fun serverReplyBlocks_renderInOrder() {

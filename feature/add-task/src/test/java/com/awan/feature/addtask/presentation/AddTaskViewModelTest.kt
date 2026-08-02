@@ -250,6 +250,15 @@ class AddTaskViewModelTest {
     }
 
     @Test
+    fun `initial goal mode with blank input cannot be submitted`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+
+        assertFalse(viewModel.state.value.canSubmit)
+    }
+
+    @Test
     fun `initial goal mode with non-blank input can be submitted`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 
@@ -257,75 +266,6 @@ class AddTaskViewModelTest {
         viewModel.onAction(AddTaskAction.InputChanged("Gym session"))
 
         assertTrue(viewModel.state.value.canSubmit)
-    }
-
-    @Test
-    fun `goal image selection enables the initial goal submit`() = runTest(testDispatcher) {
-        val viewModel = viewModel()
-
-        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
-        viewModel.onAction(AddTaskAction.GoalImageChanged("content://awan/goal-image"))
-
-        assertTrue(viewModel.state.value.canSubmit)
-        assertTrue(viewModel.state.value.isDirty)
-    }
-
-    @Test
-    fun `initial goal image submits an empty message`() = runTest(testDispatcher) {
-        goalRepository.nextContinueReply = Result.Error(AppError.Network)
-        val viewModel = viewModel()
-
-        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
-        viewModel.onAction(AddTaskAction.GoalImageChanged("content://awan/goal-image"))
-        viewModel.onAction(AddTaskAction.Submit)
-        advanceUntilIdle()
-
-        assertEquals(listOf(null to ""), goalRepository.continueCalls)
-        assertEquals("content://awan/goal-image", viewModel.state.value.goalImageUri)
-    }
-
-    @Test
-    fun `removing goal image disables an otherwise blank initial goal`() = runTest(testDispatcher) {
-        val viewModel = viewModel()
-
-        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
-        viewModel.onAction(AddTaskAction.GoalImageChanged("content://awan/goal-image"))
-        viewModel.onAction(AddTaskAction.GoalImageChanged(null))
-
-        assertFalse(viewModel.state.value.canSubmit)
-        assertFalse(viewModel.state.value.isDirty)
-    }
-
-    @Test
-    fun `successful initial goal response clears image draft`() = runTest(testDispatcher) {
-        goalRepository.nextContinueReply = Result.Success(
-            GoalDecompositionReply(
-                sessionId = "goal-image-session",
-                blocks = listOf(GoalDecompositionBlock.Question("When should this be done?", emptyList())),
-                hasProposal = false,
-            ),
-        )
-        val viewModel = viewModel()
-
-        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
-        viewModel.onAction(AddTaskAction.GoalImageChanged("content://awan/goal-image"))
-        viewModel.onAction(AddTaskAction.Submit)
-        advanceUntilIdle()
-
-        assertNull(viewModel.state.value.goalImageUri)
-        assertTrue(viewModel.state.value.goalStep is GoalStep.WritingQuestion)
-    }
-
-    @Test
-    fun `switching from goal mode clears the local image draft`() = runTest(testDispatcher) {
-        val viewModel = viewModel()
-
-        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
-        viewModel.onAction(AddTaskAction.GoalImageChanged("content://awan/goal-image"))
-        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.TASK))
-
-        assertNull(viewModel.state.value.goalImageUri)
-        assertFalse(viewModel.state.value.isDirty)
     }
 
     @Test

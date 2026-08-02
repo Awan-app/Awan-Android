@@ -100,13 +100,5 @@
     <string name="add_task_goal_permission_dialog_body">Microphone access is turned off. Please enable it in device settings to use speech recognition.</string>
     <string name="add_task_goal_permission_dialog_confirm">Open Settings</string>
     <string name="add_task_goal_permission_dialog_cancel">Cancel</string>
-    <string name="add_task_goal_image_add">Add goal by image</string>
-    <string name="add_task_goal_image_sources_expanded">Image options expanded</string>
-    <string name="add_task_goal_image_sources_collapsed">Image options collapsed</string>
-    <string name="add_task_goal_image_camera">Camera</string>
-    <string name="add_task_goal_image_library">Gallery</string>
-    <string name="add_task_goal_image_selected">Goal image added</string>
-    <string name="add_task_goal_image_preview_description">Selected goal image</string>
-    <string name="add_task_goal_image_remove">Remove goal image</string>
 
 </resources>

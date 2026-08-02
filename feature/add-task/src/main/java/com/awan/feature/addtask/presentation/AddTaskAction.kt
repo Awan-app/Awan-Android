@@ -5,7 +5,6 @@ import java.time.LocalDate
 sealed interface AddTaskAction {
     data class ModeChanged(val mode: AddTaskMode) : AddTaskAction
     data class InputChanged(val input: String) : AddTaskAction
-    data class GoalImageChanged(val uri: String?) : AddTaskAction
     data class DescriptionChanged(val description: String) : AddTaskAction
     data object MandatoryToggled : AddTaskAction
 
