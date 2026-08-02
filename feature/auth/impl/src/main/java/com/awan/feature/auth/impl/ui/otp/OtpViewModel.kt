@@ -140,6 +140,7 @@ class OtpViewModel @Inject constructor(
         }
         AppError.Serialization -> OtpStatus.Idle to toUiText()
         is AppError.Unknown -> OtpStatus.Idle to toUiText()
+        else -> OtpStatus.Idle to toUiText()
     }
 
     private companion object {

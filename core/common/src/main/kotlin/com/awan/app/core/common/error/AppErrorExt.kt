@@ -27,5 +27,6 @@ fun AppError.toUiText(): UiText = when (this) {
             ?: UiText.StringResource(R.string.error_unknown)
     }
     AppError.Serialization -> UiText.StringResource(R.string.error_serialization)
+    is AppError.Validation -> UiText.StringResource(R.string.error_validation)
     is AppError.Unknown -> UiText.StringResource(R.string.error_unknown)
 }

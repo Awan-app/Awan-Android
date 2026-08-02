@@ -6,13 +6,15 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.result.map
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.domain.task.repository.TaskRepository
-import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.Task
 import com.awan.app.core.model.TaskDraft
+import com.awan.app.core.model.TaskProposals
 import com.awan.app.core.model.TaskSchedule
 import com.awan.app.core.model.TaskWithSessions
-import com.awan.app.core.network.dto.CreateTaskWithAiRequest
+import com.awan.app.core.model.TaskWithSessionsDraft
+import com.awan.app.core.network.dto.AiTextToTasksRequest
+import com.awan.app.core.network.dto.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.ScheduleTaskRequest
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -36,11 +38,25 @@ class TaskRepositoryImpl @Inject constructor(
         remoteDataSource.createTaskWithSessions(draft.toRequest(sessions)).map { it.toModel() }
     }
 
-    override suspend fun previewTaskWithAi(title: String, description: String?): Result<AiTaskSuggestion> =
+    override suspend fun createTasksWithSessions(
+        drafts: List<TaskWithSessionsDraft>,
+    ): Result<List<Task>> = withContext(ioDispatcher) {
+        val request = BulkCreateTasksWithSessionsRequest(tasks = drafts.map { it.toRequest() })
+        remoteDataSource.createTasksWithSessions(request).map { it.toModel() }
+    }
+
+    override suspend fun proposeTasksFromText(text: String): Result<TaskProposals> =
         withContext(ioDispatcher) {
-            remoteDataSource.previewTaskWithAi(CreateTaskWithAiRequest(title, description))
-                .map { it.toModel() }
+            remoteDataSource.proposeTasksFromText(AiTextToTasksRequest(text)).map { it.toModel() }
         }
+
+    override suspend fun proposeTasksFromImage(
+        image: ByteArray,
+        mimeType: String,
+        note: String?,
+    ): Result<TaskProposals> = withContext(ioDispatcher) {
+        remoteDataSource.proposeTasksFromImage(image, mimeType, note).map { it.toModel() }
+    }
 
     override suspend fun scheduleTask(taskId: String): Result<TaskSchedule> = withContext(ioDispatcher) {
         remoteDataSource.scheduleTask(ScheduleTaskRequest(taskId)).map { it.toModel() }

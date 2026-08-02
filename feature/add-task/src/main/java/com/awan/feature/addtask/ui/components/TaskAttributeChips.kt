@@ -50,15 +50,12 @@ fun TaskAttributeChips(
         horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
     ) {
-        // Present except while Awan's answer is under review, where scheduling is a later question.
-        if (state.showsWhenChip) {
-            AwanChip(
-                label = whenChipLabel(state, today),
-                tone = colors.zoneSky,
-                active = state.parsed.startAt != null,
-                onClick = onEditWhen,
-            )
-        }
+        AwanChip(
+            label = whenChipLabel(state, today),
+            tone = colors.zoneSky,
+            active = state.parsed.startAt != null,
+            onClick = onEditWhen,
+        )
 
         Box {
             AwanChip(

@@ -1,19 +1,25 @@
 package com.awan.app.core.network.api
 
-import com.awan.app.core.network.dto.AiTaskPreviewResponse
+import com.awan.app.core.network.dto.AiTextToTasksRequest
+import com.awan.app.core.network.dto.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.CreateTaskRequest
-import com.awan.app.core.network.dto.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.ScheduleTaskRequest
 import com.awan.app.core.network.dto.TaskInfoResponse
+import com.awan.app.core.network.dto.TaskProposalResponse
 import com.awan.app.core.network.dto.TaskScheduleResponse
 import com.awan.app.core.network.dto.TaskWithSessionsDto
+import com.awan.app.core.network.dto.TasksWithSessionsResponse
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
+import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
-import retrofit2.http.GET
 
 interface TaskApiService {
 
@@ -27,25 +33,30 @@ interface TaskApiService {
         @Body request: CreateTaskWithSessionsRequest,
     ): TaskWithSessionsDto
 
-    /**
-     * Persists a task straight away with every field the model chose. The returned id is a real task
-     * already sitting in the user's Inbox. Used only by onboarding's first-task flow, which schedules
-     * it in the same breath — the add-task sheet uses [previewTaskWithAi] instead.
-     */
-    @POST("v1/ai/task-create")
-    suspend fun createTaskWithAi(
-        @Body request: CreateTaskWithAiRequest,
-    ): TaskWithSessionsDto
+    @POST("v1/tasks/with-sessions/bulk")
+    suspend fun createTasksWithSessions(
+        @Body request: BulkCreateTasksWithSessionsRequest,
+    ): TasksWithSessionsResponse
 
     /**
-     * Asks Awan to propose a task from [request] without saving anything — no id, no Inbox row. The
-     * caller creates the real task itself (via [createTask] or [createTaskWithSessions]) once the
-     * user confirms, possibly after editing what Awan proposed.
+     * Asks Awan to turn a free-form note into one or more task proposals. Nothing is persisted —
+     * every proposal carries a ready-to-POST [com.awan.app.core.network.dto.ProposedTaskDto.draft].
      */
-    @POST("v1/ai/task-create?persist=false")
-    suspend fun previewTaskWithAi(
-        @Body request: CreateTaskWithAiRequest,
-    ): AiTaskPreviewResponse
+    @POST("v1/ai/task-create")
+    suspend fun proposeTasksFromText(
+        @Body request: AiTextToTasksRequest,
+    ): TaskProposalResponse
+
+    /**
+     * Same proposal contract as [proposeTasksFromText], sourced from a photo instead of typed text.
+     * [note] is optional extra context ("finish these by Friday").
+     */
+    @Multipart
+    @POST("v1/ai/image-to-tasks")
+    suspend fun proposeTasksFromImage(
+        @Part image: MultipartBody.Part,
+        @Part("note") note: RequestBody?,
+    ): TaskProposalResponse
 
     @GET("v1/tasks/date/{date}")
     suspend fun getTasksByDate(
@@ -63,4 +74,3 @@ interface TaskApiService {
         @Query("cascade") cascade: Boolean = false,
     )
 }
-

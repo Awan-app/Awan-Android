@@ -39,10 +39,12 @@
     <string name="add_task_ai_switch_content_description">Let Awan work out the task details</string>
     <string name="add_task_ai_note_placeholder">Anything else Awan should know?</string>
     <string name="add_task_ai_submit">Ask Awan</string>
-    <string name="add_task_ai_working">Awan is working it out…</string>
-    <string name="add_task_ai_review_hint">Change anything that looks off, then pick how to schedule it.</string>
-    <string name="add_task_ai_schedule_with_ai">Let Awan schedule it</string>
-    <string name="add_task_ai_schedule_manually">I\'ll pick a time</string>
+
+    <string name="add_task_add_photo">Add a photo</string>
+    <string name="add_task_photo_from_gallery">Choose photo</string>
+    <string name="add_task_photo_take">Take photo</string>
+    <string name="add_task_remove_photo">Remove photo</string>
+    <string name="add_task_photo_content_description">Photo attached for Awan to read</string>
 
     <string name="add_task_confirm_title">All set!</string>
     <string name="add_task_confirm_first_session">Starts with</string>
@@ -58,6 +60,4 @@
     <string name="add_task_goal_body">Soon you\'ll be able to hand Awan a goal and get a whole plan back. For now, add tasks one at a time.</string>
 
     <string name="add_task_error_create_failed">Couldn\'t add that task. Check your connection and try again.</string>
-    <string name="add_task_error_ai_failed">Awan couldn\'t build that one. Check your connection and try again.</string>
-    <string name="add_task_error_ai_schedule_failed">Awan couldn\'t find a slot for this. Try picking a time yourself.</string>
 </resources>

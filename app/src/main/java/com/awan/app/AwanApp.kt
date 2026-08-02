@@ -7,18 +7,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberDecoratedNavEntries
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.awan.app.core.designsystem.AwanBottomNavBar
 import com.awan.app.core.designsystem.BottomNavItem
+import com.awan.core.navigation.NavigationState
 import com.awan.core.navigation.Navigator
+import com.awan.core.navigation.Route
 import com.awan.feature.addtask.ui.AddTaskSheet
+import com.awan.feature.aitasks.api.AiTaskProposalsRoute
+import com.awan.feature.aitasks.impl.navigation.aiTasksEntry
 import com.awan.feature.auth.api.LoginRoute
 import com.awan.feature.auth.impl.navigation.authEntry
 import com.awan.feature.calendar.impl.navigation.calendarEntry
@@ -34,6 +43,39 @@ import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.splash.impl.navigation.splashEntry
 import com.awan.feature.splash.impl.ui.SplashDestination
 
+/**
+ * Decorates every sub-stack, not just the visible one.
+ *
+ * `NavDisplay`'s own default is a `SaveableStateHolder` and nothing else, which leaves
+ * `LocalViewModelStoreOwner` pointing at the Activity: every screen's ViewModel then outlives its
+ * entry, so popping a destination and navigating back to it hands over the previous visit's state
+ * — old results, dialogs still open, `LaunchedEffect` loads skipped because the flag says they ran.
+ * [rememberViewModelStoreNavEntryDecorator] scopes the store to the entry instead, and clears it
+ * when the entry is popped.
+ *
+ * Each stack gets its own decorators and all of them are decorated on every recomposition, so
+ * switching tabs — which swaps which stack is displayed, not what's in the others — leaves the
+ * background tabs' ViewModels alive.
+ */
+@Composable
+private fun NavigationState.rememberDecoratedEntries(
+    entryProvider: (Route) -> NavEntry<Route>,
+): List<NavEntry<Route>> {
+    val decoratedStacks = subStacks.mapValues { (topLevelKey, stack) ->
+        key(topLevelKey) {
+            rememberDecoratedNavEntries(
+                backStack = stack,
+                entryDecorators = listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberViewModelStoreNavEntryDecorator(),
+                ),
+                entryProvider = entryProvider,
+            )
+        }
+    }
+    return decoratedStacks[currentTopLevelKey].orEmpty()
+}
+
 @Suppress("LongMethod")
 @Composable
 fun AwanApp(
@@ -44,7 +86,12 @@ fun AwanApp(
     var showAddTask by rememberSaveable { mutableStateOf(false) }
 
     if (showAddTask) {
-        AddTaskSheet(onDismiss = { showAddTask = false })
+        AddTaskSheet(
+            onDismiss = { showAddTask = false },
+            onAiRequested = { text, note, imageUri ->
+                navigator.navigate(AiTaskProposalsRoute(text = text, note = note, imageUri = imageUri))
+            },
+        )
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -80,6 +127,7 @@ fun AwanApp(
             )
             chatEntry()
             goalsEntry()
+            aiTasksEntry(onBack = { navigator.goBack() })
             profileEntry(
                 onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
             )
@@ -92,9 +140,8 @@ fun AwanApp(
         }
 
         NavDisplay(
-            backStack = appState.navigationState.currentSubStack,
+            entries = appState.navigationState.rememberDecoratedEntries(entryProvider),
             onBack = { navigator.goBack() },
-            entryProvider = entryProvider,
             modifier = Modifier.fillMaxSize()
         )
 

@@ -7,16 +7,9 @@ import com.awan.app.core.domain.onboarding.usecase.CompleteOnboardingUseCase
 import com.awan.app.core.domain.onboarding.utils.DayBoundsValidation
 import com.awan.app.core.domain.onboarding.usecase.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.utils.ValidateDayBounds
-import com.awan.app.core.domain.task.repository.TaskRepository
 import com.awan.app.core.domain.zone.repository.ZoneRepository
 import com.awan.app.core.domain.zone.usecase.GetZonesForDateUseCase
-import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.model.DayZone
-import com.awan.app.core.model.SessionDraft
-import com.awan.app.core.model.Task
-import com.awan.app.core.model.TaskDraft
-import com.awan.app.core.model.TaskSchedule
-import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.domain.task.usecase.CreateAndScheduleFirstTaskUseCase
 import com.awan.app.core.domain.template.usecase.CreateWeeklyTemplateUseCase
 import com.awan.app.core.model.DayBounds
@@ -45,34 +38,6 @@ class OnboardingViewModelTest {
     private lateinit var fakeAiTaskRepository: FakeAiTaskRepository
     private lateinit var fakeTemplateRepository: FakeTemplateRepository
     private lateinit var viewModel: OnboardingViewModel
-
-    private class FakeTaskRepository : TaskRepository {
-        var createdTaskTitle: String? = null
-
-        override suspend fun createTask(draft: TaskDraft): Result<Task> {
-            createdTaskTitle = draft.title
-            return Result.Success(
-                Task(
-                    id = "task-123",
-                    title = draft.title,
-                    estimatedDurationMinutes = draft.durationMinutes,
-                )
-            )
-        }
-
-        override suspend fun createTaskWithSessions(
-            draft: TaskDraft,
-            sessions: List<SessionDraft>,
-        ): Result<TaskWithSessions> = error("onboarding never schedules its first task")
-
-        override suspend fun previewTaskWithAi(title: String, description: String?): Result<AiTaskSuggestion> =
-            error("onboarding never asks the AI")
-
-        override suspend fun scheduleTask(taskId: String): Result<TaskSchedule> =
-            error("onboarding never schedules its first task")
-
-        override suspend fun deleteTask(taskId: String): Result<Unit> = error("onboarding never deletes")
-    }
 
     /** Onboarding's first task is unscheduled, so the zone lookup is never reached. */
     private class FakeZoneRepository : ZoneRepository {

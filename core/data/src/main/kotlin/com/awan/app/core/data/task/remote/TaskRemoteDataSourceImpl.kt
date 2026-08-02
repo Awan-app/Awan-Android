@@ -4,18 +4,27 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.TaskApiService
-import com.awan.app.core.network.dto.AiTaskPreviewResponse
+import com.awan.app.core.network.dto.AiTextToTasksRequest
+import com.awan.app.core.network.dto.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.CreateTaskRequest
-import com.awan.app.core.network.dto.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.ScheduleTaskRequest
 import com.awan.app.core.network.dto.TaskInfoResponse
+import com.awan.app.core.network.dto.TaskProposalResponse
 import com.awan.app.core.network.dto.TaskScheduleResponse
 import com.awan.app.core.network.dto.TaskWithSessionsDto
+import com.awan.app.core.network.dto.TasksWithSessionsResponse
 import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
+
+private const val IMAGE_PART_NAME = "image"
+/** [ImageRepositoryImpl][com.awan.app.core.data.image.ImageRepositoryImpl] always re-encodes as JPEG. */
+private const val IMAGE_FILENAME = "image.jpg"
 
 class TaskRemoteDataSourceImpl @Inject constructor(
     private val taskApiService: TaskApiService,
@@ -35,15 +44,31 @@ class TaskRemoteDataSourceImpl @Inject constructor(
             taskApiService.createTaskWithSessions(request)
         }
 
-    override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest): Result<TaskWithSessionsDto> =
+    override suspend fun createTasksWithSessions(
+        request: BulkCreateTasksWithSessionsRequest,
+    ): Result<TasksWithSessionsResponse> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
-            taskApiService.createTaskWithAi(request)
+            taskApiService.createTasksWithSessions(request)
         }
 
-    override suspend fun previewTaskWithAi(request: CreateTaskWithAiRequest): Result<AiTaskPreviewResponse> =
+    override suspend fun proposeTasksFromText(request: AiTextToTasksRequest): Result<TaskProposalResponse> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
-            taskApiService.previewTaskWithAi(request)
+            taskApiService.proposeTasksFromText(request)
         }
+
+    override suspend fun proposeTasksFromImage(
+        image: ByteArray,
+        mimeType: String,
+        note: String?,
+    ): Result<TaskProposalResponse> = safeApiCall(dispatcher = ioDispatcher, json = json) {
+        val imagePart = MultipartBody.Part.createFormData(
+            name = IMAGE_PART_NAME,
+            filename = IMAGE_FILENAME,
+            body = image.toRequestBody(mimeType.toMediaType()),
+        )
+        val notePart = note?.toRequestBody("text/plain".toMediaType())
+        taskApiService.proposeTasksFromImage(imagePart, notePart)
+    }
 
     override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {

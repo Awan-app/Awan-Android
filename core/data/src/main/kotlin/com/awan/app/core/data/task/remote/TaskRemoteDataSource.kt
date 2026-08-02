@@ -1,25 +1,35 @@
 package com.awan.app.core.data.task.remote
 
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.network.dto.AiTaskPreviewResponse
+import com.awan.app.core.network.dto.AiTextToTasksRequest
+import com.awan.app.core.network.dto.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.CreateTaskRequest
-import com.awan.app.core.network.dto.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.ScheduleTaskRequest
 import com.awan.app.core.network.dto.TaskInfoResponse
+import com.awan.app.core.network.dto.TaskProposalResponse
 import com.awan.app.core.network.dto.TaskScheduleResponse
 import com.awan.app.core.network.dto.TaskWithSessionsDto
+import com.awan.app.core.network.dto.TasksWithSessionsResponse
 
 interface TaskRemoteDataSource {
     suspend fun createTask(request: CreateTaskRequest): Result<TaskInfoResponse>
 
     suspend fun createTaskWithSessions(request: CreateTaskWithSessionsRequest): Result<TaskWithSessionsDto>
 
-    /** Persists straight away. Used only by onboarding's first-task flow. */
-    suspend fun createTaskWithAi(request: CreateTaskWithAiRequest): Result<TaskWithSessionsDto>
+    suspend fun createTasksWithSessions(
+        request: BulkCreateTasksWithSessionsRequest,
+    ): Result<TasksWithSessionsResponse>
 
-    /** Preview only — nothing is saved. Used by the add-task sheet. */
-    suspend fun previewTaskWithAi(request: CreateTaskWithAiRequest): Result<AiTaskPreviewResponse>
+    /** Nothing is saved — every proposal carries a ready-to-POST draft. */
+    suspend fun proposeTasksFromText(request: AiTextToTasksRequest): Result<TaskProposalResponse>
+
+    /** Same proposal contract, sourced from a photo. [note] is optional extra context. */
+    suspend fun proposeTasksFromImage(
+        image: ByteArray,
+        mimeType: String,
+        note: String?,
+    ): Result<TaskProposalResponse>
 
     suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse>
 
