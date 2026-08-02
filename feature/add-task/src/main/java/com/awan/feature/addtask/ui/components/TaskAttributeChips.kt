@@ -129,31 +129,30 @@ private fun DurationMenu(
 @Composable
 private fun CategoryChip(state: AddTaskState, onClick: () -> Unit) {
     val token = state.parsed.categoryToken
-    val colors = AwanTheme.colors
     when {
         state.resolvedCategory != null -> AwanChip(
             label = state.resolvedCategory.name,
-            tone = AwanChipTone.Violet,
+            tone = AwanChipTone.Lavender,
             onClick = onClick,
         )
 
         state.isResolvingCategory -> AwanChip(
             label = stringResource(R.string.add_task_chip_category_resolving),
-            tone = AwanChipTone.Violet,
+            tone = AwanChipTone.Lavender,
             active = false,
             onClick = onClick,
         )
 
         token != null -> AwanChip(
             label = stringResource(R.string.add_task_chip_category_unknown, token),
-            tone = AwanChipTone.Neutral,
+            tone = AwanChipTone.Destructive,
             active = false,
             onClick = onClick,
         )
 
         else -> AwanChip(
             label = stringResource(R.string.add_task_chip_no_category),
-            tone = AwanChipTone.Violet,
+            tone = AwanChipTone.Lavender,
             active = false,
             onClick = onClick,
         )
@@ -185,7 +184,7 @@ private fun CategoryMenu(
                 label = category.name,
                 onClick = { onSelect(category.name) },
                 selected = active,
-                leading = { AwanChipDot(tone = AwanChipTone.Violet, active = active) },
+                leading = { AwanChipDot(tone = AwanChipTone.Lavender, active = active) },
             )
         }
     }

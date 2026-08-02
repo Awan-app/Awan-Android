@@ -201,7 +201,6 @@ private fun AttributeChips(
     onCategoryPicked: (String?) -> Unit,
     onMandatoryToggled: () -> Unit,
 ) {
-    val colors = AwanTheme.colors
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
@@ -233,7 +232,7 @@ private fun AttributeChips(
         Box {
             AwanChip(
                 label = resolvedCategory?.name ?: stringResource(R.string.ai_tasks_chip_no_category),
-                tone = AwanChipTone.Violet,
+                tone = AwanChipTone.Lavender,
                 active = resolvedCategory != null,
                 onClick = { categoryMenuOpen = true },
             )
@@ -250,7 +249,7 @@ private fun AttributeChips(
                         label = stringResource(R.string.ai_tasks_chip_no_category),
                         onClick = { onCategoryPicked(null); categoryMenuOpen = false },
                         selected = draft.categoryId == null,
-                        leading = { AwanChipDot(tone = AwanChipTone.Violet, active = false) },
+                        leading = { AwanChipDot(tone = AwanChipTone.Lavender, active = false) },
                     )
                 }
                 categories.forEach { category ->
@@ -259,7 +258,7 @@ private fun AttributeChips(
                         label = category.name,
                         onClick = { onCategoryPicked(category.id); categoryMenuOpen = false },
                         selected = active,
-                        leading = { AwanChipDot(tone = AwanChipTone.Violet, active = active) },
+                        leading = { AwanChipDot(tone = AwanChipTone.Lavender, active = active) },
                     )
                 }
             }
@@ -308,8 +307,8 @@ private fun SessionsList(
 private fun SessionRow(session: ProposedSession, onClick: () -> Unit, onRemove: () -> Unit) {
     val colors = AwanTheme.colors
     val tone = if (session.isAiSuggested) AwanChipTone.Violet else AwanChipTone.Sky
-    /** The sparkle stands in for the chip's dot, so it has to carry the dot's colour for that tone. */
-    val toneColor = if (session.isAiSuggested) colors.zoneViolet else colors.skyPressed
+    // The sparkle stands in for the chip's dot, so it has to carry the dot's colour for that tone.
+    val toneColor = if (session.isAiSuggested) colors.zoneViolet else colors.zoneSky
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
