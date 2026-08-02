@@ -14,7 +14,6 @@
 
     <!-- OTP Screen -->
     <string name="auth_otp_title">Check your inbox!</string>
-    <string name="auth_navigate_back">Navigate back</string>
     <string name="auth_verifying_code_description">Verifying your code</string>
     <string name="auth_verifying_text">Verifying you in…</string>
     <string name="auth_request_new_code">REQUEST A NEW CODE</string>

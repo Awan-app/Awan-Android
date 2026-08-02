@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="ai_tasks_title">خطة أوان</string>
-    <string name="ai_tasks_back_content_description">رجوع</string>
 
     <string name="ai_tasks_loading_1">جارٍ قراءة ما أرسلته…</string>
     <string name="ai_tasks_loading_2">جارٍ التحقق من جدولك…</string>

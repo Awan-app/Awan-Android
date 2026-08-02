@@ -11,4 +11,5 @@
     <string name="ds_add_goal">+ GOAL</string>
     <string name="ds_pts">+%1$d pts</string>
     <string name="ds_friend">Friend</string>
+    <string name="ds_back">Back</string>
 </resources>

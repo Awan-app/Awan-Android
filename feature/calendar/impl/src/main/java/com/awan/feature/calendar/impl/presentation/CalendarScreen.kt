@@ -63,6 +63,7 @@ import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.Flame
 import com.composables.icons.lucide.Lucide
+import com.awan.app.core.designsystem.AwanBackButton
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanSurface
@@ -119,20 +120,7 @@ fun CalendarScreen(
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
     ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                AwanButton(
-                    onClick = onBack,
-                    variant = AwanButtonVariant.Secondary,
-                    style = Style {
-                        minHeight(0.dp)
-                        contentPadding(0.dp)
-                    },
-                    modifier = Modifier.size(42.dp),
-                ) {
-                    Icon(
-                        imageVector = Lucide.ArrowLeft,
-                        contentDescription = stringResource(R.string.calendar_back),
-                    )
-                }
+                AwanBackButton(onClick = onBack)
                 Spacer(modifier = Modifier.width(AwanTheme.spacing.sm))
                 AwanText(
                     text = stringResource(R.string.calendar_title),

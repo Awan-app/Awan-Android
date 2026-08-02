@@ -2,7 +2,6 @@
 <resources>
     <string name="calendar_title">Calendar</string>
     <string name="calendar_refresh_error">Couldn\'t refresh calendar. Showing saved data.</string>
-    <string name="calendar_back">Back</string>
     <string name="calendar_prev_month">Previous month</string>
     <string name="calendar_next_month">Next month</string>
     <string name="calendar_upcoming_deadlines">Upcoming Deadlines</string>

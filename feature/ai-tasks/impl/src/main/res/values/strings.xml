@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="ai_tasks_title">Awan\'s plan</string>
-    <string name="ai_tasks_back_content_description">Back</string>
 
     <string name="ai_tasks_loading_1">Reading what you sent…</string>
     <string name="ai_tasks_loading_2">Checking your calendar…</string>

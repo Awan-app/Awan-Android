@@ -8,7 +8,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.style.styleable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,17 +30,13 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.awan.app.core.designsystem.AwanBackButton
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanMascot
@@ -311,17 +305,11 @@ fun CenteredHeadline(title: String, subtitle: String? = null, modifier: Modifier
  */
 @Composable
 private fun BackSlot(visible: Boolean, onBack: () -> Unit) {
-    val label = stringResource(R.string.onboarding_back)
-    AwanButton(
+    AwanBackButton(
         onClick = onBack,
         enabled = visible,
-        variant = AwanButtonVariant.Secondary,
-        modifier = Modifier
-            .fadeSlot(visible)
-            .semantics(mergeDescendants = true) { contentDescription = label },
-    ) {
-        BackChevron()
-    }
+        modifier = Modifier.fadeSlot(visible),
+    )
 }
 
 /**
@@ -340,24 +328,3 @@ private fun Modifier.fadeSlot(visible: Boolean): Modifier {
         .then(if (visible) Modifier else Modifier.semantics { hideFromAccessibility() })
 }
 
-@Composable
-private fun BackChevron() {
-    // AwanButton provides the variant's animated content colour; reading it keeps the chevron
-    // correct in both themes and through the disabled and pressed states.
-    val ink = LocalContentColor.current
-    Box(Modifier.size(20.dp)) {
-        Canvas(Modifier.fillMaxSize()) {
-            val stroke = Stroke(
-                width = 2.4.dp.toPx(),
-                cap = StrokeCap.Round,
-                join = StrokeJoin.Round,
-            )
-            val path = Path().apply {
-                moveTo(size.width * 0.62f, size.height * 0.24f)
-                lineTo(size.width * 0.34f, size.height * 0.52f)
-                lineTo(size.width * 0.62f, size.height * 0.8f)
-            }
-            drawPath(path, color = ink, style = stroke)
-        }
-    }
-}

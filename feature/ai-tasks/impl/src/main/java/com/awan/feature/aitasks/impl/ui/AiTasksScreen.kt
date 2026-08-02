@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,7 +48,7 @@ import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanConfirmDialog
 import com.awan.app.core.designsystem.AwanDatePickerDialog
-import com.awan.app.core.designsystem.AwanIconButton
+import com.awan.app.core.designsystem.AwanBackButton
 import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
@@ -67,8 +66,6 @@ import com.awan.feature.aitasks.impl.presentation.AiTasksViewModel
 import com.awan.feature.aitasks.impl.presentation.PickerStep
 import com.awan.feature.aitasks.impl.ui.components.MinutesPerHour
 import com.awan.feature.aitasks.impl.ui.components.ProposalCard
-import com.composables.icons.lucide.ArrowLeft
-import com.composables.icons.lucide.Lucide
 import kotlinx.coroutines.delay
 
 @Composable
@@ -191,12 +188,7 @@ private fun Header(onBack: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
     ) {
-        AwanIconButton(
-            onClick = onBack,
-            contentDescription = stringResource(R.string.ai_tasks_back_content_description),
-        ) {
-            Icon(imageVector = Lucide.ArrowLeft, contentDescription = null, tint = AwanTheme.colors.textPrimary)
-        }
+        AwanBackButton(onClick = onBack)
         AwanText(stringResource(R.string.ai_tasks_title), style = AwanTheme.styles.titleText)
     }
 }

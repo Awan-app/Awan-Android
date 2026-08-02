@@ -11,4 +11,5 @@
     <string name="ds_add_goal">+ هدف</string>
     <string name="ds_pts">+%1$d نقطة</string>
     <string name="ds_friend">صديقي</string>
+    <string name="ds_back">رجوع</string>
 </resources>
