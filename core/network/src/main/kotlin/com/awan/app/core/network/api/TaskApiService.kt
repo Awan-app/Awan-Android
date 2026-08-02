@@ -1,15 +1,15 @@
 package com.awan.app.core.network.api
 
-import com.awan.app.core.network.dto.AiTextToTasksRequest
-import com.awan.app.core.network.dto.BulkCreateTasksWithSessionsRequest
-import com.awan.app.core.network.dto.CreateTaskRequest
-import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
-import com.awan.app.core.network.dto.ScheduleTaskRequest
-import com.awan.app.core.network.dto.TaskInfoResponse
-import com.awan.app.core.network.dto.TaskProposalResponse
-import com.awan.app.core.network.dto.TaskScheduleResponse
-import com.awan.app.core.network.dto.TaskWithSessionsDto
-import com.awan.app.core.network.dto.TasksWithSessionsResponse
+import com.awan.app.core.network.dto.task.AiTextToTasksRequest
+import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
+import com.awan.app.core.network.dto.task.CreateTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
+import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskProposalResponse
+import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskWithSessionsDto
+import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.http.Body
@@ -38,9 +38,10 @@ interface TaskApiService {
         @Body request: BulkCreateTasksWithSessionsRequest,
     ): TasksWithSessionsResponse
 
+
     /**
      * Asks Awan to turn a free-form note into one or more task proposals. Nothing is persisted —
-     * every proposal carries a ready-to-POST [com.awan.app.core.network.dto.ProposedTaskDto.draft].
+     * every proposal carries a ready-to-POST [com.awan.app.core.network.dto.task.ProposedTaskDto.draft].
      */
     @POST("v1/ai/task-create")
     suspend fun proposeTasksFromText(

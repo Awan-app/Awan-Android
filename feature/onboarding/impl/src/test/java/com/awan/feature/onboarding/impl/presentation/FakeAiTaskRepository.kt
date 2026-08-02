@@ -3,7 +3,7 @@ package com.awan.feature.onboarding.impl.presentation
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.task.repository.AiTaskRepository
-import com.awan.app.core.model.FirstTask
+import com.awan.app.core.domain.onboarding.model.FirstTask
 
 class FakeAiTaskRepository : AiTaskRepository {
     var requestedTitle: String? = null

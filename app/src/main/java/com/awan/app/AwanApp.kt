@@ -39,6 +39,8 @@ import com.awan.feature.marketplace.impl.navigation.marketplaceEntry
 import com.awan.feature.auth.api.OtpRoute
 import com.awan.feature.onboarding.api.OnboardingRoute
 import com.awan.feature.onboarding.impl.navigation.onboardingEntry
+import com.awan.feature.profile.api.DailyZonesRoute
+import com.awan.feature.profile.api.EditRoutineRoute
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.splash.impl.navigation.splashEntry
 import com.awan.feature.splash.impl.ui.SplashDestination
@@ -101,25 +103,25 @@ fun AwanApp(
                     when (destination) {
                         SplashDestination.Auth -> navigator.replaceAll(LoginRoute)
                         SplashDestination.Onboarding -> navigator.replaceAll(OnboardingRoute)
-                        SplashDestination.Home -> navigator.replaceAll(HomeRoute)
+                        SplashDestination.Home -> navigator.replaceAll(HomeRoute())
                         SplashDestination.Loading -> { /* Keep showing splash */ }
                     }
                 }
             )
             authEntry(
                 onNavigateToOtp = { email -> navigator.navigate(OtpRoute(email)) },
-                onNavigateToHome = { navigator.replaceAll(HomeRoute) },
+                onNavigateToHome = { navigator.replaceAll(HomeRoute()) },
                 onNavigateToOnboarding = { navigator.replaceAll(OnboardingRoute) },
                 onPopBackStack = { navigator.goBack() }
             )
             onboardingEntry(
-                onComplete = { navigator.replaceAll(HomeRoute) },
+                onComplete = { navigator.replaceAll(HomeRoute()) },
                 onExit = { navigator.replaceAll(LoginRoute) }
             )
             marketplaceEntry()
             homeEntry(
                 onLogout = { navigator.replaceAll(LoginRoute) },
-                onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute) },
+                onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
             )
             calendarEntry(
                 onDateSelected = { /* consumed within calendar screen */ },
@@ -129,7 +131,10 @@ fun AwanApp(
             goalsEntry()
             aiTasksEntry(onBack = { navigator.goBack() })
             profileEntry(
-                onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) }
+                onNavigateToDailyZones = { navigator.navigate(DailyZonesRoute) },
+                onNavigateToEditRoutine = { templateId -> navigator.navigate(EditRoutineRoute(templateId)) },
+                onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) },
+                onBack = { navigator.goBack() },
             )
         }
 

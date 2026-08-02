@@ -120,7 +120,7 @@ fun StepScaffold(
                 .padding(horizontal = AwanTheme.spacing.xl)
                 .clipToBounds(),
         ) {
-            Spacer(Modifier.height(lead))
+            Spacer(Modifier.height(lead.coerceAtLeast(0.dp)))
             Mascot(
                 expression = chrome.mascot,
                 width = mascotWidth,
@@ -179,7 +179,7 @@ private fun StepProgress(current: Int, modifier: Modifier = Modifier) {
         count = OnboardingStep.DOT_COUNT,
         modifier = modifier.graphicsLayer { this.alpha = alpha },
     )
-    Spacer(Modifier.size(height))
+    Spacer(Modifier.height(height.coerceAtLeast(0.dp)))
 }
 
 /**

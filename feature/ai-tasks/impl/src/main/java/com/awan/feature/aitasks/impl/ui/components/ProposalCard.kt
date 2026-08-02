@@ -39,6 +39,7 @@ import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanChip
 import com.awan.app.core.designsystem.AwanChipDot
 import com.awan.app.core.designsystem.AwanChipDotSize
+import com.awan.app.core.designsystem.AwanChipTone
 import com.awan.app.core.designsystem.AwanDropdownMenu
 import com.awan.app.core.designsystem.AwanDropdownMenuItem
 import com.awan.app.core.designsystem.AwanIconButton
@@ -210,7 +211,7 @@ private fun AttributeChips(
             AwanChip(
                 label = draft.durationMinutes?.let { durationLabel(it) }
                     ?: stringResource(R.string.ai_tasks_chip_no_duration),
-                tone = colors.zoneViolet,
+                tone = AwanChipTone.Violet,
                 active = draft.durationMinutes != null,
                 onClick = { durationMenuOpen = true },
             )
@@ -221,7 +222,7 @@ private fun AttributeChips(
                         label = durationLabel(minutes),
                         onClick = { onDurationPicked(minutes); durationMenuOpen = false },
                         selected = active,
-                        leading = { AwanChipDot(tone = colors.zoneViolet, active = active) },
+                        leading = { AwanChipDot(tone = AwanChipTone.Violet, active = active) },
                     )
                 }
             }
@@ -232,7 +233,7 @@ private fun AttributeChips(
         Box {
             AwanChip(
                 label = resolvedCategory?.name ?: stringResource(R.string.ai_tasks_chip_no_category),
-                tone = colors.zoneLavender,
+                tone = AwanChipTone.Violet,
                 active = resolvedCategory != null,
                 onClick = { categoryMenuOpen = true },
             )
@@ -249,7 +250,7 @@ private fun AttributeChips(
                         label = stringResource(R.string.ai_tasks_chip_no_category),
                         onClick = { onCategoryPicked(null); categoryMenuOpen = false },
                         selected = draft.categoryId == null,
-                        leading = { AwanChipDot(tone = colors.zoneLavender, active = false) },
+                        leading = { AwanChipDot(tone = AwanChipTone.Violet, active = false) },
                     )
                 }
                 categories.forEach { category ->
@@ -258,7 +259,7 @@ private fun AttributeChips(
                         label = category.name,
                         onClick = { onCategoryPicked(category.id); categoryMenuOpen = false },
                         selected = active,
-                        leading = { AwanChipDot(tone = colors.zoneLavender, active = active) },
+                        leading = { AwanChipDot(tone = AwanChipTone.Violet, active = active) },
                     )
                 }
             }
@@ -268,7 +269,7 @@ private fun AttributeChips(
             label = stringResource(
                 if (draft.mandatory) R.string.ai_tasks_chip_mandatory else R.string.ai_tasks_chip_optional,
             ),
-            tone = colors.zoneTangerine,
+            tone = AwanChipTone.Tangerine,
             active = draft.mandatory,
             onClick = onMandatoryToggled,
         )
@@ -306,7 +307,9 @@ private fun SessionsList(
 @Composable
 private fun SessionRow(session: ProposedSession, onClick: () -> Unit, onRemove: () -> Unit) {
     val colors = AwanTheme.colors
-    val tone = if (session.isAiSuggested) colors.zoneViolet else colors.zoneSky
+    val tone = if (session.isAiSuggested) AwanChipTone.Violet else AwanChipTone.Sky
+    /** The sparkle stands in for the chip's dot, so it has to carry the dot's colour for that tone. */
+    val toneColor = if (session.isAiSuggested) colors.zoneViolet else colors.skyPressed
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -321,7 +324,7 @@ private fun SessionRow(session: ProposedSession, onClick: () -> Unit, onRemove: 
                     Icon(
                         imageVector = Lucide.Sparkles,
                         contentDescription = stringResource(R.string.ai_tasks_session_suggested),
-                        tint = tone,
+                        tint = toneColor,
                         modifier = Modifier.size(AwanChipDotSize + 6.dp),
                     )
                 } else {

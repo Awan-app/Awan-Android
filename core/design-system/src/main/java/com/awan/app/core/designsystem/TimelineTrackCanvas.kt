@@ -8,7 +8,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 
@@ -28,12 +30,14 @@ fun TimelineTrackCanvas(
     modifier: Modifier = Modifier,
 ) {
     val hourLineColor = AwanTheme.colors.line
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Canvas(
         modifier = modifier
             .fillMaxSize()
             .zIndex(1f),
     ) {
-        val trackX      = 52.dp.toPx()
+        val trackX      = if (isRtl) size.width - 52.dp.toPx() else 52.dp.toPx()
+        val lineEnd     = if (isRtl) 0f else size.width
         val pointerY    = currentPointerY?.toPx()
         val defaultGray = hourLineColor
         val pastGray    = hourLineColor.copy(alpha = 0.55f)
@@ -74,7 +78,7 @@ fun TimelineTrackCanvas(
             drawLine(
                 color       = hourLineColor.copy(alpha = 0.70f),
                 start       = Offset(trackX, hTop),
-                end         = Offset(size.width, hTop),
+                end         = Offset(lineEnd, hTop),
                 strokeWidth = 1.dp.toPx(),
             )
 
@@ -132,15 +136,16 @@ fun TimelineTrackCanvas(
                         drawLine(
                             color       = Color(0xFFE2E8F0).copy(alpha = 0.45f),
                             start       = Offset(trackX, subY),
-                            end         = Offset(size.width, subY),
+                            end         = Offset(lineEnd, subY),
                             strokeWidth = 0.8.dp.toPx(),
                             pathEffect  = PathEffect.dashPathEffect(floatArrayOf(6f, 8f), 0f),
                         )
                     } else {
+                        val tickEnd = if (isRtl) trackX - tickWidth else trackX + tickWidth
                         drawLine(
                             color       = tickColor,
                             start       = Offset(trackX, subY),
-                            end         = Offset(trackX + tickWidth, subY),
+                            end         = Offset(tickEnd, subY),
                             strokeWidth = tickStroke,
                         )
                     }

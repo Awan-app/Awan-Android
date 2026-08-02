@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.awan.app.core.designsystem.AwanChip
 import com.awan.app.core.designsystem.AwanChipDot
+import com.awan.app.core.designsystem.AwanChipTone
 import com.awan.app.core.designsystem.AwanDropdownMenu
 import com.awan.app.core.designsystem.AwanDropdownMenuItem
 import com.awan.app.core.designsystem.AwanTheme
@@ -44,7 +45,6 @@ fun TaskAttributeChips(
     onToggleMandatory: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = AwanTheme.colors
     FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
@@ -52,7 +52,7 @@ fun TaskAttributeChips(
     ) {
         AwanChip(
             label = whenChipLabel(state, today),
-            tone = colors.zoneSky,
+            tone = AwanChipTone.Sky,
             active = state.parsed.startAt != null,
             onClick = onEditWhen,
         )
@@ -61,7 +61,7 @@ fun TaskAttributeChips(
             AwanChip(
                 label = state.parsed.durationMinutes?.let { durationLabel(it) }
                     ?: stringResource(R.string.add_task_chip_no_duration),
-                tone = colors.zoneViolet,
+                tone = AwanChipTone.Violet,
                 active = state.parsed.durationMinutes != null,
                 onClick = onEditDuration,
             )
@@ -114,7 +114,7 @@ private fun DurationMenu(
                 label = durationLabel(minutes),
                 onClick = { onSelect(minutes) },
                 selected = active,
-                leading = { AwanChipDot(tone = AwanTheme.colors.zoneViolet, active = active) },
+                leading = { AwanChipDot(tone = AwanChipTone.Violet, active = active) },
             )
         }
     }
@@ -133,27 +133,27 @@ private fun CategoryChip(state: AddTaskState, onClick: () -> Unit) {
     when {
         state.resolvedCategory != null -> AwanChip(
             label = state.resolvedCategory.name,
-            tone = colors.zoneLavender,
+            tone = AwanChipTone.Violet,
             onClick = onClick,
         )
 
         state.isResolvingCategory -> AwanChip(
             label = stringResource(R.string.add_task_chip_category_resolving),
-            tone = colors.zoneLavender,
+            tone = AwanChipTone.Violet,
             active = false,
             onClick = onClick,
         )
 
         token != null -> AwanChip(
             label = stringResource(R.string.add_task_chip_category_unknown, token),
-            tone = colors.destructive,
+            tone = AwanChipTone.Neutral,
             active = false,
             onClick = onClick,
         )
 
         else -> AwanChip(
             label = stringResource(R.string.add_task_chip_no_category),
-            tone = colors.zoneLavender,
+            tone = AwanChipTone.Violet,
             active = false,
             onClick = onClick,
         )
@@ -185,7 +185,7 @@ private fun CategoryMenu(
                 label = category.name,
                 onClick = { onSelect(category.name) },
                 selected = active,
-                leading = { AwanChipDot(tone = AwanTheme.colors.zoneLavender, active = active) },
+                leading = { AwanChipDot(tone = AwanChipTone.Violet, active = active) },
             )
         }
     }

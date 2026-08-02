@@ -266,7 +266,7 @@ class AiTasksViewModel @Inject constructor(
         if (current.isAccepting) return
         val selected = current.proposals
         if (selected.isEmpty()) return
-        if (selected.any { !it.draft.isValid }) {
+        if (selected.any { it.draft.title.isBlank() }) {
             _state.update { it.copy(acceptError = R.string.ai_tasks_error_blank_title) }
             return
         }

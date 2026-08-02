@@ -1,9 +1,9 @@
 package com.awan.app.core.domain.onboarding.model
 
-import com.awan.app.core.model.DayBounds
-import com.awan.app.core.model.FirstTask
-import com.awan.app.core.model.UserProfile
-import com.awan.app.core.model.Zone
+import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.domain.onboarding.model.FirstTask
+import com.awan.app.core.domain.profile.model.UserProfile
+import com.awan.app.core.domain.zones.model.Zone
 
 /**
  * The full onboarding draft. Everything above the repository observes this; nothing here is

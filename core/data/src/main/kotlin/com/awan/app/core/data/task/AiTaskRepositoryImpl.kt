@@ -6,10 +6,10 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.data.util.minutesOfDay
 import com.awan.app.core.domain.task.repository.AiTaskRepository
-import com.awan.app.core.model.FirstTask
+import com.awan.app.core.domain.onboarding.model.FirstTask
 import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.model.toSessionDraft
-import com.awan.app.core.network.dto.AiTextToTasksRequest
+import com.awan.app.core.network.dto.task.AiTextToTasksRequest
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.time.Duration
@@ -32,7 +32,7 @@ class AiTaskRepositoryImpl @Inject constructor(
 
         val request = proposal.draft.toRequest(proposal.sessions.map { it.toSessionDraft() })
         when (val result = remoteDataSource.createTaskWithSessions(request)) {
-            is Result.Success -> Result.Success(result.data.toModel().toFirstTask())
+            is Result.Success -> Result.Success(result.data.toWithSessionsModel().toFirstTask())
             is Result.Error -> Result.Error(result.error)
             Result.Loading -> Result.Loading
         }
