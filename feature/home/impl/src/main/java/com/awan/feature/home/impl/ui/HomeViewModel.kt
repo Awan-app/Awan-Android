@@ -22,6 +22,7 @@ import com.awan.app.core.domain.home.model.DayZone
 import com.awan.app.core.domain.home.model.SessionStatus
 import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.domain.home.usecase.GetDayScheduleUseCase
+import com.awan.app.core.domain.task.repository.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,12 +38,11 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
-
-
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getDayScheduleUseCase: GetDayScheduleUseCase,
     private val homeRepository: HomeRepository,
+    private val taskRepository: TaskRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -53,6 +53,15 @@ class HomeViewModel @Inject constructor(
         startClockTimer()
         loadUserProfile()
         loadScheduleForDate(LocalDate.now())
+        observeTaskEvents()
+    }
+
+    private fun observeTaskEvents() {
+        viewModelScope.launch {
+            taskRepository.taskCreatedEvents.collect {
+                loadScheduleForDate(_uiState.value.selectedDate)
+            }
+        }
     }
 
     private fun loadUserProfile() {
@@ -173,6 +182,7 @@ class HomeViewModel @Inject constructor(
     fun selectToday() = loadScheduleForDate(LocalDate.now())
 
     fun retryLoad() = loadScheduleForDate(_uiState.value.selectedDate)
+    fun refresh()   = loadScheduleForDate(_uiState.value.selectedDate)
 
 
     fun toggleZoneCollapse(zoneId: String) {

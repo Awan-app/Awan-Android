@@ -73,6 +73,7 @@ class HomeRepositoryImpl @Inject constructor(
 
     override suspend fun getDaySchedule(date: LocalDate): Result<DaySchedule> {
         val dateStr = date.toString()
+        scheduleCache.remove(date)
 
         val zonesResult = remoteDataSource.getZonesByDate(dateStr)
         val zones: List<ZoneDto> = when (zonesResult) {

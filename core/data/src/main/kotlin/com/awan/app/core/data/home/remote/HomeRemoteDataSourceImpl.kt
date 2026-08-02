@@ -14,6 +14,7 @@ import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import javax.inject.Singleton
 
 import com.awan.app.core.network.api.UserApiService
 import com.awan.app.core.network.dto.CompleteOnboardingResponse
@@ -22,6 +23,7 @@ import com.awan.app.core.network.api.SessionApiService
 import com.awan.app.core.network.dto.SessionDto
 import com.awan.app.core.network.dto.UpdateSessionRequest
 
+@Singleton
 class HomeRemoteDataSourceImpl @Inject constructor(
     private val zonesApiService: ZoneApiService,
     private val taskApiService: TaskApiService,

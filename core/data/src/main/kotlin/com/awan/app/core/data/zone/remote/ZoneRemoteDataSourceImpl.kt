@@ -9,7 +9,9 @@ import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class ZoneRemoteDataSourceImpl @Inject constructor(
     private val zoneApiService: ZoneApiService,
     private val json: Json,

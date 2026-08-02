@@ -10,7 +10,9 @@ import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class OnboardingRemoteDataSourceImpl @Inject constructor(
     private val onboardingApiService: OnboardingApiService,
     private val json: Json,

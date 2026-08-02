@@ -8,6 +8,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -84,10 +85,14 @@ fun AwanApp(
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
+    var homeRefreshTrigger by rememberSaveable { mutableIntStateOf(0) }
 
     if (showAddTask) {
         AddTaskSheet(
             onDismiss = { showAddTask = false },
+            onTaskCreated = {
+                homeRefreshTrigger++
+            },
             onAiRequested = { text, note, imageUri ->
                 navigator.navigate(AiTaskProposalsRoute(text = text, note = note, imageUri = imageUri))
             },
@@ -120,6 +125,7 @@ fun AwanApp(
             homeEntry(
                 onLogout = { navigator.replaceAll(LoginRoute) },
                 onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute) },
+                refreshTrigger = homeRefreshTrigger,
             )
             calendarEntry(
                 onDateSelected = { /* consumed within calendar screen */ },

@@ -21,11 +21,13 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
+import javax.inject.Singleton
 
 private const val IMAGE_PART_NAME = "image"
 /** [ImageRepositoryImpl][com.awan.app.core.data.image.ImageRepositoryImpl] always re-encodes as JPEG. */
 private const val IMAGE_FILENAME = "image.jpg"
 
+@Singleton
 class TaskRemoteDataSourceImpl @Inject constructor(
     private val taskApiService: TaskApiService,
     private val json: Json,

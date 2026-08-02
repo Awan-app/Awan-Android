@@ -10,7 +10,9 @@ import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class TemplateRemoteDataSourceImpl @Inject constructor(
     private val templateApiService: TemplateApiService,
     private val json: Json,

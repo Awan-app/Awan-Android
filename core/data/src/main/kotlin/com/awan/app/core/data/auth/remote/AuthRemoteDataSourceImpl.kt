@@ -14,7 +14,9 @@ import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class AuthRemoteDataSourceImpl @Inject constructor(
     private val authApiService: AuthApiService,
     private val json: Json,

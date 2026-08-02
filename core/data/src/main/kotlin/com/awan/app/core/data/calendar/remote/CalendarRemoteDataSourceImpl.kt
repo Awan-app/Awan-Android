@@ -10,7 +10,9 @@ import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class CalendarRemoteDataSourceImpl @Inject constructor(
     private val api: CalendarApiService,
     private val json: Json,

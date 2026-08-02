@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -54,9 +55,16 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onLogout: () -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
+    refreshTrigger: Int = 0,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(refreshTrigger) {
+        if (refreshTrigger > 0) {
+            viewModel.refresh()
+        }
+    }
 
     val timelineScrollState = rememberScrollState()
     val isHeaderCollapsed by remember { derivedStateOf { timelineScrollState.value > 80 } }

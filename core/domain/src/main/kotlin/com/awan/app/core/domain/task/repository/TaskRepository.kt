@@ -8,8 +8,12 @@ import com.awan.app.core.model.TaskProposals
 import com.awan.app.core.model.TaskSchedule
 import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.model.TaskWithSessionsDraft
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 interface TaskRepository {
+
+    val taskCreatedEvents: Flow<Unit> get() = emptyFlow()
 
     /** Creates an unscheduled task. A null `TaskDraft.goalId` puts it in the Inbox. */
     suspend fun createTask(draft: TaskDraft): Result<Task>
