@@ -4,10 +4,10 @@ import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.domain.home.model.DaySession
 import com.awan.app.core.domain.home.model.DayZone
 import com.awan.app.core.domain.home.model.SessionStatus
-import com.awan.app.core.network.dto.SessionDto
-import com.awan.app.core.network.dto.TaskInfoResponse
-import com.awan.app.core.network.dto.TaskWithSessionsDto
-import com.awan.app.core.network.dto.ZoneDto
+import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskWithSessionsDto
+import com.awan.app.core.network.dto.zone.ZoneDto
 import java.time.LocalDate
 
 internal object HomeMapper {
@@ -31,9 +31,9 @@ internal object HomeMapper {
     // ── Zone ─────────────────────────────────────────────────────────────
 
     private fun ZoneDto.toDayZone(): DayZone = DayZone(
-        id = id,
+        id = id.orEmpty(),
         name = name,
-        categoryId = category?.id ?: id,
+        categoryId = category?.id ?: id.orEmpty(),
         categoryName = category?.name ?: name,
         startMinutes = parseTimeToMinutes(startTime),
         endMinutes = parseTimeToMinutes(endTime),

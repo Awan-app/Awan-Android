@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanChip
 import com.awan.app.core.designsystem.AwanChipDot
 import com.awan.app.core.designsystem.AwanChipDotSize
+import com.awan.app.core.designsystem.AwanChipTone
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.reducedMotion
 import com.awan.feature.addtask.R
@@ -47,7 +48,7 @@ fun MandatoryToggle(
         label = stringResource(
             if (mandatory) R.string.add_task_chip_mandatory else R.string.add_task_chip_optional,
         ),
-        tone = AwanTheme.colors.zoneTangerine,
+        tone = AwanChipTone.Tangerine,
         modifier = modifier.semantics { role = Role.Switch },
         active = mandatory,
         leading = { DotOnARail(travelled = mandatory, tone = AwanTheme.colors.zoneTangerine) },

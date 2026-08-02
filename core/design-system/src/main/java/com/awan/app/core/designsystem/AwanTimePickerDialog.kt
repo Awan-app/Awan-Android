@@ -44,6 +44,6 @@ fun AwanTimePickerDialog(
             }
         },
         containerColor = AwanTheme.colors.surface,
-        text = { TimePicker(state = state) },
+        text = { AwanTimePicker(state = state) },
     )
 }

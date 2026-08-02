@@ -26,8 +26,8 @@ import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.domain.zones.model.Zone
 import com.awan.app.core.designsystem.AwanTimePickerDialog
-import com.awan.app.core.model.Zone
 import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.ui.formatClock
 

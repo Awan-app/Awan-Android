@@ -4,5 +4,4 @@ import com.awan.core.navigation.Route
 import kotlinx.serialization.Serializable
 
 @Serializable
-data object CalendarRoute : Route
-
+data class CalendarRoute(val date: String? = null) : Route

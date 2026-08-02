@@ -14,6 +14,13 @@
     <string name="home_schedule_alert_fix_it">FIX IT</string>
     <string name="home_default_user_name">Friend</string>
     <string name="home_greeting_prefix">Good afternoon</string>
+    <string name="home_greeting_morning">Good morning</string>
+    <string name="home_greeting_afternoon">Good afternoon</string>
+    <string name="home_greeting_evening">Good evening</string>
+    <string name="home_date_today_format">Today · %1$s</string>
+    <string name="home_date_yesterday_format">Yesterday · %1$s</string>
+    <string name="home_date_tomorrow_format">Tomorrow · %1$s</string>
+    <string name="home_subtitle_scheduled">Clear skies — %1$d sessions scheduled</string>
     <string name="home_error_network">No internet connection. Check your network and retry.</string>
     <string name="home_error_timeout">Request timed out. Please try again.</string>
     <string name="home_error_unauthorized">Session expired. Please log in again.</string>

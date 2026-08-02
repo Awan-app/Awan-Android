@@ -8,12 +8,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.*
-import com.awan.feature.profile.impl.presentation.ProfileUiState
+import com.awan.feature.profile.impl.presentation.ProfileState
 import com.awan.feature.profile.impl.R as ProfileR
 
 @Composable
 fun AppearanceCard(
-    uiState: ProfileUiState,
+    uiState: ProfileState,
     onThemeClick: (Boolean) -> Unit,
     onLanguageClick: (String) -> Unit,
 ) {

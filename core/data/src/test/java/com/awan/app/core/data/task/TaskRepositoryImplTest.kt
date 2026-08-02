@@ -6,16 +6,16 @@ import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.TaskDraft
 import com.awan.app.core.network.dto.AiTaskPreviewResponse
 import com.awan.app.core.network.dto.AiTaskPreviewTaskResponse
-import com.awan.app.core.network.dto.CategoryDto
-import com.awan.app.core.network.dto.CreateTaskRequest
-import com.awan.app.core.network.dto.CreateTaskWithAiRequest
-import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
-import com.awan.app.core.network.dto.ScheduleTaskRequest
-import com.awan.app.core.network.dto.ScheduledSessionResponse
-import com.awan.app.core.network.dto.SessionDto
-import com.awan.app.core.network.dto.TaskInfoResponse
-import com.awan.app.core.network.dto.TaskScheduleResponse
-import com.awan.app.core.network.dto.TaskWithSessionsDto
+import com.awan.app.core.network.dto.category.CategoryDto
+import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.network.dto.task.CreateTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithAiRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
+import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.ScheduledSessionResponse
+import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -132,7 +132,7 @@ class TaskRepositoryImplTest {
         val remote = FakeRemoteDataSource()
         val repository = TaskRepositoryImpl(remote, testDispatcher)
 
-        val result = repository.createTask(TaskDraft(title = "  Read docs  ", durationMinutes = 45))
+        val result = repository.createTask(TaskDraft(title = "  Read docs  ", durationMinutes = 45, mandatory = true))
 
         assertEquals("Read docs", remote.lastCreateRequest?.title)
         assertTrue(result is Result.Success)
@@ -240,7 +240,7 @@ class TaskRepositoryImplTest {
     fun `an unknown status maps to UNKNOWN instead of throwing`() = runTest(testDispatcher) {
         val remote = object : TaskRemoteDataSource by FakeRemoteDataSource() {
             override suspend fun createTask(request: CreateTaskRequest): Result<TaskInfoResponse> =
-                Result.Success(TaskInfoResponse(id = "t-4", title = "Gym", status = "TELEPORTED"))
+                Result.Success(TaskInfoResponse(id = "t-4", title = "Gym", status = "GHOST"))
         }
         val repository = TaskRepositoryImpl(remote, testDispatcher)
 

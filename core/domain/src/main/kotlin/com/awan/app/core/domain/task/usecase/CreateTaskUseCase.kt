@@ -2,7 +2,7 @@ package com.awan.app.core.domain.task.usecase
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.task.repository.TaskRepository
-import com.awan.app.core.domain.zone.usecase.GetZonesForDateUseCase
+import com.awan.app.core.domain.zones.usecase.GetZonesForDateUseCase
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.Task
 import com.awan.app.core.model.TaskDraft

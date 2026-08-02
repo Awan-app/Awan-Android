@@ -11,14 +11,14 @@ import com.awan.app.core.model.TaskSession
 import com.awan.app.core.model.TaskStatus
 import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.network.dto.AiTaskPreviewResponse
-import com.awan.app.core.network.dto.CreateTaskRequest
-import com.awan.app.core.network.dto.CreateTaskWithSessionsRequest
-import com.awan.app.core.network.dto.ScheduledSessionResponse
-import com.awan.app.core.network.dto.SessionDraftDto
-import com.awan.app.core.network.dto.SessionDto
-import com.awan.app.core.network.dto.TaskInfoResponse
-import com.awan.app.core.network.dto.TaskScheduleResponse
-import com.awan.app.core.network.dto.TaskWithSessionsDto
+import com.awan.app.core.network.dto.task.CreateTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
+import com.awan.app.core.network.dto.task.ScheduledSessionResponse
+import com.awan.app.core.network.dto.task.SessionDraftDto
+import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -48,11 +48,11 @@ internal fun SessionDraft.toDto(): SessionDraftDto = SessionDraftDto(
     zoneId = zoneId,
 )
 
-internal fun TaskInfoResponse.toModel(): Task = Task(
+internal fun TaskInfoResponse.toTaskModel(): Task = Task(
     id = id,
     title = title,
     description = description,
-    estimatedDurationMinutes = estimatedDuration,
+    estimatedDurationMinutes = estimatedDuration ?: 0,
     status = status.toTaskStatus(),
     mandatory = mandatory ?: true,
     estimatedPoints = estimatedPoints ?: 0,
@@ -80,8 +80,8 @@ internal fun AiTaskPreviewResponse.toModel(): AiTaskSuggestion {
  * An empty `scheduledSessions` with nothing in `unscheduledTasks` still means nothing was placed, so
  * it gets a reason of its own rather than passing for a successful schedule.
  */
-internal fun TaskScheduleResponse.toModel(): TaskSchedule {
-    val sessions = scheduledSessions.orEmpty().mapNotNull { it.toModel() }
+internal fun TaskScheduleResponse.toScheduleModel(): TaskSchedule {
+    val sessions = scheduledSessions.orEmpty().mapNotNull { it.toSessionModel() }
     val refusal = unscheduledTasks.orEmpty().firstOrNull()
     return TaskSchedule(
         sessions = sessions,
@@ -95,7 +95,7 @@ internal fun TaskScheduleResponse.toModel(): TaskSchedule {
 
 private const val UNKNOWN_REFUSAL = "UNSCHEDULED"
 
-internal fun ScheduledSessionResponse.toModel(): TaskSession? {
+internal fun ScheduledSessionResponse.toSessionModel(): TaskSession? {
     val parsedStart = start?.toLocalDateTimeOrNull() ?: return null
     val parsedEnd = end?.toLocalDateTimeOrNull() ?: return null
     return TaskSession(
@@ -108,13 +108,13 @@ internal fun ScheduledSessionResponse.toModel(): TaskSession? {
     )
 }
 
-internal fun TaskWithSessionsDto.toModel(): TaskWithSessions = TaskWithSessions(
-    task = task.toModel(),
-    sessions = sessions.mapNotNull { it.toModel() },
+internal fun TaskWithSessionsDto.toWithSessionsModel(): TaskWithSessions = TaskWithSessions(
+    task = task.toTaskModel(),
+    sessions = sessions.mapNotNull { it.toSessionModel() },
 )
 
 /** A session whose times don't parse is dropped rather than crashing the whole create. */
-internal fun SessionDto.toModel(): TaskSession? {
+internal fun SessionDto.toSessionModel(): TaskSession? {
     val parsedStart = start.toLocalDateTimeOrNull() ?: return null
     val parsedEnd = end.toLocalDateTimeOrNull() ?: return null
     return TaskSession(

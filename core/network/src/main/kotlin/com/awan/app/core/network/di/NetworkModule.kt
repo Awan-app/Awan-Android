@@ -15,7 +15,6 @@ import com.awan.app.core.network.device.DeviceIdProvider
 import com.awan.app.core.network.interceptor.AiTimeoutInterceptor
 import com.awan.app.core.network.interceptor.AuthInterceptor
 import com.awan.app.core.network.interceptor.TokenAuthenticator
-import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

@@ -10,8 +10,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.*
 import com.awan.feature.profile.impl.R as ProfileR
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,9 +31,7 @@ fun EditPersonalInfoSheet(
     var showDatePicker by remember { mutableStateOf(false) }
     
     val birthDateFormat = remember {
-        SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC)
     }
 
     ModalBottomSheet(
@@ -155,7 +155,10 @@ fun EditPersonalInfoSheet(
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = try {
-                birthDateFormat.parse(birthDate)?.time
+                LocalDate.parse(birthDate, birthDateFormat)
+                    .atStartOfDay(ZoneOffset.UTC)
+                    .toInstant()
+                    .toEpochMilli()
             } catch (_: Exception) {
                 null
             }
@@ -166,7 +169,7 @@ fun EditPersonalInfoSheet(
                 AwanButton(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            birthDate = birthDateFormat.format(Date(millis))
+                            birthDate = birthDateFormat.format(Instant.ofEpochMilli(millis))
                         }
                         showDatePicker = false
                     },

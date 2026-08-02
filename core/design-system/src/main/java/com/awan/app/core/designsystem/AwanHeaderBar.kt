@@ -172,7 +172,7 @@ fun AwanHeaderBar(
             exit = fadeOut(tween(180)) + shrinkVertically(tween(180)),
         ) {
             AwanProgressSummaryCard(
-                subtitle = "$completedSessionsCount/$totalSessionsCount sessions",
+                subtitle = stringResource(R.string.ds_tasks_count, completedSessionsCount, totalSessionsCount),
                 completedHours = completedHours,
                 totalHours = totalHours,
                 segments = progressSegments,
