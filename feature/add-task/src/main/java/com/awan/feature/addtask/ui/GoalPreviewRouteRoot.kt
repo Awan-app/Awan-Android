@@ -37,6 +37,10 @@ fun GoalPreviewRouteRoot(
 
     val speechState = rememberSpeechRecognizer(
         onTranscript = { transcript -> viewModel.onAction(AddTaskAction.InputChanged(transcript)) },
+        hasRequestedMicPermission = state.hasRequestedMicPermission,
+        onSetMicPermissionRequested = { requested ->
+            viewModel.onAction(AddTaskAction.SetMicPermissionRequested(requested))
+        },
     )
 
     LaunchedEffect(state.isSubmitting) {

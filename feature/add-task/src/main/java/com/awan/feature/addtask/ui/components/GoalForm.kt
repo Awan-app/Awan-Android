@@ -73,6 +73,10 @@ fun GoalForm(
 ) {
     val speechState = rememberSpeechRecognizer(
         onTranscript = { transcript -> onAction(AddTaskAction.InputChanged(transcript)) },
+        hasRequestedMicPermission = state.hasRequestedMicPermission,
+        onSetMicPermissionRequested = { requested ->
+            onAction(AddTaskAction.SetMicPermissionRequested(requested))
+        },
     )
 
     LaunchedEffect(state.isSubmitting) {

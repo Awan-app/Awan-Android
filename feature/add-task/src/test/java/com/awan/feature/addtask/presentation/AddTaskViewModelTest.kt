@@ -16,6 +16,10 @@ import com.awan.app.core.domain.task.usecase.DeleteTaskUseCase
 import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
 import com.awan.app.core.domain.task.usecase.PreviewTaskWithAiUseCase
 import com.awan.app.core.domain.task.usecase.ScheduleTaskWithAiUseCase
+import com.awan.app.core.domain.profile.model.UserData
+import com.awan.app.core.domain.profile.repository.UserDataRepository
+import com.awan.app.core.domain.profile.usecase.GetUserDataUseCase
+import com.awan.app.core.domain.profile.usecase.SetMicPermissionRequestedUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.model.Session
@@ -41,7 +45,10 @@ import com.awan.feature.addtask.R
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -200,6 +207,23 @@ class AddTaskViewModelTest {
         override suspend fun getCategories(): Result<List<Category>> = Result.Success(categories)
     }
 
+    private class FakeUserDataRepository : UserDataRepository {
+        val _userData = MutableStateFlow(UserData(darkThemeEnabled = false, locale = "en", micPermissionRequested = false))
+        override val userData: Flow<UserData> = _userData
+
+        override suspend fun setDarkThemeEnabled(enabled: Boolean) {
+            _userData.update { it.copy(darkThemeEnabled = enabled) }
+        }
+
+        override suspend fun setLocale(locale: String) {
+            _userData.update { it.copy(locale = locale) }
+        }
+
+        override suspend fun setMicPermissionRequested(requested: Boolean) {
+            _userData.update { it.copy(micPermissionRequested = requested) }
+        }
+    }
+
     private val playCategory = Category(id = "cat-play", name = "Play")
 
     private val playZone = DayZone(
@@ -214,6 +238,7 @@ class AddTaskViewModelTest {
     private lateinit var goalRepository: FakeGoalRepository
     private lateinit var zoneRepository: FakeZoneRepository
     private lateinit var categoryRepository: FakeCategoryRepository
+    private lateinit var userDataRepository: FakeUserDataRepository
 
     private fun viewModel(): AddTaskViewModel = AddTaskViewModel(
         parseTaskInput = ParseTaskInputUseCase(clock),
@@ -225,6 +250,8 @@ class AddTaskViewModelTest {
         deleteTask = DeleteTaskUseCase(taskRepository),
         continueGoalDecomposition = ContinueGoalDecompositionUseCase(goalRepository),
         confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(goalRepository),
+        getUserDataUseCase = GetUserDataUseCase(userDataRepository),
+        setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
         clock = clock,
     )
 
@@ -247,6 +274,7 @@ class AddTaskViewModelTest {
         goalRepository = FakeGoalRepository()
         zoneRepository = FakeZoneRepository(listOf(playZone))
         categoryRepository = FakeCategoryRepository(listOf(playCategory))
+        userDataRepository = FakeUserDataRepository()
     }
 
     @After
@@ -1353,6 +1381,8 @@ class AddTaskViewModelTest {
                 deleteTask = DeleteTaskUseCase(taskRepository),
                 continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
                 confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
+                getUserDataUseCase = GetUserDataUseCase(userDataRepository),
+                setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
                 clock = clock,
             )
 
@@ -1456,6 +1486,8 @@ class AddTaskViewModelTest {
                 deleteTask = DeleteTaskUseCase(taskRepository),
                 continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
                 confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
+                getUserDataUseCase = GetUserDataUseCase(userDataRepository),
+                setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
                 clock = clock,
             )
 
@@ -1550,6 +1582,8 @@ class AddTaskViewModelTest {
                 deleteTask = DeleteTaskUseCase(taskRepository),
                 continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
                 confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
+                getUserDataUseCase = GetUserDataUseCase(userDataRepository),
+                setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
                 clock = clock,
             )
 
@@ -1661,6 +1695,8 @@ class AddTaskViewModelTest {
                 deleteTask = DeleteTaskUseCase(taskRepository),
                 continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
                 confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
+                getUserDataUseCase = GetUserDataUseCase(userDataRepository),
+                setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
                 clock = clock,
             )
 
@@ -1714,5 +1750,24 @@ class AddTaskViewModelTest {
             // isDirty must be true so that the confirmValueChange block would normally block dismissal
             // but the `!isPreviewStep` guard lifts it for programmatic hide
             assertTrue(state.isDirty)
+        }
+
+    @Test
+    fun `SetMicPermissionRequested action updates state and user data repository`() =
+        runTest(testDispatcher) {
+            val viewModel = viewModel()
+            assertFalse(viewModel.state.value.hasRequestedMicPermission)
+
+            viewModel.onAction(AddTaskAction.SetMicPermissionRequested(true))
+            advanceUntilIdle()
+
+            assertTrue(viewModel.state.value.hasRequestedMicPermission)
+            assertTrue(userDataRepository._userData.value.micPermissionRequested)
+
+            viewModel.onAction(AddTaskAction.SetMicPermissionRequested(false))
+            advanceUntilIdle()
+
+            assertFalse(viewModel.state.value.hasRequestedMicPermission)
+            assertFalse(userDataRepository._userData.value.micPermissionRequested)
         }
 }

@@ -6,6 +6,8 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.goal.usecase.ConfirmGoalDecompositionUseCase
 import com.awan.app.core.domain.goal.usecase.ContinueGoalDecompositionUseCase
+import com.awan.app.core.domain.profile.usecase.GetUserDataUseCase
+import com.awan.app.core.domain.profile.usecase.SetMicPermissionRequestedUseCase
 import com.awan.app.core.domain.task.parser.ParsedTaskInput
 import com.awan.app.core.domain.task.usecase.ApplyTaskAttributeUseCase
 import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
@@ -45,6 +47,8 @@ class AddTaskViewModel @Inject constructor(
     private val deleteTask: DeleteTaskUseCase,
     private val continueGoalDecomposition: ContinueGoalDecompositionUseCase,
     private val confirmGoalDecomposition: ConfirmGoalDecompositionUseCase,
+    private val getUserDataUseCase: GetUserDataUseCase,
+    private val setMicPermissionRequestedUseCase: SetMicPermissionRequestedUseCase,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -58,6 +62,7 @@ class AddTaskViewModel @Inject constructor(
 
     init {
         loadCategories()
+        observeUserData()
     }
 
     private companion object {
@@ -92,6 +97,21 @@ class AddTaskViewModel @Inject constructor(
             AddTaskAction.DiscardConfirmed -> discard()
             AddTaskAction.DiscardCancelled -> _state.update { it.copy(showDiscardConfirm = false) }
             AddTaskAction.Dismiss -> close(AddTaskEvent.Dismissed)
+            is AddTaskAction.SetMicPermissionRequested -> setMicPermissionRequested(action.requested)
+        }
+    }
+
+    private fun observeUserData() {
+        viewModelScope.launch {
+            getUserDataUseCase().collect { userData ->
+                _state.update { it.copy(hasRequestedMicPermission = userData.micPermissionRequested) }
+            }
+        }
+    }
+
+    private fun setMicPermissionRequested(requested: Boolean) {
+        viewModelScope.launch {
+            setMicPermissionRequestedUseCase(requested)
         }
     }
 

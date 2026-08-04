@@ -104,6 +104,7 @@ data class AddTaskState(
     val confirmation: TaskConfirmation? = null,
     val showDiscardConfirm: Boolean = false,
     @StringRes val errorMessage: Int? = null,
+    val hasRequestedMicPermission: Boolean = false,
 ) {
     /**
      * While the parser is stood down there is no `parsed.title` to check, so the raw text stands in

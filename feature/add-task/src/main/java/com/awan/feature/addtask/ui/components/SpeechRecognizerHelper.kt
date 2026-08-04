@@ -50,6 +50,8 @@ private fun Context.findActivity(): Activity? = when (this) {
 @Composable
 fun rememberSpeechRecognizer(
     onTranscript: (String) -> Unit,
+    hasRequestedMicPermission: Boolean = false,
+    onSetMicPermissionRequested: (Boolean) -> Unit = {},
 ): SpeechRecognizerState {
     val context = LocalContext.current
     var isListening by remember { mutableStateOf(false) }
@@ -142,6 +144,7 @@ fun rememberSpeechRecognizer(
         contract = ActivityResultContracts.RequestPermission(),
     ) { isGranted ->
         if (isGranted) {
+            onSetMicPermissionRequested(false)
             isPermissionError = false
             errorMessage = null
             startListeningNow()
@@ -196,7 +199,7 @@ fun rememberSpeechRecognizer(
         )
     }
 
-    return remember(isListening, errorMessage, isPermissionError) {
+    return remember(isListening, errorMessage, isPermissionError, hasRequestedMicPermission) {
         SpeechRecognizerState(
             isListening = isListening,
             errorMessage = errorMessage,
@@ -208,11 +211,30 @@ fun rememberSpeechRecognizer(
                 ) == PackageManager.PERMISSION_GRANTED
 
                 if (hasPermission) {
+                    if (hasRequestedMicPermission) {
+                        onSetMicPermissionRequested(false)
+                    }
                     isPermissionError = false
                     errorMessage = null
                     startListeningNow()
                 } else {
-                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    val activity = context.findActivity()
+                    val shouldShowRationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
+                        activity,
+                        Manifest.permission.RECORD_AUDIO,
+                    )
+                    val isFirstRequest = !hasRequestedMicPermission
+
+                    if (isFirstRequest || shouldShowRationale) {
+                        onSetMicPermissionRequested(true)
+                        isPermissionError = true
+                        errorMessage = context.resources.getString(R.string.add_task_goal_speech_permission_denied)
+                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    } else {
+                        showSettingsDialog = true
+                        isPermissionError = false
+                        errorMessage = null
+                    }
                 }
             },
             stopListeningAction = { stopInternal() },
