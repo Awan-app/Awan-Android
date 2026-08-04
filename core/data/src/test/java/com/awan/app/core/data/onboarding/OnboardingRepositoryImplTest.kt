@@ -173,6 +173,7 @@ class OnboardingRepositoryImplTest {
         override suspend fun setDefaultZone(zone: String) {}
         override suspend fun setLocale(locale: String) {}
         override suspend fun setDefaultRegion(region: String) {}
+        override suspend fun setMicPermissionRequested(requested: Boolean) {}
     }
 
     private class FakeUserDao : com.awan.app.core.database.dao.UserDao {
