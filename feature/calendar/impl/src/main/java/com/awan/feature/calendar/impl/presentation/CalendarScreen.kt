@@ -54,11 +54,9 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
@@ -92,18 +90,7 @@ import java.time.temporal.ChronoUnit
 import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration.Companion.milliseconds
 
-private val FilledLucideFlame = ImageVector.Builder(
-    name = "FilledLucideFlame",
-    defaultWidth = 24.dp,
-    defaultHeight = 24.dp,
-    viewportWidth = 24f,
-    viewportHeight = 24f,
-).addPath(
-    pathData = PathParser().parsePathString(
-        "M12,3q1,4 4,6.5t3,5.5a1,1 0 0,1 -14,0a5,5 0 0,1 1,-3a1,1 0 0,0 5,0c0,-2 -1.5,-3 -1.5,-5q0,-2 2.5,-4"
-    ).toNodes(),
-    fill = SolidColor(Color.White),
-).build()
+
 
 @Composable
 private fun CalendarIconButton(
@@ -317,7 +304,7 @@ private fun StreakSummaryCard(streak: Int) {
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = FilledLucideFlame,
+                    painter = painterResource(id = R.drawable.ic_flame_filled),
                     contentDescription = null,
                     tint = AwanTheme.colors.streakIcon,
                     modifier = Modifier.testTag("streak_flame_icon"),
