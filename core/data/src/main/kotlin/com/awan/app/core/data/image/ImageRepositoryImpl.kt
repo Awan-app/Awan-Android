@@ -7,6 +7,7 @@ import android.net.Uri
 import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.error.AppError
+import com.awan.app.core.common.error.ValidationReason
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.image.repository.ImageRepository
 import com.awan.app.core.model.ImageBytes
@@ -25,19 +26,26 @@ class ImageRepositoryImpl @Inject constructor(
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : ImageRepository {
 
+    /**
+     * Everything that gets through is re-encoded as JPEG under the cap, so a picked file the decoder
+     * can't read is the only format failure left — it reports as one instead of as a generic error,
+     * which is the difference between "try another photo" and a dead end for the user.
+     */
     override suspend fun read(uri: String): Result<ImageBytes> = withContext(ioDispatcher) {
         val parsed = Uri.parse(uri)
-        val dimensions = decodeDimensions(parsed) ?: return@withContext Result.Error(AppError.Unknown())
+        val dimensions = decodeDimensions(parsed) ?: return@withContext undecodable()
         val sampleSize = sampleSizeFor(dimensions)
         val bitmap = runCatching {
             context.contentResolver.openInputStream(parsed)?.use { stream ->
                 BitmapFactory.decodeStream(stream, null, BitmapFactory.Options().apply { inSampleSize = sampleSize })
             }
-        }.getOrNull() ?: return@withContext Result.Error(AppError.Unknown())
+        }.getOrNull() ?: return@withContext undecodable()
 
         val bytes = bitmap.scaleToMaxEdge(MAX_EDGE).compressUnder(ImageBytes.MAX_BYTES)
         Result.Success(ImageBytes(bytes = bytes, mimeType = "image/jpeg"))
     }
+
+    private fun undecodable() = Result.Error(AppError.Validation(ValidationReason.IMAGE_TYPE_UNSUPPORTED))
 
     private fun decodeDimensions(uri: Uri): ImageDimensions? {
         val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }

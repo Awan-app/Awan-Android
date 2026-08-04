@@ -37,7 +37,6 @@
     <string name="add_task_ai_switch">Let Awan fill it in</string>
     <string name="add_task_ai_switch_body">Say what you need done — Awan\'s AI sorts out the rest.</string>
     <string name="add_task_ai_switch_content_description">Let Awan work out the task details</string>
-    <string name="add_task_ai_note_placeholder">Anything else Awan should know?</string>
     <string name="add_task_ai_submit">Ask Awan</string>
 
     <string name="add_task_add_photo">Add a photo</string>

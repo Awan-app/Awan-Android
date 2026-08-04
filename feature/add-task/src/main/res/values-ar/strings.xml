@@ -37,7 +37,6 @@
     <string name="add_task_ai_switch">دع أوان يكملها</string>
     <string name="add_task_ai_switch_body">اذكر ما تريد إنجازه، ويتولى ذكاء أوان الاصطناعي الباقي.</string>
     <string name="add_task_ai_switch_content_description">دع أوان يستنتج تفاصيل المهمة</string>
-    <string name="add_task_ai_note_placeholder">هل من شيء آخر يحتاج أوان معرفته؟</string>
     <string name="add_task_ai_submit">اسأل أوان</string>
 
     <string name="add_task_add_photo">أضف صورة</string>

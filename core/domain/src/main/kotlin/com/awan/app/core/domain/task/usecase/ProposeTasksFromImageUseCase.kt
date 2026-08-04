@@ -17,17 +17,17 @@ import javax.inject.Inject
 class ProposeTasksFromImageUseCase @Inject constructor(
     private val taskRepository: TaskRepository,
 ) {
-    suspend operator fun invoke(image: ByteArray, mimeType: String, note: String? = null): Result<TaskProposals> =
+    suspend operator fun invoke(image: ImageBytes, note: String? = null): Result<TaskProposals> =
         when {
-            mimeType.lowercase() !in SUPPORTED_MIME_TYPES ->
+            image.mimeType.lowercase() !in SUPPORTED_MIME_TYPES ->
                 Result.Error(AppError.Validation(ValidationReason.IMAGE_TYPE_UNSUPPORTED))
 
-            image.size > MAX_IMAGE_BYTES ->
+            image.bytes.size > MAX_IMAGE_BYTES ->
                 Result.Error(AppError.Validation(ValidationReason.IMAGE_TOO_LARGE))
 
             else -> taskRepository.proposeTasksFromImage(
-                image = image,
-                mimeType = mimeType,
+                image = image.bytes,
+                mimeType = image.mimeType,
                 note = note?.trim()?.takeIf { it.isNotBlank() },
             )
         }

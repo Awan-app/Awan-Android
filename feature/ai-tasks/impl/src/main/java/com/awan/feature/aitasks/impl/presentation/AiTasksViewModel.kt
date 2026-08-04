@@ -153,7 +153,7 @@ class AiTasksViewModel @Inject constructor(
 
     private suspend fun fetchFromImage(imageUri: String, note: String?) =
         when (val image = readImage(imageUri)) {
-            is Result.Success -> proposeFromImage(image.data.bytes, image.data.mimeType, note)
+            is Result.Success -> proposeFromImage(image.data, note)
             is Result.Error -> Result.Error(image.error)
             Result.Loading -> Result.Loading
         }
