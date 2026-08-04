@@ -102,6 +102,7 @@ fun AwanApp(
             )
             goalPreviewEntry(
                 onBack = { navigator.goBack() },
+                onNavigateToGoals = { navigator.replaceAll(GoalsRoute) },
             )
         }
 

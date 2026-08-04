@@ -19,12 +19,13 @@ import com.awan.feature.addtask.ui.components.rememberSpeechRecognizer
 fun GoalPreviewRouteRoot(
     viewModel: AddTaskViewModel,
     onBack: () -> Unit,
+    onNavigateToGoals: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
-            is AddTaskEvent.GoalCreated -> onBack()
+            is AddTaskEvent.GoalCreated -> onNavigateToGoals()
             is AddTaskEvent.TaskCreated -> onBack()
             AddTaskEvent.Dismissed -> onBack()
         }

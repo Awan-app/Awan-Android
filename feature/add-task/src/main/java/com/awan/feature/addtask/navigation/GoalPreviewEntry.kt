@@ -9,12 +9,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 
 fun EntryProviderScope<Route>.goalPreviewEntry(
     onBack: () -> Unit,
+    onNavigateToGoals: () -> Unit,
 ) {
     entry<GoalPreviewRoute> {
         val viewModel: AddTaskViewModel = hiltViewModel()
         GoalPreviewRouteRoot(
             viewModel = viewModel,
             onBack = onBack,
+            onNavigateToGoals = onNavigateToGoals,
         )
     }
 }

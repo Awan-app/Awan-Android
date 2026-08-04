@@ -212,20 +212,7 @@ fun rememberSpeechRecognizer(
                     errorMessage = null
                     startListeningNow()
                 } else {
-                    val activity = context.findActivity()
-                    val shouldShowRationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
-                        activity,
-                        Manifest.permission.RECORD_AUDIO,
-                    )
-                    if (!shouldShowRationale) {
-                        showSettingsDialog = true
-                        isPermissionError = false
-                        errorMessage = null
-                    } else {
-                        isPermissionError = true
-                        errorMessage = context.resources.getString(R.string.add_task_goal_speech_permission_denied)
-                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                    }
+                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                 }
             },
             stopListeningAction = { stopInternal() },
