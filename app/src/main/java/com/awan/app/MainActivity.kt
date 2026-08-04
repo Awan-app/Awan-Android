@@ -112,7 +112,10 @@ class MainActivity : AppCompatActivity() {
                     dark = useDarkTheme,
                     light = !useDarkTheme
                 ) {
-                    AwanApp(appState = appState)
+                    AwanApp(
+                        appState = appState,
+                        sessionExpiredEvents = viewModel.sessionExpired,
+                    )
                 }
             }
         }

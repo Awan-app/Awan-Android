@@ -48,6 +48,8 @@ class CalendarRepositoryImplTest {
         override suspend fun clearTokens() = Unit
         override fun observeIsLoggedIn(): Flow<Boolean> = emptyFlow()
         override suspend fun setLoggedIn(loggedIn: Boolean) = Unit
+        override val sessionExpired: Flow<Unit> = emptyFlow()
+        override fun notifySessionExpired() = Unit
     }
 
     private class FakeCalendarLocalDataSource : CalendarLocalDataSource {

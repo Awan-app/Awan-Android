@@ -3,7 +3,9 @@ package com.awan.app
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.datastore.UserPreferencesDataSource
+import com.awan.app.core.domain.auth.usecase.ObserveSessionExpiredUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -13,7 +15,11 @@ import javax.inject.Inject
 @HiltViewModel
 class MainActivityViewModel @Inject constructor(
     userDataRepository: UserPreferencesDataSource,
+    observeSessionExpired: ObserveSessionExpiredUseCase,
 ) : ViewModel() {
+
+    val sessionExpired: Flow<Unit> = observeSessionExpired()
+
     val uiState: StateFlow<MainActivityUiState> = userDataRepository.userPreferences
         .map {
             MainActivityUiState.Success(

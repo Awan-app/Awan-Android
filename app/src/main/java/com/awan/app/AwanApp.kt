@@ -1,5 +1,6 @@
 package com.awan.app
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,10 +14,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
+import com.awan.app.core.common.R as CommonR
 import com.awan.app.core.designsystem.AwanBottomNavBar
 import com.awan.app.core.designsystem.BottomNavItem
+import com.awan.app.core.designsystem.ObserveAsEvents
 import com.awan.core.navigation.Navigator
 import com.awan.feature.addtask.ui.AddTaskSheet
 import com.awan.feature.auth.api.LoginRoute
@@ -35,15 +39,24 @@ import com.awan.feature.profile.api.EditRoutineRoute
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.splash.impl.navigation.splashEntry
 import com.awan.feature.splash.impl.ui.SplashDestination
+import kotlinx.coroutines.flow.Flow
 
 @Suppress("LongMethod")
 @Composable
 fun AwanApp(
     appState: AwanAppState,
+    sessionExpiredEvents: Flow<Unit>,
     modifier: Modifier = Modifier
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    ObserveAsEvents(sessionExpiredEvents) {
+        Toast.makeText(context, CommonR.string.error_unauthorized, Toast.LENGTH_LONG).show()
+        showAddTask = false
+        navigator.replaceAll(LoginRoute)
+    }
 
     if (showAddTask) {
         AddTaskSheet(onDismiss = { showAddTask = false })

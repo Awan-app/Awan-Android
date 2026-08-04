@@ -39,7 +39,11 @@ class TokenAuthenticator @Inject constructor(
 
                 // We must refresh.
                 val refreshToken = authTokenProvider.getRefreshToken()
-                    ?: return@runBlocking null
+                if (refreshToken == null) {
+                    authTokenProvider.clearTokens()
+                    authTokenProvider.notifySessionExpired()
+                    return@runBlocking null
+                }
 
                 try {
                     val newTokens = authApiServiceProvider.get()
@@ -60,6 +64,7 @@ class TokenAuthenticator @Inject constructor(
                         .build()
                 } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                     authTokenProvider.clearTokens()
+                    authTokenProvider.notifySessionExpired()
                     null
                 }
             }

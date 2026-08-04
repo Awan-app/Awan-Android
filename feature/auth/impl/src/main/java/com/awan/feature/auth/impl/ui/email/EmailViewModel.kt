@@ -6,6 +6,7 @@ import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
+import com.awan.app.core.domain.auth.usecase.GetUserUseCase
 import com.awan.app.core.domain.auth.usecase.RequestOtpUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -20,6 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EmailViewModel @Inject constructor(
     private val requestOtpUseCase: RequestOtpUseCase,
+    private val getUserUseCase: GetUserUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EmailUiState())
@@ -29,6 +31,15 @@ class EmailViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     private var rateLimitedEmail: String? = null
+
+    init {
+        viewModelScope.launch {
+            val lastEmail = getUserUseCase()?.email
+            if (!lastEmail.isNullOrBlank() && _uiState.value.email.isEmpty()) {
+                onEmailChanged(lastEmail)
+            }
+        }
+    }
 
     fun onEmailChanged(email: String) {
         _uiState.update { current ->

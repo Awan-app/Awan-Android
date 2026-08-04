@@ -87,6 +87,9 @@ class AuthRepositoryImpl @Inject constructor(
     override fun observeIsLoggedIn(): Flow<Boolean> =
         authTokenProvider.observeIsLoggedIn()
 
+    override fun observeSessionExpired(): Flow<Unit> =
+        authTokenProvider.sessionExpired
+
     override suspend fun getUser(): User? {
         val email = authTokenProvider.getUserEmail()
         val userId = authTokenProvider.getUserId()

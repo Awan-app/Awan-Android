@@ -7,9 +7,11 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -37,6 +39,8 @@ class EncryptedTokenStorage @Inject constructor(
     private val _isLoggedIn by lazy {
         MutableStateFlow(sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false))
     }
+
+    private val _sessionExpired = Channel<Unit>(Channel.CONFLATED)
 
     override suspend fun getAccessToken(): String? = withContext(ioDispatcher) {
         sharedPreferences.getString(KEY_ACCESS_TOKEN, null)
@@ -70,8 +74,14 @@ class EncryptedTokenStorage @Inject constructor(
         sharedPreferences.getString(KEY_USER_EMAIL, null)
     }
 
+    // KEY_USER_EMAIL deliberately survives so the login screen can pre-fill it.
     override suspend fun clearTokens(): Unit = withContext(ioDispatcher) {
-        sharedPreferences.edit().clear().apply()
+        sharedPreferences.edit()
+            .remove(KEY_ACCESS_TOKEN)
+            .remove(KEY_REFRESH_TOKEN)
+            .remove(KEY_USER_ID)
+            .remove(KEY_IS_LOGGED_IN)
+            .apply()
         _isLoggedIn.value = false
     }
 
@@ -80,6 +90,12 @@ class EncryptedTokenStorage @Inject constructor(
     override suspend fun setLoggedIn(loggedIn: Boolean): Unit = withContext(ioDispatcher) {
         sharedPreferences.edit().putBoolean(KEY_IS_LOGGED_IN, loggedIn).apply()
         _isLoggedIn.value = loggedIn
+    }
+
+    override val sessionExpired: Flow<Unit> = _sessionExpired.receiveAsFlow()
+
+    override fun notifySessionExpired() {
+        _sessionExpired.trySend(Unit)
     }
 
     private companion object {
