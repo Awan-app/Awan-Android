@@ -1,20 +1,18 @@
 package com.awan.app.core.designsystem
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import com.composables.icons.lucide.ChevronLeft
+import com.composables.icons.lucide.ChevronRight
+import com.composables.icons.lucide.Lucide
 
 /** The app's single back-navigation button, styled after the onboarding chevron. */
 @Composable
@@ -30,28 +28,18 @@ fun AwanBackButton(
         variant = AwanButtonVariant.Secondary,
         modifier = modifier.semantics(mergeDescendants = true) { this.contentDescription = contentDescription },
     ) {
-        BackChevron()
+        // Lucide's chevrons carry no auto-mirroring, and back points rightwards in Arabic. Left
+        // untinted so the icon takes the variant's animated content colour through pressed and disabled.
+        Icon(
+            imageVector = if (LocalLayoutDirection.current == LayoutDirection.Rtl) {
+                Lucide.ChevronRight
+            } else {
+                Lucide.ChevronLeft
+            },
+            contentDescription = null,
+            modifier = Modifier.size(BackChevronSize),
+        )
     }
 }
 
-@Composable
-private fun BackChevron() {
-    // AwanButton provides the variant's animated content colour; reading it keeps the chevron
-    // correct in both themes and through the disabled and pressed states.
-    val ink = LocalContentColor.current
-    Box(Modifier.size(20.dp)) {
-        Canvas(Modifier.fillMaxSize()) {
-            val stroke = Stroke(
-                width = 2.4.dp.toPx(),
-                cap = StrokeCap.Round,
-                join = StrokeJoin.Round,
-            )
-            val path = Path().apply {
-                moveTo(size.width * 0.62f, size.height * 0.24f)
-                lineTo(size.width * 0.34f, size.height * 0.52f)
-                lineTo(size.width * 0.62f, size.height * 0.8f)
-            }
-            drawPath(path, color = ink, style = stroke)
-        }
-    }
-}
+private val BackChevronSize = 20.dp
