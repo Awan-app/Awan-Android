@@ -63,13 +63,20 @@ import kotlinx.coroutines.flow.Flow
  * Each stack gets its own decorators and all of them are decorated on every recomposition, so
  * switching tabs — which swaps which stack is displayed, not what's in the others — leaves the
  * background tabs' ViewModels alive.
+ *
+ * Keeping them alive across tabs is the point; keeping them alive across *sessions* is not. A tab
+ * root never leaves its own sub-stack, so `onPop` never fires for it and its store would outlive a
+ * logout — handing the next user the previous user's ViewModel. Keying on [NavigationState.generation],
+ * which every `replaceAll` bumps, drops each stack's decorators at those boundaries; their
+ * `rememberViewModelStoreProvider` clears all of its keys on dispose. Configuration changes are
+ * unaffected: that path checks the parent lifecycle and deliberately skips the clear.
  */
 @Composable
 private fun NavigationState.rememberDecoratedEntries(
     entryProvider: (Route) -> NavEntry<Route>,
 ): List<NavEntry<Route>> {
     val decoratedStacks = subStacks.mapValues { (topLevelKey, stack) ->
-        key(topLevelKey) {
+        key(topLevelKey, generation) {
             rememberDecoratedNavEntries(
                 backStack = stack,
                 entryDecorators = listOf(

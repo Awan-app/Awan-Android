@@ -28,6 +28,8 @@ class Navigator(val state: NavigationState) {
             state.subStacks as MutableMap<Route, MutableList<Route>>
             state.subStacks[key] = mutableStateListOf(key)
         }
+
+        state.generation++
     }
 
     fun resetCurrentSubStack(key: Route) {

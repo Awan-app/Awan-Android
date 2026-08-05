@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.IOException
+import java.security.GeneralSecurityException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -35,11 +37,14 @@ class EmailViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             // Pre-fill is a convenience, never a reason to take the login screen down: reading it
-            // hits EncryptedSharedPreferences, which throws once the Keystore key is invalidated.
-            @Suppress("TooGenericExceptionCaught")
+            // hits EncryptedSharedPreferences, which throws once the Keystore master key is
+            // invalidated. Caught narrowly rather than via runCatching — this call suspends, and
+            // both runCatching and catch(Exception) would swallow the cancellation.
             val lastEmail = try {
                 getLastUsedEmailUseCase()
-            } catch (e: Exception) {
+            } catch (e: GeneralSecurityException) {
+                null
+            } catch (e: IOException) {
                 null
             }
             if (!lastEmail.isNullOrBlank() && _uiState.value.email.isEmpty()) {
