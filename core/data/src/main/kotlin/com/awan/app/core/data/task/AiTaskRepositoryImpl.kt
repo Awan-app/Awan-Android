@@ -5,13 +5,11 @@ import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.data.util.minutesOfDay
-import com.awan.app.core.data.util.parseIsoDateTime
 import com.awan.app.core.domain.task.repository.AiTaskRepository
 import com.awan.app.core.domain.onboarding.model.FirstTask
-import com.awan.app.core.network.dto.task.CreateTaskWithAiRequest
-import com.awan.app.core.network.dto.task.ScheduleTaskRequest
-import com.awan.app.core.network.dto.task.ScheduledSessionResponse
-import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.model.TaskWithSessions
+import com.awan.app.core.model.toSessionDraft
+import com.awan.app.core.network.dto.task.AiTextToTasksRequest
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.time.Duration
@@ -24,45 +22,30 @@ class AiTaskRepositoryImpl @Inject constructor(
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : AiTaskRepository {
 
+    /** No separate `/schedule/task` step: the proposal already carries availability-grounded timing. */
     override suspend fun createAndScheduleTask(title: String): Result<FirstTask?> = withContext(ioDispatcher) {
-        val created = when (val result = remoteDataSource.createTaskWithAi(
-            CreateTaskWithAiRequest(
-                title = title
-            )
-        )) {
-            is Result.Success -> result.data.task
+        val proposal = when (val result = remoteDataSource.proposeTasksFromText(AiTextToTasksRequest(title))) {
+            is Result.Success -> result.data.tasks.firstOrNull()?.toModel() ?: return@withContext Result.Success(null)
             is Result.Error -> return@withContext Result.Error(result.error)
             Result.Loading -> return@withContext Result.Loading
         }
 
-        val request = ScheduleTaskRequest(taskId = created.id, horizonDays = HORIZON_DAYS)
-        when (val result = remoteDataSource.scheduleTask(request)) {
-            is Result.Success -> {
-                val session = result.data.scheduledSessions.orEmpty().firstOrNull()
-                Result.Success(session?.let { toFirstTask(it, created.id, created.title) })
-            }
+        val request = proposal.draft.toRequest(proposal.sessions.map { it.toSessionDraft() })
+        when (val result = remoteDataSource.createTaskWithSessions(request)) {
+            is Result.Success -> Result.Success(result.data.toWithSessionsModel().toFirstTask())
             is Result.Error -> Result.Error(result.error)
             Result.Loading -> Result.Loading
         }
     }
 
-    private fun toFirstTask(
-        session: ScheduledSessionResponse,
-        taskId: String,
-        title: String,
-    ): FirstTask? {
-        val start = session.start?.let(::parseIsoDateTime) ?: return null
-        val end = session.end?.let(::parseIsoDateTime) ?: return null
+    private fun TaskWithSessions.toFirstTask(): FirstTask? {
+        val session = sessions.minByOrNull { it.start } ?: return null
         return FirstTask(
-            id = taskId,
-            title = title,
+            id = task.id,
+            title = task.title,
             zoneId = session.zoneId.orEmpty(),
-            startMinutes = start.minutesOfDay(),
-            durationMinutes = Duration.between(start, end).toMinutes().toInt(),
+            startMinutes = session.start.minutesOfDay(),
+            durationMinutes = Duration.between(session.start, session.end).toMinutes().toInt(),
         )
-    }
-
-    private companion object {
-        const val HORIZON_DAYS = 14
     }
 }

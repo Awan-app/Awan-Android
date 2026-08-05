@@ -7,17 +7,6 @@ import com.awan.app.core.domain.onboarding.utils.DayBoundsValidation
 import com.awan.app.core.domain.onboarding.usecase.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.utils.ValidateDayBounds
 import com.awan.app.core.domain.onboarding.usecase.CompleteOnboardingUseCase
-import com.awan.app.core.domain.task.repository.TaskRepository
-import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
-import com.awan.app.core.domain.zones.repository.ZonesRepository
-import com.awan.app.core.domain.zones.model.DailyZone
-import com.awan.app.core.model.DayZone
-import com.awan.app.core.model.SessionDraft
-import com.awan.app.core.model.Task
-import com.awan.app.core.model.TaskDraft
-import com.awan.app.core.model.TaskSchedule
-import com.awan.app.core.model.TaskWithSessions
-import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.domain.task.usecase.CreateAndScheduleFirstTaskUseCase
 import com.awan.app.core.domain.template.usecase.CreateWeeklyTemplateUseCase
 import com.awan.app.core.domain.onboarding.model.DayBounds
