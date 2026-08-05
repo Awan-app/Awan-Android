@@ -1,11 +1,14 @@
 package com.awan.feature.addtask.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.activity.ComponentActivity
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanConfirmDialog
 import com.awan.app.core.designsystem.ObserveAsEvents
@@ -17,9 +20,11 @@ import com.awan.feature.addtask.ui.components.rememberSpeechRecognizer
 
 @Composable
 fun GoalPreviewRouteRoot(
-    viewModel: AddTaskViewModel,
     onBack: () -> Unit,
     onNavigateToGoals: () -> Unit,
+    viewModel: AddTaskViewModel = hiltViewModel(
+        viewModelStoreOwner = checkNotNull(LocalActivity.current) as ComponentActivity,
+    ),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -27,6 +32,7 @@ fun GoalPreviewRouteRoot(
         when (event) {
             is AddTaskEvent.GoalCreated -> onNavigateToGoals()
             is AddTaskEvent.TaskCreated -> onBack()
+            is AddTaskEvent.AiRequested -> Unit
             AddTaskEvent.Dismissed -> onBack()
         }
     }

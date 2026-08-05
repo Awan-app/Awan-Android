@@ -51,7 +51,6 @@ import com.awan.app.core.designsystem.SparkleBurst
 import com.awan.app.core.designsystem.reducedMotion
 import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskAction
-import com.awan.feature.addtask.presentation.AddTaskAiStage
 import com.awan.feature.addtask.presentation.AddTaskEvent
 import com.awan.feature.addtask.presentation.AddTaskMode
 import com.awan.feature.addtask.presentation.AddTaskPicker
@@ -62,6 +61,7 @@ import com.awan.feature.addtask.presentation.TaskConfirmation
 import com.awan.feature.addtask.ui.components.AddTaskModeSelector
 import com.awan.feature.addtask.ui.components.AiToggle
 import com.awan.feature.addtask.ui.components.GoalForm
+import com.awan.feature.addtask.ui.components.ImageAttachment
 import com.awan.feature.addtask.ui.components.TaskAttributeChips
 import com.awan.feature.addtask.ui.components.TaskConfirmationPanel
 import com.awan.feature.addtask.ui.components.rememberTokenHighlight
@@ -74,6 +74,10 @@ private val DragHandleHeight = 4.dp
 /**
  * Quick capture. Opened from the `+` in the bottom bar; it is deliberately not a navigation
  * destination, so dismissing it always returns to whatever screen was already showing.
+ *
+ * Handing a note (and optionally a photo) to Awan never happens inside this sheet — [onAiRequested]
+ * is the sheet's only involvement, and everything after that (the call, the loading state, reviewing
+ * and editing what comes back) is a full-screen destination `:app` navigates to.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,8 +85,8 @@ fun AddTaskSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     onTaskCreated: (String) -> Unit = {},
-    onGoalCreated: (String) -> Unit = {},
     onNavigateToGoalPreview: () -> Unit = {},
+    onAiRequested: (text: String, note: String?, imageUri: String?) -> Unit = { _, _, _ -> },
     viewModel: AddTaskViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -119,7 +123,11 @@ fun AddTaskSheet(
             }
 
             is AddTaskEvent.GoalCreated -> {
-                onGoalCreated(event.title)
+                onDismiss()
+            }
+
+            is AddTaskEvent.AiRequested -> {
+                onAiRequested(event.text, event.note, event.imageUri)
                 onDismiss()
             }
 
@@ -273,14 +281,14 @@ private fun TaskForm(
     state: AddTaskState,
     onAction: (AddTaskAction) -> Unit,
 ) {
-    val composing = state.aiStage.isComposing
+    val composing = state.aiEnabled
 
     Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
         // Above the form, not below it: it is the offer to skip the form, so it has to be read first.
         if (state.showsAiSwitch) {
             CascadeItem(1, Modifier.fillMaxWidth()) {
                 AiToggle(
-                    enabled = state.aiStage != AddTaskAiStage.OFF,
+                    enabled = state.aiEnabled,
                     onToggle = { onAction(AddTaskAction.AiToggled) },
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -300,7 +308,7 @@ private fun TaskForm(
                     placeholderStyle = AwanTheme.styles.headingText.copy(color = AwanTheme.colors.meta),
                     // Empty while the parser is stood down, which is what hides the highlights.
                     visualTransformation = rememberTokenHighlight(state.parsed.tokens),
-                    enabled = state.aiStage != AddTaskAiStage.WORKING,
+                    enabled = !state.isSubmitting,
                     capitalization = KeyboardCapitalization.Sentences,
                     imeAction = ImeAction.Next,
                     modifier = Modifier.fillMaxWidth(),
@@ -308,23 +316,33 @@ private fun TaskForm(
             }
         }
 
-        CascadeItem(2, Modifier.fillMaxWidth()) {
-            NoteField(
-                value = state.description,
-                placeholder = stringResource(
-                    if (composing) R.string.add_task_ai_note_placeholder
-                    else R.string.add_task_description_placeholder,
-                ),
-                onValueChange = { onAction(AddTaskAction.DescriptionChanged(it)) },
-            )
+        if (!state.aiEnabled) {
+            CascadeItem(2, Modifier.fillMaxWidth()) {
+                NoteField(
+                    value = state.description,
+                    placeholder = stringResource(R.string.add_task_description_placeholder),
+                    onValueChange = { onAction(AddTaskAction.DescriptionChanged(it)) },
+                )
+            }
         }
 
-        CascadeItem(3) {
+        // A photo is only worth offering once Awan is the one reading it.
+        if (composing) {
+            CascadeItem(3, Modifier.fillMaxWidth()) {
+                ImageAttachment(
+                    imageUri = state.imageUri,
+                    onImagePicked = { onAction(AddTaskAction.ImagePicked(it)) },
+                    onImageCleared = { onAction(AddTaskAction.ImageCleared) },
+                )
+            }
+        }
+
+        CascadeItem(4) {
             AwanText(hintFor(state), style = AwanTheme.styles.metaText)
         }
 
         if (state.showsAttributeChips) {
-            CascadeItem(4, Modifier.fillMaxWidth()) {
+            CascadeItem(5, Modifier.fillMaxWidth()) {
                 TaskAttributeChips(
                     state = state,
                     today = state.today,
@@ -345,62 +363,20 @@ private fun TaskForm(
             AwanText(stringResource(it), style = AwanTheme.styles.errorText)
         }
 
-        CascadeItem(5, Modifier.fillMaxWidth()) {
-            SheetActions(state = state, onAction = onAction)
+        CascadeItem(6, Modifier.fillMaxWidth()) {
+            SubmitButton(
+                state = state,
+                label = stringResource(if (composing) R.string.add_task_ai_submit else R.string.add_task_submit),
+                onSubmit = { onAction(AddTaskAction.Submit) },
+            )
         }
     }
 }
 
-/** Says what the current stage is asking for, so the copy under the field is never stale. */
+/** Says what the sheet is asking for right now, so the copy under the field is never stale. */
 @Composable
-private fun hintFor(state: AddTaskState): String = stringResource(
-    when {
-        state.aiStage.isComposing -> R.string.add_task_ai_hint
-        state.aiStage == AddTaskAiStage.REVIEW -> R.string.add_task_ai_review_hint
-        else -> R.string.add_task_hint
-    },
-)
-
-/**
- * Review is the only stage that asks two questions at once — hand it to Awan, or take it back. Every
- * other stage has exactly one thing to press.
- */
-@Composable
-private fun SheetActions(state: AddTaskState, onAction: (AddTaskAction) -> Unit) {
-    if (state.aiStage == AddTaskAiStage.REVIEW) {
-        Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-            AwanButton(
-                onClick = { onAction(AddTaskAction.ScheduleWithAi) },
-                enabled = !state.isSubmitting,
-                isLoading = state.isSubmitting,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                AwanText(stringResource(R.string.add_task_ai_schedule_with_ai))
-            }
-            AwanButton(
-                onClick = { onAction(AddTaskAction.ScheduleManually) },
-                enabled = !state.isSubmitting,
-                variant = AwanButtonVariant.Quiet,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                AwanText(stringResource(R.string.add_task_ai_schedule_manually))
-            }
-        }
-        return
-    }
-
-    SubmitButton(
-        state = state,
-        label = stringResource(
-            when (state.aiStage) {
-                AddTaskAiStage.COMPOSING -> R.string.add_task_ai_submit
-                AddTaskAiStage.WORKING -> R.string.add_task_ai_working
-                else -> R.string.add_task_submit
-            },
-        ),
-        onSubmit = { onAction(AddTaskAction.Submit) },
-    )
-}
+private fun hintFor(state: AddTaskState): String =
+    stringResource(if (state.aiEnabled) R.string.add_task_ai_hint else R.string.add_task_hint)
 
 /**
  * The description. No rim, no border, body scale, secondary ink — it reads as an annotation hanging

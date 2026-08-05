@@ -1,6 +1,8 @@
 package com.awan.app.core.designsystem
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 
 /**
@@ -46,6 +49,7 @@ fun AwanCard(
     val defaultRimColor = if (selected) selectedColor.copy(alpha = 0.35f) else colors.line
     val targetRimColor = customRimColor ?: defaultRimColor
     val rimColor by animateColorAsState(targetRimColor, label = "cardRim")
+    val sizeSpec = if (reducedMotion()) snap() else AwanTheme.motion.settle.spec<IntSize>()
 
     val clickModifier = if (onClick != null) {
         Modifier.clickable(
@@ -65,7 +69,8 @@ fun AwanCard(
                 shape = shape,
                 spotColor = selectedColor,
                 ambientColor = selectedColor,
-            ),
+            )
+            .animateContentSize(animationSpec = sizeSpec),
         content = {
             // Rim (index 0)
             Box(Modifier.clip(shape).background(rimColor))

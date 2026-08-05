@@ -15,7 +15,6 @@ Reference docs live in `docs/reference/` (architecture, layers, feature guide) a
 - Single test class: `./gradlew :app:testDebugUnitTest --tests "com.awan.app.ExampleUnitTest"`
 - Instrumented tests (device/emulator required): `./gradlew connectedDebugAndroidTest`
 - Lint: `./gradlew lint`
-- Static analysis: `./gradlew detekt` (config: `detekt.yml` at repo root, with compose rules + formatting)
 
 Gradle 9.4.1 with configuration cache enabled; daemon toolchain is JVM 21. AGP 9.2.1, Kotlin 2.4.0, compileSdk 37 / minSdk 26, Compose BOM 2026.06.01. Version catalog: `gradle/libs.versions.toml`.
 
@@ -40,8 +39,6 @@ Dependency direction is always `presentation → domain ← data`. Domain depend
 - `:core:domain` stays Android-free in spirit — no Compose, no Android framework types in signatures.
 - Reference vertical to copy: `core/domain/auth/` (contract + models + use cases) paired with `core/data/auth/` (impl + remote data source).
 
-Known violations to fix when touching them, not to imitate: `TaskRepository`, `OnboardingRepository`, and `CreateTaskUseCase` currently sit in `:core:data`.
-
 ### Mandatory skills — invoke before writing code
 
 - `nowinandroid-architecture` — modularization, convention plugins, Hilt, offline-first data layer, feature modules. Use for any structural/scaffolding/module work.
@@ -53,9 +50,9 @@ Known violations to fix when touching them, not to imitate: `TaskRepository`, `O
 
 ### Current structure
 
-- `build-logic/` convention plugins own shared Gradle config: `awan.android.application`, `awan.android.library`, `awan.android.compose`, `awan.android.hilt`, `awan.android.feature`. Module build files stay declarative — apply these instead of repeating config.
+- `build-logic/` convention plugins own shared Gradle config: `awan.android.application`, `awan.android.library`, `awan.jvm.library`, `awan.android.compose`, `awan.android.hilt`, `awan.android.feature`, `awan.android.room`, `awan.android.navigation`. Module build files stay declarative — apply these instead of repeating config.
 - `:core:*` modules: `model` (domain models), `domain` (repository contracts + use cases), `data` (repository impls, data sources, DTOs/mappers), `database` (Room), `common` (dispatchers, `Result`, `AppError`), `datastore` + `datastore-proto` (Proto DataStore prefs, encrypted token storage), `network` (Retrofit/OkHttp, auth interceptor + token authenticator), `design-system` (Awan components, Styles API themes, tokens), `navigation` (`Navigator`, `NavigationState`, `Route`).
-- `:feature:*` modules with **api/impl split** (api = routes only, impl = EntryProvider + screens): splash, onboarding, auth, home, calendar, chat, goals, profile, profile-setup. Features depend on core and other features' `api` modules, never on their `impl`.
+- `:feature:*` modules with **api/impl split** (api = routes only, impl = EntryProvider + screens): splash, onboarding, auth, home, calendar, chat, goals, profile, marketplace. Features depend on core and other features' `api` modules, never on their `impl`. Exception: `:feature:add-task` has no split — it's a state-driven sheet, not a navigation destination, so it exports no Route and only `:app` consumes it.
 - `:app` hosts the Navigation 3 shell: `AwanApp`, `AwanAppState`, `TopLevelDestination`, `MainActivity`.
 - Hilt DI throughout; UDF ViewModels exposing `StateFlow` of sealed UI state.
 - Packages: `com.awan.app` (app), `com.awan.app.core.*` (core), `com.awan.feature.*` (features).
@@ -87,4 +84,4 @@ Every plan written for a feature — initial implementation, a refactor, a bugfi
 
 - Every UI-facing string (and any string that will be rendered to the user) lives in `strings.xml` — never hardcode a display string in Kotlin/Compose.
 - Key naming: `${module_name}_${string_name}`, e.g. `onboarding_day_bounds_title`. `module_name` is the feature/core module the string belongs to.
-- Every string must be provided for all languages the app supports — add the key to each `res/values-*/strings.xml`, not just the default `res/values/strings.xml`.
+- The app ships English (`res/values/`) and Arabic (`res/values-ar/`). Every key goes in both, in the module that owns it — never only the default.
