@@ -35,14 +35,15 @@
     <string name="add_task_submit">أضف المهمة</string>
 
     <string name="add_task_ai_switch">دع أوان يكملها</string>
-    <string name="add_task_ai_switch_body">اذكر ما تريد إنجازه فقط، ويتولى أوان تقدير مدتها وفئتها وموعدها.</string>
+    <string name="add_task_ai_switch_body">اذكر ما تريد إنجازه، ويتولى ذكاء أوان الاصطناعي الباقي.</string>
     <string name="add_task_ai_switch_content_description">دع أوان يستنتج تفاصيل المهمة</string>
-    <string name="add_task_ai_note_placeholder">هل من شيء آخر يحتاج أوان معرفته؟</string>
     <string name="add_task_ai_submit">اسأل أوان</string>
-    <string name="add_task_ai_working">أوان يفكّر في الأمر…</string>
-    <string name="add_task_ai_review_hint">عدّل ما لا يعجبك، ثم اختر طريقة الجدولة.</string>
-    <string name="add_task_ai_schedule_with_ai">دع أوان يجدولها</string>
-    <string name="add_task_ai_schedule_manually">سأختار الوقت بنفسي</string>
+
+    <string name="add_task_add_photo">أضف صورة</string>
+    <string name="add_task_photo_from_gallery">اختر صورة</string>
+    <string name="add_task_photo_take">التقط صورة</string>
+    <string name="add_task_remove_photo">إزالة الصورة</string>
+    <string name="add_task_photo_content_description">صورة مرفقة ليقرأها أوان</string>
 
     <string name="add_task_confirm_title">تمّت الإضافة!</string>
     <string name="add_task_confirm_first_session">تبدأ في</string>
@@ -58,6 +59,4 @@
     <string name="add_task_goal_body">قريبًا ستتمكن من إعطاء أوان هدفًا فيعيد لك خطة كاملة. أما الآن فأضف المهام واحدة تلو الأخرى.</string>
 
     <string name="add_task_error_create_failed">تعذّرت إضافة المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
-    <string name="add_task_error_ai_failed">تعذّر على أوان بناء هذه المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
-    <string name="add_task_error_ai_schedule_failed">لم يجد أوان وقتًا مناسبًا لها. جرّب اختيار الوقت بنفسك.</string>
 </resources>

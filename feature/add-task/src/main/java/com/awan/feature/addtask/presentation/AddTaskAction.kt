@@ -20,12 +20,8 @@ sealed interface AddTaskAction {
     data class CategoryPicked(val categoryName: String) : AddTaskAction
 
     data object AiToggled : AddTaskAction
-
-    /** Keeps Awan's task and asks the engine to place it. */
-    data object ScheduleWithAi : AddTaskAction
-
-    /** Reveals the when chip; confirming then replaces Awan's task with a scheduled one. */
-    data object ScheduleManually : AddTaskAction
+    data class ImagePicked(val uri: String) : AddTaskAction
+    data object ImageCleared : AddTaskAction
 
     data object Submit : AddTaskAction
 

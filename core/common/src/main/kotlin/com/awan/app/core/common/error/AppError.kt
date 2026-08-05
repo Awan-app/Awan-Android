@@ -13,5 +13,15 @@ sealed class AppError {
         val errorCode: String? = null,
     ) : AppError()
     data object Serialization : AppError()
+
+    /** Input rejected before it left the device — never comes back from a data source. */
+    data class Validation(val reason: ValidationReason) : AppError()
     data class Unknown(val cause: Throwable? = null) : AppError()
+}
+
+enum class ValidationReason {
+    TEXT_BLANK,
+    TEXT_TOO_LONG,
+    IMAGE_TOO_LARGE,
+    IMAGE_TYPE_UNSUPPORTED,
 }

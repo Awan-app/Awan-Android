@@ -2,7 +2,6 @@
 <resources>
     <string name="onboarding_continue">CONTINUE</string>
     <string name="onboarding_skip">Skip</string>
-    <string name="onboarding_back">Back</string>
     <string name="onboarding_got_it">Got it</string>
 
     <string name="onboarding_greeting_morning">Good morning</string>

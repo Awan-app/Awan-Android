@@ -2,7 +2,6 @@
 <resources>
     <string name="calendar_title">التقويم</string>
     <string name="calendar_refresh_error">تعذّر تحديث التقويم. يتم عرض البيانات المحفوظة.</string>
-    <string name="calendar_back">رجوع</string>
     <string name="calendar_prev_month">الشهر السابق</string>
     <string name="calendar_next_month">الشهر التالي</string>
     <string name="calendar_upcoming_deadlines">المواعيد النهائية القادمة</string>
