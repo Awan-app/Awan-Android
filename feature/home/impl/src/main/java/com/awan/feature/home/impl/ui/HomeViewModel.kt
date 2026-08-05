@@ -419,5 +419,6 @@ class HomeViewModel @Inject constructor(
             ?: UiText.StringResource(R.string.home_error_something_went_wrong)
         is com.awan.app.core.common.error.AppError.Serialization -> UiText.StringResource(R.string.home_error_serialization)
         is com.awan.app.core.common.error.AppError.Unknown    -> UiText.StringResource(R.string.home_error_unknown)
+        else -> UiText.StringResource(R.string.home_error_something_went_wrong)
     }
 }

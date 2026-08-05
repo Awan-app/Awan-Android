@@ -4,18 +4,21 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.TaskDraft
-import com.awan.app.core.network.dto.AiTaskPreviewResponse
-import com.awan.app.core.network.dto.AiTaskPreviewTaskResponse
-import com.awan.app.core.network.dto.category.CategoryDto
-import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.model.TaskWithSessionsDraft
+import com.awan.app.core.network.dto.task.AiTextToTasksRequest
+import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
-import com.awan.app.core.network.dto.task.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
+import com.awan.app.core.network.dto.task.ProposedTaskDto
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
 import com.awan.app.core.network.dto.task.ScheduledSessionResponse
+import com.awan.app.core.network.dto.task.SessionDraftDto
+import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
+import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -35,8 +38,9 @@ class TaskRepositoryImplTest {
     private open class FakeRemoteDataSource : TaskRemoteDataSource {
         var lastCreateRequest: CreateTaskRequest? = null
         var lastWithSessionsRequest: CreateTaskWithSessionsRequest? = null
-        var lastAiRequest: CreateTaskWithAiRequest? = null
-        var lastPreviewRequest: CreateTaskWithAiRequest? = null
+        var lastBulkRequest: BulkCreateTasksWithSessionsRequest? = null
+        var lastProposeTextRequest: String? = null
+        var lastProposeImageNote: String? = null
         var deletedTaskId: String? = null
 
         override suspend fun createTask(request: CreateTaskRequest): Result<TaskInfoResponse> {
@@ -72,35 +76,57 @@ class TaskRepositoryImplTest {
             )
         }
 
-        override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest): Result<TaskWithSessionsDto> {
-            lastAiRequest = request
+        override suspend fun createTasksWithSessions(
+            request: BulkCreateTasksWithSessionsRequest,
+        ): Result<TasksWithSessionsResponse> {
+            lastBulkRequest = request
             return Result.Success(
-                TaskWithSessionsDto(
-                    task = TaskInfoResponse(
-                        id = "t-ai",
-                        title = request.title,
-                        description = request.description,
-                        estimatedDuration = 90,
-                        status = "SCHEDULED",
-                        estimatedPoints = 8,
-                        allowTaskSplitting = true,
-                        category = CategoryDto(id = "cat-1", name = "Afternoon Work"),
+                TasksWithSessionsResponse(
+                    tasks = request.tasks.mapIndexed { index, task ->
+                        TaskWithSessionsDto(
+                            task = TaskInfoResponse(id = "t-bulk-$index", title = task.task.title, status = "SCHEDULED"),
+                        )
+                    },
+                )
+            )
+        }
+
+        override suspend fun proposeTasksFromText(request: AiTextToTasksRequest): Result<TaskProposalResponse> {
+            lastProposeTextRequest = request.text
+            return Result.Success(
+                TaskProposalResponse(
+                    tasks = listOf(
+                        ProposedTaskDto(
+                            draft = CreateTaskWithSessionsRequest(
+                                task = CreateTaskRequest(
+                                    title = request.text,
+                                    estimatedDuration = 90,
+                                    estimatedPoints = 8,
+                                    allowTaskSplitting = true,
+                                    categoryId = "cat-1",
+                                ),
+                            ),
+                            aiProposedSessions = listOf(
+                                SessionDraftDto(start = "2026-07-25T09:00:00", end = "2026-07-25T10:30:00"),
+                            ),
+                            reason = "Morning zone has room.",
+                        ),
                     ),
                 )
             )
         }
 
-        override suspend fun previewTaskWithAi(request: CreateTaskWithAiRequest): Result<AiTaskPreviewResponse> {
-            lastPreviewRequest = request
+        override suspend fun proposeTasksFromImage(
+            image: ByteArray,
+            mimeType: String,
+            note: String?,
+        ): Result<TaskProposalResponse> {
+            lastProposeImageNote = note
             return Result.Success(
-                AiTaskPreviewResponse(
-                    task = AiTaskPreviewTaskResponse(
-                        title = request.title,
-                        description = request.description,
-                        estimatedDuration = 90,
-                        estimatedPoints = 8,
-                        allowTaskSplitting = true,
-                        category = CategoryDto(id = "cat-1", name = "Afternoon Work"),
+                TaskProposalResponse(
+                    sourceSummary = "TASK 1: Buy groceries",
+                    tasks = listOf(
+                        ProposedTaskDto(draft = CreateTaskWithSessionsRequest(task = CreateTaskRequest(title = "Buy groceries"))),
                     ),
                 )
             )
@@ -165,19 +191,96 @@ class TaskRepositoryImplTest {
     }
 
     @Test
-    fun `previewTaskWithAi carries the model's own fields through the mapper`() = runTest(testDispatcher) {
+    fun `createTasksWithSessions sends every draft in one bulk request`() = runTest(testDispatcher) {
+        val remote = FakeRemoteDataSource()
+        val repository = TaskRepositoryImpl(remote, testDispatcher)
+        val start = LocalDateTime.of(2026, 7, 24, 18, 0)
+
+        val result = repository.createTasksWithSessions(
+            listOf(
+                TaskWithSessionsDraft(task = TaskDraft(title = "Build login page")),
+                TaskWithSessionsDraft(
+                    task = TaskDraft(title = "Gym session"),
+                    sessions = listOf(SessionDraft(start = start, end = start.plusMinutes(60))),
+                ),
+            ),
+        )
+
+        assertEquals(2, remote.lastBulkRequest?.tasks?.size)
+        assertTrue(result is Result.Success)
+        val tasks = (result as Result.Success).data
+        assertEquals(2, tasks.size)
+        assertEquals("Build login page", tasks[0].title)
+    }
+
+    @Test
+    fun `proposeTasksFromText maps the model's fields and merges suggested sessions`() = runTest(testDispatcher) {
         val remote = FakeRemoteDataSource()
         val repository = TaskRepositoryImpl(remote, testDispatcher)
 
-        val result = repository.previewTaskWithAi("Build login page", "with email and password")
+        val result = repository.proposeTasksFromText("Build login page")
 
-        assertEquals("Build login page", remote.lastPreviewRequest?.title)
+        assertEquals("Build login page", remote.lastProposeTextRequest)
         assertTrue(result is Result.Success)
-        val suggestion = (result as Result.Success).data
-        assertEquals(90, suggestion.estimatedDurationMinutes)
-        assertEquals(8, suggestion.estimatedPoints)
-        assertTrue(suggestion.allowTaskSplitting)
-        assertEquals("Afternoon Work", suggestion.categoryName)
+        val proposal = (result as Result.Success).data.tasks.single()
+        assertEquals(90, proposal.draft.durationMinutes)
+        assertEquals(8, proposal.draft.estimatedPoints)
+        assertTrue(proposal.draft.allowTaskSplitting)
+        assertEquals("cat-1", proposal.draft.categoryId)
+        assertEquals("Morning zone has room.", proposal.reason)
+        val session = proposal.sessions.single()
+        assertTrue(session.isAiSuggested)
+        assertEquals(LocalDateTime.of(2026, 7, 25, 9, 0), session.start)
+    }
+
+    @Test
+    fun `both session channels merge into one list, tagged by who proposed them`() {
+        val proposal = ProposedTaskDto(
+            draft = CreateTaskWithSessionsRequest(
+                task = CreateTaskRequest(title = "Gym"),
+                sessions = listOf(SessionDraftDto(start = "2026-07-24T18:00:00", end = "2026-07-24T19:00:00")),
+            ),
+            aiProposedSessions = listOf(
+                SessionDraftDto(start = "2026-07-25T09:00:00", end = "2026-07-25T10:00:00"),
+            ),
+        ).toModel()
+
+        assertEquals(2, proposal.sessions.size)
+        val stated = proposal.sessions[0]
+        assertFalse(stated.isAiSuggested)
+        assertEquals(LocalDateTime.of(2026, 7, 24, 18, 0), stated.start)
+        val suggested = proposal.sessions[1]
+        assertTrue(suggested.isAiSuggested)
+        assertEquals(LocalDateTime.of(2026, 7, 25, 9, 0), suggested.start)
+    }
+
+    @Test
+    fun `a suggestion echoing a stated time is dropped rather than shown twice`() {
+        val proposal = ProposedTaskDto(
+            draft = CreateTaskWithSessionsRequest(
+                task = CreateTaskRequest(title = "Gym"),
+                sessions = listOf(SessionDraftDto(start = "2026-07-24T18:00:00", end = "2026-07-24T19:00:00")),
+            ),
+            aiProposedSessions = listOf(
+                SessionDraftDto(start = "2026-07-24T18:00:00", end = "2026-07-24T19:00:00"),
+            ),
+        ).toModel()
+
+        val session = proposal.sessions.single()
+        assertFalse(session.isAiSuggested)
+        assertEquals(LocalDateTime.of(2026, 7, 24, 18, 0), session.start)
+    }
+
+    @Test
+    fun `proposeTasksFromImage carries the source summary through`() = runTest(testDispatcher) {
+        val remote = FakeRemoteDataSource()
+        val repository = TaskRepositoryImpl(remote, testDispatcher)
+
+        val result = repository.proposeTasksFromImage(ByteArray(1), "image/jpeg", "Focus on top item")
+
+        assertEquals("Focus on top item", remote.lastProposeImageNote)
+        assertTrue(result is Result.Success)
+        assertEquals("TASK 1: Buy groceries", (result as Result.Success).data.sourceSummary)
     }
 
     @Test
