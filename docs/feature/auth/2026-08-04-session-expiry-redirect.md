@@ -130,3 +130,54 @@ and its `markConsumed()` is a no-op, so re-collection across `repeatOnLifecycle`
 
 `./gradlew assembleDebug`, `lint`, and `testDebugUnitTest` all pass. Device verification from the
 list above is still outstanding.
+
+### Merging develop, and the ViewModel leak the merge made live (2026-08-05)
+
+The branch was 8 commits behind `develop`. Merging it (`18edf0d`) conflicted only in `AwanApp.kt`,
+in two adjacent import hunks — no competing logic.
+
+That merge brought in `rememberDecoratedEntries` from AWAN-101 (PR #31), which **invalidates the
+original verdict on one review comment**. The reviewer's "previous user's `HomeViewModel` stays in
+memory" comment was judged against this branch's tip, which predated that function, and was wrongly
+called invalid. It was correct:
+
+- `rememberDecoratedEntries` decorates *every* sub-stack each recomposition, on purpose, so
+  background tabs keep their ViewModels across tab switches.
+- `ViewModelStoreNavEntryDecorator` clears a store only via `onPop = { clearKey(key) }` — that is,
+  only when a key leaves the backStack it watches.
+- A **tab root never leaves its own sub-stack**. Resetting the stacks in `replaceAll` pops and
+  clears the deep routes but never `HomeRoute`/`ProfileRoute`/`GoalsRoute`/`MarketplaceRoute`. So
+  after logout or expiry, re-login handed the next user the previous user's ViewModel.
+
+Fixed in `b54ce1c` via the library's own cleanup path rather than backstack manipulation:
+`NavigationState.generation` is bumped by every `replaceAll`, and the per-sub-stack decorators are
+keyed on it. Changing the key drops each stack's decorators; their `rememberViewModelStoreProvider`
+is `remember(parent, key)`-scoped and calls `clearAllKeys()` in `onDispose`. Configuration changes
+are unaffected — that hook checks the parent lifecycle and deliberately skips the clear when it is
+already `DESTROYED`.
+
+Bumping on *every* `replaceAll` is intentional: all six call sites (splash → Login/Onboarding/Home,
+login → Home/Onboarding, onboarding → Home/Login, both logouts, expiry) are flow boundaries where
+stale per-screen state is wrong. Pinned by `NavigatorTest.replaceAll_bumpsGenerationSoEntryDecoratorsDrop`
+and `navigate_doesNotBumpGeneration`.
+
+Also narrowed the `EmailViewModel` pre-fill catch from `Exception` to
+`GeneralSecurityException`/`IOException`. The call suspends, and both a broad `catch` and the
+`runCatching` idiom used elsewhere in the codebase would have swallowed `CancellationException`.
+
+**Known gap, deliberately not fixed.** `receiveAsFlow`'s contract says an element is lost if the
+collector is cancelled after receiving it but before processing it, and `ObserveAsEvents` cancels on
+`STOPPED`. A session that dies exactly as the app backgrounds can therefore drop the signal, landing
+the user back on Home's dead Retry screen — the very bug this plan fixes. The window is narrow and
+the next 401 re-fires. The durable fix is a `MutableStateFlow` latch instead of a channel (a latch
+has no element to lose), reset in `setLoggedIn(true)`; it replaces the mechanism this plan chose, so
+it is left for a follow-up.
+
+Additional device checks this work needs, on top of the list above:
+
+6. Log in as A, open Home and Profile, log out, log in as B → B sees no trace of A's screen state.
+7. Rotate the device on Home → state survives; the generation bump must not fire on configuration change.
+8. Kill the network mid-refresh → stays logged in, no redirect to Login.
+9. Fire concurrent 401s → exactly one toast, one redirect.
+
+`./gradlew assembleDebug`, `lint`, and `testDebugUnitTest` pass after the merge and after the fix.
