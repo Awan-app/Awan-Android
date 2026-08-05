@@ -19,5 +19,7 @@ interface AuthRepository {
 
     suspend fun getUser(): User?
 
+    suspend fun getLastUsedEmail(): String?
+
     suspend fun refreshUserData(): Result<User>
 }

@@ -90,19 +90,23 @@ class AuthRepositoryImpl @Inject constructor(
     override fun observeSessionExpired(): Flow<Unit> =
         authTokenProvider.sessionExpired
 
+    override suspend fun getLastUsedEmail(): String? = authTokenProvider.getUserEmail()
+
+    // The email deliberately outlives clearTokens(), so it must not count towards "is there a
+    // session" — otherwise a logged-out user reads back as signed in. Use getLastUsedEmail() to
+    // reach the surviving email.
     override suspend fun getUser(): User? {
-        val email = authTokenProvider.getUserEmail()
         val userId = authTokenProvider.getUserId()
         val accessToken = authTokenProvider.getAccessToken()
         val refreshToken = authTokenProvider.getRefreshToken()
 
-        if (email == null && userId == null && accessToken == null && refreshToken == null) {
+        if (userId == null && accessToken == null && refreshToken == null) {
             return null
         }
 
         return User(
             id = userId,
-            email = email,
+            email = authTokenProvider.getUserEmail(),
             accessToken = accessToken,
             refreshToken = refreshToken,
         )

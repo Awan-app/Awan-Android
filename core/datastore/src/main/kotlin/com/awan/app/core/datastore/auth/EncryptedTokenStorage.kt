@@ -94,8 +94,10 @@ class EncryptedTokenStorage @Inject constructor(
 
     override val sessionExpired: Flow<Unit> = _sessionExpired.receiveAsFlow()
 
+    // Only a live session can expire. Callers notify before clearTokens(), so concurrent 401s
+    // racing through the authenticator collapse to the one signal that found the session alive.
     override fun notifySessionExpired() {
-        _sessionExpired.trySend(Unit)
+        if (_isLoggedIn.value) _sessionExpired.trySend(Unit)
     }
 
     private companion object {

@@ -6,7 +6,7 @@ import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
-import com.awan.app.core.domain.auth.usecase.GetUserUseCase
+import com.awan.app.core.domain.auth.usecase.GetLastUsedEmailUseCase
 import com.awan.app.core.domain.auth.usecase.RequestOtpUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -21,7 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EmailViewModel @Inject constructor(
     private val requestOtpUseCase: RequestOtpUseCase,
-    private val getUserUseCase: GetUserUseCase,
+    private val getLastUsedEmailUseCase: GetLastUsedEmailUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EmailUiState())
@@ -34,7 +34,14 @@ class EmailViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val lastEmail = getUserUseCase()?.email
+            // Pre-fill is a convenience, never a reason to take the login screen down: reading it
+            // hits EncryptedSharedPreferences, which throws once the Keystore key is invalidated.
+            @Suppress("TooGenericExceptionCaught")
+            val lastEmail = try {
+                getLastUsedEmailUseCase()
+            } catch (e: Exception) {
+                null
+            }
             if (!lastEmail.isNullOrBlank() && _uiState.value.email.isEmpty()) {
                 onEmailChanged(lastEmail)
             }

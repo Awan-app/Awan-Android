@@ -11,6 +11,8 @@ import okhttp3.Authenticator
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.Route
+import retrofit2.HttpException
+import java.net.HttpURLConnection
 import javax.inject.Inject
 import javax.inject.Provider
 
@@ -40,8 +42,8 @@ class TokenAuthenticator @Inject constructor(
                 // We must refresh.
                 val refreshToken = authTokenProvider.getRefreshToken()
                 if (refreshToken == null) {
-                    authTokenProvider.clearTokens()
                     authTokenProvider.notifySessionExpired()
+                    authTokenProvider.clearTokens()
                     return@runBlocking null
                 }
 
@@ -63,8 +65,13 @@ class TokenAuthenticator @Inject constructor(
                         .header("Authorization", "Bearer ${newTokens.accessToken}")
                         .build()
                 } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                    authTokenProvider.clearTokens()
-                    authTokenProvider.notifySessionExpired()
+                    // Only a server rejection means the session is actually dead. IO failures,
+                    // timeouts and 5xx are transient — wiping the tokens there logs the user out
+                    // over a dropped connection while their refresh token is still valid.
+                    if (e is HttpException && e.code() in SESSION_REJECTED_CODES) {
+                        authTokenProvider.notifySessionExpired()
+                        authTokenProvider.clearTokens()
+                    }
                     null
                 }
             }
@@ -73,6 +80,10 @@ class TokenAuthenticator @Inject constructor(
 
     companion object {
         private val refreshMutex = Mutex()
+        private val SESSION_REJECTED_CODES = setOf(
+            HttpURLConnection.HTTP_UNAUTHORIZED,
+            HttpURLConnection.HTTP_FORBIDDEN,
+        )
     }
 }
 

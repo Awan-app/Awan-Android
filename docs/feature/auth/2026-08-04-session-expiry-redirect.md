@@ -94,3 +94,39 @@ No new keys.
 3. Tap Logout from Profile → lands on Login with **no** toast, email pre-filled.
 4. Cold start while logged out → no toast, splash → Login as before.
 5. Arabic: repeat (1) and confirm the toast is the Arabic string.
+
+### PR #32 review follow-up (2026-08-05)
+
+Five of six review comments were acted on; one was rejected as factually wrong.
+
+- **Transient network errors no longer end the session.** `TokenAuthenticator`'s refresh `catch`
+  was generic, so an `IOException` or `SocketTimeoutException` cleared the tokens and bounced the
+  user to Login with a perfectly valid refresh token still on the server. It now only treats
+  `HttpException` 401/403 as a dead session; everything else returns `null` and leaves the tokens
+  alone, so the next call retries.
+- **`getUser()`'s invariant is restored.** Basing the null check on the surviving email made a
+  logged-out user read back as a non-null `User`. The check now looks only at `userId` /
+  `accessToken` / `refreshToken`, and the pre-fill reads the email through a new
+  `GetLastUsedEmailUseCase` → `AuthRepository.getLastUsedEmail()`. `getUser() != null` means
+  "has a session" again.
+- **Concurrent 401s collapse to one signal.** Parallel requests each hit the no-refresh-token
+  branch and each fired `notifySessionExpired()`, stacking toasts. Callers now notify *before*
+  `clearTokens()`, and `notifySessionExpired()` is a no-op when `_isLoggedIn` is already false —
+  so only the caller that found the session alive gets through.
+- **`Navigator.replaceAll` resets every sub-stack, not just the target's.** It previously left the
+  other top-level sub-stacks deep, so a session that expired on Profile > DailyZones would restore
+  the *previous* user to DailyZones the next time that tab was selected after re-login. Covered by
+  `NavigatorTest.replaceAll_resetsEverySubStackNotJustTheTarget`. This also fixes the two
+  pre-existing deliberate-logout callers.
+- **The email pre-fill can no longer crash Login.** `EncryptedSharedPreferences` throws once the
+  Keystore master key is invalidated (OS update, lock-screen change); the unguarded read in
+  `EmailViewModel.init` would have taken the process down. The read is wrapped — no pre-fill beats
+  no login screen.
+
+Rejected: the claim that `_sessionExpired.receiveAsFlow()` throws
+`IllegalStateException: Channel's flows are one-shot`. That is `consumeAsFlow`. Confirmed against
+kotlinx-coroutines 1.11.0 `flow/Channels.kt` — `receiveAsFlow` is `ChannelAsFlow(consume = false)`
+and its `markConsumed()` is a no-op, so re-collection across `repeatOnLifecycle` restarts is safe.
+
+`./gradlew assembleDebug`, `lint`, and `testDebugUnitTest` all pass. Device verification from the
+list above is still outstanding.
