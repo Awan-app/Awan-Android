@@ -83,7 +83,8 @@ class ZonesRepositoryImpl @Inject constructor(
                 name = zone.name,
                 startTime = zone.startTime,
                 endTime = zone.endTime,
-                color = zone.color
+                color = zone.color,
+                categoryId = zone.categoryId
             )
         ).map { it.toDomain() }
 
@@ -146,7 +147,8 @@ class ZonesRepositoryImpl @Inject constructor(
                 name = zone.name,
                 startTime = zone.startTime,
                 endTime = zone.endTime,
-                color = zone.color
+                color = zone.color,
+                categoryId = zone.categoryId
             )
         ).map { it.toDomain() }
 
@@ -187,7 +189,8 @@ class ZonesRepositoryImpl @Inject constructor(
                 name = zone.name,
                 startTime = zone.startTime,
                 endTime = zone.endTime,
-                color = zone.color
+                color = zone.color,
+                categoryId = zone.categoryId
             )
         ).map { it.toDomain() }
 

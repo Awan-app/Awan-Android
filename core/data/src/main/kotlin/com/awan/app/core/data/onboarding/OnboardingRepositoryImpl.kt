@@ -51,30 +51,37 @@ class OnboardingRepositoryImpl @Inject constructor(
 
         when (val result = remoteDataSource.completeOnboarding(request)) {
             is Result.Success -> {
-                // Create or update the default template with onboarding zones
-                val dailyZones = data.zones.filter { it.isEnabled }.map { zone ->
-                    DailyZone(
-                        id = null,
-                        name = zone.name,
-                        startTime = formatMinutesToTimeShort(zone.startMinutes),
-                        endTime = formatMinutesToTimeShort(zone.endMinutes),
-                        color = String.format("#%06X", 0xFFFFFF and zone.colorArgb)
-                    )
-                }
+                // Create or update the default template with onboarding zones. A zone without a
+                // category is rejected by the backend, so drop those rather than sending a request
+                // that is certain to fail — an account with no categories simply gets no template.
+                val dailyZones = data.zones
+                    .filter { it.isEnabled && it.categoryId != null }
+                    .map { zone ->
+                        DailyZone(
+                            id = null,
+                            name = zone.name,
+                            startTime = formatMinutesToTimeShort(zone.startMinutes),
+                            endTime = formatMinutesToTimeShort(zone.endMinutes),
+                            color = String.format("#%06X", 0xFFFFFF and zone.colorArgb),
+                            categoryId = zone.categoryId
+                        )
+                    }
 
-                val templatesResult = zonesRepository.getTemplates()
-                val existingDefault = if (templatesResult is Result.Success) {
-                    templatesResult.data.find { it.name.equals("Default", ignoreCase = true) }
-                } else null
+                if (dailyZones.isNotEmpty()) {
+                    val templatesResult = zonesRepository.getTemplates()
+                    val existingDefault = if (templatesResult is Result.Success) {
+                        templatesResult.data.find { it.name.equals("Default", ignoreCase = true) }
+                    } else null
 
-                if (existingDefault != null) {
-                    zonesRepository.updateTemplateZones(existingDefault.id, dailyZones)
-                } else {
-                    zonesRepository.createTemplate(
-                        name = "Default",
-                        daysOfWeek = DayOfWeek.entries,
-                        zones = dailyZones
-                    )
+                    if (existingDefault != null) {
+                        zonesRepository.updateTemplateZones(existingDefault.id, dailyZones)
+                    } else {
+                        zonesRepository.createTemplate(
+                            name = "Default",
+                            daysOfWeek = DayOfWeek.entries,
+                            zones = dailyZones
+                        )
+                    }
                 }
 
                 userPreferencesDataSource.setOnboardingCompleted(true)

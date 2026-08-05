@@ -7,6 +7,8 @@
     <string name="error_serialization">استجابة غير متوقعة من الخادم.</string>
     <string name="error_unknown">حدث خطأ ما. يرجى المحاولة مرة أخرى.</string>
     <string name="error_validation">لا يمكن استخدام هذا الإدخال. يرجى مراجعته والمحاولة مرة أخرى.</string>
+    <string name="error_category_name_taken">لديك فئة بهذا الاسم بالفعل.</string>
+    <string name="error_category_not_found">لم تعد هذه الفئة موجودة.</string>
     <string name="error_email_not_found">هذا البريد الإلكتروني غير مسجل.</string>
     <string name="error_invalid_otp">رمز التحقق غير صحيح.</string>
     <string name="error_invalid_otp_with_attempts">رمز التحقق غير صحيح. متبقي %1$d محاولات.</string>

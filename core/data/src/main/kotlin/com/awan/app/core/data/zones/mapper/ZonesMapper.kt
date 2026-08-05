@@ -10,6 +10,9 @@ import com.awan.app.core.network.dto.zone.TemplateOverrideDto
 import com.awan.app.core.network.dto.zone.WeeklyTemplateDto
 import com.awan.app.core.network.dto.zone.ZoneDto
 
+// The server reads `categoryId` and writes back a nested `category`. Reading the id off that nested
+// object here is what lets a load-edit-save round-trip keep its category without every call site
+// having to carry one — and the backend rejects a zone that arrives without it.
 fun ZoneDto.toDomain(): DailyZone = DailyZone(
     id = id,
     name = name,
@@ -17,7 +20,8 @@ fun ZoneDto.toDomain(): DailyZone = DailyZone(
     endTime = endTime,
     color = color ?: "#2E8BFF",
     templateId = templateId,
-    templateOverrideId = templateOverrideId
+    templateOverrideId = templateOverrideId,
+    categoryId = categoryId ?: category?.id
 )
 
 fun DailyZone.toDto(): ZoneDto = ZoneDto(
@@ -27,7 +31,8 @@ fun DailyZone.toDto(): ZoneDto = ZoneDto(
     endTime = endTime,
     color = color ?: "#2E8BFF",
     templateId = templateId,
-    templateOverrideId = templateOverrideId
+    templateOverrideId = templateOverrideId,
+    categoryId = categoryId
 )
 
 fun WeeklyTemplateDto.toDomain(): WeeklyTemplate = WeeklyTemplate(

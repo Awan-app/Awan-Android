@@ -16,6 +16,8 @@ import com.awan.app.core.domain.onboarding.model.DayBounds
 import com.awan.app.core.domain.onboarding.usecase.CompleteOnboardingUseCase
 import com.awan.app.core.domain.profile.model.UserProfile
 import com.awan.app.core.domain.zones.model.Zone
+import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
+import com.awan.app.core.model.Category
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +34,7 @@ class OnboardingViewModel @Inject constructor(
     private val suggestZoneSchedule: SuggestZoneScheduleUseCase,
     private val validateDayBounds: ValidateDayBounds,
     private val createAndScheduleFirstTask: CreateAndScheduleFirstTaskUseCase,
+    private val getCategories: GetCategoriesUseCase,
 ) : ViewModel() {
 
     private var zonesUserEdited = false
@@ -44,6 +47,37 @@ class OnboardingViewModel @Inject constructor(
 
     private val _events = Channel<OnboardingEvent>()
     val events = _events.receiveAsFlow()
+
+    init {
+        loadCategories()
+    }
+
+    /**
+     * The backend rejects a zone without a category, so the zones step needs the user's own list
+     * before it can produce a saveable day. A failure is not fatal: the step still works, the sheet
+     * says there are no categories, and the repository skips the template rather than 422-ing.
+     */
+    private fun loadCategories() {
+        viewModelScope.launch {
+            val categories = (getCategories() as? Result.Success)?.data ?: return@launch
+            _state.update { it.copy(availableCategories = categories, zones = it.zones.withDefaultCategories(categories)) }
+        }
+    }
+
+    /**
+     * Each default zone is named after one of the categories the backend seeds at signup, so the
+     * match is a plain name lookup. General is the documented fallback; the first category covers a
+     * user who renamed or deleted their way out of having one.
+     */
+    private fun List<Zone>.withDefaultCategories(categories: List<Category>): List<Zone> {
+        if (categories.isEmpty()) return this
+        val fallback = categories.firstOrNull { it.name.equals(GENERAL_CATEGORY, ignoreCase = true) } ?: categories.first()
+        return map { zone ->
+            if (zone.categoryId != null) return@map zone
+            val match = categories.firstOrNull { it.name.equals(zone.name, ignoreCase = true) } ?: fallback
+            zone.copy(categoryId = match.id)
+        }
+    }
 
     fun onAction(action: OnboardingAction) {
         when (action) {
@@ -69,6 +103,9 @@ class OnboardingViewModel @Inject constructor(
             }
             is OnboardingAction.ToggleZoneEnabled -> updateZones {
                 map { if (it.id == action.zoneId) it.copy(isEnabled = !it.isEnabled) else it }
+            }
+            is OnboardingAction.ZoneCategoryPicked -> updateZones {
+                map { if (it.id == action.zoneId) it.copy(categoryId = action.categoryId) else it }
             }
 
             is OnboardingAction.TaskLengthChanged -> _state.update { it.copy(preferredTaskLengthMinutes = action.minutes) }
@@ -203,7 +240,7 @@ class OnboardingViewModel @Inject constructor(
 
     private fun updateBounds(newBounds: DayBounds) {
         _state.update {
-            val zones = if (zonesUserEdited) it.zones else suggestZoneSchedule(newBounds)
+            val zones = if (zonesUserEdited) it.zones else suggestZoneSchedule(newBounds).withDefaultCategories(it.availableCategories)
             it.copy(
                 bounds = newBounds,
                 boundsValidation = validateDayBounds(newBounds),
@@ -217,7 +254,7 @@ class OnboardingViewModel @Inject constructor(
     private fun applySuggestedZones() {
         zonesUserEdited = false
         _state.update {
-            val zones = suggestZoneSchedule(it.bounds)
+            val zones = suggestZoneSchedule(it.bounds).withDefaultCategories(it.availableCategories)
             it.copy(zones = zones, overlappingZoneIds = ZoneEditRules.overlappingZoneIds(zones, it.bounds))
         }
     }
@@ -241,4 +278,8 @@ class OnboardingViewModel @Inject constructor(
     }
 
     private fun normalize(minutes: Int): Int = ZoneEditRules.snapToFive(minutes).mod(DayBounds.MINUTES_PER_DAY)
+
+    private companion object {
+        const val GENERAL_CATEGORY = "General"
+    }
 }

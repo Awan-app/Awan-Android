@@ -15,17 +15,28 @@ class SuggestZoneScheduleUseCaseTest {
     private fun windows(zones: List<Zone>) = zones.map { it.id to (it.startMinutes to it.endMinutes) }
 
     @Test
-    fun `normal day splits equally from wake+30 to sleep-30`() {
+    fun `normal day splits by weight from wake+30 to sleep-30`() {
         val zones = suggest(DayBounds(wakeMinutes = 7 * 60, sleepMinutes = 23 * 60))
         assertEquals(
             listOf(
-                Zone.STUDY to (450 to 675),
-                Zone.WORK to (675 to 900),
-                Zone.PLAY to (900 to 1125),
-                Zone.PERSONAL to (1125 to 1350),
+                Zone.WORK to (450 to 810),
+                Zone.LEARNING to (810 to 930),
+                Zone.PERSONAL to (930 to 1050),
+                Zone.GENERAL to (1050 to 1350),
             ),
             windows(zones),
         )
+    }
+
+    @Test
+    fun `weights are shares of the pool, so a short day scales all four down`() {
+        // 8h waking leaves 7h usable; every zone keeps its 6:2:2:5 share rather than the last starving.
+        val zones = suggest(DayBounds(wakeMinutes = 9 * 60, sleepMinutes = 17 * 60))
+        val durations = zones.map { it.endMinutes - it.startMinutes }
+        assertTrue(durations.all { it > 0 })
+        assertEquals(7 * 60, durations.sum())
+        assertEquals(durations[1], durations[2])
+        assertTrue(durations[0] > durations[3] && durations[3] > durations[1])
     }
 
     @Test
@@ -33,10 +44,10 @@ class SuggestZoneScheduleUseCaseTest {
         val zones = suggest(DayBounds(wakeMinutes = 22 * 60, sleepMinutes = 6 * 60))
         assertEquals(
             listOf(
-                Zone.STUDY to (1350 to 1455),
-                Zone.WORK to (15 to 120),
-                Zone.PLAY to (120 to 225),
-                Zone.PERSONAL to (225 to 330),
+                Zone.WORK to (1350 to 1520),
+                Zone.LEARNING to (80 to 135),
+                Zone.PERSONAL to (135 to 190),
+                Zone.GENERAL to (190 to 330),
             ),
             windows(zones),
         )
@@ -52,7 +63,7 @@ class SuggestZoneScheduleUseCaseTest {
     @Test
     fun `all suggested zones are enabled and in fixed default order`() {
         val zones = suggest(DayBounds.Default)
-        assertEquals(listOf(Zone.STUDY, Zone.WORK, Zone.PLAY, Zone.PERSONAL), zones.map { it.id })
+        assertEquals(listOf(Zone.WORK, Zone.LEARNING, Zone.PERSONAL, Zone.GENERAL), zones.map { it.id })
         assertTrue(zones.all { it.isEnabled })
     }
 }

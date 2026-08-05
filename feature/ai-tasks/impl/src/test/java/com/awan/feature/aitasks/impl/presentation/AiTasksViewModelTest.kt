@@ -90,6 +90,9 @@ class AiTasksViewModelTest {
 
     private class FakeCategoryRepository(private val categories: List<Category>) : CategoryRepository {
         override suspend fun getCategories(): Result<List<Category>> = Result.Success(categories)
+        override suspend fun createCategory(name: String): Result<Category> = error("not used")
+        override suspend fun getCategory(categoryId: String): Result<Category> = error("not used")
+        override suspend fun updateCategory(categoryId: String, name: String): Result<Category> = error("not used")
     }
 
     private class FakeImageRepository(private val result: Result<ImageBytes>) : ImageRepository {
