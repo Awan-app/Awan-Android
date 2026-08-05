@@ -92,8 +92,6 @@
     <string name="add_task_goal_speech_error">حدث خطأ أثناء التعرف على الصوت. يُرجى المحاولة مرة أخرى.</string>
 
     <string name="add_task_error_create_failed">تعذّر إضافة المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
-    <string name="add_task_error_ai_failed">تعذّر على أوان بناء هذه المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
-    <string name="add_task_error_ai_schedule_failed">لم يجد أوان وقتًا مناسبًا لها. جرّب اختيار الوقت بنفسك.</string>
     <string name="add_task_error_goal_continuation_failed">تعذّر على أوان تقسيم هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
     <string name="add_task_error_goal_confirm_failed">تعذّر حفظ هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
 
