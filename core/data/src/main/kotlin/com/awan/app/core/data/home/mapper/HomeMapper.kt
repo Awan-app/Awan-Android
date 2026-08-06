@@ -54,7 +54,7 @@ internal object HomeMapper {
             zoneId = zoneId,
             startMinutes = startMin,
             durationMinutes = duration,
-            status = parseSessionStatus(status),
+            status = parseSessionStatus(status.orEmpty()),
             locked = locked,
             points = task.estimatedPoints,
             categoryId = task.category?.id,

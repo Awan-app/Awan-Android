@@ -25,9 +25,13 @@ sealed interface AddTaskAction {
 
     data object Submit : AddTaskAction
 
+    data class GoalOptionSelected(val option: String) : AddTaskAction
+    data object AcceptGoalProposal : AddTaskAction
+
     /** A dismiss the user asked for. Becomes [Dismiss] only once nothing would be lost. */
     data object DismissRequested : AddTaskAction
     data object DiscardConfirmed : AddTaskAction
     data object DiscardCancelled : AddTaskAction
     data object Dismiss : AddTaskAction
+    data class SetMicPermissionRequested(val requested: Boolean) : AddTaskAction
 }

@@ -4,12 +4,17 @@ import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.domain.onboarding.utils.DayBoundsValidation
+import com.awan.app.core.domain.onboarding.usecase.AssignDefaultCategoriesUseCase
 import com.awan.app.core.domain.onboarding.usecase.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.utils.ValidateDayBounds
 import com.awan.app.core.domain.onboarding.usecase.CompleteOnboardingUseCase
 import com.awan.app.core.domain.task.usecase.CreateAndScheduleFirstTaskUseCase
 import com.awan.app.core.domain.template.usecase.CreateWeeklyTemplateUseCase
 import com.awan.app.core.domain.onboarding.model.DayBounds
+import com.awan.app.core.domain.category.repository.CategoryRepository
+import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
+import com.awan.app.core.domain.zones.model.Zone
+import com.awan.app.core.model.Category
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -35,18 +40,22 @@ class OnboardingViewModelTest {
     private lateinit var fakeAiTaskRepository: FakeAiTaskRepository
     private lateinit var viewModel: OnboardingViewModel
 
+    private fun viewModel(categoryRepository: CategoryRepository = FakeCategoryRepository()) =
+        OnboardingViewModel(
+            completeOnboarding = CompleteOnboardingUseCase(repository),
+            suggestZoneSchedule = SuggestZoneScheduleUseCase(),
+            validateDayBounds = ValidateDayBounds(),
+            createAndScheduleFirstTask = CreateAndScheduleFirstTaskUseCase(fakeAiTaskRepository),
+            getCategories = GetCategoriesUseCase(categoryRepository),
+            assignDefaultCategories = AssignDefaultCategoriesUseCase(),
+        )
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeOnboardingRepository()
         fakeAiTaskRepository = FakeAiTaskRepository()
-        viewModel = OnboardingViewModel(
-            completeOnboarding = CompleteOnboardingUseCase(repository),
-            suggestZoneSchedule = SuggestZoneScheduleUseCase(),
-            validateDayBounds = ValidateDayBounds(),
-            createAndScheduleFirstTask = CreateAndScheduleFirstTaskUseCase(fakeAiTaskRepository),
-        )
+        viewModel = viewModel()
     }
 
     @After
@@ -58,6 +67,45 @@ class OnboardingViewModelTest {
         assertEquals(OnboardingStep.Welcome, state.step)
         assertEquals(4, state.zones.size)
         assertEquals(SuggestZoneScheduleUseCase()(DayBounds.Default).first().startMinutes, state.zones.first().startMinutes)
+    }
+
+    @Test
+    fun `each default zone takes the seeded category that shares its name`() = runTest(testDispatcher) {
+        val zones = viewModel.state.value.zones.associate { it.id to it.categoryId }
+        assertEquals("cat-work", zones[Zone.WORK])
+        assertEquals("cat-learning", zones[Zone.LEARNING])
+        assertEquals("cat-personal", zones[Zone.PERSONAL])
+        assertEquals("cat-general", zones[Zone.GENERAL])
+    }
+
+    @Test
+    fun `a zone with no same-named category falls back to General`() = runTest(testDispatcher) {
+        val vm = viewModel(FakeCategoryRepository(listOf(Category("cat-general", "General"))))
+        assertTrue(vm.state.value.zones.all { it.categoryId == "cat-general" })
+    }
+
+    @Test
+    fun `picking a category sticks on that zone alone`() = runTest(testDispatcher) {
+        viewModel.onAction(OnboardingAction.ZoneCategoryPicked(Zone.WORK, "cat-health"))
+        val zones = viewModel.state.value.zones.associate { it.id to it.categoryId }
+        assertEquals("cat-health", zones[Zone.WORK])
+        assertEquals("cat-learning", zones[Zone.LEARNING])
+    }
+
+    /** Re-suggesting rebuilds the zone list from defaults, which would otherwise drop the categories. */
+    @Test
+    fun `re-suggesting keeps every zone saveable`() = runTest(testDispatcher) {
+        viewModel.onAction(OnboardingAction.WakeChanged(8 * 60))
+        viewModel.onAction(OnboardingAction.UseSuggestedZones)
+        assertTrue(viewModel.state.value.zones.all { it.categoryId != null })
+    }
+
+    @Test
+    fun `a failed category load leaves the zones step usable`() = runTest(testDispatcher) {
+        val vm = viewModel(FakeCategoryRepository(failWith = AppError.Network))
+        assertEquals(4, vm.state.value.zones.size)
+        assertTrue(vm.state.value.availableCategories.isEmpty())
+        assertTrue(vm.state.value.zones.all { it.categoryId == null })
     }
 
     @Test

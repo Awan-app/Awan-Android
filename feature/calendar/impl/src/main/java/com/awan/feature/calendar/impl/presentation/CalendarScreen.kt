@@ -2,7 +2,9 @@ package com.awan.feature.calendar.impl.presentation
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -10,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -34,11 +37,14 @@ import androidx.compose.foundation.style.styleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.MotionDurationScale
@@ -50,18 +56,23 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.lucide.ArrowLeft
+import com.composables.icons.lucide.ArrowRight
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.ChevronRight
-import com.composables.icons.lucide.Flame
 import com.composables.icons.lucide.Lucide
 import com.awan.app.core.designsystem.AwanBackButton
 import com.awan.app.core.designsystem.AwanButton
@@ -70,13 +81,75 @@ import com.awan.app.core.designsystem.AwanSurface
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextStyle
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.awanButtonHaptic
 import com.awan.feature.calendar.impl.R
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration.Companion.milliseconds
+
+
+
+@Composable
+private fun CalendarIconButton(
+    onClick: () -> Unit,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+    testTag: String? = null,
+    icon: @Composable () -> Unit,
+) {
+    val colors = AwanTheme.colors
+    val shape = RoundedCornerShape(12.dp)
+    val hapticFeedback = LocalHapticFeedback.current
+    val haptic = awanButtonHaptic(AwanButtonVariant.Secondary)
+    val scope = rememberCoroutineScope()
+    val pressAnim = remember { Animatable(0f) }
+
+    val currentTopInset = (2.5.dp * pressAnim.value)
+    val currentBottomPadding = (2.5.dp * (1f - pressAnim.value))
+
+    Box(
+        modifier = modifier
+            .size(42.dp)
+            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClick = {
+                    haptic.let(hapticFeedback::performHapticFeedback)
+                    scope.launch {
+                        pressAnim.animateTo(1f, animationSpec = tween(40, easing = LinearOutSlowInEasing))
+                        pressAnim.animateTo(0f, animationSpec = tween(60, easing = LinearOutSlowInEasing))
+                    }
+                    onClick()
+                },
+            ),
+    ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .padding(top = currentTopInset)
+                .clip(shape)
+                .background(colors.line)
+        )
+        CompositionLocalProvider(LocalContentColor provides colors.textPrimary) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .padding(top = currentTopInset, bottom = currentBottomPadding)
+                    .clip(shape)
+                    .background(colors.surface)
+                    .border(2.dp, colors.line, shape),
+                contentAlignment = Alignment.Center,
+                content = { icon() },
+            )
+        }
+    }
+}
 
 @Composable
 fun rememberIsReducedMotion(): Boolean {
@@ -110,6 +183,7 @@ fun CalendarScreen(
     onBack: () -> Unit,
 ) {
     val isReducedMotion = rememberIsReducedMotion()
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
     Column(
         modifier = Modifier
@@ -121,11 +195,19 @@ fun CalendarScreen(
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
     ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                AwanBackButton(onClick = onBack)
+                CalendarIconButton(
+                    onClick = onBack,
+                    contentDescription = stringResource(R.string.calendar_back),
+                ) {
+                    Icon(
+                        imageVector = if (isRtl) Lucide.ArrowRight else Lucide.ArrowLeft,
+                        contentDescription = null,
+                    )
+                }
                 Spacer(modifier = Modifier.width(AwanTheme.spacing.sm))
                 AwanText(
                     text = stringResource(R.string.calendar_title),
-                    style = AwanTheme.styles.displayText,
+                    style = AwanTextStyle(AwanTheme.typography.title.copy(fontSize = 26.sp), AwanTheme.colors.textPrimary),
                     modifier = Modifier.testTag("calendar_title"),
                 )
             }
@@ -219,10 +301,15 @@ private fun StreakSummaryCard(streak: Int) {
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(AwanTheme.colors.zoneSun),
+                    .background(AwanTheme.colors.streakSurface),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Lucide.Flame, contentDescription = null, tint = AwanTheme.colors.textPrimary)
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_flame_filled),
+                    contentDescription = null,
+                    tint = AwanTheme.colors.streakIcon,
+                    modifier = Modifier.testTag("streak_flame_icon"),
+                )
             }
             Spacer(modifier = Modifier.width(AwanTheme.spacing.md))
             Column {
@@ -246,6 +333,7 @@ private fun MonthHeader(
     onNextMonth: () -> Unit,
 ) {
     val monthFormatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy") }
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -256,39 +344,28 @@ private fun MonthHeader(
             style = AwanTheme.styles.titleText,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
-            AwanButton(
+            CalendarIconButton(
                 onClick = onPrevMonth,
-                variant = AwanButtonVariant.Secondary,
-                style = Style {
-                    minHeight(0.dp)
-                    contentPadding(0.dp)
-                },
-                modifier = Modifier
-                    .size(42.dp)
-                    .testTag("prev_month_button"),
+                contentDescription = stringResource(R.string.calendar_prev_month),
+                testTag = "prev_month_button",
             ) {
                 Icon(
-                    imageVector = Lucide.ChevronLeft,
-                    contentDescription = stringResource(R.string.calendar_prev_month),
+                    imageVector = if (isRtl) Lucide.ChevronRight else Lucide.ChevronLeft,
+                    contentDescription = null,
                 )
             }
-            AwanButton(
+            CalendarIconButton(
                 onClick = onNextMonth,
-                variant = AwanButtonVariant.Secondary,
-                style = Style {
-                    minHeight(0.dp)
-                    contentPadding(0.dp)
-                },
-                modifier = Modifier
-                    .size(42.dp)
-                    .testTag("next_month_button"),
+                contentDescription = stringResource(R.string.calendar_next_month),
+                testTag = "next_month_button",
             ) {
                 Icon(
-                    imageVector = Lucide.ChevronRight,
-                    contentDescription = stringResource(R.string.calendar_next_month),
+                    imageVector = if (isRtl) Lucide.ChevronLeft else Lucide.ChevronRight,
+                    contentDescription = null,
                 )
             }
-        }    }
+        }
+    }
 }
 
 @Composable
@@ -470,6 +547,7 @@ private fun DayCell(
                 role = Role.Button,
                 onClick = { onSelectDate(dayState.date) }
             )
+            .testTag("calendar_day_${dayState.date}")
             .padding(vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -625,4 +703,3 @@ private fun GoalItemSurface(
         }
     }
 }
-

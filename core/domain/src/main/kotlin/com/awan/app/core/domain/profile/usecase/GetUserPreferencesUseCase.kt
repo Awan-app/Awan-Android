@@ -1,12 +1,12 @@
 package com.awan.app.core.domain.profile.usecase
 
-import com.awan.app.core.datastore.model.UserPreferencesData
-import com.awan.app.core.datastore.UserPreferencesDataSource
+import com.awan.app.core.domain.profile.model.UserData
+import com.awan.app.core.domain.profile.repository.UserDataRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class GetUserPreferencesUseCase @Inject constructor(
-    private val userDataRepository: UserPreferencesDataSource
+    private val userDataRepository: UserDataRepository
 ) {
-    operator fun invoke(): Flow<UserPreferencesData> = userDataRepository.userPreferences
+    operator fun invoke(): Flow<UserData> = userDataRepository.userData
 }

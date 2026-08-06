@@ -12,4 +12,6 @@ data class UserPreferencesData(
     val locale: String = "",
 
     val defaultRegion: String = "",
+
+    val micPermissionRequested: Boolean = false,
 )

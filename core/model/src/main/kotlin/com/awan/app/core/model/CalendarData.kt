@@ -6,7 +6,7 @@ data class CalendarUser(
     val timezone: String,
 )
 
-data class Goal(
+data class CalendarGoal(
     val id: String,
     val title: String,
     val targetDate: String?,

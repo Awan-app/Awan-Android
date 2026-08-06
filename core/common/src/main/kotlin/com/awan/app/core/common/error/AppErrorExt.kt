@@ -20,6 +20,11 @@ fun AppError.toUiText(): UiText = when (this) {
                 else -> UiText.StringResource(R.string.error_invalid_otp)
             }
         }
+        errorCode == "CATEGORY_NAME_TAKEN" -> UiText.StringResource(R.string.error_category_name_taken)
+        errorCode == "CATEGORY_NOT_FOUND" -> UiText.StringResource(R.string.error_category_not_found)
+        // The server's validation prose is unlocalized and field-level; the raw-body fallback below
+        // would show it verbatim, and 422s are routine now that every zone write is validated.
+        errorCode == "VALIDATION_ERROR" -> UiText.StringResource(R.string.error_validation)
         code == 404 -> UiText.StringResource(R.string.error_email_not_found)
         code == 410 -> UiText.StringResource(R.string.error_otp_expired)
         code == 429 -> UiText.StringResource(R.string.error_too_many_requests)

@@ -43,10 +43,12 @@ fun ZonesStepBody(state: OnboardingState, onAction: (OnboardingAction) -> Unit) 
     if (editingZone != null) {
         ZoneSheet(
             zone = editingZone,
+            categories = state.availableCategories,
             onDismiss = { editingZoneId = null },
             onSetWindow = { start, end ->
                 onAction(OnboardingAction.EditZoneWindow(editingZone.id, start, end))
             },
+            onPickCategory = { onAction(OnboardingAction.ZoneCategoryPicked(editingZone.id, it)) },
         )
     }
 }

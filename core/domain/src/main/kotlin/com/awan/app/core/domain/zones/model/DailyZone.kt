@@ -1,5 +1,6 @@
 package com.awan.app.core.domain.zones.model
 
+/** [categoryId] is required by the backend on every zone write; a zone without one cannot be saved. */
 data class DailyZone(
     val id: String?,
     val name: String,
@@ -7,7 +8,8 @@ data class DailyZone(
     val endTime: String,
     val color: String,
     val templateId: String? = null,
-    val templateOverrideId: String? = null
+    val templateOverrideId: String? = null,
+    val categoryId: String? = null
 )
 
 data class WeeklyTemplate(
