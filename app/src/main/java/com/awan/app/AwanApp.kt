@@ -1,5 +1,6 @@
 package com.awan.app
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,14 +15,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.awan.app.core.common.R as CommonR
 import com.awan.app.core.designsystem.AwanBottomNavBar
 import com.awan.app.core.designsystem.BottomNavItem
+import com.awan.app.core.designsystem.ObserveAsEvents
 import com.awan.core.navigation.NavigationState
 import com.awan.core.navigation.Navigator
 import com.awan.core.navigation.Route
@@ -47,6 +51,7 @@ import com.awan.feature.profile.api.EditRoutineRoute
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.splash.impl.navigation.splashEntry
 import com.awan.feature.splash.impl.ui.SplashDestination
+import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
 /**
@@ -62,13 +67,20 @@ import java.time.LocalDate
  * Each stack gets its own decorators and all of them are decorated on every recomposition, so
  * switching tabs — which swaps which stack is displayed, not what's in the others — leaves the
  * background tabs' ViewModels alive.
+ *
+ * Keeping them alive across tabs is the point; keeping them alive across *sessions* is not. A tab
+ * root never leaves its own sub-stack, so `onPop` never fires for it and its store would outlive a
+ * logout — handing the next user the previous user's ViewModel. Keying on [NavigationState.generation],
+ * which every `replaceAll` bumps, drops each stack's decorators at those boundaries; their
+ * `rememberViewModelStoreProvider` clears all of its keys on dispose. Configuration changes are
+ * unaffected: that path checks the parent lifecycle and deliberately skips the clear.
  */
 @Composable
 private fun NavigationState.rememberDecoratedEntries(
     entryProvider: (Route) -> NavEntry<Route>,
 ): List<NavEntry<Route>> {
     val decoratedStacks = subStacks.mapValues { (topLevelKey, stack) ->
-        key(topLevelKey) {
+        key(topLevelKey, generation) {
             rememberDecoratedNavEntries(
                 backStack = stack,
                 entryDecorators = listOf(
@@ -86,12 +98,20 @@ private fun NavigationState.rememberDecoratedEntries(
 @Composable
 fun AwanApp(
     appState: AwanAppState,
+    sessionExpiredEvents: Flow<Unit>,
     modifier: Modifier = Modifier,
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
     // Holds the live HomeViewModel's selectDate so Calendar can invoke it after popping.
     val homeSelectDateRef = remember { arrayOf<((LocalDate) -> Unit)?>(null) }
+
+    val context = LocalContext.current
+    ObserveAsEvents(sessionExpiredEvents) {
+        Toast.makeText(context, CommonR.string.error_unauthorized, Toast.LENGTH_LONG).show()
+        showAddTask = false
+        navigator.replaceAll(LoginRoute)
+    }
 
     if (showAddTask) {
         AddTaskSheet(

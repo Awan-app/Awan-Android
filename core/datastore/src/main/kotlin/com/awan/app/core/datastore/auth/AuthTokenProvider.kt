@@ -16,5 +16,9 @@ interface AuthTokenProvider {
     fun observeIsLoggedIn(): Flow<Boolean>
 
     suspend fun setLoggedIn(loggedIn: Boolean)
+
+    val sessionExpired: Flow<Unit>
+
+    fun notifySessionExpired()
 }
 
