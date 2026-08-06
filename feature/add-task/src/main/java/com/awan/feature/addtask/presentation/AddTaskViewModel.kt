@@ -4,20 +4,24 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
+import com.awan.app.core.domain.goal.usecase.ConfirmGoalDecompositionUseCase
+import com.awan.app.core.domain.goal.usecase.ContinueGoalDecompositionUseCase
+import com.awan.app.core.domain.profile.usecase.GetUserDataUseCase
+import com.awan.app.core.domain.profile.usecase.SetMicPermissionRequestedUseCase
 import com.awan.app.core.domain.task.parser.ParsedTaskInput
 import com.awan.app.core.domain.task.usecase.ApplyTaskAttributeUseCase
 import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
-import com.awan.app.core.domain.task.usecase.DeleteTaskUseCase
 import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
-import com.awan.app.core.domain.task.usecase.PreviewTaskWithAiUseCase
-import com.awan.app.core.domain.task.usecase.ScheduleTaskWithAiUseCase
 import com.awan.app.core.domain.task.usecase.TaskAttribute
-import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.model.Category
+import com.awan.app.core.model.GoalDecompositionBlock
+import com.awan.app.core.model.Task
 import com.awan.feature.addtask.R
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,9 +38,10 @@ class AddTaskViewModel @Inject constructor(
     private val applyTaskAttribute: ApplyTaskAttributeUseCase,
     private val getCategories: GetCategoriesUseCase,
     private val createTask: CreateTaskUseCase,
-    private val previewTaskWithAi: PreviewTaskWithAiUseCase,
-    private val scheduleTaskWithAi: ScheduleTaskWithAiUseCase,
-    private val deleteTask: DeleteTaskUseCase,
+    private val continueGoalDecomposition: ContinueGoalDecompositionUseCase,
+    private val confirmGoalDecomposition: ConfirmGoalDecompositionUseCase,
+    private val getUserDataUseCase: GetUserDataUseCase,
+    private val setMicPermissionRequestedUseCase: SetMicPermissionRequestedUseCase,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -46,8 +51,11 @@ class AddTaskViewModel @Inject constructor(
     private val _events = Channel<AddTaskEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
+    private var activeGoalJob: Job? = null
+
     init {
         loadCategories()
+        observeUserData()
     }
 
     private companion object {
@@ -58,7 +66,7 @@ class AddTaskViewModel @Inject constructor(
 
     fun onAction(action: AddTaskAction) {
         when (action) {
-            is AddTaskAction.ModeChanged -> _state.update { it.copy(mode = action.mode, errorMessage = null) }
+            is AddTaskAction.ModeChanged -> onModeChanged(action.mode)
             is AddTaskAction.InputChanged -> onInputChanged(action.input)
             is AddTaskAction.DescriptionChanged -> _state.update { it.copy(description = action.description) }
             AddTaskAction.MandatoryToggled -> _state.update { it.copy(mandatory = !it.mandatory) }
@@ -71,15 +79,81 @@ class AddTaskViewModel @Inject constructor(
             is AddTaskAction.DurationPicked -> applyAttribute(TaskAttribute.Lasting(action.minutes))
             is AddTaskAction.CategoryPicked -> applyAttribute(TaskAttribute.In(action.categoryName))
             AddTaskAction.AiToggled -> toggleAi()
-            AddTaskAction.ScheduleWithAi -> scheduleWithAi()
-            AddTaskAction.ScheduleManually ->
-                _state.update { it.copy(aiStage = AddTaskAiStage.MANUAL, errorMessage = null) }
+            is AddTaskAction.ImagePicked -> _state.update { it.copy(imageUri = action.uri) }
+            AddTaskAction.ImageCleared -> _state.update { it.copy(imageUri = null) }
 
             AddTaskAction.Submit -> submit()
+            is AddTaskAction.GoalOptionSelected -> selectGoalOption(action.option)
+            AddTaskAction.AcceptGoalProposal -> acceptGoalProposal()
             AddTaskAction.DismissRequested -> requestDismiss()
             AddTaskAction.DiscardConfirmed -> discard()
             AddTaskAction.DiscardCancelled -> _state.update { it.copy(showDiscardConfirm = false) }
             AddTaskAction.Dismiss -> close(AddTaskEvent.Dismissed)
+            is AddTaskAction.SetMicPermissionRequested -> setMicPermissionRequested(action.requested)
+        }
+    }
+
+    private fun observeUserData() {
+        viewModelScope.launch {
+            getUserDataUseCase().collect { userData ->
+                _state.update { it.copy(hasRequestedMicPermission = userData.micPermissionRequested) }
+            }
+        }
+    }
+
+    private fun setMicPermissionRequested(requested: Boolean) {
+        viewModelScope.launch {
+            setMicPermissionRequestedUseCase(requested)
+        }
+    }
+
+    private fun onModeChanged(newMode: AddTaskMode) {
+        val current = _state.value
+        if (current.mode == newMode) return
+
+        val isBlocked = current.isSubmitting ||
+            current.confirmation != null ||
+            (current.mode == AddTaskMode.GOAL && (current.goalSessionId != null || current.goalStep != GoalStep.Initial))
+        if (isBlocked) return
+
+        if (newMode == AddTaskMode.GOAL) {
+            _state.update {
+                it.copy(
+                    mode = AddTaskMode.GOAL,
+                    aiEnabled = false,
+                    imageUri = null,
+                    openPicker = null,
+                    parsed = ParsedTaskInput.Empty,
+                    resolvedCategory = null,
+                    errorMessage = null,
+                )
+            }
+        } else {
+            val parsed = parseTaskInput(current.input)
+            _state.update {
+                it.copy(
+                    mode = AddTaskMode.TASK,
+                    parsed = parsed,
+                    resolvedCategory = it.availableCategories.matching(parsed.categoryToken),
+                    errorMessage = null,
+                )
+            }
+        }
+    }
+
+    private fun selectGoalOption(option: String) {
+        _state.update { state ->
+            if (state.mode != AddTaskMode.GOAL || state.isSubmitting) return@update state
+            val currentStep = state.goalStep
+            if (currentStep is GoalStep.MultipleChoice && currentStep.options.contains(option)) {
+                state.copy(
+                    goalStep = currentStep.copy(selectedOption = option),
+                    input = "",
+                    errorMessage = null,
+                )
+            } else {
+                state
+            }
         }
     }
 
@@ -114,13 +188,30 @@ class AddTaskViewModel @Inject constructor(
     }
 
     /**
-     * The typed text is never touched by the stage — only whether it gets read. Standing the parser
-     * down leaves `parsed` empty, which is what makes the chips and the highlights disappear without
-     * anything having to hide them one by one.
+     * The typed text is never touched by the switch — only whether it gets read. Standing the
+     * parser down leaves `parsed` empty, which is what makes the chips and the highlights disappear
+     * without anything having to hide them one by one.
      */
     private fun onInputChanged(input: String) {
-        if (_state.value.aiStage.isComposing) {
-            _state.update { it.copy(input = input, errorMessage = null) }
+        val current = _state.value
+        if (current.mode == AddTaskMode.GOAL && current.isSubmitting) return
+        if (current.mode == AddTaskMode.GOAL || current.aiEnabled) {
+            _state.update { state ->
+                val updatedStep = if (state.mode == AddTaskMode.GOAL && state.goalStep is GoalStep.MultipleChoice) {
+                    if (input.isNotBlank()) {
+                        state.goalStep.copy(selectedOption = null)
+                    } else {
+                        state.goalStep
+                    }
+                } else {
+                    state.goalStep
+                }
+                state.copy(
+                    input = input,
+                    goalStep = updatedStep,
+                    errorMessage = null,
+                )
+            }
             return
         }
         val parsed = parseTaskInput(input)
@@ -137,16 +228,11 @@ class AddTaskViewModel @Inject constructor(
     /** Flipping the switch re-reads the same sentence, or stops reading it. The text survives both. */
     private fun toggleAi() {
         val current = _state.value
-        if (!current.showsAiSwitch) return
-        val stage = if (current.aiStage == AddTaskAiStage.OFF) {
-            AddTaskAiStage.COMPOSING
-        } else {
-            AddTaskAiStage.OFF
-        }
-        val parsed = if (stage.isComposing) ParsedTaskInput.Empty else parseTaskInput(current.input)
+        val enabled = !current.aiEnabled
+        val parsed = if (enabled) ParsedTaskInput.Empty else parseTaskInput(current.input)
         _state.update {
             it.copy(
-                aiStage = stage,
+                aiEnabled = enabled,
                 parsed = parsed,
                 resolvedCategory = it.availableCategories.matching(parsed.categoryToken),
                 openPicker = null,
@@ -189,13 +275,132 @@ class AddTaskViewModel @Inject constructor(
 
     private fun submit() {
         val current = _state.value
-        if (!current.canSubmit) return
-        when (current.aiStage) {
-            AddTaskAiStage.COMPOSING -> askAwan()
-            // MANUAL is the same plain create as OFF: scheduleWithAi() never leaves a task behind
-            // for a failed attempt to inherit, so picking a time by hand always starts from scratch.
-            else -> createDirectly()
+        if (!current.canSubmit || current.isSubmitting) return
+        if (current.mode == AddTaskMode.GOAL) {
+            submitGoalContinuation()
+            return
         }
+        if (current.aiEnabled) {
+            close(
+                AddTaskEvent.AiRequested(
+                    text = current.input,
+                    note = current.description.takeIf { it.isNotBlank() },
+                    imageUri = current.imageUri,
+                ),
+            )
+        } else {
+            createDirectly()
+        }
+    }
+
+    private fun submitGoalContinuation() {
+        val current = _state.value
+        val (sessionId, message) = when (val step = current.goalStep) {
+            GoalStep.Initial -> null to current.input.trim()
+            is GoalStep.MultipleChoice -> {
+                val customText = current.input.trim()
+                if (customText.isNotBlank()) {
+                    current.goalSessionId to customText
+                } else {
+                    val selected = step.selectedOption ?: return
+                    current.goalSessionId to selected.trim()
+                }
+            }
+
+            is GoalStep.WritingQuestion -> current.goalSessionId to current.input.trim()
+            is GoalStep.Preview -> current.goalSessionId to current.input.trim()
+        }
+
+        if (message.isBlank()) return
+
+        _state.update { it.copy(isSubmitting = true, errorMessage = null) }
+
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            try {
+                when (val result = continueGoalDecomposition(sessionId = sessionId, message = message)) {
+                    is Result.Success -> {
+                        val reply = result.data
+                        val proposalBlock = reply.blocks.filterIsInstance<GoalDecompositionBlock.Proposal>().firstOrNull()
+                        val questionBlock = reply.blocks.filterIsInstance<GoalDecompositionBlock.Question>().firstOrNull()
+
+                        val nextStep = when {
+                            proposalBlock != null -> GoalStep.Preview(proposalBlock.proposal)
+                            questionBlock != null -> {
+                                if (questionBlock.options.isNotEmpty()) {
+                                    GoalStep.MultipleChoice(
+                                        question = questionBlock.text,
+                                        options = questionBlock.options,
+                                        selectedOption = null,
+                                    )
+                                } else {
+                                    GoalStep.WritingQuestion(question = questionBlock.text)
+                                }
+                            }
+
+                            else -> GoalStep.WritingQuestion(question = "")
+                        }
+
+                        _state.update {
+                            it.copy(
+                                goalStep = nextStep,
+                                goalSessionId = reply.sessionId,
+                                goalReplyBlocks = reply.blocks,
+                                input = "",
+                                isSubmitting = false,
+                                errorMessage = null,
+                            )
+                        }
+                    }
+
+                    is Result.Error -> {
+                        _state.update {
+                            it.copy(
+                                isSubmitting = false,
+                                errorMessage = R.string.add_task_error_goal_continuation_failed,
+                            )
+                        }
+                    }
+
+                    Result.Loading -> Unit
+                }
+            } finally {
+                if (activeGoalJob === coroutineContext[Job]) {
+                    activeGoalJob = null
+                }
+            }
+        }
+        activeGoalJob = job
+        job.start()
+    }
+
+    private fun acceptGoalProposal() {
+        val current = _state.value
+        if (!current.canAcceptGoal || current.isSubmitting) return
+        val sessionId = current.goalSessionId ?: return
+
+        _state.update { it.copy(isSubmitting = true, errorMessage = null) }
+
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            try {
+                when (val result = confirmGoalDecomposition(sessionId)) {
+                    is Result.Success -> close(AddTaskEvent.GoalCreated(result.data.title))
+                    is Result.Error -> _state.update {
+                        it.copy(
+                            isSubmitting = false,
+                            errorMessage = R.string.add_task_error_goal_confirm_failed,
+                        )
+                    }
+
+                    Result.Loading -> Unit
+                }
+            } finally {
+                if (activeGoalJob === coroutineContext[Job]) {
+                    activeGoalJob = null
+                }
+            }
+        }
+        activeGoalJob = job
+        job.start()
     }
 
     private fun createDirectly() {
@@ -206,122 +411,6 @@ class AddTaskViewModel @Inject constructor(
                 is Result.Success -> confirm(current.plannedConfirmation())
                 is Result.Error -> _state.update {
                     it.copy(isSubmitting = false, errorMessage = R.string.add_task_error_create_failed)
-                }
-
-                Result.Loading -> Unit
-            }
-        }
-    }
-
-    private fun askAwan() {
-        val current = _state.value
-        viewModelScope.launch {
-            _state.update {
-                it.copy(aiStage = AddTaskAiStage.WORKING, isSubmitting = true, errorMessage = null)
-            }
-            when (val result = previewTaskWithAi(current.input, current.description)) {
-                is Result.Success -> _state.update { it.intoReview(result.data) }
-                is Result.Error -> _state.update {
-                    it.copy(
-                        aiStage = AddTaskAiStage.COMPOSING,
-                        isSubmitting = false,
-                        errorMessage = R.string.add_task_error_ai_failed,
-                    )
-                }
-
-                Result.Loading -> Unit
-            }
-        }
-    }
-
-    /**
-     * Awan's answer is folded back into the sentence rather than held beside it, so the review stage
-     * is the ordinary form with ordinary chips — one path from text to draft, as before.
-     */
-    private fun AddTaskState.intoReview(suggestion: AiTaskSuggestion): AddTaskState {
-        var sentence = suggestion.title.ifBlank { input }
-        var parsed = parseTaskInput(sentence)
-        suggestion.estimatedDurationMinutes?.let {
-            sentence = applyTaskAttribute(sentence, parsed, TaskAttribute.Lasting(it))
-            parsed = parseTaskInput(sentence)
-        }
-        // The preview may only echo a categoryId, not a name — fall back to our own list for that.
-        val categoryName = suggestion.categoryName
-            ?: suggestion.categoryId?.let { id -> availableCategories.firstOrNull { it.id == id }?.name }
-        categoryName?.let {
-            sentence = applyTaskAttribute(sentence, parsed, TaskAttribute.In(it))
-            parsed = parseTaskInput(sentence)
-        }
-        return copy(
-            aiStage = AddTaskAiStage.REVIEW,
-            aiPoints = suggestion.estimatedPoints,
-            aiSplittable = suggestion.allowTaskSplitting,
-            input = sentence,
-            parsed = parsed,
-            description = suggestion.description.orEmpty(),
-            mandatory = suggestion.mandatory,
-            // Awan's category may not be one of ours — keep the id with whatever name we resolved,
-            // but never fall back to the raw id as a display name (it's usually a UUID).
-            resolvedCategory = availableCategories.matching(parsed.categoryToken)
-                ?: categoryName?.let { name ->
-                    suggestion.categoryId?.let { id -> Category(id = id, name = name) }
-                },
-            isSubmitting = false,
-            errorMessage = null,
-        )
-    }
-
-    /**
-     * Nothing exists on the backend yet at REVIEW, so this creates the task itself — with whatever
-     * the user edited through the chips — before asking the engine to place it. `startAt` is forced
-     * out: the composed sentence may still carry a time phrase typed before Awan was switched on, and
-     * "let Awan schedule it" has to mean the engine picks the slot, not whatever the parser found.
-     * Anything short of a placed session deletes what was just created, so a retry (or switching to
-     * "I'll pick a time") never has a stray task to inherit.
-     */
-    private fun scheduleWithAi() {
-        val current = _state.value
-        viewModelScope.launch {
-            _state.update { it.copy(isSubmitting = true, errorMessage = null) }
-            val created = when (val result = createTask(current.toDraft().copy(startAt = null))) {
-                is Result.Success -> result.data
-                is Result.Error -> {
-                    _state.update {
-                        it.copy(isSubmitting = false, errorMessage = R.string.add_task_error_create_failed)
-                    }
-                    return@launch
-                }
-
-                Result.Loading -> return@launch
-            }
-            when (val result = scheduleTaskWithAi(created.id)) {
-                is Result.Success -> when {
-                    // The engine chose the slot, so the receipt reports its answer, not the request.
-                    result.data.isScheduled -> confirm(
-                        TaskConfirmation(
-                            title = current.parsed.title,
-                            firstSession = result.data.sessions.minByOrNull { it.start }?.start,
-                            durationMinutes = current.parsed.durationMinutes,
-                        ),
-                    )
-
-                    else -> {
-                        deleteTask(created.id)
-                        _state.update {
-                            it.copy(
-                                aiStage = AddTaskAiStage.REVIEW,
-                                isSubmitting = false,
-                                errorMessage = R.string.add_task_error_ai_schedule_failed,
-                            )
-                        }
-                    }
-                }
-
-                is Result.Error -> {
-                    deleteTask(created.id)
-                    _state.update {
-                        it.copy(isSubmitting = false, errorMessage = R.string.add_task_error_ai_schedule_failed)
-                    }
                 }
 
                 Result.Loading -> Unit
@@ -366,11 +455,7 @@ class AddTaskViewModel @Inject constructor(
         )
     }
 
-    /**
-     * Nothing is ever persisted while the sheet is open — a preview never saves, and `scheduleWithAi`
-     * cleans up after itself on anything short of a placed session — so walking away has nothing to
-     * take with it.
-     */
+    /** Nothing is ever persisted while the sheet is open, so walking away has nothing to clean up. */
     private fun discard() {
         _state.update { it.copy(showDiscardConfirm = false) }
         close(AddTaskEvent.Dismissed)
@@ -382,6 +467,8 @@ class AddTaskViewModel @Inject constructor(
      * tap on `+` reopens whatever the last one left behind, receipt and all.
      */
     private fun close(event: AddTaskEvent) {
+        activeGoalJob?.cancel()
+        activeGoalJob = null
         _state.value = AddTaskState(today = LocalDate.now(clock))
         loadCategories()
         viewModelScope.launch { _events.send(event) }

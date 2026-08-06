@@ -15,7 +15,11 @@ interface AuthRepository {
 
     fun observeIsLoggedIn(): Flow<Boolean>
 
+    fun observeSessionExpired(): Flow<Unit>
+
     suspend fun getUser(): User?
+
+    suspend fun getLastUsedEmail(): String?
 
     suspend fun refreshUserData(): Result<User>
 }

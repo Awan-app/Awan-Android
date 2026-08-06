@@ -2,7 +2,6 @@
 <resources>
     <string name="onboarding_continue">CONTINUE</string>
     <string name="onboarding_skip">Skip</string>
-    <string name="onboarding_back">Back</string>
     <string name="onboarding_got_it">Got it</string>
 
     <string name="onboarding_greeting_morning">Good morning</string>
@@ -69,6 +68,8 @@
     <string name="onboarding_zone_move_down">Move down</string>
     <string name="onboarding_zone_edit_hours">Set hours</string>
     <string name="onboarding_zone_sheet_title">%1$s hours</string>
+    <string name="onboarding_zone_category">Category</string>
+    <string name="onboarding_zone_category_empty">No categories yet</string>
 
     <string name="onboarding_task_length_title">How long do you like to focus in one go?</string>
     <string name="onboarding_task_length_caption">preferred focus block</string>

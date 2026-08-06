@@ -16,14 +16,20 @@ class Navigator(val state: NavigationState) {
         state.topLevelStack.clear()
         state.topLevelStack.add(key)
 
-        val subStack = state.subStacks[key]
-        if (subStack != null) {
+        // Every sub-stack resets, not just the target's: a sub-stack left deep (e.g. Profile >
+        // DailyZones) would otherwise be restored the next time that tab is selected, dropping
+        // whoever logs in next onto the previous session's screen.
+        state.subStacks.forEach { (root, subStack) ->
             subStack.clear()
-            subStack.add(key)
-        } else {
+            subStack.add(root)
+        }
+
+        if (state.subStacks[key] == null) {
             state.subStacks as MutableMap<Route, MutableList<Route>>
             state.subStacks[key] = mutableStateListOf(key)
         }
+
+        state.generation++
     }
 
     fun resetCurrentSubStack(key: Route) {

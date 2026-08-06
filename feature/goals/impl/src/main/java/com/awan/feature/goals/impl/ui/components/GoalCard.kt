@@ -96,7 +96,7 @@ internal fun GoalCard(
             ) {
                 // Emoji
                 AwanText(
-                    text = goal.emoji ?: "🎯",
+                    text = goal.emoji,
                     style = AwanTheme.typography.heading.copy(fontSize = 30.sp),
                 )
                 Spacer(modifier = Modifier.width(12.dp))

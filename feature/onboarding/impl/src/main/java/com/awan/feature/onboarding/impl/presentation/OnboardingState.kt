@@ -6,6 +6,7 @@ import com.awan.app.core.domain.onboarding.model.FirstTask
 import com.awan.app.core.domain.zones.model.Zone
 import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.domain.onboarding.utils.DayBoundsValidation
+import com.awan.app.core.model.Category
 
 data class OnboardingState(
     val step: OnboardingStep = OnboardingStep.Welcome,
@@ -19,6 +20,8 @@ data class OnboardingState(
     /** The same zones as the server created them — a scheduled session's `zoneId` points here. */
     val templateZones: List<Zone> = emptyList(),
     val overlappingZoneIds: Set<String> = emptySet(),
+    /** The user's own categories. Empty until the fetch lands, and on a legacy account that has none. */
+    val availableCategories: List<Category> = emptyList(),
     val preferredTaskLengthMinutes: Int = OnboardingData.DEFAULT_TASK_LENGTH_MINUTES,
     val firstTaskTitle: String = "",
     val firstTask: FirstTask? = null,

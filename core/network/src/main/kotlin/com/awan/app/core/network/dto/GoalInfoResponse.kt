@@ -1,8 +1,8 @@
 package com.awan.app.core.network.dto
 
+import com.awan.app.core.network.dto.task.TaskInfoResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import com.awan.app.core.network.dto.task.TaskInfoResponse
 
 @Serializable
 data class GoalInfoResponse(
@@ -13,5 +13,5 @@ data class GoalInfoResponse(
     @SerialName("targetDate") val targetDate: String? = null,
     @SerialName("createdAt") val createdAt: String? = null,
     @SerialName("inbox") val inbox: Boolean = false,
-    @SerialName("tasks") val tasks: List<TaskInfoResponse> = emptyList<TaskInfoResponse>(),
+    @SerialName("tasks") val tasks: List<TaskInfoResponse> = emptyList(),
 )

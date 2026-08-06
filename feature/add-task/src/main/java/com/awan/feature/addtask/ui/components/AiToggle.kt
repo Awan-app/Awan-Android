@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanAiAura
 import com.awan.app.core.designsystem.AwanCard
@@ -233,7 +234,7 @@ private fun AiSwitchTrack(on: Boolean) {
     ) {
         Box(
             Modifier
-                .offset(x = offset)
+                .offset { IntOffset(x = offset.roundToPx(), y = 0) }
                 .size(ThumbSize)
                 .clip(AwanTheme.shapes.pill)
                 .background(thumb),

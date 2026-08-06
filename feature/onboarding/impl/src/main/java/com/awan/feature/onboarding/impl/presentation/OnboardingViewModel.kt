@@ -7,6 +7,7 @@ import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.common.text.UiText
+import com.awan.app.core.domain.onboarding.usecase.AssignDefaultCategoriesUseCase
 import com.awan.app.core.domain.onboarding.usecase.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.utils.ValidateDayBounds
 import com.awan.app.core.domain.onboarding.utils.ZoneEditRules
@@ -16,6 +17,7 @@ import com.awan.app.core.domain.onboarding.model.DayBounds
 import com.awan.app.core.domain.onboarding.usecase.CompleteOnboardingUseCase
 import com.awan.app.core.domain.profile.model.UserProfile
 import com.awan.app.core.domain.zones.model.Zone
+import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +34,8 @@ class OnboardingViewModel @Inject constructor(
     private val suggestZoneSchedule: SuggestZoneScheduleUseCase,
     private val validateDayBounds: ValidateDayBounds,
     private val createAndScheduleFirstTask: CreateAndScheduleFirstTaskUseCase,
+    private val getCategories: GetCategoriesUseCase,
+    private val assignDefaultCategories: AssignDefaultCategoriesUseCase,
 ) : ViewModel() {
 
     private var zonesUserEdited = false
@@ -44,6 +48,27 @@ class OnboardingViewModel @Inject constructor(
 
     private val _events = Channel<OnboardingEvent>()
     val events = _events.receiveAsFlow()
+
+    init {
+        loadCategories()
+    }
+
+    /**
+     * The backend rejects a zone without a category, so the zones step needs the user's own list
+     * before it can produce a saveable day. A failure is not fatal: the step still works, the sheet
+     * says there are no categories, and the repository skips the template rather than 422-ing.
+     */
+    private fun loadCategories() {
+        viewModelScope.launch {
+            val categories = (getCategories() as? Result.Success)?.data ?: return@launch
+            _state.update {
+                it.copy(
+                    availableCategories = categories,
+                    zones = assignDefaultCategories(it.zones, categories),
+                )
+            }
+        }
+    }
 
     fun onAction(action: OnboardingAction) {
         when (action) {
@@ -69,6 +94,9 @@ class OnboardingViewModel @Inject constructor(
             }
             is OnboardingAction.ToggleZoneEnabled -> updateZones {
                 map { if (it.id == action.zoneId) it.copy(isEnabled = !it.isEnabled) else it }
+            }
+            is OnboardingAction.ZoneCategoryPicked -> updateZones {
+                map { if (it.id == action.zoneId) it.copy(categoryId = action.categoryId) else it }
             }
 
             is OnboardingAction.TaskLengthChanged -> _state.update { it.copy(preferredTaskLengthMinutes = action.minutes) }
@@ -203,7 +231,11 @@ class OnboardingViewModel @Inject constructor(
 
     private fun updateBounds(newBounds: DayBounds) {
         _state.update {
-            val zones = if (zonesUserEdited) it.zones else suggestZoneSchedule(newBounds)
+            val zones = if (zonesUserEdited) {
+                it.zones
+            } else {
+                assignDefaultCategories(suggestZoneSchedule(newBounds), it.availableCategories)
+            }
             it.copy(
                 bounds = newBounds,
                 boundsValidation = validateDayBounds(newBounds),
@@ -217,7 +249,7 @@ class OnboardingViewModel @Inject constructor(
     private fun applySuggestedZones() {
         zonesUserEdited = false
         _state.update {
-            val zones = suggestZoneSchedule(it.bounds)
+            val zones = assignDefaultCategories(suggestZoneSchedule(it.bounds), it.availableCategories)
             it.copy(zones = zones, overlappingZoneIds = ZoneEditRules.overlappingZoneIds(zones, it.bounds))
         }
     }

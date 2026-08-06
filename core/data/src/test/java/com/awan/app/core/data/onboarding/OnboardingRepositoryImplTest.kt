@@ -16,6 +16,7 @@ import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.model.Session
 import com.awan.app.core.domain.zones.model.TemplateOverride
 import com.awan.app.core.domain.zones.model.WeeklyTemplate
+import com.awan.app.core.domain.zones.model.Zone
 import com.awan.app.core.model.DayZone
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -34,6 +36,7 @@ class OnboardingRepositoryImplTest {
     private lateinit var fakeRemoteDataSource: FakeOnboardingRemoteDataSource
     private lateinit var fakePreferencesDataSource: FakeUserPreferencesDataSource
     private lateinit var fakeUserDao: FakeUserDao
+    private lateinit var fakeZonesRepository: FakeZonesRepository
     private lateinit var repository: OnboardingRepositoryImpl
 
     @Before
@@ -41,9 +44,10 @@ class OnboardingRepositoryImplTest {
         fakeRemoteDataSource = FakeOnboardingRemoteDataSource()
         fakePreferencesDataSource = FakeUserPreferencesDataSource()
         fakeUserDao = FakeUserDao()
+        fakeZonesRepository = FakeZonesRepository()
         repository = OnboardingRepositoryImpl(
             remoteDataSource = fakeRemoteDataSource,
-            zonesRepository = FakeZonesRepository(),
+            zonesRepository = fakeZonesRepository,
             userPreferencesDataSource = fakePreferencesDataSource,
             userDao = fakeUserDao,
             ioDispatcher = testDispatcher,
@@ -135,11 +139,44 @@ class OnboardingRepositoryImplTest {
         assertFalse(fakePreferencesDataSource.isOnboardingCompleted)
     }
 
-    private fun onboardingData() = OnboardingData(
+    @Test
+    fun `a failed template write fails onboarding instead of dropping the zones`() = runTest(testDispatcher.scheduler) {
+        fakeZonesRepository.failWith = AppError.Network
+
+        val result = repository.completeOnboarding(onboardingData(zones = zonesWithCategories()))
+
+        assertTrue(result is Result.Error)
+        assertFalse(fakePreferencesDataSource.isOnboardingCompleted)
+    }
+
+    @Test
+    fun `an already-onboarded user still gets the template the failed attempt never wrote`() =
+        runTest(testDispatcher.scheduler) {
+            fakeRemoteDataSource.failWith = AppError.Api(code = 409, body = "user already onboarded")
+
+            val result = repository.completeOnboarding(onboardingData(zones = zonesWithCategories()))
+
+            assertTrue(result is Result.Success)
+            assertEquals(2, fakeZonesRepository.createdZones?.size)
+            assertTrue(fakePreferencesDataSource.isOnboardingCompleted)
+        }
+
+    @Test
+    fun `an account with no categories gets no template rather than an error`() = runTest(testDispatcher.scheduler) {
+        val result = repository.completeOnboarding(onboardingData())
+
+        assertTrue(result is Result.Success)
+        assertNull(fakeZonesRepository.createdZones)
+    }
+
+    private fun onboardingData(zones: List<Zone> = Zone.defaults) = OnboardingData(
         profile = UserProfile(firstName = "Sarah", lastName = "Connor"),
         bounds = DayBounds(wakeMinutes = 7 * 60, sleepMinutes = 23 * 60),
         preferredTaskLengthMinutes = 45,
+        zones = zones,
     )
+
+    private fun zonesWithCategories() = Zone.defaults.take(2).map { it.copy(categoryId = "cat-${it.id}") }
 
     private class FakeOnboardingRemoteDataSource : OnboardingRemoteDataSource {
         var lastReceivedRequest: CompleteOnboardingRequest? = null
@@ -173,6 +210,7 @@ class OnboardingRepositoryImplTest {
         override suspend fun setDefaultZone(zone: String) {}
         override suspend fun setLocale(locale: String) {}
         override suspend fun setDefaultRegion(region: String) {}
+        override suspend fun setMicPermissionRequested(requested: Boolean) {}
     }
 
     private class FakeUserDao : com.awan.app.core.database.dao.UserDao {
@@ -193,10 +231,16 @@ class OnboardingRepositoryImplTest {
     }
 
     private class FakeZonesRepository : ZonesRepository {
+        var failWith: AppError? = null
+        var createdZones: List<DailyZone>? = null
+
         override suspend fun getZonesForDate(date: LocalDate): Result<List<DayZone>> = Result.Success(emptyList())
         override suspend fun getTemplates(): Result<List<WeeklyTemplate>> = Result.Success(emptyList())
-        override suspend fun createTemplate(name: String, daysOfWeek: List<DayOfWeek>, zones: List<DailyZone>): Result<WeeklyTemplate> =
-            Result.Success(WeeklyTemplate(id = "default", name = name, daysOfWeek = daysOfWeek, zones = zones))
+        override suspend fun createTemplate(name: String, daysOfWeek: List<DayOfWeek>, zones: List<DailyZone>): Result<WeeklyTemplate> {
+            failWith?.let { return Result.Error(it) }
+            createdZones = zones
+            return Result.Success(WeeklyTemplate(id = "default", name = name, daysOfWeek = daysOfWeek, zones = zones))
+        }
         override suspend fun getTemplate(templateId: String): Result<WeeklyTemplate> = Result.Error(com.awan.app.core.common.error.AppError.Unknown())
         override suspend fun updateTemplate(templateId: String, name: String, daysOfWeek: List<DayOfWeek>): Result<WeeklyTemplate> = Result.Error(com.awan.app.core.common.error.AppError.Unknown())
         override suspend fun deleteTemplate(templateId: String): Result<Unit> = Result.Success(Unit)

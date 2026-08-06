@@ -35,14 +35,15 @@
     <string name="add_task_submit">أضف المهمة</string>
 
     <string name="add_task_ai_switch">دع أوان يكملها</string>
-    <string name="add_task_ai_switch_body">اذكر ما تريد إنجازه فقط، ويتولى أوان تقدير مدتها وفئتها وموعدها.</string>
+    <string name="add_task_ai_switch_body">اذكر ما تريد إنجازه، ويتولى ذكاء أوان الاصطناعي الباقي.</string>
     <string name="add_task_ai_switch_content_description">دع أوان يستنتج تفاصيل المهمة</string>
-    <string name="add_task_ai_note_placeholder">هل من شيء آخر يحتاج أوان معرفته؟</string>
     <string name="add_task_ai_submit">اسأل أوان</string>
-    <string name="add_task_ai_working">أوان يفكّر في الأمر…</string>
-    <string name="add_task_ai_review_hint">عدّل ما لا يعجبك، ثم اختر طريقة الجدولة.</string>
-    <string name="add_task_ai_schedule_with_ai">دع أوان يجدولها</string>
-    <string name="add_task_ai_schedule_manually">سأختار الوقت بنفسي</string>
+
+    <string name="add_task_add_photo">أضف صورة</string>
+    <string name="add_task_photo_from_gallery">اختر صورة</string>
+    <string name="add_task_photo_take">التقط صورة</string>
+    <string name="add_task_remove_photo">إزالة الصورة</string>
+    <string name="add_task_photo_content_description">صورة مرفقة ليقرأها أوان</string>
 
     <string name="add_task_confirm_title">تمّت الإضافة!</string>
     <string name="add_task_confirm_first_session">تبدأ في</string>
@@ -54,10 +55,49 @@
     <string name="add_task_discard_confirm">تجاهل</string>
     <string name="add_task_discard_cancel">أكمل التعديل</string>
 
-    <string name="add_task_goal_title">الأهداف قادمة</string>
-    <string name="add_task_goal_body">قريبًا ستتمكن من إعطاء أوان هدفًا فيعيد لك خطة كاملة. أما الآن فأضف المهام واحدة تلو الأخرى.</string>
+    <string name="add_task_goal_initial_title">ما الهدف الذي تسعى لتحقيقه؟</string>
+    <string name="add_task_goal_initial_subtitle">صف هدفك وسيتكفّل أوان بتقسيمه إلى مهام قابلة للتنفيذ.</string>
+    <string name="add_task_goal_input_placeholder">مثلاً: تعلم الإسبانية لرحلة مدتها أسبوعان</string>
+    <string name="add_task_goal_input_description">إدخال وصف الهدف</string>
+    <string name="add_task_goal_submit_initial">قسّم الهدف</string>
 
-    <string name="add_task_error_create_failed">تعذّرت إضافة المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
-    <string name="add_task_error_ai_failed">تعذّر على أوان بناء هذه المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
-    <string name="add_task_error_ai_schedule_failed">لم يجد أوان وقتًا مناسبًا لها. جرّب اختيار الوقت بنفسك.</string>
+    <string name="add_task_goal_mcq_continue">متابعة</string>
+    <string name="add_task_goal_mcq_option_description">الخيار: %1$s</string>
+    <string name="add_task_goal_mcq_custom_placeholder">أو اكتب إجابتك الخاصة…</string>
+    <string name="add_task_goal_mcq_custom_description">إدخال الإجابة المخصصة</string>
+
+    <string name="add_task_goal_writing_placeholder">اكتب إجابتك أو أملِها…</string>
+    <string name="add_task_goal_writing_description">إجابة السؤال</string>
+    <string name="add_task_goal_writing_fallback_prompt">أضف مزيدًا من التفاصيل حول هدفك</string>
+    <string name="add_task_goal_writing_continue">متابعة</string>
+
+    <string name="add_task_goal_preview_title">خطة الهدف</string>
+    <string name="add_task_goal_preview_close">إغلاق معاينة الهدف</string>
+    <string name="add_task_goal_preview_accept_action">قبول خطة الهدف</string>
+    <string name="add_task_goal_preview_accept">اعتماد الهدف</string>
+    <string name="add_task_goal_preview_tasks_header">المهام المقترحة (%1$d)</string>
+    <string name="add_task_goal_preview_task_item_title">%1$d. %2$s</string>
+    <string name="add_task_goal_preview_revision_placeholder">اطلب تعديلات أو حسّن الخطة…</string>
+    <string name="add_task_goal_preview_revision_description">طلب تعديل الخطة</string>
+    <string name="add_task_goal_preview_revision_submit">تحديث الخطة</string>
+    <string name="add_task_goal_preview_target_date">تاريخ الهدف: %1$s</string>
+    <string name="add_task_goal_preview_duration">المدة التقديرية %1$s</string>
+    <string name="add_task_goal_preview_points">%1$d نقاط</string>
+
+    <string name="add_task_goal_mic_idle">إملاء نصي</string>
+    <string name="add_task_goal_mic_listening">جارٍ الاستماع… انقر للإيقاف</string>
+    <string name="add_task_goal_speech_permission_denied">إذن الميكروفون مطلوب للتعرف على الصوت.</string>
+    <string name="add_task_goal_speech_unavailable">التعرف على الصوت غير متاح على هذا الجهاز.</string>
+    <string name="add_task_goal_speech_no_match">لم أتمكن من التقاط الصوت. حاول التحدث مجددًا.</string>
+    <string name="add_task_goal_speech_error">حدث خطأ أثناء التعرف على الصوت. يُرجى المحاولة مرة أخرى.</string>
+
+    <string name="add_task_error_create_failed">تعذّر إضافة المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
+    <string name="add_task_error_goal_continuation_failed">تعذّر على أوان تقسيم هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
+    <string name="add_task_error_goal_confirm_failed">تعذّر حفظ هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
+
+    <string name="add_task_goal_permission_dialog_title">إذن الميكروفون مطلوب</string>
+    <string name="add_task_goal_permission_dialog_body">تم إيقاف إذن الميكروفون. يرجى تفعيله من إعدادات التطبيق لاستخدام الإملاء الصوتي.</string>
+    <string name="add_task_goal_permission_dialog_confirm">فتح الإعدادات</string>
+    <string name="add_task_goal_permission_dialog_cancel">إلغاء</string>
+
 </resources>

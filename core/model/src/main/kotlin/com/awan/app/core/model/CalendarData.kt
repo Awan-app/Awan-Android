@@ -6,4 +6,10 @@ data class CalendarUser(
     val timezone: String,
 )
 
-
+data class CalendarGoal(
+    val id: String,
+    val title: String,
+    val targetDate: String?,
+    val status: String,
+    val isInbox: Boolean,
+)

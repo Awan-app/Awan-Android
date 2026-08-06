@@ -1,12 +1,13 @@
 package com.awan.app.core.domain.task.repository
 
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.model.AiTaskSuggestion
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.Task
 import com.awan.app.core.model.TaskDraft
+import com.awan.app.core.model.TaskProposals
 import com.awan.app.core.model.TaskSchedule
 import com.awan.app.core.model.TaskWithSessions
+import com.awan.app.core.model.TaskWithSessionsDraft
 
 interface TaskRepository {
 
@@ -19,13 +20,19 @@ interface TaskRepository {
         sessions: List<SessionDraft>,
     ): Result<TaskWithSessions>
 
+    /** Creates multiple tasks (each with its own sessions) atomically. The backend caps [drafts] at 50. */
+    suspend fun createTasksWithSessions(drafts: List<TaskWithSessionsDraft>): Result<List<Task>>
+
     /**
-     * Hands [title] and [description] to the backend's model, which proposes duration, points,
-     * mandatory, splitting and category. This is a preview — nothing is persisted, so there is no
-     * task id and nothing to clean up if the user backs out. Confirming it goes through [createTask]
-     * or [createTaskWithSessions] instead.
+     * Hands [text] to the backend's model, which proposes one or more tasks — duration, points,
+     * mandatory, splitting, category and timing. Nothing is persisted, so there is no task id and
+     * nothing to clean up if the user backs out. Confirming a proposal goes through
+     * [createTaskWithSessions] or [createTasksWithSessions] instead.
      */
-    suspend fun previewTaskWithAi(title: String, description: String?): Result<AiTaskSuggestion>
+    suspend fun proposeTasksFromText(text: String): Result<TaskProposals>
+
+    /** Same proposal contract as [proposeTasksFromText], sourced from a photo. */
+    suspend fun proposeTasksFromImage(image: ByteArray, mimeType: String, note: String?): Result<TaskProposals>
 
     /** Asks the scheduling engine to place an existing task. */
     suspend fun scheduleTask(taskId: String): Result<TaskSchedule>

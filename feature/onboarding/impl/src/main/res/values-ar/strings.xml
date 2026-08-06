@@ -2,7 +2,6 @@
 <resources>
     <string name="onboarding_continue">متابعة</string>
     <string name="onboarding_skip">تخطّي</string>
-    <string name="onboarding_back">رجوع</string>
     <string name="onboarding_got_it">حسناً</string>
 
     <string name="onboarding_greeting_morning">صباح الخير</string>
@@ -77,6 +76,8 @@
     <string name="onboarding_zone_move_down">تحريك لأسفل</string>
     <string name="onboarding_zone_edit_hours">تحديد الساعات</string>
     <string name="onboarding_zone_sheet_title">ساعات %1$s</string>
+    <string name="onboarding_zone_category">الفئة</string>
+    <string name="onboarding_zone_category_empty">لا توجد فئات بعد</string>
 
     <string name="onboarding_task_length_title">كم تحبّ أن تركّز في الجلسة الواحدة؟</string>
     <string name="onboarding_task_length_caption">مدة التركيز المفضّلة</string>

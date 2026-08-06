@@ -2,20 +2,24 @@ package com.awan.app.core.data.task.remote
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.TaskApiService
-import com.awan.app.core.network.dto.AiTaskPreviewResponse
-import com.awan.app.core.network.dto.AiTaskPreviewTaskResponse
+import com.awan.app.core.network.dto.task.AiTextToTasksRequest
+import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
-import com.awan.app.core.network.dto.task.CreateTaskWithAiRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
+import com.awan.app.core.network.dto.task.ProposedTaskDto
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
 import com.awan.app.core.network.dto.task.ScheduledSessionResponse
 import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
+import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -28,16 +32,22 @@ private open class FakeTaskApiService : TaskApiService {
         request: CreateTaskWithSessionsRequest,
     ): TaskWithSessionsDto = error("not used")
 
-    override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest): TaskWithSessionsDto =
+    override suspend fun createTasksWithSessions(
+        request: BulkCreateTasksWithSessionsRequest,
+    ): TasksWithSessionsResponse = error("not used")
+
+    override suspend fun proposeTasksFromText(request: AiTextToTasksRequest): TaskProposalResponse =
         error("not used")
 
-    override suspend fun previewTaskWithAi(request: CreateTaskWithAiRequest): AiTaskPreviewResponse =
-        error("not used")
+    override suspend fun proposeTasksFromImage(
+        image: MultipartBody.Part,
+        note: RequestBody?,
+    ): TaskProposalResponse = error("not used")
+
+    override suspend fun getTasksByDate(date: String): List<TaskWithSessionsDto> = error("not used")
 
     override suspend fun scheduleTask(request: ScheduleTaskRequest): TaskScheduleResponse =
         error("not used")
-
-    override suspend fun getTasksByDate(date: String): List<TaskWithSessionsDto> = error("not used")
 
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Unit = error("not used")
 }
@@ -86,36 +96,75 @@ class TaskRemoteDataSourceTest {
     }
 
     @Test
-    fun `createTaskWithAi returns Success when API call succeeds`() = runTest(testDispatcher) {
+    fun `createTasksWithSessions returns Success when API call succeeds`() = runTest(testDispatcher) {
         val api = object : FakeTaskApiService() {
-            override suspend fun createTaskWithAi(request: CreateTaskWithAiRequest) = TaskWithSessionsDto(
-                task = TaskInfoResponse(
-                    id = "task-ai",
-                    title = request.title,
-                    estimatedDuration = 90,
-                    status = "SCHEDULED",
-                ),
+            override suspend fun createTasksWithSessions(
+                request: BulkCreateTasksWithSessionsRequest,
+            ) = TasksWithSessionsResponse(
+                tasks = request.tasks.mapIndexed { index, task ->
+                    TaskWithSessionsDto(
+                        task = TaskInfoResponse(id = "task-$index", title = task.task.title, status = "SCHEDULED"),
+                    )
+                },
             )
         }
-        val result = dataSource(api, json, testDispatcher).createTaskWithAi(CreateTaskWithAiRequest(title = "Build login page"))
+        val result = dataSource(api, json, testDispatcher).createTasksWithSessions(
+            BulkCreateTasksWithSessionsRequest(
+                tasks = listOf(
+                    CreateTaskWithSessionsRequest(task = CreateTaskRequest(title = "Build login page")),
+                    CreateTaskWithSessionsRequest(task = CreateTaskRequest(title = "Set up DB schema")),
+                ),
+            ),
+        )
 
         assertTrue(result is Result.Success)
-        assertEquals("task-ai", (result as Result.Success<TaskWithSessionsDto>).data.task.id)
-        assertEquals(90, result.data.task.estimatedDuration)
+        assertEquals(2, (result as Result.Success).data.tasks.size)
+        assertEquals("Build login page", result.data.tasks[0].task.title)
     }
 
     @Test
-    fun `previewTaskWithAi returns Success when API call succeeds`() = runTest(testDispatcher) {
+    fun `proposeTasksFromText returns Success when API call succeeds`() = runTest(testDispatcher) {
         val api = object : FakeTaskApiService() {
-            override suspend fun previewTaskWithAi(request: CreateTaskWithAiRequest) =
-                AiTaskPreviewResponse(
-                    task = AiTaskPreviewTaskResponse(title = request.title, estimatedDuration = 90),
-                )
+            override suspend fun proposeTasksFromText(request: AiTextToTasksRequest) = TaskProposalResponse(
+                tasks = listOf(
+                    ProposedTaskDto(
+                        draft = CreateTaskWithSessionsRequest(
+                            task = CreateTaskRequest(title = "Build login page", estimatedDuration = 60),
+                        ),
+                    ),
+                ),
+            )
         }
-        val result = dataSource(api, json, testDispatcher).previewTaskWithAi(CreateTaskWithAiRequest(title = "Build login page"))
+        val result = dataSource(api, json, testDispatcher).proposeTasksFromText(AiTextToTasksRequest(text = "Build login page"))
 
         assertTrue(result is Result.Success)
-        assertEquals(90, (result as Result.Success).data.task?.estimatedDuration)
+        assertEquals(1, (result as Result.Success).data.tasks.size)
+        assertEquals("Build login page", result.data.tasks.single().draft.task.title)
+    }
+
+    @Test
+    fun `proposeTasksFromImage returns Success when API call succeeds`() = runTest(testDispatcher) {
+        val api = object : FakeTaskApiService() {
+            override suspend fun proposeTasksFromImage(image: MultipartBody.Part, note: RequestBody?) =
+                TaskProposalResponse(
+                    sourceSummary = "TASK 1: Buy groceries",
+                    tasks = listOf(
+                        ProposedTaskDto(
+                            draft = CreateTaskWithSessionsRequest(
+                                task = CreateTaskRequest(title = "Buy groceries"),
+                            ),
+                        ),
+                    ),
+                )
+        }
+        val result = dataSource(api, json, testDispatcher).proposeTasksFromImage(
+            image = ByteArray(4) { it.toByte() },
+            mimeType = "image/jpeg",
+            note = "Focus on the top item",
+        )
+
+        assertTrue(result is Result.Success)
+        assertEquals("TASK 1: Buy groceries", (result as Result.Success).data.sourceSummary)
     }
 
     @Test

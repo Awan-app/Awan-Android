@@ -8,12 +8,12 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:navigation"))
     implementation(project(":core:design-system"))
     implementation(project(":core:domain"))
     implementation(project(":core:model"))
 
     implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -21,4 +21,5 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }

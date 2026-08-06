@@ -12,4 +12,5 @@ interface UserPreferencesDataSource {
     suspend fun setDefaultZone(zone: String)
     suspend fun setLocale(locale: String)
     suspend fun setDefaultRegion(region: String)
+    suspend fun setMicPermissionRequested(requested: Boolean)
 }

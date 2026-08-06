@@ -51,6 +51,10 @@ class AwanPreferencesDataSource @Inject constructor(
         dataStore.updateData { it.copy { defaultRegion = region } }
     }
 
+    override suspend fun setMicPermissionRequested(requested: Boolean) {
+        dataStore.updateData { it.copy { micPermissionRequested = requested } }
+    }
+
     private fun UserPreferences.toData() = UserPreferencesData(
         darkThemeEnabled = darkThemeEnabled,
         useDynamicColor = useDynamicColor,
@@ -58,5 +62,6 @@ class AwanPreferencesDataSource @Inject constructor(
         defaultZone = defaultZone,
         locale = locale,
         defaultRegion = defaultRegion,
+        micPermissionRequested = micPermissionRequested,
     )
 }

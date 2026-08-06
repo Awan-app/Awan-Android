@@ -9,6 +9,7 @@ sealed interface OnboardingAction {
     data class EditZoneWindow(val zoneId: String, val startMinutes: Int, val endMinutes: Int) : OnboardingAction
     data class ReorderZone(val fromIndex: Int, val toIndex: Int) : OnboardingAction
     data class ToggleZoneEnabled(val zoneId: String) : OnboardingAction
+    data class ZoneCategoryPicked(val zoneId: String, val categoryId: String) : OnboardingAction
     data class TaskLengthChanged(val minutes: Int) : OnboardingAction
     data class FirstTaskTitleChanged(val title: String) : OnboardingAction
     data object SubmitFirstTask : OnboardingAction

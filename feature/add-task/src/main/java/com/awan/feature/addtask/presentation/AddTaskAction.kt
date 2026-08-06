@@ -20,18 +20,18 @@ sealed interface AddTaskAction {
     data class CategoryPicked(val categoryName: String) : AddTaskAction
 
     data object AiToggled : AddTaskAction
-
-    /** Keeps Awan's task and asks the engine to place it. */
-    data object ScheduleWithAi : AddTaskAction
-
-    /** Reveals the when chip; confirming then replaces Awan's task with a scheduled one. */
-    data object ScheduleManually : AddTaskAction
+    data class ImagePicked(val uri: String) : AddTaskAction
+    data object ImageCleared : AddTaskAction
 
     data object Submit : AddTaskAction
+
+    data class GoalOptionSelected(val option: String) : AddTaskAction
+    data object AcceptGoalProposal : AddTaskAction
 
     /** A dismiss the user asked for. Becomes [Dismiss] only once nothing would be lost. */
     data object DismissRequested : AddTaskAction
     data object DiscardConfirmed : AddTaskAction
     data object DiscardCancelled : AddTaskAction
     data object Dismiss : AddTaskAction
+    data class SetMicPermissionRequested(val requested: Boolean) : AddTaskAction
 }

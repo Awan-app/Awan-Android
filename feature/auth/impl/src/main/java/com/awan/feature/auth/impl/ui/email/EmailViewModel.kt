@@ -6,6 +6,7 @@ import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
+import com.awan.app.core.domain.auth.usecase.GetLastUsedEmailUseCase
 import com.awan.app.core.domain.auth.usecase.RequestOtpUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -15,11 +16,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.IOException
+import java.security.GeneralSecurityException
 import javax.inject.Inject
 
 @HiltViewModel
 class EmailViewModel @Inject constructor(
     private val requestOtpUseCase: RequestOtpUseCase,
+    private val getLastUsedEmailUseCase: GetLastUsedEmailUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EmailUiState())
@@ -29,6 +33,25 @@ class EmailViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     private var rateLimitedEmail: String? = null
+
+    init {
+        viewModelScope.launch {
+            // Pre-fill is a convenience, never a reason to take the login screen down: reading it
+            // hits EncryptedSharedPreferences, which throws once the Keystore master key is
+            // invalidated. Caught narrowly rather than via runCatching — this call suspends, and
+            // both runCatching and catch(Exception) would swallow the cancellation.
+            val lastEmail = try {
+                getLastUsedEmailUseCase()
+            } catch (e: GeneralSecurityException) {
+                null
+            } catch (e: IOException) {
+                null
+            }
+            if (!lastEmail.isNullOrBlank() && _uiState.value.email.isEmpty()) {
+                onEmailChanged(lastEmail)
+            }
+        }
+    }
 
     fun onEmailChanged(email: String) {
         _uiState.update { current ->

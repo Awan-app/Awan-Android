@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanChip
 import com.awan.app.core.designsystem.AwanChipDot
@@ -88,7 +89,7 @@ internal fun DotOnARail(travelled: Boolean, tone: Color) {
     ) {
         Box(
             Modifier
-                .offset(x = offset)
+                .offset { IntOffset(x = offset.roundToPx(), y = 0) }
                 .size(AwanChipDotSize)
                 .clip(AwanTheme.shapes.pill)
                 .background(thumb),

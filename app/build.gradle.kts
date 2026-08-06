@@ -57,6 +57,8 @@ dependencies {
     implementation(project(":feature:profile:impl"))
     implementation(project(":feature:marketplace:api"))
     implementation(project(":feature:marketplace:impl"))
+    implementation(project(":feature:ai-tasks:api"))
+    implementation(project(":feature:ai-tasks:impl"))
     implementation(project(":feature:add-task"))
 
     // Core modules
@@ -90,6 +92,7 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.material3.adaptive.navigation3)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     // Serialization
     implementation(libs.kotlinx.serialization.core)

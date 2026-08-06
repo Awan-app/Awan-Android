@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="goals_title">الأهداف</string>
+    <string name="goals_title">أهدافي</string>
     <string name="goals_tab_active">النشطة</string>
     <string name="goals_tab_completed">المكتملة</string>
-    <string name="goals_progress_format">%1$d / %2$d مهمة</string>
+    <string name="goals_progress_format">%1$d من %2$d مهمة منجزة</string>
     <string name="goals_progress_percentage">%1$d%%</string>
     <string name="goals_empty_active_title">لا توجد أهداف نشطة بعد</string>
     <string name="goals_empty_active_subtitle">أنشئ هدفك الأول للبدء!</string>

@@ -4,12 +4,12 @@ import android.content.Context
 import com.awan.app.core.network.BuildConfig
 import com.awan.app.core.network.api.AuthApiService
 import com.awan.app.core.network.api.CategoryApiService
+import com.awan.app.core.network.api.GoalApiService
 import com.awan.app.core.network.api.OnboardingApiService
 import com.awan.app.core.network.api.ProfileApiService
 import com.awan.app.core.network.api.TaskApiService
 import com.awan.app.core.network.api.ZoneApiService
 import com.awan.app.core.network.api.TemplateApiService
-import com.awan.app.core.network.api.GoalApiService
 import com.awan.app.core.network.device.AndroidDeviceIdProvider
 import com.awan.app.core.network.device.DeviceIdProvider
 import com.awan.app.core.network.interceptor.AiTimeoutInterceptor
@@ -163,6 +163,7 @@ object NetworkModule {
     @Singleton
     fun providesGoalApiService(retrofit: Retrofit): GoalApiService =
         retrofit.create(GoalApiService::class.java)
+
 
     @Provides
     @Singleton

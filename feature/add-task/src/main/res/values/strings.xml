@@ -35,14 +35,15 @@
     <string name="add_task_submit">Add task</string>
 
     <string name="add_task_ai_switch">Let Awan fill it in</string>
-    <string name="add_task_ai_switch_body">Just say what you need done. Awan works out how long it takes, where it belongs, and when to do it.</string>
+    <string name="add_task_ai_switch_body">Say what you need done — Awan\'s AI sorts out the rest.</string>
     <string name="add_task_ai_switch_content_description">Let Awan work out the task details</string>
-    <string name="add_task_ai_note_placeholder">Anything else Awan should know?</string>
     <string name="add_task_ai_submit">Ask Awan</string>
-    <string name="add_task_ai_working">Awan is working it out…</string>
-    <string name="add_task_ai_review_hint">Change anything that looks off, then pick how to schedule it.</string>
-    <string name="add_task_ai_schedule_with_ai">Let Awan schedule it</string>
-    <string name="add_task_ai_schedule_manually">I\'ll pick a time</string>
+
+    <string name="add_task_add_photo">Add a photo</string>
+    <string name="add_task_photo_from_gallery">Choose photo</string>
+    <string name="add_task_photo_take">Take photo</string>
+    <string name="add_task_remove_photo">Remove photo</string>
+    <string name="add_task_photo_content_description">Photo attached for Awan to read</string>
 
     <string name="add_task_confirm_title">All set!</string>
     <string name="add_task_confirm_first_session">Starts with</string>
@@ -54,10 +55,48 @@
     <string name="add_task_discard_confirm">Discard</string>
     <string name="add_task_discard_cancel">Keep editing</string>
 
-    <string name="add_task_goal_title">Goals are coming</string>
-    <string name="add_task_goal_body">Soon you\'ll be able to hand Awan a goal and get a whole plan back. For now, add tasks one at a time.</string>
+    <string name="add_task_goal_initial_title">What goal are you aiming for?</string>
+    <string name="add_task_goal_initial_subtitle">Describe your goal and Awan will break it down into actionable tasks.</string>
+    <string name="add_task_goal_input_placeholder">e.g., Learn Spanish for a 2-week trip</string>
+    <string name="add_task_goal_input_description">Goal description input</string>
+    <string name="add_task_goal_submit_initial">Break down goal</string>
+
+    <string name="add_task_goal_mcq_continue">Continue</string>
+    <string name="add_task_goal_mcq_option_description">Option: %1$s</string>
+    <string name="add_task_goal_mcq_custom_placeholder">Or type your own answer…</string>
+    <string name="add_task_goal_mcq_custom_description">Custom answer input</string>
+
+    <string name="add_task_goal_writing_placeholder">Type or dictate your answer…</string>
+    <string name="add_task_goal_writing_description">Answer to question</string>
+    <string name="add_task_goal_writing_fallback_prompt">Provide more detail about your goal</string>
+    <string name="add_task_goal_writing_continue">Continue</string>
+
+    <string name="add_task_goal_preview_title">Goal Plan</string>
+    <string name="add_task_goal_preview_close">Close goal preview</string>
+    <string name="add_task_goal_preview_accept_action">Accept goal plan</string>
+    <string name="add_task_goal_preview_accept">Accept goal</string>
+    <string name="add_task_goal_preview_tasks_header">Proposed tasks (%1$d)</string>
+    <string name="add_task_goal_preview_task_item_title">%1$d. %2$s</string>
+    <string name="add_task_goal_preview_revision_placeholder">Request changes or refine plan…</string>
+    <string name="add_task_goal_preview_revision_description">Plan revision request</string>
+    <string name="add_task_goal_preview_revision_submit">Update plan</string>
+    <string name="add_task_goal_preview_target_date">Target date: %1$s</string>
+    <string name="add_task_goal_preview_duration">Est. %1$s</string>
+    <string name="add_task_goal_preview_points">%1$d pts</string>
+
+    <string name="add_task_goal_mic_idle">Dictate text</string>
+    <string name="add_task_goal_mic_listening">Listening… tap to stop</string>
+    <string name="add_task_goal_speech_permission_denied">Microphone permission is required for speech recognition.</string>
+    <string name="add_task_goal_speech_unavailable">Speech recognition is unavailable on this device.</string>
+    <string name="add_task_goal_speech_no_match">Didn\'t catch that. Try speaking again.</string>
+    <string name="add_task_goal_speech_error">Speech recognition error. Please try again.</string>
 
     <string name="add_task_error_create_failed">Couldn\'t add that task. Check your connection and try again.</string>
-    <string name="add_task_error_ai_failed">Awan couldn\'t build that one. Check your connection and try again.</string>
-    <string name="add_task_error_ai_schedule_failed">Awan couldn\'t find a slot for this. Try picking a time yourself.</string>
+    <string name="add_task_error_goal_continuation_failed">Awan couldn\'t break down that goal. Check your connection and try again.</string>
+    <string name="add_task_error_goal_confirm_failed">Couldn\'t save this goal. Check your connection and try again.</string>
+
+    <string name="add_task_goal_permission_dialog_title">Microphone Permission Required</string>
+    <string name="add_task_goal_permission_dialog_body">Microphone access is turned off. Please enable it in device settings to use speech recognition.</string>
+    <string name="add_task_goal_permission_dialog_confirm">Open Settings</string>
+    <string name="add_task_goal_permission_dialog_cancel">Cancel</string>
 </resources>

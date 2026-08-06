@@ -5,6 +5,8 @@ import com.awan.app.core.designsystem.MascotExpression
 import com.awan.app.core.domain.task.parser.ParsedTaskInput
 import com.awan.app.core.domain.task.parser.TaskInputParser
 import com.awan.app.core.model.Category
+import com.awan.app.core.model.GoalDecompositionBlock
+import com.awan.app.core.model.GoalProposal
 import com.awan.app.core.model.TaskDraft
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -16,30 +18,23 @@ enum class AddTaskMode { TASK, GOAL }
 enum class AddTaskPicker { DATE, TIME, DURATION, CATEGORY }
 
 /**
- * How far through the hand-over to Awan the sheet is. [OFF] is the sheet as it has always been —
- * every other value is a step of the AI flow, and each one changes what the form shows.
+ * The four user-visible steps of the AI goal-decomposition flow.
  */
-enum class AddTaskAiStage {
-    OFF,
+sealed interface GoalStep {
+    data object Initial : GoalStep
+    data class MultipleChoice(
+        val question: String,
+        val options: List<String>,
+        val selectedOption: String? = null,
+    ) : GoalStep
 
-    /** Switch on, parser stood down: just a sentence and a note for Awan to read. */
-    COMPOSING,
+    data class WritingQuestion(
+        val question: String,
+    ) : GoalStep
 
-    /** The request is out. */
-    WORKING,
-
-    /** Awan answered. The fields are editable again, but the *when* is not asked for yet. */
-    REVIEW,
-
-    /** The user chose to place it themselves, so the when chip is back. */
-    MANUAL,
-    ;
-
-    /** The two stages where the typed text must not be parsed or highlighted. */
-    val isComposing: Boolean get() = this == COMPOSING || this == WORKING
-
-    /** The two stages that follow a returned AI task. */
-    val isReviewing: Boolean get() = this == REVIEW || this == MANUAL
+    data class Preview(
+        val proposal: GoalProposal,
+    ) : GoalStep
 }
 
 /**
@@ -68,10 +63,13 @@ data class AddTaskState(
     val openPicker: AddTaskPicker? = null,
     /** Chosen on the date step, held until the clock step commits both into the sentence. */
     val pendingDate: LocalDate? = null,
-    val aiStage: AddTaskAiStage = AddTaskAiStage.OFF,
-    /** Awan's own estimates, held aside because the sentence has no syntax for them. */
-    val aiPoints: Int = 0,
-    val aiSplittable: Boolean = false,
+    val goalStep: GoalStep = GoalStep.Initial,
+    val goalSessionId: String? = null,
+    val goalReplyBlocks: List<GoalDecompositionBlock> = emptyList(),
+    /** Switched on, the sentence and note go to Awan's full-screen proposal review instead of being parsed here. */
+    val aiEnabled: Boolean = false,
+    /** A gallery pick or camera shot, attached to the note as extra context for Awan. */
+    val imageUri: String? = null,
     val isSubmitting: Boolean = false,
     /** True for one beat after a successful create, so the mascot can cheer. */
     val isCelebrating: Boolean = false,
@@ -79,46 +77,55 @@ data class AddTaskState(
     val confirmation: TaskConfirmation? = null,
     val showDiscardConfirm: Boolean = false,
     @StringRes val errorMessage: Int? = null,
+    val hasRequestedMicPermission: Boolean = false,
 ) {
     /**
-     * While the parser is stood down there is no `parsed.title` to check, so the raw text stands in
-     * for it — otherwise the AI flow could never be submitted. Placing a task without Awan means the
-     * sentence has to carry the whole placement itself: a title, a clock time and a length. A bare
-     * day defaults its hour, which is not a time anyone chose, so it does not count as one.
+     * While the parser is stood down there is no `parsed.title` to check, so the raw text — or a
+     * photo with no text at all — stands in for it. Placing a task without Awan means the sentence
+     * has to carry the whole placement itself: a title, a clock time and a length. A bare day
+     * defaults its hour, which is not a time anyone chose, so it does not count as one.
      */
     val canSubmit: Boolean
-        get() = mode == AddTaskMode.TASK && !isSubmitting && when (aiStage) {
-            AddTaskAiStage.COMPOSING, AddTaskAiStage.WORKING -> input.isNotBlank()
-            AddTaskAiStage.OFF ->
+        get() = if (mode == AddTaskMode.GOAL) {
+            !isSubmitting && when (val step = goalStep) {
+                GoalStep.Initial -> input.isNotBlank()
+                is GoalStep.MultipleChoice -> !step.selectedOption.isNullOrBlank() || input.isNotBlank()
+                is GoalStep.WritingQuestion, is GoalStep.Preview -> input.isNotBlank()
+            }
+        } else {
+            !isSubmitting && if (aiEnabled) {
+                input.isNotBlank() || imageUri != null
+            } else {
                 parsed.title.isNotBlank() && parsed.hasExplicitTime && parsed.durationMinutes != null
-
-            else -> parsed.title.isNotBlank()
+            }
         }
 
-    /**
-     * The switch is a way *into* the flow only: once Awan has answered there is no going back, and
-     * while it is thinking there is a request in flight whose answer would land on a sheet that had
-     * already switched away from it.
-     */
+    val canAcceptGoal: Boolean
+        get() = mode == AddTaskMode.GOAL &&
+            goalStep is GoalStep.Preview &&
+            goalSessionId != null &&
+            !isSubmitting
+
     val showsAiSwitch: Boolean
-        get() = mode == AddTaskMode.TASK &&
-            confirmation == null &&
-            !aiStage.isReviewing &&
-            aiStage != AddTaskAiStage.WORKING
+        get() = mode == AddTaskMode.TASK && confirmation == null
 
     /** Same reason: the mode selector would offer a way out of a task that already exists. */
-    val showsModeSelector: Boolean get() = !aiStage.isReviewing && confirmation == null
+    val showsModeSelector: Boolean
+        get() = confirmation == null && !isSubmitting &&
+            (mode == AddTaskMode.TASK || (goalSessionId == null && goalStep == GoalStep.Initial))
 
-    /** The chips are a readout of the parser, so they go quiet while it is stood down. */
-    val showsAttributeChips: Boolean get() = !aiStage.isComposing
-
-    /** Scheduling is a separate question, asked only once the details are settled. */
-    val showsWhenChip: Boolean get() = aiStage != AddTaskAiStage.REVIEW
+    /** The chips are a readout of the parser, so they go quiet while Awan is doing the reading instead. */
+    val showsAttributeChips: Boolean get() = !aiEnabled
 
     /** Nothing is at risk once the task is saved, so the receipt closes without an argument. */
     val isDirty: Boolean
-        get() = confirmation == null &&
-            (input.isNotBlank() || description.isNotBlank() || aiStage != AddTaskAiStage.OFF)
+        get() = confirmation == null && (
+            input.isNotBlank() ||
+            description.isNotBlank() ||
+            imageUri != null ||
+            aiEnabled ||
+            (mode == AddTaskMode.GOAL && (goalSessionId != null || goalStep != GoalStep.Initial))
+        )
 
     /** Opens the calendar on whatever day the sentence already says, or on today. */
     val pickerInitialDate: LocalDate
@@ -135,15 +142,15 @@ data class AddTaskState(
 
     /**
      * Awan watches what you type: curious once the sentence carries something schedulable or once
-     * it is thinking, greeting you while it's still just a title, cheering when the task lands. The
-     * cheer outlasts [isCelebrating] — that only times the sparkles, and dropping back to a greeting
-     * while the receipt is still up would read as Awan losing interest in what it just did.
+     * it is standing by for Awan, greeting you while it's still just a title, cheering when the task
+     * lands. The cheer outlasts [isCelebrating] — that only times the sparkles, and dropping back to
+     * a greeting while the receipt is still up would read as Awan losing interest in what it just did.
      */
     val mascot: MascotExpression
         get() = when {
             isCelebrating || confirmation != null -> MascotExpression.Celebrate
             mode == AddTaskMode.GOAL -> MascotExpression.Curious
-            aiStage != AddTaskAiStage.OFF -> MascotExpression.Curious
+            aiEnabled -> MascotExpression.Curious
             parsed.startAt != null || parsed.categoryToken != null -> MascotExpression.Curious
             input.isNotBlank() -> MascotExpression.Greet
             else -> MascotExpression.Idle
@@ -157,7 +164,5 @@ data class AddTaskState(
         startAt = parsed.startAt,
         categoryToken = parsed.categoryToken,
         categoryId = resolvedCategory?.id,
-        estimatedPoints = aiPoints,
-        allowTaskSplitting = aiSplittable,
     )
 }
