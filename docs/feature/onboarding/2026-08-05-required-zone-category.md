@@ -251,6 +251,19 @@ key parity verified by diff for both touched modules (core:common 15/15, onboard
 - **`Zone.defaults` names are still hardcoded English and are what the name-match keys off.** Localizing the
   display name now means splitting display name from server name. Deferred by decision, not oversight.
 
+### PR #33 review follow-ups
+
+- **The name-match rule moved out of the ViewModel into `AssignDefaultCategoriesUseCase`**
+  (`core/domain/onboarding/usecase/`), beside `SuggestZoneScheduleUseCase`. §5 had it as a private
+  ViewModel helper, which is a Clean Architecture violation the review caught. Behaviour is unchanged;
+  the existing ViewModel tests cover it through the use case.
+- **A failed template write now fails `completeOnboarding` instead of being discarded.** The plan only
+  guarded the *no category* case; an actual API failure was silently dropped, costing the user their
+  whole zone setup with no path back into onboarding. Two knock-on changes were required for the fix to
+  hold: the already-onboarded (409) branch now writes the template too — otherwise the very first retry
+  swallows the 409 as success and skips the zones forever — and a failed `getTemplates()` is returned
+  rather than treated as "no default exists", which would have created a second `Default` template.
+
 ### Deferred, and noted for the PR
 
 - Category **management screen** (§5.3) — the CRUD use cases (`CreateCategoryUseCase`, `GetCategoryUseCase`,

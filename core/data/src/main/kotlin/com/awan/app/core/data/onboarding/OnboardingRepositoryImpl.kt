@@ -10,6 +10,7 @@ import com.awan.app.core.domain.zones.repository.ZonesRepository
 import com.awan.app.core.domain.onboarding.model.DayBounds
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
+import com.awan.app.core.domain.zones.model.Zone
 import com.awan.app.core.network.dto.onboarding.CompleteOnboardingRequest
 import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.domain.onboarding.repository.OnboardingRepository
@@ -51,38 +52,7 @@ class OnboardingRepositoryImpl @Inject constructor(
 
         when (val result = remoteDataSource.completeOnboarding(request)) {
             is Result.Success -> {
-                // Create or update the default template with onboarding zones. A zone without a
-                // category is rejected by the backend, so drop those rather than sending a request
-                // that is certain to fail — an account with no categories simply gets no template.
-                val dailyZones = data.zones
-                    .filter { it.isEnabled && it.categoryId != null }
-                    .map { zone ->
-                        DailyZone(
-                            id = null,
-                            name = zone.name,
-                            startTime = formatMinutesToTimeShort(zone.startMinutes),
-                            endTime = formatMinutesToTimeShort(zone.endMinutes),
-                            color = String.format("#%06X", 0xFFFFFF and zone.colorArgb),
-                            categoryId = zone.categoryId
-                        )
-                    }
-
-                if (dailyZones.isNotEmpty()) {
-                    val templatesResult = zonesRepository.getTemplates()
-                    val existingDefault = if (templatesResult is Result.Success) {
-                        templatesResult.data.find { it.name.equals("Default", ignoreCase = true) }
-                    } else null
-
-                    if (existingDefault != null) {
-                        zonesRepository.updateTemplateZones(existingDefault.id, dailyZones)
-                    } else {
-                        zonesRepository.createTemplate(
-                            name = "Default",
-                            daysOfWeek = DayOfWeek.entries,
-                            zones = dailyZones
-                        )
-                    }
-                }
+                saveDefaultTemplate(data.zones)?.let { return@withContext Result.Error(it) }
 
                 userPreferencesDataSource.setOnboardingCompleted(true)
                 val response = result.data
@@ -101,8 +71,12 @@ class OnboardingRepositoryImpl @Inject constructor(
                 Result.Success(Unit)
             }
             // An already-onboarded user is not a failure: swallow it as a success so they reach Home
-            // instead of being stranded in onboarding with an error they cannot act on.
+            // instead of being stranded in onboarding with an error they cannot act on. The template
+            // is still written here — this is the path every retry takes once the account exists, so
+            // skipping it would drop the zones of anyone whose first attempt failed on the template.
             is Result.Error -> if (result.error.isAlreadyOnboarded()) {
+                saveDefaultTemplate(data.zones)?.let { return@withContext Result.Error(it) }
+
                 userPreferencesDataSource.setOnboardingCompleted(true)
                 Result.Success(Unit)
             } else {
@@ -110,6 +84,49 @@ class OnboardingRepositoryImpl @Inject constructor(
             }
             Result.Loading -> Result.Loading
         }
+    }
+
+    /**
+     * Writes the onboarding zones as the user's default weekly template, returning the failure that
+     * stopped it or null when there was nothing to fail. A zone without a category is rejected by the
+     * backend, so those are dropped rather than sending a request that is certain to fail — an
+     * account with no categories simply gets no template, which is not an error.
+     *
+     * A real failure is reported rather than swallowed: nothing re-enters onboarding once it is left,
+     * so a dropped template would cost the user their whole zone setup with no way to redo it.
+     */
+    private suspend fun saveDefaultTemplate(zones: List<Zone>): AppError? {
+        val dailyZones = zones
+            .filter { it.isEnabled && it.categoryId != null }
+            .map { zone ->
+                DailyZone(
+                    id = null,
+                    name = zone.name,
+                    startTime = formatMinutesToTimeShort(zone.startMinutes),
+                    endTime = formatMinutesToTimeShort(zone.endMinutes),
+                    color = String.format("#%06X", 0xFFFFFF and zone.colorArgb),
+                    categoryId = zone.categoryId,
+                )
+            }
+        if (dailyZones.isEmpty()) return null
+
+        // Creating on an unread template list would leave the account with two "Default" templates.
+        val templates = zonesRepository.getTemplates()
+        if (templates is Result.Error) return templates.error
+        val existingDefault = (templates as? Result.Success)
+            ?.data
+            ?.find { it.name.equals(DEFAULT_TEMPLATE_NAME, ignoreCase = true) }
+
+        val write = if (existingDefault != null) {
+            zonesRepository.updateTemplateZones(existingDefault.id, dailyZones)
+        } else {
+            zonesRepository.createTemplate(
+                name = DEFAULT_TEMPLATE_NAME,
+                daysOfWeek = DayOfWeek.entries,
+                zones = dailyZones,
+            )
+        }
+        return (write as? Result.Error)?.error
     }
 
     private fun formatMinutesToTime(minutes: Int): String {
@@ -142,6 +159,7 @@ class OnboardingRepositoryImpl @Inject constructor(
     }
 
     private companion object {
+        const val DEFAULT_TEMPLATE_NAME = "Default"
         const val HTTP_CONFLICT = 409
         const val ONBOARDING_ALREADY_COMPLETED = "ONBOARDING_ALREADY_COMPLETED"
     }

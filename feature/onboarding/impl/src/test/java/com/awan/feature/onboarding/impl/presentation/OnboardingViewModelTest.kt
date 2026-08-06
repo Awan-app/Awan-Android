@@ -4,6 +4,7 @@ import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.domain.onboarding.utils.DayBoundsValidation
+import com.awan.app.core.domain.onboarding.usecase.AssignDefaultCategoriesUseCase
 import com.awan.app.core.domain.onboarding.usecase.SuggestZoneScheduleUseCase
 import com.awan.app.core.domain.onboarding.utils.ValidateDayBounds
 import com.awan.app.core.domain.onboarding.usecase.CompleteOnboardingUseCase
@@ -46,6 +47,7 @@ class OnboardingViewModelTest {
             validateDayBounds = ValidateDayBounds(),
             createAndScheduleFirstTask = CreateAndScheduleFirstTaskUseCase(fakeAiTaskRepository),
             getCategories = GetCategoriesUseCase(categoryRepository),
+            assignDefaultCategories = AssignDefaultCategoriesUseCase(),
         )
 
     @Before
