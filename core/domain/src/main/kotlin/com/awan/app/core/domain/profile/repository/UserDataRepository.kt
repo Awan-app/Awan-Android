@@ -7,4 +7,5 @@ interface UserDataRepository {
     val userData: Flow<UserData>
     suspend fun setDarkThemeEnabled(enabled: Boolean)
     suspend fun setLocale(locale: String)
+    suspend fun setMicPermissionRequested(requested: Boolean)
 }

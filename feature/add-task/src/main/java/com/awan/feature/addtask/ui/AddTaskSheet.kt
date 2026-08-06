@@ -56,10 +56,11 @@ import com.awan.feature.addtask.presentation.AddTaskMode
 import com.awan.feature.addtask.presentation.AddTaskPicker
 import com.awan.feature.addtask.presentation.AddTaskState
 import com.awan.feature.addtask.presentation.AddTaskViewModel
+import com.awan.feature.addtask.presentation.GoalStep
 import com.awan.feature.addtask.presentation.TaskConfirmation
 import com.awan.feature.addtask.ui.components.AddTaskModeSelector
 import com.awan.feature.addtask.ui.components.AiToggle
-import com.awan.feature.addtask.ui.components.GoalPlaceholder
+import com.awan.feature.addtask.ui.components.GoalForm
 import com.awan.feature.addtask.ui.components.ImageAttachment
 import com.awan.feature.addtask.ui.components.TaskAttributeChips
 import com.awan.feature.addtask.ui.components.TaskConfirmationPanel
@@ -84,6 +85,7 @@ fun AddTaskSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     onTaskCreated: (String) -> Unit = {},
+    onNavigateToGoalPreview: () -> Unit = {},
     onAiRequested: (text: String, note: String?, imageUri: String?) -> Unit = { _, _, _ -> },
     viewModel: AddTaskViewModel = hiltViewModel(),
 ) {
@@ -96,17 +98,31 @@ fun AddTaskSheet(
      * animated away by the time anyone can object, and it never comes back.
      */
     val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
         confirmValueChange = { target ->
-            val blocked = target == SheetValue.Hidden && viewModel.state.value.isDirty
+            val isPreviewStep = viewModel.state.value.goalStep is GoalStep.Preview
+            val blocked = target == SheetValue.Hidden && viewModel.state.value.isDirty && !isPreviewStep
             if (blocked) viewModel.onAction(AddTaskAction.DismissRequested)
             !blocked
         },
     )
 
+    LaunchedEffect(state.goalStep) {
+        if (state.goalStep is GoalStep.Preview) {
+            sheetState.hide()          // suspends until SheetValue.Hidden
+            onDismiss()                // sets showAddTask = false
+            onNavigateToGoalPreview()  // navigator.navigate(GoalPreviewRoute)
+        }
+    }
+
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
             is AddTaskEvent.TaskCreated -> {
                 onTaskCreated(event.title)
+                onDismiss()
+            }
+
+            is AddTaskEvent.GoalCreated -> {
                 onDismiss()
             }
 
@@ -220,9 +236,10 @@ private fun AddTaskSheetContent(
                     )
 
                     AddTaskMode.TASK -> TaskForm(state = state, onAction = onAction)
-                    AddTaskMode.GOAL -> GoalPlaceholder()
+                    AddTaskMode.GOAL -> GoalForm(state = state, onAction = onAction)
                     else -> Unit
                 }
+
             }
         }
     }

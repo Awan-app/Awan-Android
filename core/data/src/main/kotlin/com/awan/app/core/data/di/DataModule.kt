@@ -107,7 +107,6 @@ internal abstract class DataModule {
     abstract fun bindCategoryRepository(
         impl: CategoryRepositoryImpl,
     ): CategoryRepository
-
     @Binds
     @Singleton
     abstract fun bindAiTaskRepository(
@@ -186,5 +185,17 @@ internal abstract class DataModule {
     abstract fun bindHomeRepository(
         impl: HomeRepositoryImpl,
     ): HomeRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGoalRemoteDataSource(
+        impl: com.awan.app.core.data.goal.remote.GoalRemoteDataSourceImpl,
+    ): com.awan.app.core.data.goal.remote.GoalRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindGoalRepository(
+        impl: com.awan.app.core.data.goal.GoalRepositoryImpl,
+    ): com.awan.app.core.domain.goal.repository.GoalRepository
 }
 

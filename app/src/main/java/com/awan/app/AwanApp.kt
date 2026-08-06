@@ -25,6 +25,8 @@ import com.awan.app.core.designsystem.BottomNavItem
 import com.awan.core.navigation.NavigationState
 import com.awan.core.navigation.Navigator
 import com.awan.core.navigation.Route
+import com.awan.feature.addtask.navigation.GoalPreviewRoute
+import com.awan.feature.addtask.navigation.goalPreviewEntry
 import com.awan.feature.addtask.ui.AddTaskSheet
 import com.awan.feature.aitasks.api.AiTaskProposalsRoute
 import com.awan.feature.aitasks.impl.navigation.aiTasksEntry
@@ -32,6 +34,7 @@ import com.awan.feature.auth.api.LoginRoute
 import com.awan.feature.auth.impl.navigation.authEntry
 import com.awan.feature.calendar.impl.navigation.calendarEntry
 import com.awan.feature.chat.impl.navigation.chatEntry
+import com.awan.feature.goals.api.GoalsRoute
 import com.awan.feature.goals.impl.navigation.goalsEntry
 import com.awan.feature.home.api.HomeRoute
 import com.awan.feature.home.impl.navigation.homeEntry
@@ -83,7 +86,7 @@ private fun NavigationState.rememberDecoratedEntries(
 @Composable
 fun AwanApp(
     appState: AwanAppState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
@@ -93,7 +96,12 @@ fun AwanApp(
     if (showAddTask) {
         AddTaskSheet(
             onDismiss = { showAddTask = false },
+            onNavigateToGoalPreview = {
+                showAddTask = false
+                navigator.navigate(GoalPreviewRoute)
+            },
             onAiRequested = { text, note, imageUri ->
+                showAddTask = false
                 navigator.navigate(AiTaskProposalsRoute(text = text, note = note, imageUri = imageUri))
             },
         )
@@ -142,6 +150,10 @@ fun AwanApp(
                 onNavigateToEditRoutine = { templateId -> navigator.navigate(EditRoutineRoute(templateId)) },
                 onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) },
                 onBack = { navigator.goBack() },
+            )
+            goalPreviewEntry(
+                onBack = { navigator.goBack() },
+                onNavigateToGoals = { navigator.replaceAll(GoalsRoute) },
             )
         }
 

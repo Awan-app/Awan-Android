@@ -35,11 +35,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
@@ -68,6 +70,7 @@ fun AwanButton(
     isLoading: Boolean = false,
     haptic: HapticFeedbackType? = awanButtonHaptic(variant),
     icon: (@Composable () -> Unit)? = null,
+    latchedPressed: Boolean = false,
     content: @Composable RowScope.() -> Unit,
 ) {
     val effectiveEnabled = enabled && !isLoading
@@ -98,10 +101,32 @@ fun AwanButton(
     )
     val rimDepth = if (variant == AwanButtonVariant.Quiet) 0.dp else AwanButtonRimDepth
     val rimSide = if (variant == AwanButtonVariant.Quiet) 0.dp else AwanButtonRimSide
+    val effectivePressed = styleState.isPressed || latchedPressed
+    val latchedPressActive = latchedPressed && !styleState.isPressed
+    val latchedTranslationX = animateDpAsState(
+        targetValue = if (latchedPressActive) {
+            buttonPressedTranslationX(LocalLayoutDirection.current)
+        } else {
+            0.dp
+        },
+        animationSpec = tween(
+            durationMillis = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
+            easing = LinearOutSlowInEasing,
+        ),
+        label = "AwanButtonLatchedTranslationX",
+    ).value
+    val latchedTranslationY = animateDpAsState(
+        targetValue = if (latchedPressActive) AwanButtonRimDepth else 0.dp,
+        animationSpec = tween(
+            durationMillis = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
+            easing = LinearOutSlowInEasing,
+        ),
+        label = "AwanButtonLatchedTranslationY",
+    ).value
     // A chip's target is exactly the pill: face plus rim, with no dead margin around it.
     val minTouchSize = if (variant == AwanButtonVariant.Chip) AwanChipFaceHeight + AwanButtonRimDepth else 48.dp
     val rimTopInset = animateDpAsState(
-        targetValue = if (styleState.isPressed) AwanButtonRimDepth else 0.dp,
+        targetValue = if (effectivePressed) AwanButtonRimDepth else 0.dp,
         animationSpec = tween(
             durationMillis = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
             easing = LinearOutSlowInEasing,
@@ -109,7 +134,7 @@ fun AwanButton(
         label = "AwanButtonRimTopInset",
     ).value
     val rimStartInset = animateDpAsState(
-        targetValue = if (styleState.isPressed) rimSide else 0.dp,
+        targetValue = if (effectivePressed) rimSide else 0.dp,
         animationSpec = tween(
             durationMillis = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
             easing = LinearOutSlowInEasing,
@@ -164,7 +189,11 @@ fun AwanButton(
                 Row(
                     modifier = Modifier
                         .padding(bottom = rimDepth, start = rimSide)
-                        .styleable(styleState, faceStyle, style),
+                        .styleable(styleState, faceStyle, style)
+                        .graphicsLayer {
+                            translationX = latchedTranslationX.toPx()
+                            translationY = latchedTranslationY.toPx()
+                        },
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

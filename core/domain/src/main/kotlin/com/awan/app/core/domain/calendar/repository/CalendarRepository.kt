@@ -2,7 +2,7 @@ package com.awan.app.core.domain.calendar.repository
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.model.CalendarUser
-import com.awan.app.core.model.Goal
+import com.awan.app.core.model.CalendarGoal
 import kotlinx.coroutines.flow.Flow
 
 interface CalendarRepository {
@@ -12,5 +12,5 @@ interface CalendarRepository {
 
 data class CalendarSnapshot(
     val user: CalendarUser,
-    val goals: List<Goal>,
+    val goals: List<CalendarGoal>,
 )

@@ -4,6 +4,7 @@ import android.content.Context
 import com.awan.app.core.network.BuildConfig
 import com.awan.app.core.network.api.AuthApiService
 import com.awan.app.core.network.api.CategoryApiService
+import com.awan.app.core.network.api.GoalApiService
 import com.awan.app.core.network.api.OnboardingApiService
 import com.awan.app.core.network.api.ProfileApiService
 import com.awan.app.core.network.api.TaskApiService
@@ -157,6 +158,12 @@ object NetworkModule {
     @Singleton
     fun providesTemplateApiService(retrofit: Retrofit): TemplateApiService =
         retrofit.create(TemplateApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesGoalApiService(retrofit: Retrofit): GoalApiService =
+        retrofit.create(GoalApiService::class.java)
+
 
     @Provides
     @Singleton

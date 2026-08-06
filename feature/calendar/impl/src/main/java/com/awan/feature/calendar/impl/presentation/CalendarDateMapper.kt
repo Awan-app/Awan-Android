@@ -1,6 +1,6 @@
 package com.awan.feature.calendar.impl.presentation
 
-import com.awan.app.core.model.Goal
+import com.awan.app.core.model.CalendarGoal as CoreCalendarGoal
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -16,7 +16,7 @@ object CalendarDateMapper {
         LocalDate.parse(datePart)
     }.getOrNull()
 
-    fun filterAndSortUpcomingGoals(goals: List<Goal>, today: LocalDate): List<CalendarGoal> =
+    fun filterAndSortUpcomingGoals(goals: List<CoreCalendarGoal>, today: LocalDate): List<CalendarGoal> =
         goals.asSequence()
             .filter { it.status.equals("ACTIVE", true) && !it.isInbox }
             .mapNotNull { goal -> parseLocalDate(goal.targetDate)?.let { CalendarGoal(goal.id, goal.title, it) } }
@@ -36,4 +36,3 @@ object CalendarDateMapper {
 
     fun parseZoneIdOrDefault(value: String?): ZoneId = runCatching { ZoneId.of(value.orEmpty().trim()) }.getOrDefault(ZoneId.systemDefault())
 }
-

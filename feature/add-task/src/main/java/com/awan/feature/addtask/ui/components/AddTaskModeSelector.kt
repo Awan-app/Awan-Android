@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
@@ -61,7 +62,7 @@ fun AddTaskModeSelector(
 
         Box(
             modifier = Modifier
-                .offset(x = halfWidth * slide)
+                .offset { IntOffset(x = (halfWidth * slide).roundToPx(), y = 0) }
                 .width(halfWidth)
                 .fillMaxHeight()
                 .clip(AwanTheme.shapes.pill)

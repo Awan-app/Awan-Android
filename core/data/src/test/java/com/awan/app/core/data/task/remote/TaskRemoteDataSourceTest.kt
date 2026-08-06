@@ -44,10 +44,10 @@ private open class FakeTaskApiService : TaskApiService {
         note: RequestBody?,
     ): TaskProposalResponse = error("not used")
 
+    override suspend fun getTasksByDate(date: String): List<TaskWithSessionsDto> = error("not used")
+
     override suspend fun scheduleTask(request: ScheduleTaskRequest): TaskScheduleResponse =
         error("not used")
-
-    override suspend fun getTasksByDate(date: String): List<TaskWithSessionsDto> = error("not used")
 
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Unit = error("not used")
 }

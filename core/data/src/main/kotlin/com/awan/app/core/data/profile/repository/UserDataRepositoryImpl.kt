@@ -13,7 +13,8 @@ class UserDataRepositoryImpl @Inject constructor(
     override val userData: Flow<UserData> = userPreferencesDataSource.userPreferences.map {
         UserData(
             darkThemeEnabled = it.darkThemeEnabled,
-            locale = it.locale
+            locale = it.locale,
+            micPermissionRequested = it.micPermissionRequested,
         )
     }
 
@@ -23,5 +24,9 @@ class UserDataRepositoryImpl @Inject constructor(
 
     override suspend fun setLocale(locale: String) {
         userPreferencesDataSource.setLocale(locale)
+    }
+
+    override suspend fun setMicPermissionRequested(requested: Boolean) {
+        userPreferencesDataSource.setMicPermissionRequested(requested)
     }
 }
