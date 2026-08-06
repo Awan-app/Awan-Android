@@ -24,22 +24,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanCard
+import com.awan.app.core.designsystem.AwanChipDot
+import com.awan.app.core.designsystem.AwanChipTone
+import com.awan.app.core.designsystem.AwanDropdownMenu
+import com.awan.app.core.designsystem.AwanDropdownMenuItem
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.domain.zones.model.Zone
+import com.awan.app.core.model.Category
 import com.awan.app.core.designsystem.AwanTimePickerDialog
 import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.ui.formatClock
 
 private enum class Editing { None, Start, End }
 
-/** Hours for one zone, reusing the shared [AwanTimePickerDialog] for the actual picking. */
+/** Hours and category for one zone, reusing the shared [AwanTimePickerDialog] for the actual picking. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ZoneSheet(
     zone: Zone,
+    categories: List<Category>,
     onDismiss: () -> Unit,
     onSetWindow: (start: Int, end: Int) -> Unit,
+    onPickCategory: (categoryId: String) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState()
     var editing by remember { mutableStateOf(Editing.None) }
@@ -80,6 +87,11 @@ fun ZoneSheet(
                     modifier = Modifier.weight(1f),
                 )
             }
+            CategoryField(
+                categories = categories,
+                selectedCategoryId = zone.categoryId,
+                onSelect = onPickCategory,
+            )
         }
     }
 
@@ -107,6 +119,59 @@ fun ZoneSheet(
         )
 
         Editing.None -> Unit
+    }
+}
+
+/**
+ * The zone's category. Required by the backend, so it names the resolved category rather than
+ * offering a "none" row — the only empty state is a user who has no categories at all.
+ */
+@Composable
+private fun CategoryField(
+    categories: List<Category>,
+    selectedCategoryId: String?,
+    onSelect: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selected = categories.firstOrNull { it.id == selectedCategoryId }
+
+    Box {
+        AwanCard(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
+            AwanText(
+                stringResource(R.string.onboarding_zone_category),
+                style = AwanTheme.styles.metaText,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            AwanText(
+                selected?.name ?: stringResource(R.string.onboarding_zone_category_empty),
+                style = AwanTheme.styles.titleText,
+                maxLines = 1,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        AwanDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            if (categories.isEmpty()) {
+                AwanDropdownMenuItem(
+                    label = stringResource(R.string.onboarding_zone_category_empty),
+                    onClick = {},
+                    enabled = false,
+                )
+                return@AwanDropdownMenu
+            }
+            categories.forEach { category ->
+                val active = category.id == selectedCategoryId
+                AwanDropdownMenuItem(
+                    label = category.name,
+                    onClick = {
+                        expanded = false
+                        onSelect(category.id)
+                    },
+                    selected = active,
+                    leading = { AwanChipDot(tone = AwanChipTone.Lavender, active = active) },
+                )
+            }
+        }
     }
 }
 

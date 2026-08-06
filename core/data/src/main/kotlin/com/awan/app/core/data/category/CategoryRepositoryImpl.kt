@@ -21,4 +21,16 @@ class CategoryRepositoryImpl @Inject constructor(
     override suspend fun getCategories(): Result<List<Category>> = withContext(ioDispatcher) {
         remoteDataSource.getCategories().map { categories -> categories.map { it.toModel() } }
     }
+
+    override suspend fun createCategory(name: String): Result<Category> = withContext(ioDispatcher) {
+        remoteDataSource.createCategory(name).map { it.toModel() }
+    }
+
+    override suspend fun getCategory(categoryId: String): Result<Category> = withContext(ioDispatcher) {
+        remoteDataSource.getCategory(categoryId).map { it.toModel() }
+    }
+
+    override suspend fun updateCategory(categoryId: String, name: String): Result<Category> = withContext(ioDispatcher) {
+        remoteDataSource.updateCategory(categoryId, name).map { it.toModel() }
+    }
 }
