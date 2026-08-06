@@ -34,6 +34,13 @@ private val Nunito = FontFamily(
     Font(R.font.nunito_extrabold, FontWeight.ExtraBold)
 )
 
+private val Cairo = FontFamily(
+    Font(R.font.cairo_variable, FontWeight.Medium),
+    Font(R.font.cairo_variable, FontWeight.SemiBold),
+    Font(R.font.cairo_variable, FontWeight.Bold),
+    Font(R.font.cairo_variable, FontWeight.ExtraBold)
+)
+
 @Immutable
 data class AwanColors(
     val backgroundStart: Color,
@@ -82,6 +89,8 @@ data class AwanColors(
     val zoneTangerinePressed: Color,
     val zoneSunPressed: Color,
     val zoneLavenderPressed: Color,
+    val streakSurface: Color,
+    val streakIcon: Color,
     val zoneCardAlpha: Float,
 )
 
@@ -145,6 +154,8 @@ internal val LightAwanColors = AwanColors(
     zoneTangerinePressed = Color(0xFFD9771C),
     zoneSunPressed = Color(0xFFD99E14),
     zoneLavenderPressed = Color(0xFF7659D9),
+    streakSurface = Color(0xFFFFE7B3),
+    streakIcon = Color(0xFFB45309),
     zoneCardAlpha = 0.35f, // Increased for better visibility with pastels
 )
 
@@ -213,6 +224,8 @@ internal val DarkAwanColors = AwanColors(
     zoneTangerinePressed = Color(0xFFD9771C),
     zoneSunPressed = Color(0xFFD99E14),
     zoneLavenderPressed = Color(0xFF7659D9),
+    streakSurface = Color(0xFF3B2A20),
+    streakIcon = Color(0xFFFFB84D),
     zoneCardAlpha = 0.45f,
 )
 
@@ -268,6 +281,53 @@ internal val AwanTypographyTokens = AwanTypography(
     ),
     caption = TextStyle(
         fontFamily = Baloo2,
+        fontWeight = FontWeight.Bold,
+        fontSize = 11.5.sp,
+        lineHeight = 17.sp,
+    ),
+)
+
+internal val AwanArabicTypographyTokens = AwanTypography(
+    display = TextStyle(
+        fontFamily = Cairo,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 44.sp,
+        lineHeight = 31.sp,
+    ),
+    title = TextStyle(
+        fontFamily = Cairo,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 22.sp,
+        lineHeight = 26.sp,
+    ),
+    heading = TextStyle(
+        fontFamily = Cairo,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 17.sp,
+        lineHeight = 22.sp,
+    ),
+    body = TextStyle(
+        fontFamily = Cairo,
+        fontWeight = FontWeight.Bold,
+        fontSize = 14.5.sp,
+        lineHeight = 21.sp,
+    ),
+    button = TextStyle(
+        fontFamily = Cairo,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 15.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.5.sp,
+    ),
+    buttonCompact = TextStyle(
+        fontFamily = Cairo,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
+        letterSpacing = 0.5.sp,
+    ),
+    caption = TextStyle(
+        fontFamily = Cairo,
         fontWeight = FontWeight.Bold,
         fontSize = 11.5.sp,
         lineHeight = 17.sp,

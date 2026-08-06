@@ -44,6 +44,7 @@ import com.awan.feature.profile.api.EditRoutineRoute
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.splash.impl.navigation.splashEntry
 import com.awan.feature.splash.impl.ui.SplashDestination
+import java.time.LocalDate
 
 /**
  * Decorates every sub-stack, not just the visible one.
@@ -86,6 +87,8 @@ fun AwanApp(
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
+    // Holds the live HomeViewModel's selectDate so Calendar can invoke it after popping.
+    val homeSelectDateRef = remember { arrayOf<((LocalDate) -> Unit)?>(null) }
 
     if (showAddTask) {
         AddTaskSheet(
@@ -122,9 +125,13 @@ fun AwanApp(
             homeEntry(
                 onLogout = { navigator.replaceAll(LoginRoute) },
                 onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
+                onRegisterSelectDate = { fn -> homeSelectDateRef[0] = fn },
             )
             calendarEntry(
-                onDateSelected = { /* consumed within calendar screen */ },
+                onDateSelected = { date ->
+                    navigator.goBack()
+                    homeSelectDateRef[0]?.invoke(date)
+                },
                 onBack = { navigator.goBack() },
             )
             chatEntry()
@@ -151,7 +158,12 @@ fun AwanApp(
         )
 
         val currentRoute = appState.navigationState.currentKey
-        val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route == currentRoute }
+        val isTopLevel = appState.topLevelDestinations.any { dest ->
+            when (val route = dest.route) {
+                is HomeRoute -> currentRoute is HomeRoute
+                else -> route != null && route == currentRoute
+            }
+        }
 
         if (isTopLevel) {
             val navItems = remember(appState.topLevelDestinations) {
@@ -165,7 +177,12 @@ fun AwanApp(
                     )
                 }
             }
-            val selectedDest = appState.topLevelDestinations.find { it.route == appState.navigationState.currentTopLevelKey }
+            val selectedDest = appState.topLevelDestinations.find { dest ->
+                when (val route = dest.route) {
+                    is HomeRoute -> appState.navigationState.currentTopLevelKey is HomeRoute
+                    else -> route != null && route == appState.navigationState.currentTopLevelKey
+                }
+            }
 
             AwanBottomNavBar(
                 items = navItems,

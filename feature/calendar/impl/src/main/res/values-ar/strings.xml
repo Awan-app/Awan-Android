@@ -16,6 +16,7 @@
     <string name="calendar_badge_past">سابق</string>
     <string name="calendar_streak_day">يوم متتالي</string>
     <string name="calendar_has_deadline">لديه موعد نهائي</string>
+    <string name="calendar_back">ارجع</string>
     <string name="calendar_weekday_sun">&#x627;&#x644;&#x623;&#x62D;&#x62F;</string>
     <string name="calendar_weekday_mon">&#x627;&#x644;&#x627;&#x62B;&#x646;&#x64A;&#x646;</string>
     <string name="calendar_weekday_tue">&#x627;&#x644;&#x62B;&#x644;&#x627;&#x62B;&#x627;&#x621;</string>

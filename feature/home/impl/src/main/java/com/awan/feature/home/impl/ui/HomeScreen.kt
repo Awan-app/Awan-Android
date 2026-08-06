@@ -1,6 +1,7 @@
 package com.awan.feature.home.impl.ui
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,6 +43,7 @@ import com.awan.app.core.designsystem.AwanScheduleTimeline
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.home.impl.R
+import java.time.LocalDate
 
 private sealed interface TimelineContentState {
     data object Loading : TimelineContentState
@@ -54,9 +56,14 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onLogout: () -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
+    onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        onRegisterSelectDate(viewModel::selectDate)
+    }
 
     val timelineScrollState = rememberScrollState()
     val isHeaderCollapsed by remember { derivedStateOf { timelineScrollState.value > 80 } }
@@ -212,36 +219,6 @@ fun HomeScreen(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun DataRow(
-    label: String,
-    value: String,
-    isMonospace: Boolean = false,
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        AwanText(
-            text = label,
-            style = AwanTheme.typography.caption.copy(
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = AwanTheme.colors.textSecondary,
-            ),
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        SelectionContainer {
-            AwanText(
-                text = value,
-                style = AwanTheme.typography.body.copy(
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Normal,
-                    fontFamily = if (isMonospace) FontFamily.Monospace else AwanTheme.typography.body.fontFamily,
-                    color = AwanTheme.colors.textSecondary,
-                ),
-            )
         }
     }
 }
