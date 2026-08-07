@@ -50,6 +50,8 @@ private open class FakeTaskApiService : TaskApiService {
         error("not used")
 
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Unit = error("not used")
+
+    override suspend fun getInboxTasks(): List<TaskWithSessionsDto> = error("not used")
 }
 
 private fun dataSource(api: TaskApiService, json: Json, dispatcher: kotlinx.coroutines.CoroutineDispatcher) =

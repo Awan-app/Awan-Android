@@ -73,6 +73,8 @@ class AiTaskRepositoryImplTest {
             error("not used")
 
         override suspend fun deleteTask(taskId: String): Result<Unit> = error("not used")
+
+        override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = error("not used")
     }
 
     private val repository = AiTaskRepositoryImpl(remoteDataSource, UnconfinedTestDispatcher())

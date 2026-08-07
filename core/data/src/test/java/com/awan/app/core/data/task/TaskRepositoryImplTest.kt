@@ -151,6 +151,8 @@ class TaskRepositoryImplTest {
             deletedTaskId = taskId
             return Result.Success(Unit)
         }
+
+        override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = Result.Success(emptyList())
     }
 
     @Test
