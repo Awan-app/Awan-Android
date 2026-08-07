@@ -44,7 +44,7 @@ class CalendarLocalDataSourceImpl @Inject constructor(
     override suspend fun upsertCalendar(profile: UserProfileResponse, goals: List<GoalResponse>) =
         database.withTransaction {
             userDao.upsertUserWithPreferences(
-                UserEntity(profile.id, profile.email, profile.firstName, profile.lastName, profile.birthDate, profile.points, profile.streak, profile.maxStreak),
+                UserEntity(profile.id, profile.email, profile.firstName, profile.lastName, profile.birthDate, profile.points, profile.streak, profile.maxStreak, profile.profilePictureUrl, profile.isNew ),
                 UserPreferencesEntity(profile.id, profile.preferences?.timezone.orEmpty(), profile.preferences?.preferredSessionDuration ?: 0, profile.preferences?.bufferBetweenSessions ?: 0, profile.preferences?.wakeupTime.orEmpty(), profile.preferences?.sleepTime.orEmpty(), profile.preferences?.schedulingType ?: "BALANCED"),
             )
             goalDao.upsertGoals(goals.map(GoalResponse::asEntity))
