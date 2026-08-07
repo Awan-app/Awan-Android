@@ -1,15 +1,34 @@
 package com.awan.feature.profile.impl.ui.components
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cake
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import com.awan.app.core.common.text.UiText
 import com.awan.app.core.designsystem.*
 import com.awan.feature.profile.impl.R as ProfileR
+import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -21,21 +40,56 @@ fun EditPersonalInfoSheet(
     initialFirstName: String,
     initialLastName: String,
     initialBirthDate: String,
+    profilePictureUrl: String?,
+    pendingPictureUri: String?,
+    error: UiText?,
     onDismiss: () -> Unit,
     onSave: (String, String, String) -> Unit,
+    onPickPicture: (String) -> Unit,
+    onDeletePicture: () -> Unit,
     isLoading: Boolean = false
 ) {
     var firstName by remember { mutableStateOf(initialFirstName) }
     var lastName by remember { mutableStateOf(initialLastName) }
     var birthDate by remember { mutableStateOf(initialBirthDate) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var showPhotoSheet by remember { mutableStateOf(false) }
     
+    val context = LocalContext.current
+    var tempPhotoUri by remember { mutableStateOf<android.net.Uri?>(null) }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let { onPickPicture(it.toString()) }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            tempPhotoUri?.let { onPickPicture(it.toString()) }
+        }
+    }
+
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+
+    fun launchCamera() {
+        val file = File(context.cacheDir, "profile_picture_${System.currentTimeMillis()}.jpg")
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        tempPhotoUri = uri
+        cameraLauncher.launch(uri)
+    }
+
     val birthDateFormat = remember {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC)
     }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
         containerColor = AwanTheme.colors.surface,
         dragHandle = { BottomSheetDefaults.DragHandle(color = AwanTheme.colors.line) },
         shape = AwanTheme.shapes.card
@@ -58,15 +112,93 @@ fun EditPersonalInfoSheet(
                 )
             }
 
+            // Profile Picture Picker Section with Inline Error
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier.size(100.dp),
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(AwanTheme.colors.line)
+                            .clickable { showPhotoSheet = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Priority: Pending (Preview) > Current URL > Placeholder
+                        val imageSource = when {
+                            pendingPictureUri == "delete" -> null
+                            pendingPictureUri != null -> pendingPictureUri
+                            else -> profilePictureUrl
+                        }
+
+                        if (imageSource != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(imageSource)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.PhotoCamera,
+                                contentDescription = null,
+                                tint = AwanTheme.colors.textSecondary,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+
+                    // Edit Indicator
+                    Surface(
+                        shape = CircleShape,
+                        color = AwanTheme.colors.sky,
+                        contentColor = AwanTheme.colors.onSky,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .offset(x = 4.dp, y = 4.dp)
+                            .clickable { showPhotoSheet = true }
+                            .graphicsLayer {
+                                shadowElevation = 8f
+                                shape = CircleShape
+                                clip = false
+                            },
+                        shadowElevation = 4.dp
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoCamera,
+                            contentDescription = null,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                }
+                
+                // Inline Error Feedback
+                if (error != null) {
+                    AwanText(
+                        text = error.asString(),
+                        style = AwanTheme.styles.captionText.copy(color = AwanTheme.colors.destructive),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+
             Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.lg)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)
                 ) {
-                    // First Name Field
                     Column(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)
+                        verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)
                     ) {
                         AwanText(
                             text = stringResource(ProfileR.string.profile_first_name),
@@ -83,10 +215,9 @@ fun EditPersonalInfoSheet(
                         )
                     }
 
-                    // Last Name Field
                     Column(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)
+                        verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)
                     ) {
                         AwanText(
                             text = stringResource(ProfileR.string.profile_last_name),
@@ -104,8 +235,7 @@ fun EditPersonalInfoSheet(
                     }
                 }
 
-                // Birth Date Field
-                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
                     AwanText(
                         text = stringResource(ProfileR.string.profile_birth_date),
                         style = AwanTheme.styles.captionText.copy(
@@ -150,6 +280,19 @@ fun EditPersonalInfoSheet(
                 }
             }
         }
+    }
+
+    if (showPhotoSheet) {
+        ProfilePictureSheet(
+            onDismiss = { showPhotoSheet = false },
+            onCameraClick = { launchCamera() },
+            onGalleryClick = {
+                galleryLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                )
+            },
+            onDeleteClick = if (profilePictureUrl != null || pendingPictureUri != null) onDeletePicture else null
+        )
     }
 
     if (showDatePicker) {

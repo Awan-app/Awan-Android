@@ -1,12 +1,8 @@
 package com.awan.feature.profile.impl.ui.components
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -36,17 +32,8 @@ fun ProfileHeaderCard(
     profile: Profile,
     uiState: ProfileState,
     onEditClick: () -> Unit,
-    onUpdatePicture: (String) -> Unit,
-    onDeletePicture: () -> Unit,
 ) {
     val isDark = uiState.useDarkTheme
-    var showDeleteOption by remember { mutableStateOf(false) }
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        uri?.let { onUpdatePicture(it.toString()) }
-    }
 
     val mascotBgColor by animateColorAsState(
         targetValue = if (isDark) AwanTheme.colors.skyMidday else AwanTheme.colors.zoneSun,
@@ -66,16 +53,7 @@ fun ProfileHeaderCard(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(mascotBgColor)
-                    .clickable {
-                        if (profile.profilePictureUrl != null) {
-                            showDeleteOption = true
-                        } else {
-                            launcher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        }
-                    },
+                    .background(mascotBgColor),
                 contentAlignment = Alignment.Center
             ) {
                 if (profile.profilePictureUrl != null) {
@@ -83,35 +61,12 @@ fun ProfileHeaderCard(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(profile.profilePictureUrl)
                             .crossfade(true)
+                            .memoryCacheKey("${profile.profilePictureUrl}_${System.currentTimeMillis() / 10000}")
                             .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
-
-                    DropdownMenu(
-                        expanded = showDeleteOption,
-                        onDismissRequest = { showDeleteOption = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { AwanText(stringResource(ProfileR.string.profile_update_picture)) },
-                            onClick = {
-                                showDeleteOption = false
-                                launcher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                )
-                            },
-                            leadingIcon = { Icon(Icons.Default.PhotoCamera, contentDescription = null) }
-                        )
-                        DropdownMenuItem(
-                            text = { AwanText(stringResource(ProfileR.string.profile_delete_picture)) },
-                            onClick = {
-                                showDeleteOption = false
-                                onDeletePicture()
-                            },
-                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) }
-                        )
-                    }
                 } else {
                     val celestialColor by animateColorAsState(
                         targetValue = if (isDark) AwanTheme.colors.textPrimary else AwanTheme.colors.zoneTangerine,

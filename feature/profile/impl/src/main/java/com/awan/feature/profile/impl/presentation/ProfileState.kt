@@ -11,4 +11,5 @@ data class ProfileState(
     val language: String = "en",
     val isUpdatingField: Boolean = false,
     val fieldError: UiText? = null,
+    val pendingProfilePictureUri: String? = null,
 )

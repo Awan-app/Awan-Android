@@ -33,6 +33,10 @@ class ImageRepositoryImpl @Inject constructor(
      */
     override suspend fun read(uri: String): Result<ImageBytes> = withContext(ioDispatcher) {
         val parsed = Uri.parse(uri)
+        val mimeType = context.contentResolver.getType(parsed)
+        val isSupported = mimeType == "image/jpeg" || mimeType == "image/png" || mimeType == "image/webp"
+        if (!isSupported) return@withContext undecodable()
+
         val dimensions = decodeDimensions(parsed) ?: return@withContext undecodable()
         val sampleSize = sampleSizeFor(dimensions)
         val bitmap = runCatching {

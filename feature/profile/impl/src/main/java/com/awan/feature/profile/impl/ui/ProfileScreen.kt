@@ -8,20 +8,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.awan.app.core.designsystem.*
 import com.awan.feature.profile.impl.presentation.ProfileAction
+import com.awan.feature.profile.impl.presentation.ProfileEvent
 import com.awan.feature.profile.impl.presentation.ProfileState
 import com.awan.feature.profile.impl.R as ProfileR
 import com.awan.feature.profile.impl.ui.components.EditPersonalInfoSheet
 import com.awan.feature.profile.impl.ui.components.ProfileShimmer
+import kotlinx.coroutines.flow.Flow
 
 @Composable
 fun ProfileScreen(
     uiState: ProfileState,
+    events: Flow<ProfileEvent>,
     onAction: (ProfileAction) -> Unit,
     onDailyZonesClick: () -> Unit = {},
     onSettingsClick: (String) -> Unit = {},
 ) {
     var showEditSheet by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+
+    ObserveAsEvents(events) { event ->
+        when (event) {
+            ProfileEvent.LogoutSuccess -> { /* Handled by navigation */ }
+            ProfileEvent.UpdateSuccess -> { showEditSheet = false }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -46,11 +56,15 @@ fun ProfileScreen(
                     initialFirstName = uiState.profile.firstName ?: "",
                     initialLastName = uiState.profile.lastName ?: "",
                     initialBirthDate = uiState.profile.birthDate ?: "",
+                    profilePictureUrl = uiState.profile.profilePictureUrl,
+                    pendingPictureUri = uiState.pendingProfilePictureUri,
+                    error = uiState.fieldError,
                     onDismiss = { showEditSheet = false },
                     onSave = { first, last, birth ->
                         onAction(ProfileAction.UpdatePersonalInfo(first, last, birth))
-                        showEditSheet = false
                     },
+                    onPickPicture = { onAction(ProfileAction.UpdateProfilePicture(it)) },
+                    onDeletePicture = { onAction(ProfileAction.DeleteProfilePicture) },
                     isLoading = uiState.isUpdatingField
                 )
             }

@@ -22,13 +22,7 @@ import com.awan.app.core.domain.profile.usecase.UpdateSleepScheduleUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateTimezoneUseCase
 import com.awan.feature.profile.impl.R
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -53,8 +47,8 @@ class ProfileViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ProfileState())
     val uiState: StateFlow<ProfileState> = _uiState.asStateFlow()
 
-    private val _events = Channel<ProfileEvent>()
-    val events = _events.receiveAsFlow()
+    private val _events = MutableSharedFlow<ProfileEvent>()
+    val events = _events.asSharedFlow()
 
     init {
         loadProfile()
@@ -75,8 +69,12 @@ class ProfileViewModel @Inject constructor(
                 action.lastName,
                 action.birthDate
             )
-            is ProfileAction.UpdateProfilePicture -> updateProfilePicture(action.uri)
-            ProfileAction.DeleteProfilePicture -> deleteProfilePicture()
+            is ProfileAction.UpdateProfilePicture -> {
+                _uiState.update { it.copy(pendingProfilePictureUri = action.uri, fieldError = null) }
+            }
+            ProfileAction.DeleteProfilePicture -> {
+                _uiState.update { it.copy(pendingProfilePictureUri = "delete", fieldError = null) }
+            }
             ProfileAction.Logout -> logout()
         }
     }
@@ -133,6 +131,7 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isUpdatingField = true, fieldError = null) }
 
+            // 1. Update Profile Info (Name & BirthDate)
             val nameResult = updateProfilePartialUseCase(firstName = firstName, lastName = lastName)
             if (nameResult is Result.Error) {
                 _uiState.update { it.copy(isUpdatingField = false, fieldError = nameResult.error.toUiText()) }
@@ -145,15 +144,38 @@ class ProfileViewModel @Inject constructor(
                 return@launch
             }
 
-            if (nameResult is Result.Success && birthDateResult is Result.Success) {
-                _uiState.update {
-                    it.copy(
-                        isUpdatingField = false,
-                        profile = birthDateResult.data,
-                        fieldError = null
-                    )
+            val pendingUri = _uiState.value.pendingProfilePictureUri
+            if (pendingUri != null) {
+                if (pendingUri == "delete") {
+                    val deleteResult = deleteProfilePictureUseCase()
+                    if (deleteResult is Result.Error) {
+                        _uiState.update { it.copy(isUpdatingField = false, fieldError = deleteResult.error.toUiText()) }
+                        return@launch
+                    }
+                } else {
+                    val imageResult = imageRepository.read(pendingUri)
+                    if (imageResult is Result.Error) {
+                        _uiState.update { it.copy(isUpdatingField = false, fieldError = imageResult.error.toUiText()) }
+                        return@launch
+                    }
+
+                    val imageBytes = (imageResult as Result.Success).data
+                    val uploadResult = updateProfilePictureUseCase(imageBytes.bytes, imageBytes.mimeType)
+                    if (uploadResult is Result.Error) {
+                        _uiState.update { it.copy(isUpdatingField = false, fieldError = uploadResult.error.toUiText()) }
+                        return@launch
+                    }
                 }
             }
+
+            _uiState.update {
+                it.copy(
+                    isUpdatingField = false,
+                    pendingProfilePictureUri = null,
+                    fieldError = null
+                )
+            }
+            _events.emit(ProfileEvent.UpdateSuccess)
         }
     }
 
@@ -233,7 +255,7 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             when (logoutUseCase()) {
-                is Result.Success -> _events.send(ProfileEvent.LogoutSuccess)
+                is Result.Success -> _events.emit(ProfileEvent.LogoutSuccess)
                 is Result.Error -> {
                     _uiState.update {
                         it.copy(

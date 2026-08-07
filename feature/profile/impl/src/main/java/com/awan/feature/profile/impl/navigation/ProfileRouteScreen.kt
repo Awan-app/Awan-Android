@@ -21,12 +21,14 @@ fun ProfileRouteScreen(
         viewModel.events.collectLatest { event ->
             when (event) {
                 ProfileEvent.LogoutSuccess -> onLogout()
+                ProfileEvent.UpdateSuccess -> Unit
             }
         }
     }
 
     ProfileScreen(
         uiState = uiState,
+        events = viewModel.events,
         onAction = viewModel::onAction,
         onDailyZonesClick = onDailyZonesClick,
         onSettingsClick = { },

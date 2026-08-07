@@ -92,6 +92,10 @@
     <string name="profile_error_logout">فشل تسجيل الخروج</string>
     <string name="profile_update_picture">تحديث الصورة</string>
     <string name="profile_delete_picture">حذف الصورة</string>
+    <string name="profile_camera">الكاميرا</string>
+    <string name="profile_gallery">المعرض</string>
+    <string name="profile_remove_photo">إزالة الصورة</string>
+    <string name="profile_photo_sheet_title">صورة الملف الشخصي</string>
 
     <!-- Routines -->
     <string name="profile_routine_create">إنشاء روتين</string>
