@@ -12,16 +12,20 @@ import com.awan.app.core.network.dto.GoalStatusDto
 import com.awan.app.core.network.dto.PageResponse
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
-
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import com.awan.app.core.database.dao.GoalDao
+import com.awan.app.core.database.model.GoalEntity
 
 /**
  * Tests for the remote/repository layer:
@@ -59,6 +63,20 @@ class GoalDecompositionRepositoryTest {
         blocks = emptyList(),
         hasProposal = false,
     )
+
+    /** No-op goal DAO – decomposition tests do not exercise Room. */
+    private val noOpGoalDao = object : GoalDao {
+        override suspend fun upsertGoal(goal: GoalEntity) {}
+        override suspend fun upsertGoals(goals: List<GoalEntity>) {}
+        override fun observeAllGoals(): Flow<List<GoalEntity>> = flowOf(emptyList())
+        override suspend fun getAllGoals(): List<GoalEntity> = emptyList()
+        override fun observeGoalsByStatus(status: String): Flow<List<GoalEntity>> = flowOf(emptyList())
+        override fun observeGoal(goalId: String): Flow<GoalEntity?> = MutableStateFlow(null)
+        override suspend fun getGoal(goalId: String): GoalEntity? = null
+        override fun observeInboxGoal(): Flow<GoalEntity?> = MutableStateFlow(null)
+        override suspend fun deleteGoal(goalId: String) {}
+        override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
+    }
 
     // --- C. Remote data source / repository behavior ---
 
@@ -123,7 +141,7 @@ class GoalDecompositionRepositoryTest {
             override suspend fun confirmDecomposition(sessionId: String): Result<GoalInfoResponse> =
                 Result.Success(GoalInfoResponse(id = "", title = "", status = GoalStatusDto.ACTIVE))
         }
-        val repository = GoalRepositoryImpl(fakeDs)
+        val repository = GoalRepositoryImpl(fakeDs, noOpGoalDao)
         val result = repository.continueDecomposition(sessionId = null, message = "Test")
 
         assertEquals(expectedError, result)
@@ -140,7 +158,7 @@ class GoalDecompositionRepositoryTest {
             override suspend fun confirmDecomposition(sessionId: String): Result<GoalInfoResponse> =
                 expectedError
         }
-        val repository = GoalRepositoryImpl(fakeDs)
+        val repository = GoalRepositoryImpl(fakeDs, noOpGoalDao)
         val result = repository.confirmDecomposition(sessionId = "sess-x")
 
         assertEquals(expectedError, result)

@@ -42,6 +42,10 @@ javaxInject = "1"
 # New — Database
 room = "2.7.2"
 
+# New — WorkManager & Hilt Work
+workmanager = "2.11.2"
+hiltWork = "1.4.0"
+
 # New — Lottie
 lottie = "6.6.2"
 composeIcons = "2.2.1"
@@ -91,6 +95,12 @@ hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.r
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version = "1.2.0" }
 lifecycle-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleRuntimeKtx" }
 
+# WorkManager & Hilt Work
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workmanager" }
+androidx-work-testing = { group = "androidx.work", name = "work-testing", version.ref = "workmanager" }
+androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
+androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltWork" }
+
 # Networking — Retrofit + OkHttp
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-kotlinx-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version.ref = "retrofit" }
@@ -120,10 +130,10 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 # Room
-room-runtime  = { group = "androidx.room", name = "room-runtime",  version.ref = "room" }
-room-ktx      = { group = "androidx.room", name = "room-ktx",      version.ref = "room" }
-room-compiler = { group = "androidx.room", name = "room-compiler",  version.ref = "room" }
-room-testing  = { group = "androidx.room", name = "room-testing",   version.ref = "room" }
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 
 # Lucide
 compose-icons-lucide-cmp = { group = "com.composables", name = "icons-lucide-cmp", version.ref = "composeIcons" }
@@ -164,3 +174,4 @@ awan-jvm-library = { id = "awan.jvm.library" }
 awan-feature = { id = "awan.feature" }
 awan-android-room = { id = "awan.android.room" }
 awan-android-navigation = { id = "awan.android.navigation" }
+awan-android-workmanager = { id = "awan.android.workmanager" }

@@ -9,4 +9,7 @@
     <string name="navigation_goals">Goals</string>
     <string name="navigation_profile">Profile</string>
     <string name="navigation_add_task">Add a task</string>
+    <string name="app_offline_banner_text">You are offline. Server edits and sync are disabled.</string>
+    <string name="app_offline_lock_explanation">This action requires an active internet connection.</string>
 </resources>
+

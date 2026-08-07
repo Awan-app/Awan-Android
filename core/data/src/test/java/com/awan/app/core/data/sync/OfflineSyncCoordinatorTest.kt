@@ -1,0 +1,477 @@
+package com.awan.app.core.data.sync
+
+import com.awan.app.core.common.result.Result
+import com.awan.app.core.database.dao.CachedScheduleDateDao
+import com.awan.app.core.database.dao.CategoryDao
+import com.awan.app.core.database.dao.GoalDao
+import com.awan.app.core.database.dao.SessionDao
+import com.awan.app.core.database.dao.TaskDao
+import com.awan.app.core.database.dao.TemplateDao
+import com.awan.app.core.database.dao.TemplateOverrideDao
+import com.awan.app.core.database.dao.UserDao
+import com.awan.app.core.database.dao.ZoneDao
+import com.awan.app.core.database.model.CachedScheduleDateEntity
+import com.awan.app.core.database.model.CategoryEntity
+import com.awan.app.core.database.model.GoalEntity
+import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.TaskDependencyEntity
+import com.awan.app.core.database.model.TaskEntity
+import com.awan.app.core.database.model.TemplateDayOfWeekEntity
+import com.awan.app.core.database.model.TemplateEntity
+import com.awan.app.core.database.model.TemplateOverrideEntity
+import com.awan.app.core.database.model.UserEntity
+import com.awan.app.core.database.model.UserPreferencesEntity
+import com.awan.app.core.database.model.UserWithPreferences
+import com.awan.app.core.database.model.ZoneEntity
+import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
+import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
+import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
+import com.awan.app.core.data.task.remote.TaskRemoteDataSource
+import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
+import com.awan.app.core.domain.network.NetworkConnectivityMonitor
+import com.awan.app.core.network.dto.GoalDecomposeRequest
+import com.awan.app.core.network.dto.GoalDecomposeResponse
+import com.awan.app.core.network.dto.GoalInfoResponse
+import com.awan.app.core.network.dto.category.CategoryDto
+import com.awan.app.core.network.dto.profile.AwardPointsRequest
+import com.awan.app.core.network.dto.profile.DeductPointsRequest
+import com.awan.app.core.network.dto.profile.ProfileResponse
+import com.awan.app.core.network.dto.profile.UpdateBirthDateRequest
+import com.awan.app.core.network.dto.profile.UpdateNameRequest
+import com.awan.app.core.network.dto.profile.UpdateProfilePartialRequest
+import com.awan.app.core.network.dto.profile.UpdateSchedulingTypeRequest
+import com.awan.app.core.network.dto.profile.UpdateSessionSettingsRequest
+import com.awan.app.core.network.dto.profile.UpdateSleepScheduleRequest
+import com.awan.app.core.network.dto.profile.UpdateTimezoneRequest
+import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.network.dto.task.AiTextToTasksRequest
+import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
+import com.awan.app.core.network.dto.task.CreateTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
+import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskProposalResponse
+import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskWithSessionsDto
+import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
+import com.awan.app.core.network.dto.zone.CreateOverrideRequest
+import com.awan.app.core.network.dto.zone.CreateTemplateRequest
+import com.awan.app.core.network.dto.zone.CreateZoneRequest
+import com.awan.app.core.network.dto.zone.TemplateOverrideDto
+import com.awan.app.core.network.dto.zone.UpdateOverrideRequest
+import com.awan.app.core.network.dto.zone.UpdateTemplateRequest
+import com.awan.app.core.network.dto.zone.UpdateZoneRequest
+import com.awan.app.core.network.dto.zone.UpdateZonesRequest
+import com.awan.app.core.network.dto.zone.WeeklyTemplateDto
+import com.awan.app.core.network.dto.zone.ZoneDto
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.time.LocalDate
+
+// ---------------------------------------------------------------------------
+// Fakes
+// ---------------------------------------------------------------------------
+
+private class FakeTaskRemoteDataSource(
+    private val rangeResult: Result<Map<String, List<TaskWithSessionsDto>>> = Result.Success(emptyMap()),
+) : TaskRemoteDataSource {
+    override suspend fun createTask(request: CreateTaskRequest) = error("not used")
+    override suspend fun createTaskWithSessions(request: CreateTaskWithSessionsRequest) = error("not used")
+    override suspend fun createTasksWithSessions(request: BulkCreateTasksWithSessionsRequest) = error("not used")
+    override suspend fun proposeTasksFromText(request: AiTextToTasksRequest) = error("not used")
+    override suspend fun proposeTasksFromImage(image: ByteArray, mimeType: String, note: String?) = error("not used")
+    override suspend fun getTasksByRange(startDate: String, endDate: String) = rangeResult
+    override suspend fun scheduleTask(request: ScheduleTaskRequest) = error("not used")
+    override suspend fun deleteTask(taskId: String) = error("not used")
+}
+
+private class FakeGoalRemoteDataSource(
+    private val goalsResult: Result<List<GoalInfoResponse>> = Result.Success(emptyList()),
+) : GoalRemoteDataSource {
+    override suspend fun getGoals(): Result<List<GoalInfoResponse>> = goalsResult
+    override suspend fun continueDecomposition(request: GoalDecomposeRequest) = error("not used")
+    override suspend fun confirmDecomposition(sessionId: String) = error("not used")
+}
+
+private class FakeCategoryRemoteDataSource(
+    private val categoriesResult: Result<List<CategoryDto>> = Result.Success(emptyList()),
+) : CategoryRemoteDataSource {
+    override suspend fun getCategories(): Result<List<CategoryDto>> = categoriesResult
+    override suspend fun createCategory(name: String): Result<CategoryDto> = error("not used")
+    override suspend fun getCategory(categoryId: String): Result<CategoryDto> = error("not used")
+    override suspend fun updateCategory(categoryId: String, name: String): Result<CategoryDto> = error("not used")
+}
+
+private class FakeProfileRemoteDataSource : ProfileRemoteDataSource {
+    override suspend fun getProfileInfo(): Result<ProfileResponse> = Result.Success(ProfileResponse())
+    override suspend fun updateProfileName(request: UpdateNameRequest) = error("not used")
+    override suspend fun updateProfileBirthDate(request: UpdateBirthDateRequest) = error("not used")
+    override suspend fun updateProfilePartial(request: UpdateProfilePartialRequest) = error("not used")
+    override suspend fun updateTimezone(request: UpdateTimezoneRequest) = error("not used")
+    override suspend fun updateSessionSettings(request: UpdateSessionSettingsRequest) = error("not used")
+    override suspend fun updateSleepSchedule(request: UpdateSleepScheduleRequest) = error("not used")
+    override suspend fun updateSchedulingType(request: UpdateSchedulingTypeRequest) = error("not used")
+    override suspend fun incrementStreak() = error("not used")
+    override suspend fun resetStreak() = error("not used")
+    override suspend fun awardPoints(request: AwardPointsRequest) = error("not used")
+    override suspend fun deductPoints(request: DeductPointsRequest) = error("not used")
+}
+
+private class FakeZonesRemoteDataSource : ZonesRemoteDataSource {
+    override suspend fun getZonesByDate(date: String) = Result.Success(emptyList<ZoneDto>())
+    override suspend fun getTemplates() = Result.Success(emptyList<WeeklyTemplateDto>())
+    override suspend fun createTemplate(request: CreateTemplateRequest) = error("not used")
+    override suspend fun getTemplate(templateId: String) = error("not used")
+    override suspend fun updateTemplate(templateId: String, request: UpdateTemplateRequest) = error("not used")
+    override suspend fun deleteTemplate(templateId: String) = error("not used")
+    override suspend fun addZoneToTemplate(templateId: String, request: CreateZoneRequest) = error("not used")
+    override suspend fun getTemplateZones(templateId: String) = Result.Success(emptyList<ZoneDto>())
+    override suspend fun updateTemplateZones(templateId: String, request: UpdateZonesRequest) = Result.Success(emptyList<ZoneDto>())
+    override suspend fun createOverride(request: CreateOverrideRequest) = error("not used")
+    override suspend fun getOverrides() = Result.Success(emptyList<TemplateOverrideDto>())
+    override suspend fun getOverride(overrideId: String) = error("not used")
+    override suspend fun updateOverride(overrideId: String, request: UpdateOverrideRequest) = error("not used")
+    override suspend fun deleteOverride(overrideId: String) = error("not used")
+    override suspend fun addZoneToOverride(overrideId: String, request: CreateZoneRequest) = error("not used")
+    override suspend fun getOverrideZones(overrideId: String) = Result.Success(emptyList<ZoneDto>())
+    override suspend fun updateOverrideZones(overrideId: String, request: UpdateZonesRequest) = Result.Success(emptyList<ZoneDto>())
+    override suspend fun getZone(zoneId: String) = error("not used")
+    override suspend fun getZoneSessions(zoneId: String) = Result.Success(emptyList<SessionDto>())
+    override suspend fun getEffectiveZones(date: String) = Result.Success(emptyList<ZoneDto>())
+    override suspend fun updateZone(zoneId: String, request: UpdateZoneRequest) = error("not used")
+    override suspend fun deleteZone(zoneId: String) = error("not used")
+}
+
+private class FakeTaskDao : TaskDao {
+    val upsertedTasks = mutableListOf<TaskEntity>()
+    override suspend fun upsertTask(task: TaskEntity) { upsertedTasks += task }
+    override suspend fun upsertTasks(tasks: List<TaskEntity>) { upsertedTasks += tasks }
+    override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
+    override fun observeInboxTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
+    override fun observeAllTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
+    override suspend fun getAllTasks(): List<TaskEntity> = emptyList()
+    override fun observeTask(taskId: String): Flow<TaskEntity?> = MutableStateFlow(null)
+    override suspend fun getTask(taskId: String): TaskEntity? = null
+    override suspend fun deleteTask(taskId: String) {}
+    override suspend fun upsertDependency(dependency: TaskDependencyEntity) {}
+    override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
+    override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
+    override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+    override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+    override suspend fun deleteAllDependenciesForTask(taskId: String) {}
+    override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}
+    override suspend fun deleteTasksByGoal(goalId: String) {}
+}
+
+private class FakeCategoryDao : CategoryDao {
+    val upserted = mutableListOf<CategoryEntity>()
+    override suspend fun upsertCategories(categories: List<CategoryEntity>) { upserted += categories }
+    override suspend fun upsertCategory(category: CategoryEntity) { upserted += category }
+    override fun observeAllCategories(): Flow<List<CategoryEntity>> = flowOf(emptyList())
+    override suspend fun getAllCategories(): List<CategoryEntity> = emptyList()
+    override suspend fun getCategory(id: String): CategoryEntity? = null
+    override suspend fun deleteCategory(id: String) {}
+    override suspend fun deleteAllCategories() {}
+}
+
+private class FakeSessionDao : SessionDao {
+    val replacedDates = mutableListOf<String>()
+    val upserted = mutableListOf<SessionEntity>()
+    override suspend fun upsertSession(session: SessionEntity) { upserted += session }
+    override suspend fun upsertSessions(sessions: List<SessionEntity>) { upserted += sessions }
+    override fun observeSessionsForDate(date: String): Flow<List<SessionEntity>> = flowOf(emptyList())
+    override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<SessionEntity>> = flowOf(emptyList())
+    override suspend fun getSessionsForDate(date: String): List<SessionEntity> = emptyList()
+    override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = emptyList()
+    override suspend fun getSession(id: String): SessionEntity? = null
+    override suspend fun deleteSessionsForDates(dates: List<String>) { replacedDates += dates }
+    override suspend fun deleteSession(id: String) {}
+}
+
+private class FakeGoalDao : GoalDao {
+    val upserted = mutableListOf<GoalEntity>()
+    override suspend fun upsertGoal(goal: GoalEntity) { upserted += goal }
+    override suspend fun upsertGoals(goals: List<GoalEntity>) { upserted += goals }
+    override fun observeAllGoals(): Flow<List<GoalEntity>> = flowOf(emptyList())
+    override suspend fun getAllGoals(): List<GoalEntity> = upserted.toList()
+    override fun observeGoalsByStatus(status: String): Flow<List<GoalEntity>> = flowOf(emptyList())
+    override fun observeGoal(goalId: String): Flow<GoalEntity?> = MutableStateFlow(null)
+    override suspend fun getGoal(goalId: String): GoalEntity? = null
+    override fun observeInboxGoal(): Flow<GoalEntity?> = MutableStateFlow(null)
+    override suspend fun deleteGoal(goalId: String) {}
+    override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
+}
+
+private class FakeUserDao : UserDao {
+    val upsertedUsers = mutableListOf<UserEntity>()
+    val upsertedPrefs = mutableListOf<UserPreferencesEntity>()
+    override suspend fun upsertUser(user: UserEntity) { upsertedUsers += user }
+    override fun observeUser(userId: String): Flow<UserEntity?> = MutableStateFlow(null)
+    override suspend fun getUser(userId: String): UserEntity? = null
+    override suspend fun getFirstUser(): UserEntity? = null
+    override suspend fun deleteUser(userId: String) {}
+    override suspend fun upsertPreferences(preferences: UserPreferencesEntity) { upsertedPrefs += preferences }
+    override fun observePreferences(userId: String): Flow<UserPreferencesEntity?> = MutableStateFlow(null)
+    override suspend fun getPreferences(userId: String): UserPreferencesEntity? = null
+    override fun observeUserWithPreferences(userId: String): Flow<UserWithPreferences?> = MutableStateFlow(null)
+    override suspend fun getUserWithPreferences(userId: String): UserWithPreferences? = null
+}
+
+private class FakeZoneDao : ZoneDao {
+    val upserted = mutableListOf<ZoneEntity>()
+    override suspend fun upsertZone(zone: ZoneEntity) { upserted += zone }
+    override suspend fun upsertZones(zones: List<ZoneEntity>) { upserted += zones }
+    override fun observeZone(zoneId: String): Flow<ZoneEntity?> = MutableStateFlow(null)
+    override suspend fun getZone(zoneId: String): ZoneEntity? = null
+    override fun observeZonesForTemplate(templateId: String): Flow<List<ZoneEntity>> = flowOf(emptyList())
+    override fun observeZonesForOverride(overrideId: String): Flow<List<ZoneEntity>> = flowOf(emptyList())
+    override suspend fun deleteZone(zoneId: String) {}
+    override suspend fun deleteZonesForTemplate(templateId: String) {}
+    override suspend fun deleteZonesForOverride(overrideId: String) {}
+}
+
+private class FakeTemplateDao : TemplateDao {
+    val upserted = mutableListOf<TemplateEntity>()
+    val upsertedDays = mutableListOf<TemplateDayOfWeekEntity>()
+    override suspend fun upsertTemplate(template: TemplateEntity) { upserted += template }
+    override suspend fun upsertTemplates(templates: List<TemplateEntity>) { upserted += templates }
+    override fun observeAllTemplates(): Flow<List<TemplateEntity>> = flowOf(emptyList())
+    override fun observeTemplate(templateId: String): Flow<TemplateEntity?> = MutableStateFlow(null)
+    override suspend fun getTemplate(templateId: String): TemplateEntity? = null
+    override suspend fun deleteTemplate(templateId: String) {}
+    override suspend fun upsertDays(days: List<TemplateDayOfWeekEntity>) { upsertedDays += days }
+    override fun observeDaysForTemplate(templateId: String): Flow<List<TemplateDayOfWeekEntity>> = flowOf(emptyList())
+    override suspend fun getDayAssignment(dayOfWeek: String): TemplateDayOfWeekEntity? = null
+    override suspend fun deleteDaysForTemplate(templateId: String) {}
+}
+
+private class FakeTemplateOverrideDao : TemplateOverrideDao {
+    val upserted = mutableListOf<TemplateOverrideEntity>()
+    override suspend fun upsertOverride(override: TemplateOverrideEntity) { upserted += override }
+    override suspend fun upsertOverrides(overrides: List<TemplateOverrideEntity>) { upserted += overrides }
+    override fun observeAllOverrides(): Flow<List<TemplateOverrideEntity>> = flowOf(emptyList())
+    override fun observeOverride(overrideId: String): Flow<TemplateOverrideEntity?> = MutableStateFlow(null)
+    override suspend fun getOverride(overrideId: String): TemplateOverrideEntity? = null
+    override suspend fun getOverrideForDate(date: String): TemplateOverrideEntity? = null
+    override suspend fun deleteOverride(overrideId: String) {}
+}
+
+private class FakeCachedScheduleDateDao : CachedScheduleDateDao {
+    val upserted = mutableListOf<CachedScheduleDateEntity>()
+    val cachedDates = mutableSetOf<String>()
+    override suspend fun upsertCachedDate(cachedDate: CachedScheduleDateEntity) { upserted += cachedDate; cachedDates += cachedDate.date }
+    override suspend fun upsertCachedDates(cachedDates: List<CachedScheduleDateEntity>) {
+        upserted += cachedDates
+        this.cachedDates += cachedDates.map { it.date }
+    }
+    override suspend fun isDateCached(date: String): Boolean = date in cachedDates
+    override fun observeIsDateCached(date: String): Flow<Boolean> = MutableStateFlow(date in cachedDates)
+    override suspend fun getCachedDatesInRange(startDate: String, endDate: String): List<String> =
+        cachedDates.filter { it >= startDate && it <= endDate }
+    override suspend fun clearAll() { upserted.clear(); cachedDates.clear() }
+}
+
+private val onlineMonitor = object : NetworkConnectivityMonitor {
+    override val isOnline: Flow<Boolean> = flowOf(true)
+    override fun isCurrentlyOnline(): Boolean = true
+}
+
+private val offlineMonitor = object : NetworkConnectivityMonitor {
+    override val isOnline: Flow<Boolean> = flowOf(false)
+    override fun isCurrentlyOnline(): Boolean = false
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+class OfflineSyncCoordinatorTest {
+
+    private val testDispatcher = StandardTestDispatcher()
+
+    private fun buildCoordinator(
+        taskRemoteDataSource: TaskRemoteDataSource = FakeTaskRemoteDataSource(),
+        goalRemoteDataSource: GoalRemoteDataSource = FakeGoalRemoteDataSource(),
+        categoryRemoteDataSource: CategoryRemoteDataSource = FakeCategoryRemoteDataSource(),
+        profileRemoteDataSource: ProfileRemoteDataSource = FakeProfileRemoteDataSource(),
+        zonesRemoteDataSource: ZonesRemoteDataSource = FakeZonesRemoteDataSource(),
+        taskDao: TaskDao = FakeTaskDao(),
+        categoryDao: CategoryDao = FakeCategoryDao(),
+        sessionDao: SessionDao = FakeSessionDao(),
+        goalDao: GoalDao = FakeGoalDao(),
+        userDao: UserDao = FakeUserDao(),
+        zoneDao: ZoneDao = FakeZoneDao(),
+        templateDao: TemplateDao = FakeTemplateDao(),
+        templateOverrideDao: TemplateOverrideDao = FakeTemplateOverrideDao(),
+        cachedScheduleDateDao: CachedScheduleDateDao = FakeCachedScheduleDateDao(),
+        connectivityMonitor: NetworkConnectivityMonitor = onlineMonitor,
+    ) = OfflineSyncCoordinator(
+        taskRemoteDataSource = taskRemoteDataSource,
+        goalRemoteDataSource = goalRemoteDataSource,
+        categoryRemoteDataSource = categoryRemoteDataSource,
+        profileRemoteDataSource = profileRemoteDataSource,
+        zonesRemoteDataSource = zonesRemoteDataSource,
+        taskDao = taskDao,
+        categoryDao = categoryDao,
+        sessionDao = sessionDao,
+        goalDao = goalDao,
+        userDao = userDao,
+        zoneDao = zoneDao,
+        templateDao = templateDao,
+        templateOverrideDao = templateOverrideDao,
+        cachedScheduleDateDao = cachedScheduleDateDao,
+        connectivityMonitor = connectivityMonitor,
+        ioDispatcher = testDispatcher,
+    )
+
+    // ── DB-only read precedence ───────────────────────────────────────────────
+
+    @Test
+    fun syncScheduleRange_replacesSessionsForEmptyAndNonEmptyDates() = runTest(testDispatcher) {
+        val startDate = LocalDate.of(2026, 8, 6)
+        val endDate = LocalDate.of(2026, 8, 7)
+
+        val rangeResponse = mapOf(
+            "2026-08-06" to listOf(
+                TaskWithSessionsDto(
+                    task = TaskInfoResponse(id = "t1", title = "Task 1"),
+                    sessions = emptyList(),
+                )
+            ),
+            "2026-08-07" to emptyList(),
+        )
+
+        val fakeSession = FakeSessionDao()
+        val fakeCacheDate = FakeCachedScheduleDateDao()
+        val coordinator = buildCoordinator(
+            taskRemoteDataSource = FakeTaskRemoteDataSource(Result.Success(rangeResponse)),
+            sessionDao = fakeSession,
+            cachedScheduleDateDao = fakeCacheDate,
+        )
+
+        val result = coordinator.syncScheduleRange(startDate, endDate)
+
+        assertTrue(result)
+        // Both dates were in the request — sessions for them must have been deleted (replaced)
+        assertTrue(fakeSession.replacedDates.containsAll(listOf("2026-08-06", "2026-08-07")))
+    }
+
+    @Test
+    fun syncScheduleRange_marksEmptyDateAsCached() = runTest(testDispatcher) {
+        val startDate = LocalDate.of(2026, 8, 10)
+        val endDate = LocalDate.of(2026, 8, 10)
+
+        // Server responds with an empty list for that date
+        val rangeResponse = mapOf("2026-08-10" to emptyList<TaskWithSessionsDto>())
+
+        val fakeCacheDate = FakeCachedScheduleDateDao()
+        val coordinator = buildCoordinator(
+            taskRemoteDataSource = FakeTaskRemoteDataSource(Result.Success(rangeResponse)),
+            cachedScheduleDateDao = fakeCacheDate,
+        )
+
+        val result = coordinator.syncScheduleRange(startDate, endDate)
+
+        assertTrue(result)
+        // An empty-but-synced date must be persisted as cached — not treated as "unknown"
+        assertTrue(fakeCacheDate.cachedDates.contains("2026-08-10"))
+    }
+
+    @Test
+    fun syncScheduleRange_returnsFalseWhenOffline() = runTest(testDispatcher) {
+        val coordinator = buildCoordinator(connectivityMonitor = offlineMonitor)
+
+        val result = coordinator.syncScheduleRange(LocalDate.now(), LocalDate.now().plusDays(6))
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun syncGoals_upsertsMappedEntitiesToRoom() = runTest(testDispatcher) {
+        val fakeGoalDao = FakeGoalDao()
+        val goals = listOf(
+            com.awan.app.core.network.dto.GoalInfoResponse(
+                id = "g1",
+                title = "Study",
+                status = com.awan.app.core.network.dto.GoalStatusDto.ACTIVE,
+            )
+        )
+        val coordinator = buildCoordinator(
+            goalRemoteDataSource = FakeGoalRemoteDataSource(Result.Success(goals)),
+            goalDao = fakeGoalDao,
+        )
+
+        val result = coordinator.syncGoals()
+
+        assertTrue(result)
+        assertEquals(1, fakeGoalDao.upserted.size)
+        assertEquals("g1", fakeGoalDao.upserted.first().id)
+    }
+
+    @Test
+    fun syncGoals_returnsFalseWhenOffline() = runTest(testDispatcher) {
+        val coordinator = buildCoordinator(connectivityMonitor = offlineMonitor)
+
+        assertFalse(coordinator.syncGoals())
+    }
+
+    @Test
+    fun syncCategories_upsertsMappedEntitiesToRoom() = runTest(testDispatcher) {
+        val fakeCategoryDao = FakeCategoryDao()
+        val categories = listOf(CategoryDto(id = "c1", name = "Work"))
+        val coordinator = buildCoordinator(
+            categoryRemoteDataSource = FakeCategoryRemoteDataSource(Result.Success(categories)),
+            categoryDao = fakeCategoryDao,
+        )
+
+        val result = coordinator.syncCategories()
+
+        assertTrue(result)
+        assertEquals(1, fakeCategoryDao.upserted.size)
+        assertEquals("Work", fakeCategoryDao.upserted.first().name)
+    }
+
+    @Test
+    fun paginatedGoalUpsert_doesNotDeleteGoalsMissingFromPage() = runTest(testDispatcher) {
+        // Simulate: Room already has goals g1 and g2 from a previous sync.
+        // Sync returns only g1. g2 must NOT be deleted.
+        val fakeGoalDao = FakeGoalDao()
+        // pre-populate g2 via upsert (simulate existing record)
+        fakeGoalDao.upsertGoal(GoalEntity(id = "g2", title = "Existing", description = null, status = "ACTIVE", targetDate = null, createdAt = "", isInbox = false))
+        fakeGoalDao.upserted.clear() // reset tracker so we only observe the sync upsert
+
+        val newGoals = listOf(
+            com.awan.app.core.network.dto.GoalInfoResponse(
+                id = "g1", title = "New goal", status = com.awan.app.core.network.dto.GoalStatusDto.ACTIVE,
+            )
+        )
+        val coordinator = buildCoordinator(
+            goalRemoteDataSource = FakeGoalRemoteDataSource(Result.Success(newGoals)),
+            goalDao = fakeGoalDao,
+        )
+
+        coordinator.syncGoals()
+
+        // Only g1 is in the upsert list — g2 was not explicitly deleted
+        assertEquals(1, fakeGoalDao.upserted.size)
+        assertEquals("g1", fakeGoalDao.upserted.first().id)
+        // g2 is still accessible (not deleted)
+        // The DAO is a fake so deletion would have been recorded separately
+    }
+
+    @Test
+    fun syncAll_returnsFalseWhenOffline() = runTest(testDispatcher) {
+        val coordinator = buildCoordinator(connectivityMonitor = offlineMonitor)
+
+        val result = coordinator.syncAll()
+
+        assertFalse(result)
+    }
+}

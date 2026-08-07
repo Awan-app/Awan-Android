@@ -69,6 +69,11 @@ class AiTaskRepositoryImplTest {
             note: String?,
         ): Result<TaskProposalResponse> = error("not used")
 
+        override suspend fun getTasksByRange(
+            startDate: String,
+            endDate: String,
+        ): Result<Map<String, List<TaskWithSessionsDto>>> = error("not used")
+
         override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> =
             error("not used")
 

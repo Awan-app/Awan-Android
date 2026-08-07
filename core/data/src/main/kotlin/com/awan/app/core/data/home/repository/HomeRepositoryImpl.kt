@@ -1,62 +1,80 @@
 package com.awan.app.core.data.home.repository
 
+import com.awan.app.core.common.dispatcher.AwanDispatchers
+import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.data.home.mapper.HomeMapper
-import com.awan.app.core.data.home.remote.HomeRemoteDataSource
-import com.awan.app.core.domain.home.model.DaySchedule
-import com.awan.app.core.domain.home.repository.HomeRepository
-import com.awan.app.core.network.dto.zone.ZoneDto
-import java.time.LocalDate
-import javax.inject.Inject
-import javax.inject.Singleton
-
+import com.awan.app.core.database.dao.CachedScheduleDateDao
+import com.awan.app.core.database.dao.CategoryDao
+import com.awan.app.core.database.dao.SessionDao
+import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.dao.UserDao
+import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.UserEntity
+import com.awan.app.core.data.home.remote.HomeRemoteDataSource
+import com.awan.app.core.data.sync.OfflineSyncCoordinator
+import com.awan.app.core.domain.home.model.DaySchedule
+import com.awan.app.core.domain.home.model.DaySession
 import com.awan.app.core.domain.home.model.SessionStatus
 import com.awan.app.core.domain.home.model.UserProfileInfo
+import com.awan.app.core.domain.home.repository.HomeRepository
+import com.awan.app.core.domain.network.NetworkConnectivityMonitor
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.LocalTime
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class HomeRepositoryImpl @Inject constructor(
     private val remoteDataSource: HomeRemoteDataSource,
     private val userDao: UserDao,
+    private val taskDao: TaskDao,
+    private val sessionDao: SessionDao,
+    private val zoneDao: ZoneDao,
+    private val categoryDao: CategoryDao,
+    private val cachedScheduleDateDao: CachedScheduleDateDao,
+    private val offlineSyncCoordinator: OfflineSyncCoordinator,
+    private val connectivityMonitor: NetworkConnectivityMonitor,
+    @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : HomeRepository {
 
-    private val scheduleCache = java.util.concurrent.ConcurrentHashMap<LocalDate, DaySchedule>()
-
-    override suspend fun getUserProfile(): Result<UserProfileInfo> {
-        val result = remoteDataSource.getUserProfile()
-        if (result is Result.Success) {
-            val dto = result.data
-            val firstName = dto.firstName ?: "User"
-            val lastName = dto.lastName ?: ""
-            val points = dto.points ?: 0
-            val streak = dto.streak ?: 0
-            userDao.upsertUser(
-                UserEntity(
-                    id = dto.id,
-                    email = dto.email ?: "",
-                    firstName = firstName,
-                    lastName = lastName,
-                    birthDate = dto.birthDate,
-                    points = points,
-                    streak = streak,
-                    maxStreak = dto.maxStreak ?: 0,
+    override suspend fun getUserProfile(): Result<UserProfileInfo> = withContext(ioDispatcher) {
+        if (connectivityMonitor.isCurrentlyOnline()) {
+            val result = remoteDataSource.getUserProfile()
+            if (result is Result.Success) {
+                val dto = result.data
+                val firstName = dto.firstName ?: "User"
+                val lastName = dto.lastName ?: ""
+                val points = dto.points ?: 0
+                val streak = dto.streak ?: 0
+                userDao.upsertUser(
+                    UserEntity(
+                        id = dto.id,
+                        email = dto.email ?: "",
+                        firstName = firstName,
+                        lastName = lastName,
+                        birthDate = dto.birthDate,
+                        points = points,
+                        streak = streak,
+                        maxStreak = dto.maxStreak ?: 0,
+                    )
                 )
-            )
-            return Result.Success(
-                UserProfileInfo(
-                    id = dto.id,
-                    firstName = firstName,
-                    lastName = lastName,
-                    points = points,
-                    streak = streak,
+                return@withContext Result.Success(
+                    UserProfileInfo(
+                        id = dto.id,
+                        firstName = firstName,
+                        lastName = lastName,
+                        points = points,
+                        streak = streak,
+                    )
                 )
-            )
+            }
         }
 
         val cachedUser = userDao.getFirstUser()
-        return if (cachedUser != null) {
+        if (cachedUser != null) {
             Result.Success(
                 UserProfileInfo(
                     id = cachedUser.id,
@@ -67,65 +85,54 @@ class HomeRepositoryImpl @Inject constructor(
                 )
             )
         } else {
-            Result.Error((result as? Result.Error)?.error ?: AppError.Unknown())
+            Result.Error(AppError.Network)
         }
     }
 
-    override suspend fun getDaySchedule(date: LocalDate): Result<DaySchedule> {
+    override suspend fun getDaySchedule(date: LocalDate): Result<DaySchedule> = withContext(ioDispatcher) {
         val dateStr = date.toString()
 
-        val zonesResult = remoteDataSource.getZonesByDate(dateStr)
-        val zones: List<ZoneDto> = when (zonesResult) {
-            is Result.Success -> zonesResult.data
-            is Result.Error -> {
-                if (zonesResult.error !is AppError.Server) {
-                    scheduleCache[date]?.let { return Result.Success(it) }
-                    return zonesResult
-                }
-                emptyList()
+        val isCached = cachedScheduleDateDao.isDateCached(dateStr)
+        if (!isCached && connectivityMonitor.isCurrentlyOnline()) {
+            offlineSyncCoordinator.syncScheduleRange(date, date)
+        }
+
+        val sessionEntities = sessionDao.getSessionsForDate(dateStr)
+
+
+        val daySessions = sessionEntities.mapNotNull { s ->
+            val task = taskDao.getTask(s.taskId) ?: return@mapNotNull null
+            val category = task.categoryId?.let { categoryDao.getCategory(it) }
+            val startLocalTime = parseLocalTime(s.startTime)
+            val endLocalTime = parseLocalTime(s.endTime)
+            val startMinutes = startLocalTime.hour * 60 + startLocalTime.minute
+            val durationMinutes = run {
+                val endMinutes = endLocalTime.hour * 60 + endLocalTime.minute
+                if (endMinutes > startMinutes) endMinutes - startMinutes else 0
             }
-            is Result.Loading -> emptyList()
+
+            DaySession(
+                id = s.id,
+                taskId = task.id,
+                taskTitle = task.title,
+                zoneId = s.zoneId,
+                startMinutes = startMinutes,
+                durationMinutes = durationMinutes,
+                status = mapStatus(s.status),
+                locked = s.locked,
+                points = task.estimatedPoints,
+                categoryId = task.categoryId,
+                categoryName = category?.name,
+            )
         }
 
-        val effectiveZones = if (zones.isEmpty()) {
-            resolveZoneFallback(date, dateStr)
-        } else {
-            zones
-        }
-
-        val tasksResult = remoteDataSource.getTasksByDate(dateStr)
-        if (tasksResult is Result.Error) {
-            scheduleCache[date]?.let { return Result.Success(it) }
-            return tasksResult
-        }
-
-        val tasks = (tasksResult as Result.Success).data
-        val schedule = HomeMapper.toDaySchedule(date, effectiveZones, tasks)
-        scheduleCache[date] = schedule
-        return Result.Success(schedule)
-    }
-
-
-    @Suppress("NewApi")
-    private suspend fun resolveZoneFallback(date: LocalDate, dateStr: String): List<ZoneDto> {
-        val overridesResult = remoteDataSource.getTemplateOverrides()
-        if (overridesResult is Result.Success) {
-            val matchingOverride = overridesResult.data.firstOrNull { it.dateOfDay == dateStr }
-            if (matchingOverride != null && matchingOverride.zones.isNotEmpty()) {
-                return matchingOverride.zones
-            }
-        }
-
-        val templatesResult = remoteDataSource.getTemplates()
-        if (templatesResult is Result.Success) {
-            val dayOfWeek = date.dayOfWeek.name
-            val matchingTemplate = templatesResult.data.firstOrNull { template ->
-                template.daysOfWeek.any { it.uppercase() == dayOfWeek }
-            }
-            if (matchingTemplate != null) return matchingTemplate.zones
-        }
-
-        return emptyList()
+        Result.Success(
+            DaySchedule(
+                date = date,
+                zones = emptyList(),
+                sessions = daySessions,
+            )
+        )
     }
 
     override suspend fun updateSessionStatus(
@@ -133,7 +140,10 @@ class HomeRepositoryImpl @Inject constructor(
         status: SessionStatus,
         startIso: String?,
         endIso: String?,
-    ): Result<Unit> {
+    ): Result<Unit> = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return@withContext Result.Error(AppError.Network)
+        }
         val statusString = when (status) {
             SessionStatus.COMPLETED -> "COMPLETED"
             SessionStatus.IN_PROGRESS -> "IN_PROGRESS"
@@ -146,20 +156,39 @@ class HomeRepositoryImpl @Inject constructor(
             startIso = startIso,
             endIso = endIso,
         )
-        return when (result) {
-            is Result.Success -> {
-                scheduleCache.forEach { (date, cachedSchedule) ->
-                    if (cachedSchedule.sessions.any { it.id == sessionId }) {
-                        val updatedSessions = cachedSchedule.sessions.map { session ->
-                            if (session.id == sessionId) session.copy(status = status) else session
-                        }
-                        scheduleCache[date] = cachedSchedule.copy(sessions = updatedSessions)
-                    }
-                }
-                Result.Success(Unit)
+        if (result is Result.Success) {
+            val dto = result.data
+            val existing = sessionDao.getSession(sessionId)
+            if (existing != null) {
+                sessionDao.upsertSession(
+                    existing.copy(
+                        status = dto.status ?: statusString,
+                        startTime = if (dto.start.length >= 19) dto.start.substring(11, 19) else existing.startTime,
+                        endTime = if (dto.end.length >= 19) dto.end.substring(11, 19) else existing.endTime,
+                        locked = dto.locked,
+                    )
+                )
             }
-            is Result.Error -> Result.Error(result.error)
-            else -> Result.Error(AppError.Unknown(Throwable("Failed to update session status")))
+            Result.Success(Unit)
+        } else {
+            Result.Error((result as Result.Error).error)
+        }
+    }
+
+    private fun parseLocalTime(timeStr: String): LocalTime {
+        return try {
+            LocalTime.parse(timeStr)
+        } catch (_: Exception) {
+            LocalTime.of(0, 0)
+        }
+    }
+
+    private fun mapStatus(statusStr: String): SessionStatus {
+        return when (statusStr.uppercase()) {
+            "COMPLETED" -> SessionStatus.COMPLETED
+            "IN_PROGRESS" -> SessionStatus.IN_PROGRESS
+            "CANCELLED" -> SessionStatus.CANCELLED
+            else -> SessionStatus.SCHEDULED
         }
     }
 }

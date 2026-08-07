@@ -24,6 +24,7 @@ import javax.inject.Singleton
 
 import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.model.UserEntity
+import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 
 @Singleton
 class OnboardingRepositoryImpl @Inject constructor(
@@ -31,14 +32,19 @@ class OnboardingRepositoryImpl @Inject constructor(
     private val zonesRepository: ZonesRepository,
     private val userPreferencesDataSource: UserPreferencesDataSource,
     private val userDao: UserDao,
+    private val connectivityMonitor: NetworkConnectivityMonitor,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : OnboardingRepository {
 
     override suspend fun completeOnboarding(data: OnboardingData): Result<Unit> = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return@withContext Result.Error(AppError.Network)
+        }
         val firstName = data.profile?.firstName?.takeIf { it.isNotBlank() } ?: "User"
         val lastName = data.profile?.lastName?.takeIf { it.isNotBlank() } ?: "Awan"
 
         val request = CompleteOnboardingRequest(
+
             firstName = firstName,
             lastName = lastName,
             birthDate = "2000-01-01",

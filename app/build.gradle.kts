@@ -2,8 +2,10 @@ plugins {
     alias(libs.plugins.awan.android.application)
     alias(libs.plugins.awan.android.compose)
     alias(libs.plugins.awan.android.hilt)
+    alias(libs.plugins.awan.android.workmanager)
     alias(libs.plugins.jetbrains.kotlin.serialization)
 }
+
 
 android {
     namespace = "com.awan.app"

@@ -19,12 +19,19 @@ import androidx.room.PrimaryKey
             entity = GoalEntity::class,
             parentColumns = ["id"],
             childColumns = ["goalId"],
-            // Intentionally NO cascade — deleting a goal is an explicit operation
-            // handled at the repository layer to avoid accidental data loss.
+            onDelete = ForeignKey.NO_ACTION,
+        ),
+        ForeignKey(
+            entity = CategoryEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["categoryId"],
             onDelete = ForeignKey.NO_ACTION,
         ),
     ],
-    indices = [Index("goalId")],
+    indices = [
+        Index("goalId"),
+        Index("categoryId"),
+    ],
 )
 data class TaskEntity(
     @PrimaryKey val id: String,
@@ -40,6 +47,8 @@ data class TaskEntity(
     val mandatory: Boolean,
     val estimatedPoints: Int,
     val allowTaskSplitting: Boolean,
-    /** Foreign key to the parent [GoalEntity]. */
-    val goalId: String,
+    /** Optional foreign key to the parent [GoalEntity]. Null for Inbox tasks. */
+    val goalId: String? = null,
+    /** Optional foreign key to [CategoryEntity]. */
+    val categoryId: String? = null,
 )

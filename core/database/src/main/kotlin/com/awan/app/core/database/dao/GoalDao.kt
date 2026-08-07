@@ -11,6 +11,7 @@ interface GoalDao {
     @Upsert suspend fun upsertGoal(goal: GoalEntity)
     @Upsert suspend fun upsertGoals(goals: List<GoalEntity>)
     @Query("SELECT * FROM goals ORDER BY createdAt DESC") fun observeAllGoals(): Flow<List<GoalEntity>>
+    @Query("SELECT * FROM goals ORDER BY createdAt DESC") suspend fun getAllGoals(): List<GoalEntity>
     @Query("SELECT * FROM goals WHERE status = :status ORDER BY createdAt DESC") fun observeGoalsByStatus(status: String): Flow<List<GoalEntity>>
     @Query("SELECT * FROM goals WHERE id = :goalId") fun observeGoal(goalId: String): Flow<GoalEntity?>
     @Query("SELECT * FROM goals WHERE id = :goalId") suspend fun getGoal(goalId: String): GoalEntity?

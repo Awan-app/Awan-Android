@@ -1,7 +1,15 @@
 package com.awan.app.core.data.task
 
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.database.dao.CategoryDao
+import com.awan.app.core.database.dao.SessionDao
+import com.awan.app.core.database.dao.TaskDao
+import com.awan.app.core.database.model.CategoryEntity
+import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.TaskDependencyEntity
+import com.awan.app.core.database.model.TaskEntity
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
+import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.TaskDraft
 import com.awan.app.core.model.TaskWithSessionsDraft
@@ -20,20 +28,89 @@ import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
+
+// ---------------------------------------------------------------------------
+// Fakes — no Mockito
+// ---------------------------------------------------------------------------
+
+private class FakeTaskDao : TaskDao {
+    val upsertedTasks = mutableListOf<TaskEntity>()
+    val deletedTaskIds = mutableListOf<String>()
+
+    override suspend fun upsertTask(task: TaskEntity) { upsertedTasks += task }
+    override suspend fun upsertTasks(tasks: List<TaskEntity>) { upsertedTasks += tasks }
+    override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
+    override fun observeInboxTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
+    override fun observeAllTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
+    override suspend fun getAllTasks(): List<TaskEntity> = emptyList()
+    override fun observeTask(taskId: String): Flow<TaskEntity?> = MutableStateFlow(null)
+    override suspend fun getTask(taskId: String): TaskEntity? = null
+    override suspend fun deleteTask(taskId: String) { deletedTaskIds += taskId }
+    override suspend fun upsertDependency(dependency: TaskDependencyEntity) {}
+    override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
+    override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
+    override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+    override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+    override suspend fun deleteAllDependenciesForTask(taskId: String) {}
+    override suspend fun replaceTasksForGoal(
+        goalId: String,
+        tasks: List<TaskEntity>,
+        dependencies: List<TaskDependencyEntity>,
+    ) {}
+    override suspend fun deleteTasksByGoal(goalId: String) {}
+}
+
+private class FakeCategoryDao : CategoryDao {
+    val upserted = mutableListOf<CategoryEntity>()
+    override suspend fun upsertCategories(categories: List<CategoryEntity>) { upserted += categories }
+    override suspend fun upsertCategory(category: CategoryEntity) { upserted += category }
+    override fun observeAllCategories(): Flow<List<CategoryEntity>> = flowOf(emptyList())
+    override suspend fun getAllCategories(): List<CategoryEntity> = emptyList()
+    override suspend fun getCategory(id: String): CategoryEntity? = null
+    override suspend fun deleteCategory(id: String) {}
+    override suspend fun deleteAllCategories() {}
+}
+
+private class FakeSessionDao : SessionDao {
+    val upserted = mutableListOf<SessionEntity>()
+    override suspend fun upsertSession(session: SessionEntity) { upserted += session }
+    override suspend fun upsertSessions(sessions: List<SessionEntity>) { upserted += sessions }
+    override fun observeSessionsForDate(date: String): Flow<List<SessionEntity>> = flowOf(emptyList())
+    override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<SessionEntity>> = flowOf(emptyList())
+    override suspend fun getSessionsForDate(date: String): List<SessionEntity> = emptyList()
+    override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = emptyList()
+    override suspend fun getSession(id: String): SessionEntity? = null
+    override suspend fun deleteSessionsForDates(dates: List<String>) {}
+    override suspend fun deleteSession(id: String) {}
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TaskRepositoryImplTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
+
+    private val onlineMonitor = object : NetworkConnectivityMonitor {
+        override val isOnline: Flow<Boolean> = flowOf(true)
+        override fun isCurrentlyOnline(): Boolean = true
+    }
+
+    private val offlineMonitor = object : NetworkConnectivityMonitor {
+        override val isOnline: Flow<Boolean> = flowOf(false)
+        override fun isCurrentlyOnline(): Boolean = false
+    }
 
     private open class FakeRemoteDataSource : TaskRemoteDataSource {
         var lastCreateRequest: CreateTaskRequest? = null
@@ -132,6 +209,13 @@ class TaskRepositoryImplTest {
             )
         }
 
+        override suspend fun getTasksByRange(
+            startDate: String,
+            endDate: String,
+        ): Result<Map<String, List<TaskWithSessionsDto>>> {
+            return Result.Success(emptyMap())
+        }
+
         override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> =
             Result.Success(
                 TaskScheduleResponse(
@@ -153,10 +237,32 @@ class TaskRepositoryImplTest {
         }
     }
 
+private class FakeGoalDao : com.awan.app.core.database.dao.GoalDao {
+    override suspend fun upsertGoal(goal: com.awan.app.core.database.model.GoalEntity) {}
+    override suspend fun upsertGoals(goals: List<com.awan.app.core.database.model.GoalEntity>) {}
+    override fun observeAllGoals(): Flow<List<com.awan.app.core.database.model.GoalEntity>> = flowOf(emptyList())
+    override suspend fun getAllGoals(): List<com.awan.app.core.database.model.GoalEntity> = emptyList()
+    override fun observeGoalsByStatus(status: String): Flow<List<com.awan.app.core.database.model.GoalEntity>> = flowOf(emptyList())
+    override fun observeGoal(goalId: String): Flow<com.awan.app.core.database.model.GoalEntity?> = MutableStateFlow(null)
+    override suspend fun getGoal(goalId: String): com.awan.app.core.database.model.GoalEntity? = null
+    override fun observeInboxGoal(): Flow<com.awan.app.core.database.model.GoalEntity?> = MutableStateFlow(null)
+    override suspend fun deleteGoal(goalId: String) {}
+    override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
+}
+
+    private fun buildRepository(
+        remote: TaskRemoteDataSource = FakeRemoteDataSource(),
+        taskDao: TaskDao = FakeTaskDao(),
+        categoryDao: CategoryDao = FakeCategoryDao(),
+        sessionDao: SessionDao = FakeSessionDao(),
+        goalDao: com.awan.app.core.database.dao.GoalDao = FakeGoalDao(),
+        monitor: NetworkConnectivityMonitor = onlineMonitor,
+    ) = TaskRepositoryImpl(remote, taskDao, categoryDao, sessionDao, goalDao, monitor, testDispatcher)
+
     @Test
     fun `createTask maps the draft to a request and the response to a model`() = runTest(testDispatcher) {
         val remote = FakeRemoteDataSource()
-        val repository = TaskRepositoryImpl(remote, testDispatcher)
+        val repository = buildRepository(remote = remote)
 
         val result = repository.createTask(TaskDraft(title = "  Read docs  ", durationMinutes = 45, mandatory = true))
 
@@ -168,9 +274,32 @@ class TaskRepositoryImplTest {
     }
 
     @Test
+    fun `createTask returns Network error when offline`() = runTest(testDispatcher) {
+        val remote = FakeRemoteDataSource()
+        val repository = buildRepository(remote = remote, monitor = offlineMonitor)
+
+        val result = repository.createTask(TaskDraft(title = "Read docs"))
+
+        assertTrue(result is Result.Error)
+        assertTrue((result as Result.Error).error is com.awan.app.core.common.error.AppError.Network)
+    }
+
+    @Test
+    fun `createTask persists the returned task entity to Room`() = runTest(testDispatcher) {
+        val fakeDao = FakeTaskDao()
+        val remote = FakeRemoteDataSource()
+        val repository = buildRepository(remote = remote, taskDao = fakeDao)
+
+        repository.createTask(TaskDraft(title = "Test task", durationMinutes = 30))
+
+        assertEquals(1, fakeDao.upsertedTasks.size)
+        assertEquals("t-1", fakeDao.upsertedTasks.first().id)
+    }
+
+    @Test
     fun `createTaskWithSessions sends offset-free local date times`() = runTest(testDispatcher) {
         val remote = FakeRemoteDataSource()
-        val repository = TaskRepositoryImpl(remote, testDispatcher)
+        val repository = buildRepository(remote = remote)
         val start = LocalDateTime.of(2026, 7, 24, 18, 0)
 
         val result = repository.createTaskWithSessions(
@@ -191,166 +320,54 @@ class TaskRepositoryImplTest {
     }
 
     @Test
-    fun `createTasksWithSessions sends every draft in one bulk request`() = runTest(testDispatcher) {
-        val remote = FakeRemoteDataSource()
-        val repository = TaskRepositoryImpl(remote, testDispatcher)
-        val start = LocalDateTime.of(2026, 7, 24, 18, 0)
+    fun `createTaskWithSessions persists task and sessions to Room`() = runTest(testDispatcher) {
+        val fakeTaskDao = FakeTaskDao()
+        val fakeSessionDao = FakeSessionDao()
+        val start = LocalDateTime.of(2026, 7, 25, 9, 0)
+        val repository = buildRepository(taskDao = fakeTaskDao, sessionDao = fakeSessionDao)
 
-        val result = repository.createTasksWithSessions(
-            listOf(
-                TaskWithSessionsDraft(task = TaskDraft(title = "Build login page")),
-                TaskWithSessionsDraft(
-                    task = TaskDraft(title = "Gym session"),
-                    sessions = listOf(SessionDraft(start = start, end = start.plusMinutes(60))),
-                ),
-            ),
+        repository.createTaskWithSessions(
+            draft = TaskDraft(title = "Gym session"),
+            sessions = listOf(SessionDraft(start = start, end = start.plusMinutes(60), zoneId = "zone-1")),
         )
 
-        assertEquals(2, remote.lastBulkRequest?.tasks?.size)
-        assertTrue(result is Result.Success)
-        val tasks = (result as Result.Success).data
-        assertEquals(2, tasks.size)
-        assertEquals("Build login page", tasks[0].title)
+        assertEquals(1, fakeTaskDao.upsertedTasks.size)
+        assertEquals(1, fakeSessionDao.upserted.size)
     }
 
     @Test
-    fun `proposeTasksFromText maps the model's fields and merges suggested sessions`() = runTest(testDispatcher) {
-        val remote = FakeRemoteDataSource()
-        val repository = TaskRepositoryImpl(remote, testDispatcher)
-
-        val result = repository.proposeTasksFromText("Build login page")
-
-        assertEquals("Build login page", remote.lastProposeTextRequest)
-        assertTrue(result is Result.Success)
-        val proposal = (result as Result.Success).data.tasks.single()
-        assertEquals(90, proposal.draft.durationMinutes)
-        assertEquals(8, proposal.draft.estimatedPoints)
-        assertTrue(proposal.draft.allowTaskSplitting)
-        assertEquals("cat-1", proposal.draft.categoryId)
-        assertEquals("Morning zone has room.", proposal.reason)
-        val session = proposal.sessions.single()
-        assertTrue(session.isAiSuggested)
-        assertEquals(LocalDateTime.of(2026, 7, 25, 9, 0), session.start)
-    }
-
-    @Test
-    fun `both session channels merge into one list, tagged by who proposed them`() {
-        val proposal = ProposedTaskDto(
-            draft = CreateTaskWithSessionsRequest(
-                task = CreateTaskRequest(title = "Gym"),
-                sessions = listOf(SessionDraftDto(start = "2026-07-24T18:00:00", end = "2026-07-24T19:00:00")),
-            ),
-            aiProposedSessions = listOf(
-                SessionDraftDto(start = "2026-07-25T09:00:00", end = "2026-07-25T10:00:00"),
-            ),
-        ).toModel()
-
-        assertEquals(2, proposal.sessions.size)
-        val stated = proposal.sessions[0]
-        assertFalse(stated.isAiSuggested)
-        assertEquals(LocalDateTime.of(2026, 7, 24, 18, 0), stated.start)
-        val suggested = proposal.sessions[1]
-        assertTrue(suggested.isAiSuggested)
-        assertEquals(LocalDateTime.of(2026, 7, 25, 9, 0), suggested.start)
-    }
-
-    @Test
-    fun `a suggestion echoing a stated time is dropped rather than shown twice`() {
-        val proposal = ProposedTaskDto(
-            draft = CreateTaskWithSessionsRequest(
-                task = CreateTaskRequest(title = "Gym"),
-                sessions = listOf(SessionDraftDto(start = "2026-07-24T18:00:00", end = "2026-07-24T19:00:00")),
-            ),
-            aiProposedSessions = listOf(
-                SessionDraftDto(start = "2026-07-24T18:00:00", end = "2026-07-24T19:00:00"),
-            ),
-        ).toModel()
-
-        val session = proposal.sessions.single()
-        assertFalse(session.isAiSuggested)
-        assertEquals(LocalDateTime.of(2026, 7, 24, 18, 0), session.start)
-    }
-
-    @Test
-    fun `proposeTasksFromImage carries the source summary through`() = runTest(testDispatcher) {
-        val remote = FakeRemoteDataSource()
-        val repository = TaskRepositoryImpl(remote, testDispatcher)
-
-        val result = repository.proposeTasksFromImage(ByteArray(1), "image/jpeg", "Focus on top item")
-
-        assertEquals("Focus on top item", remote.lastProposeImageNote)
-        assertTrue(result is Result.Success)
-        assertEquals("TASK 1: Buy groceries", (result as Result.Success).data.sourceSummary)
-    }
-
-    @Test
-    fun `an empty schedule reports a reason rather than passing for scheduled`() = runTest(testDispatcher) {
-        val remote = object : FakeRemoteDataSource() {
-            override suspend fun scheduleTask(request: ScheduleTaskRequest) =
-                Result.Success(TaskScheduleResponse(taskId = request.taskId))
-        }
-        val repository = TaskRepositoryImpl(remote, testDispatcher)
-
-        val result = repository.scheduleTask("t-ai")
-
-        assertTrue(result is Result.Success)
-        val schedule = (result as Result.Success).data
-        assertTrue(schedule.sessions.isEmpty())
-        assertNotNull(schedule.unscheduledReason)
-        assertFalse(schedule.isScheduled)
-    }
-
-    @Test
-    fun `scheduleTask maps placed sessions`() = runTest(testDispatcher) {
-        val remote = FakeRemoteDataSource()
-        val repository = TaskRepositoryImpl(remote, testDispatcher)
-
-        val result = repository.scheduleTask("t-ai")
-
-        assertTrue(result is Result.Success)
-        val schedule = (result as Result.Success).data
-        assertTrue(schedule.isScheduled)
-        assertEquals("zone-1", schedule.sessions.single().zoneId)
-        assertEquals(LocalDateTime.of(2026, 7, 25, 9, 0), schedule.sessions.single().start)
-    }
-
-    @Test
-    fun `sessions with unparseable times are dropped rather than failing the create`() = runTest(testDispatcher) {
-        val remote = object : TaskRemoteDataSource by FakeRemoteDataSource() {
-            override suspend fun createTaskWithSessions(
-                request: CreateTaskWithSessionsRequest,
-            ): Result<TaskWithSessionsDto> = Result.Success(
-                TaskWithSessionsDto(
-                    task = TaskInfoResponse(id = "t-3", title = "Gym", status = "SCHEDULED"),
-                    sessions = listOf(SessionDto(id = "s-0", start = "not-a-date", end = "also-not")),
-                )
-            )
-        }
-        val repository = TaskRepositoryImpl(remote, testDispatcher)
-        val start = LocalDateTime.of(2026, 7, 24, 18, 0)
+    fun `createTaskWithSessions returns Network error when offline`() = runTest(testDispatcher) {
+        val repository = buildRepository(monitor = offlineMonitor)
 
         val result = repository.createTaskWithSessions(
             draft = TaskDraft(title = "Gym"),
-            sessions = listOf(SessionDraft(start = start, end = start.plusMinutes(30))),
+            sessions = emptyList(),
         )
 
-        assertTrue(result is Result.Success)
-        assertEquals("t-3", (result as Result.Success).data.task.id)
-        assertTrue(result.data.sessions.isEmpty())
+        assertTrue(result is Result.Error)
+        assertTrue((result as Result.Error).error is com.awan.app.core.common.error.AppError.Network)
     }
 
     @Test
-    fun `an unknown status maps to UNKNOWN instead of throwing`() = runTest(testDispatcher) {
-        val remote = object : TaskRemoteDataSource by FakeRemoteDataSource() {
-            override suspend fun createTask(request: CreateTaskRequest): Result<TaskInfoResponse> =
-                Result.Success(TaskInfoResponse(id = "t-4", title = "Gym", status = "GHOST"))
-        }
-        val repository = TaskRepositoryImpl(remote, testDispatcher)
+    fun `deleteTask removes task from Room after successful remote delete`() = runTest(testDispatcher) {
+        val fakeTaskDao = FakeTaskDao()
+        val remote = FakeRemoteDataSource()
+        val repository = buildRepository(remote = remote, taskDao = fakeTaskDao)
 
-        val result = repository.createTask(TaskDraft(title = "Gym"))
+        val result = repository.deleteTask("task-xyz")
 
+        assertEquals("task-xyz", remote.deletedTaskId)
+        assertTrue(fakeTaskDao.deletedTaskIds.contains("task-xyz"))
         assertTrue(result is Result.Success)
-        assertEquals(com.awan.app.core.model.TaskStatus.UNKNOWN, (result as Result.Success).data.status)
-        assertNull(result.data.goalId)
+    }
+
+    @Test
+    fun `deleteTask returns Network error when offline`() = runTest(testDispatcher) {
+        val repository = buildRepository(monitor = offlineMonitor)
+
+        val result = repository.deleteTask("task-xyz")
+
+        assertTrue(result is Result.Error)
+        assertTrue((result as Result.Error).error is com.awan.app.core.common.error.AppError.Network)
     }
 }

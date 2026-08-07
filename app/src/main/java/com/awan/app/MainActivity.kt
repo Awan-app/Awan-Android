@@ -46,14 +46,26 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         var uiState: MainActivityUiState by mutableStateOf(Loading)
+        var isOnline by mutableStateOf(true)
 
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collectLatest { state ->
-                    uiState = state
-                    if (state is Success) {
-                        val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags(state.language)
-                        AppCompatDelegate.setApplicationLocales(appLocale)
+                launch {
+                    viewModel.isOnline.collectLatest { online ->
+                        isOnline = online
+                        if (online) {
+                            com.awan.app.core.data.sync.SyncWorker.schedulePeriodicSync(this@MainActivity)
+                            com.awan.app.core.data.sync.SyncWorker.enqueueImmediateSync(this@MainActivity)
+                        }
+                    }
+                }
+                launch {
+                    viewModel.uiState.collectLatest { state ->
+                        uiState = state
+                        if (state is Success) {
+                            val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags(state.language)
+                            AppCompatDelegate.setApplicationLocales(appLocale)
+                        }
                     }
                 }
             }
@@ -112,12 +124,10 @@ class MainActivity : AppCompatActivity() {
                     dark = useDarkTheme,
                     light = !useDarkTheme
                 ) {
-                    AwanApp(
-                        appState = appState,
-                        sessionExpiredEvents = viewModel.sessionExpired,
-                    )
+                    AwanApp(appState = appState, isOnline = isOnline)
                 }
             }
         }
     }
 }
+
