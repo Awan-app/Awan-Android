@@ -141,7 +141,10 @@ class HomeViewModel @Inject constructor(
             zoneById[fallbackZone.id] = fallbackZone
         }
 
-        val sessions = schedule.sessions.mapNotNull { it.toUiSession(zoneById) }
+        val resolvedZones = resolveNonOverlappingZones(zones)
+        val finalZoneById = resolvedZones.associateBy { it.id }
+
+        val sessions = schedule.sessions.mapNotNull { it.toUiSession(finalZoneById) }
 
         val completedCount = sessions.count { it.status == TaskStatus.Completed }
         val (completedHours, totalHours) = calculateSessionHours(sessions)
@@ -152,7 +155,7 @@ class HomeViewModel @Inject constructor(
             state.copy(
                 isLoading = false,
                 errorMessage = null,
-                zones = zones,
+                zones = resolvedZones,
                 sessions = sessions,
                 subtitleText = subtitle,
                 completedSessionsCount = completedCount,
