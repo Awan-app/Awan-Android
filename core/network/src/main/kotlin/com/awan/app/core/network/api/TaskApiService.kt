@@ -59,6 +59,11 @@ interface TaskApiService {
         @Part("note") note: RequestBody?,
     ): TaskProposalResponse
 
+    @GET("v1/tasks/{taskId}")
+    suspend fun getTask(
+        @Path("taskId") taskId: String,
+    ): TaskInfoResponse
+
     @GET("v1/tasks/date/{date}")
     suspend fun getTasksByDate(
         @Path("date") date: String,

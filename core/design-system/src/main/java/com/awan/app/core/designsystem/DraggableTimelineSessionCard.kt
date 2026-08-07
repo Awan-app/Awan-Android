@@ -47,6 +47,7 @@ fun DraggableTimelineSessionCard(
     viewportHeightPx: Float,
     onSessionMoved: (sessionId: String, newStartMinutes: Int) -> Unit,
     onSessionStatusToggle: (sessionId: String) -> Unit,
+    onSessionClick: (sessionId: String) -> Unit = {},
     displayMode: SessionDisplayMode = SessionDisplayMode.Full,
     modifier: Modifier = Modifier,
 ) {
@@ -191,6 +192,7 @@ fun DraggableTimelineSessionCard(
             isDragging = isDragging,
             displayMode = displayMode,
             onStatusToggle = { onSessionStatusToggle(session.id) },
+            onClick = { onSessionClick(session.id) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(sessionHeightDp),

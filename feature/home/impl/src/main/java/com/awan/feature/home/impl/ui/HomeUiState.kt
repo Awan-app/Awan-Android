@@ -13,6 +13,7 @@ import com.awan.feature.home.impl.R
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.awan.app.core.model.SessionTaskDetail
 
 internal fun formatSelectedDate(date: LocalDate): UiText {
     val today = LocalDate.now()
@@ -25,6 +26,13 @@ internal fun formatSelectedDate(date: LocalDate): UiText {
         else -> UiText.DynamicString(formatted)
     }
 }
+
+data class SessionDetailDialogState(
+    val sessionId: String,
+    val isLoading: Boolean = true,
+    val detail: SessionTaskDetail? = null,
+    val errorMessage: UiText? = null,
+)
 
 data class HomeUiState(
     val userName: String = "",
@@ -53,4 +61,5 @@ data class HomeUiState(
     val conflictMessage: String = "",
     val isLoading: Boolean = false,
     val errorMessage: UiText? = null,
+    val selectedSessionDetailState: SessionDetailDialogState? = null,
 )

@@ -57,9 +57,20 @@ class HomeRemoteDataSourceImpl @Inject constructor(
             userApiService.getUserProfile()
         }
 
+    override suspend fun getSession(sessionId: String): Result<SessionDto> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            sessionApiService.getSession(sessionId)
+        }
+
+    override suspend fun getTask(taskId: String): Result<com.awan.app.core.network.dto.task.TaskInfoResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.getTask(taskId)
+        }
+
     override suspend fun updateSession(
         sessionId: String,
         status: String?,
+        locked: Boolean?,
         startIso: String?,
         endIso: String?,
     ): Result<SessionDto> =
@@ -70,7 +81,18 @@ class HomeRemoteDataSourceImpl @Inject constructor(
                     start = startIso,
                     end = endIso,
                     status = status,
+                    locked = locked,
                 ),
             )
+        }
+
+    override suspend fun lockSession(sessionId: String): Result<SessionDto> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            sessionApiService.lockSession(sessionId)
+        }
+
+    override suspend fun unlockSession(sessionId: String): Result<SessionDto> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            sessionApiService.unlockSession(sessionId)
         }
 }

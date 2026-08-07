@@ -39,9 +39,12 @@ import kotlin.time.Duration.Companion.milliseconds
 
 
 
+import com.awan.app.core.domain.home.usecase.GetSessionDetailUseCase
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getDayScheduleUseCase: GetDayScheduleUseCase,
+    private val getSessionDetailUseCase: GetSessionDetailUseCase,
     private val homeRepository: HomeRepository,
 ) : ViewModel() {
 
@@ -377,6 +380,108 @@ class HomeViewModel @Inject constructor(
     fun fixConflict()     = _uiState.update { it.copy(hasConflict = false) }
     fun dismissConflict() = _uiState.update { it.copy(hasConflict = false) }
 
+
+    fun onSessionClicked(sessionId: String) {
+        _uiState.update { state ->
+            state.copy(
+                selectedSessionDetailState = SessionDetailDialogState(
+                    sessionId = sessionId,
+                    isLoading = true,
+                )
+            )
+        }
+        viewModelScope.launch {
+            when (val result = getSessionDetailUseCase(sessionId)) {
+                is Result.Success -> {
+                    _uiState.update { state ->
+                        state.copy(
+                            selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                                isLoading = false,
+                                detail = result.data,
+                                errorMessage = null,
+                            )
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update { state ->
+                        state.copy(
+                            selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                                isLoading = false,
+                                errorMessage = result.error.toReadableMessage(),
+                            )
+                        )
+                    }
+                }
+                else -> Unit
+            }
+        }
+    }
+
+    fun dismissSessionDetail() {
+        _uiState.update { state ->
+            state.copy(selectedSessionDetailState = null)
+        }
+    }
+
+    fun retryLoadSessionDetail() {
+        val currentSessionId = uiState.value.selectedSessionDetailState?.sessionId ?: return
+        onSessionClicked(currentSessionId)
+    }
+
+    fun toggleSessionStatusFromDialog() {
+        val currentDialogState = uiState.value.selectedSessionDetailState ?: return
+        val currentDetail = currentDialogState.detail ?: return
+        val sessionId = currentDialogState.sessionId
+
+        val isCurrentlyCompleted = currentDetail.session.status.uppercase() == "COMPLETED"
+        val newStatusStr = if (isCurrentlyCompleted) "SCHEDULED" else "COMPLETED"
+
+        toggleSessionStatus(sessionId)
+
+        _uiState.update { state ->
+            val updatedDetail = state.selectedSessionDetailState?.detail?.let { detail ->
+                detail.copy(
+                    session = detail.session.copy(status = newStatusStr),
+                    task = detail.task.copy(status = newStatusStr),
+                )
+            }
+            state.copy(
+                selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                    detail = updatedDetail
+                )
+            )
+        }
+    }
+
+    fun toggleSessionLockFromDialog() {
+        val currentDialogState = uiState.value.selectedSessionDetailState ?: return
+        val currentDetail = currentDialogState.detail ?: return
+        val sessionId = currentDialogState.sessionId
+
+        val newLocked = !currentDetail.session.locked
+
+        _uiState.update { state ->
+            val updatedSessions = state.sessions.map { session ->
+                if (session.id == sessionId) {
+                    session.copy(isFixed = newLocked)
+                } else session
+            }
+            val updatedDetail = state.selectedSessionDetailState?.detail?.let { detail ->
+                detail.copy(session = detail.session.copy(locked = newLocked))
+            }
+            state.copy(
+                sessions = updatedSessions,
+                selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                    detail = updatedDetail
+                )
+            )
+        }
+
+        viewModelScope.launch {
+            homeRepository.updateSessionLock(sessionId, newLocked)
+        }
+    }
 
     private fun updateCurrentTime() {
         val cal = Calendar.getInstance()

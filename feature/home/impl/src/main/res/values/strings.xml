@@ -28,4 +28,34 @@
     <string name="home_error_something_went_wrong">Something went wrong.</string>
     <string name="home_error_serialization">Unexpected server response. Please update the app.</string>
     <string name="home_error_unknown">An unexpected error occurred.</string>
+
+    <string name="home_session_details_title">Session Details</string>
+    <string name="home_task_details_title">Task Details</string>
+    <string name="home_session_status_label">Status</string>
+    <string name="home_session_locked_label">Locked</string>
+    <string name="home_session_locked_yes">Locked</string>
+    <string name="home_session_locked_no">Unlocked</string>
+    <string name="home_task_duration_label">Duration</string>
+    <string name="home_task_duration_value">%1$d min</string>
+    <string name="home_task_points_label">Points</string>
+    <string name="home_task_points_value">%1$d points</string>
+    <string name="home_task_category_label">Category</string>
+    <string name="home_task_requirement_label">Requirement</string>
+    <string name="home_task_mandatory">Mandatory</string>
+    <string name="home_task_optional">Optional</string>
+    <string name="home_task_splitting_label">Task Splitting</string>
+    <string name="home_task_splitting_allowed">Allowed</string>
+    <string name="home_task_splitting_not_allowed">Single Session</string>
+    <string name="home_dialog_close">Close</string>
+    <string name="home_session_detail_loading">Loading session details…</string>
+    <string name="home_action_mark_done">Mark as Done</string>
+    <string name="home_action_mark_pending">Mark as Pending</string>
+    <string name="home_action_lock">Lock Session</string>
+    <string name="home_action_unlock">Unlock Session</string>
+    <string name="home_session_duration_chip">Session Duration: %1$d min</string>
+    <string name="home_task_default_category">Task</string>
+    <string name="home_status_completed">Completed</string>
+    <string name="home_status_scheduled">Scheduled</string>
+    <string name="home_status_in_progress">In Progress</string>
+    <string name="home_status_skipped">Skipped</string>
 </resources>

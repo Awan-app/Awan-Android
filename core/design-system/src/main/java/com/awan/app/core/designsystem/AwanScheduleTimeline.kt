@@ -68,6 +68,7 @@ fun AwanScheduleTimeline(
     onToggleZoneCollapse: (zoneId: String) -> Unit = {},
     onAddSessionToZone: (zoneId: String) -> Unit = {},
     onSessionStatusToggle: (sessionId: String) -> Unit = {},
+    onSessionClick: (sessionId: String) -> Unit = {},
     onSessionMoved: (sessionId: String, newStartMinutes: Int) -> Unit = { _, _ -> },
     onReorderSessionsInZone: (zoneId: String, fromIndex: Int, toIndex: Int) -> Unit = { _, _, _ -> },
     scrollState: ScrollState = rememberScrollState(),
@@ -315,6 +316,7 @@ fun AwanScheduleTimeline(
                                     displayMode = displayMode,
                                     onSessionMoved = onSessionMoved,
                                     onSessionStatusToggle = onSessionStatusToggle,
+                                    onSessionClick = onSessionClick,
                                 )
                             }
                         }

@@ -43,6 +43,7 @@ import com.awan.app.core.designsystem.AwanScheduleTimeline
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.home.impl.R
+import com.awan.feature.home.impl.ui.components.SessionTaskDetailDialog
 import java.time.LocalDate
 
 private sealed interface TimelineContentState {
@@ -190,6 +191,7 @@ fun HomeScreen(
                             onToggleZoneCollapse = viewModel::toggleZoneCollapse,
                             onAddSessionToZone = viewModel::addSessionToZone,
                             onSessionStatusToggle = viewModel::toggleSessionStatus,
+                            onSessionClick = viewModel::onSessionClicked,
                             onSessionMoved = viewModel::moveSession,
                             onReorderSessionsInZone = viewModel::reorderSessionsInZone,
                             scrollState = timelineScrollState,
@@ -198,6 +200,16 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+
+        uiState.selectedSessionDetailState?.let { dialogState ->
+            SessionTaskDetailDialog(
+                state = dialogState,
+                onDismiss = viewModel::dismissSessionDetail,
+                onRetry = viewModel::retryLoadSessionDetail,
+                onToggleStatus = viewModel::toggleSessionStatusFromDialog,
+                onToggleLock = viewModel::toggleSessionLockFromDialog,
+            )
         }
 
         if (uiState.hasConflict) {

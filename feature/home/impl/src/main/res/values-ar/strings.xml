@@ -28,4 +28,34 @@
     <string name="home_error_something_went_wrong">حدث خطأ ما.</string>
     <string name="home_error_serialization">استجابة غير متوقعة من الخادم. يرجى تحديث التطبيق.</string>
     <string name="home_error_unknown">حدث خطأ غير متوقع.</string>
+
+    <string name="home_session_details_title">تفاصيل الجلسة</string>
+    <string name="home_task_details_title">تفاصيل المهمة</string>
+    <string name="home_session_status_label">الحالة</string>
+    <string name="home_session_locked_label">القفل</string>
+    <string name="home_session_locked_yes">مقفلة</string>
+    <string name="home_session_locked_no">غير مقفلة</string>
+    <string name="home_task_duration_label">المدة</string>
+    <string name="home_task_duration_value">%1$d دقيقة</string>
+    <string name="home_task_points_label">النقاط</string>
+    <string name="home_task_points_value">%1$d نقطة</string>
+    <string name="home_task_category_label">الفئة</string>
+    <string name="home_task_requirement_label">النوع</string>
+    <string name="home_task_mandatory">إلزامية</string>
+    <string name="home_task_optional">اختيارية</string>
+    <string name="home_task_splitting_label">تقسيم المهمة</string>
+    <string name="home_task_splitting_allowed">مسموح</string>
+    <string name="home_task_splitting_not_allowed">جلسة واحدة</string>
+    <string name="home_dialog_close">إغلاق</string>
+    <string name="home_session_detail_loading">جاري تحميل تفاصيل الجلسة…</string>
+    <string name="home_action_mark_done">تحديد كمكتمل</string>
+    <string name="home_action_mark_pending">إلغاء الإكتمال</string>
+    <string name="home_action_lock">قفل الجلسة</string>
+    <string name="home_action_unlock">إلغاء قفل الجلسة</string>
+    <string name="home_session_duration_chip">مدة الجلسة: %1$d دقيقة</string>
+    <string name="home_task_default_category">مهمة</string>
+    <string name="home_status_completed">مكتملة</string>
+    <string name="home_status_scheduled">مجدولة</string>
+    <string name="home_status_in_progress">قيد التنفيذ</string>
+    <string name="home_status_skipped">تم تخطيها</string>
 </resources>
