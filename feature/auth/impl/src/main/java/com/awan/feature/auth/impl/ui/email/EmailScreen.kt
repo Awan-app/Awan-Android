@@ -1,5 +1,7 @@
 package com.awan.feature.auth.impl.ui.email
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -31,18 +34,35 @@ import com.awan.feature.auth.impl.ui.components.AuthEmailField
 import com.awan.feature.auth.impl.ui.components.AuthScreenLayout
 import com.awan.feature.auth.impl.ui.components.SocialButton
 import com.awan.feature.auth.impl.ui.components.rememberCountdownTimerState
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 
 @Composable
 fun EmailRouteScreen(
     onNext: (email: String) -> Unit,
+    onNavigateToHome: () -> Unit = {},
+    onNavigateToOnboarding: () -> Unit = {},
     viewModel: EmailViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.data != null) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            viewModel.handleGoogleSignInResult(task)
+        } else {
+            viewModel.onGoogleSignInCancelledOrFailed()
+        }
+    }
 
     LaunchedEffect(viewModel.events) {
         viewModel.events.collect { event ->
             when (event) {
                 is EmailEvent.NavigateToOtp -> onNext(event.email)
+                EmailEvent.NavigateToHome -> onNavigateToHome()
+                EmailEvent.NavigateToOnboarding -> onNavigateToOnboarding()
             }
         }
     }
@@ -52,7 +72,11 @@ fun EmailRouteScreen(
         onEmailChanged = viewModel::onEmailChanged,
         onContinue = viewModel::onSendCode,
         onRateLimitExpired = viewModel::onRateLimitExpired,
-        onSignInWithGoogle = { /* TODO: Google sign-in */ },
+        onSignInWithGoogle = {
+            viewModel.onSignInWithGoogle(context) { intent ->
+                googleSignInLauncher.launch(intent)
+            }
+        },
     )
 }
 
@@ -118,9 +142,7 @@ fun EmailScreen(
                 label = "email-error-banner",
             ) { targetBanner ->
                 when (targetBanner) {
-                    EmailErrorBanner.None -> {
-                        // Empty space, no banner
-                    }
+                    EmailErrorBanner.None -> Unit
                     EmailErrorBanner.RateLimited -> {
                         Column {
                             AwanText(

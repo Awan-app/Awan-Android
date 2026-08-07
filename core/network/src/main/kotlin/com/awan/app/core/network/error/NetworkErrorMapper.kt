@@ -18,28 +18,37 @@ fun Throwable.toAppError(json: Json? = null): AppError = when (this) {
     is UnknownHostException -> AppError.Network
     is IOException -> AppError.Network
     is HttpException -> {
-        when (val code = code()) {
-            401 -> AppError.Unauthorized
-            in 500..599 -> AppError.Server(code)
-            else -> {
-                val rawBody = response()?.errorBody()?.string()
-                var bodyMessage: String? = rawBody
-                var remainingAttempts: Int? = null
-                var retryAfterSeconds: Int? = null
-                var errorCode: String? = null
+        val code = code()
+        val rawBody = response()?.errorBody()?.string()
+        var bodyMessage: String? = rawBody
+        var remainingAttempts: Int? = null
+        var retryAfterSeconds: Int? = null
+        var errorCode: String? = null
 
-                if (!rawBody.isNullOrBlank() && json != null) {
-                    try {
-                        val parsed = json.decodeFromString<ApiErrorResponse>(rawBody)
-                        bodyMessage = parsed.message ?: rawBody
-                        remainingAttempts = parsed.info?.remainingAttempts
-                        retryAfterSeconds = parsed.info?.retryAfterSeconds
-                        errorCode = parsed.errorCode ?: parsed.code
-                    } catch (_: Exception) {
-                    }
-                }
+        if (!rawBody.isNullOrBlank() && json != null) {
+            try {
+                val parsed = json.decodeFromString<ApiErrorResponse>(rawBody)
+                bodyMessage = parsed.message ?: rawBody
+                remainingAttempts = parsed.info?.remainingAttempts
+                retryAfterSeconds = parsed.info?.retryAfterSeconds
+                errorCode = parsed.errorCode ?: parsed.code
+            } catch (_: Exception) {
+            }
+        }
 
-                AppError.Api(
+        if (errorCode != null) {
+            AppError.Api(
+                code = code,
+                body = bodyMessage,
+                remainingAttempts = remainingAttempts,
+                retryAfterSeconds = retryAfterSeconds,
+                errorCode = errorCode,
+            )
+        } else {
+            when (code) {
+                401 -> AppError.Unauthorized
+                in 500..599 -> AppError.Server(code)
+                else -> AppError.Api(
                     code = code,
                     body = bodyMessage,
                     remainingAttempts = remainingAttempts,

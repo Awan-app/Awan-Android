@@ -8,6 +8,7 @@ import com.awan.app.core.domain.auth.model.AuthSession
 import com.awan.app.core.domain.auth.model.User
 import com.awan.app.core.domain.auth.repository.AuthRepository
 import com.awan.app.core.network.device.DeviceIdProvider
+import com.awan.app.core.network.dto.auth.FirebaseAuthRequest
 import com.awan.app.core.network.dto.auth.LogoutRequest
 import com.awan.app.core.network.dto.auth.RefreshTokenRequest
 import com.awan.app.core.network.dto.auth.RequestOtpRequest
@@ -69,6 +70,50 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun signInWithFirebase(idToken: String): Result<AuthSession> {
+        val result = remoteDataSource.firebaseAuth(
+            FirebaseAuthRequest(
+                idToken = idToken,
+                deviceId = deviceIdProvider.getDeviceId(),
+            )
+        )
+
+        if (result is Result.Success) {
+            authTokenProvider.saveTokens(
+                accessToken = result.data.accessToken,
+                refreshToken = result.data.refreshToken,
+            )
+            val userDto = result.data.user
+            authTokenProvider.saveUserData(
+                userId = userDto?.id,
+                email = userDto?.email ?: "",
+            )
+            authTokenProvider.setLoggedIn(true)
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        return when (result) {
+            is Result.Success -> Result.Success(
+                AuthSession(
+                    accessToken = result.data.accessToken,
+                    refreshToken = result.data.refreshToken,
+                    expiresIn = result.data.accessTokenExpiresIn,
+                    user = result.data.user?.let { userDto ->
+                        User(
+                            id = userDto.id,
+                            email = userDto.email,
+                            isNew = userDto.isNew ?: false,
+                            accessToken = result.data.accessToken,
+                            refreshToken = result.data.refreshToken,
+                        )
+                    },
+                )
+            )
+            is Result.Error -> result as Result<AuthSession>
+            Result.Loading -> result as Result<AuthSession>
+        }
+    }
+
     override suspend fun logout(): Result<Unit> {
         val accessToken = authTokenProvider.getAccessToken()
 
@@ -92,9 +137,6 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun getLastUsedEmail(): String? = authTokenProvider.getUserEmail()
 
-    // The email deliberately outlives clearTokens(), so it must not count towards "is there a
-    // session" — otherwise a logged-out user reads back as signed in. Use getLastUsedEmail() to
-    // reach the surviving email.
     override suspend fun getUser(): User? {
         val userId = authTokenProvider.getUserId()
         val accessToken = authTokenProvider.getAccessToken()
