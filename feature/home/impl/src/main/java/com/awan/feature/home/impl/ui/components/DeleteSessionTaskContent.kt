@@ -50,7 +50,6 @@ internal fun DeleteSessionTaskContent(
             .padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // Header Row with Warning Icon & Title
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -90,12 +89,10 @@ internal fun DeleteSessionTaskContent(
             }
         }
 
-        // Selection Cards
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // Option 1: Delete Session Only
             DeleteOptionItemCard(
                 icon = Icons.Default.Delete,
                 title = stringResource(R.string.home_delete_option_session_title),
@@ -104,7 +101,6 @@ internal fun DeleteSessionTaskContent(
                 onClick = { if (!isDeleting) onSelectTarget(DeleteTargetType.SESSION) },
             )
 
-            // Option 2: Delete Entire Task & All Sessions
             DeleteOptionItemCard(
                 icon = Icons.Default.DeleteForever,
                 title = stringResource(R.string.home_delete_option_task_title),
@@ -116,7 +112,6 @@ internal fun DeleteSessionTaskContent(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Action Buttons Row — both 2D style via AwanButton
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),

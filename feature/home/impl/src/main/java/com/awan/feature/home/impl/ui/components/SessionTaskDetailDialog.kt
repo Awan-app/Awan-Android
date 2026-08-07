@@ -1,5 +1,12 @@
 package com.awan.feature.home.impl.ui.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,11 +14,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -31,6 +42,16 @@ import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.home.impl.R
 import com.awan.feature.home.impl.ui.SessionDetailDialogState
 
+private enum class SheetScreen { DETAIL, EDIT, DELETE, LOADING, ERROR }
+
+private fun SessionDetailDialogState.currentScreen(): SheetScreen = when {
+    isLoading -> SheetScreen.LOADING
+    errorMessage != null -> SheetScreen.ERROR
+    showDeleteConfirmDialog -> SheetScreen.DELETE
+    isEditing -> SheetScreen.EDIT
+    else -> SheetScreen.DETAIL
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionTaskDetailDialog(
@@ -39,6 +60,16 @@ fun SessionTaskDetailDialog(
     onRetry: () -> Unit,
     onToggleStatus: () -> Unit,
     onToggleLock: () -> Unit,
+    onStartEditing: () -> Unit = {},
+    onCancelEditing: () -> Unit = {},
+    onTitleChange: (String) -> Unit = {},
+    onDescriptionChange: (String) -> Unit = {},
+    onDurationChange: (Int) -> Unit = {},
+    onSaveEdits: () -> Unit = {},
+    onDeleteClick: () -> Unit = {},
+    onSelectDeleteTarget: (com.awan.feature.home.impl.ui.DeleteTargetType) -> Unit = {},
+    onConfirmDelete: () -> Unit = {},
+    onCancelDelete: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -64,14 +95,28 @@ fun SessionTaskDetailDialog(
         ),
         modifier = modifier,
     ) {
-        Column(
+        val currentScreen = state.currentScreen()
+
+        AnimatedContent(
+            targetState = currentScreen,
+            transitionSpec = {
+                val forward = targetState.ordinal > initialState.ordinal
+                val enter = slideInHorizontally(
+                    initialOffsetX = { width -> if (forward) width else -width },
+                ) + fadeIn()
+                val exit = slideOutHorizontally(
+                    targetOffsetX = { width -> if (forward) -width else width },
+                ) + fadeOut()
+                (enter togetherWith exit).using(SizeTransform(clip = false))
+            },
+            label = "SheetScreenTransition",
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 24.dp),
-        ) {
-            when {
-                state.isLoading -> {
+        ) { screen ->
+            when (screen) {
+                SheetScreen.LOADING -> {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -97,20 +142,22 @@ fun SessionTaskDetailDialog(
                     }
                 }
 
-                state.errorMessage != null -> {
+                SheetScreen.ERROR -> {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        AwanText(
-                            text = "☁️",
-                            style = AwanTheme.typography.display.copy(fontSize = 40.sp),
+                        Icon(
+                            imageVector = Icons.Default.CloudOff,
+                            contentDescription = null,
+                            tint = AwanTheme.colors.sky,
+                            modifier = Modifier.size(44.dp),
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         AwanText(
-                            text = state.errorMessage.asString(),
+                            text = state.errorMessage?.asString() ?: "",
                             style = AwanTheme.typography.body.copy(
                                 fontSize = 14.sp,
                                 color = AwanTheme.colors.textPrimary,
@@ -127,13 +174,42 @@ fun SessionTaskDetailDialog(
                     }
                 }
 
-                state.detail != null -> {
-                    UnifiedSessionTaskContent(
-                        detail = state.detail,
-                        onDismiss = onDismiss,
-                        onToggleStatus = onToggleStatus,
-                        onToggleLock = onToggleLock,
+                SheetScreen.DELETE -> {
+                    DeleteSessionTaskContent(
+                        selectedTarget = state.deleteTargetType,
+                        isDeleting = state.isDeleting,
+                        onSelectTarget = onSelectDeleteTarget,
+                        onConfirmDelete = onConfirmDelete,
+                        onCancel = onCancelDelete,
                     )
+                }
+
+                SheetScreen.EDIT -> {
+                    EditSessionTaskContent(
+                        editTitle = state.editTitle,
+                        editDescription = state.editDescription,
+                        editDurationMinutes = state.editDurationMinutes,
+                        isSaving = state.isSaving,
+                        onTitleChange = onTitleChange,
+                        onDescriptionChange = onDescriptionChange,
+                        onDurationChange = onDurationChange,
+                        onSave = onSaveEdits,
+                        onCancel = onCancelEditing,
+                    )
+                }
+
+                SheetScreen.DETAIL -> {
+                    if (state.detail != null) {
+                        UnifiedSessionTaskContent(
+                            detail = state.detail,
+                            onToggleStatus = onToggleStatus,
+                            onToggleLock = onToggleLock,
+                            onEditClick = onStartEditing,
+                            onDeleteClick = onDeleteClick,
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.height(1.dp))
+                    }
                 }
             }
         }

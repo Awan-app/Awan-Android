@@ -18,8 +18,24 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.CallSplit
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,9 +55,10 @@ import com.awan.feature.home.impl.R
 @Composable
 internal fun UnifiedSessionTaskContent(
     detail: SessionTaskDetail,
-    onDismiss: () -> Unit,
     onToggleStatus: () -> Unit,
     onToggleLock: () -> Unit,
+    onEditClick: (() -> Unit)? = null,
+    onDeleteClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val isCompleted = detail.session.status.uppercase() == "COMPLETED" ||
@@ -53,7 +70,6 @@ internal fun UnifiedSessionTaskContent(
     Column(
         modifier = modifier.fillMaxWidth(),
     ) {
-        // Top Header Row with Category Badge & Close Icon
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -78,17 +94,45 @@ internal fun UnifiedSessionTaskContent(
                 )
             }
 
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier.size(32.dp),
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                AwanText(
-                    text = "✕",
-                    style = AwanTheme.typography.heading.copy(
-                        fontSize = 16.sp,
-                        color = AwanTheme.colors.textSecondary,
-                    ),
-                )
+                if (onEditClick != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(AwanTheme.colors.sky.copy(alpha = 0.12f))
+                            .clickable(onClick = onEditClick),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.home_action_edit),
+                            tint = AwanTheme.colors.sky,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+
+                if (onDeleteClick != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(AwanTheme.colors.destructive.copy(alpha = 0.12f))
+                            .clickable(onClick = onDeleteClick),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = stringResource(R.string.home_action_delete),
+                            tint = AwanTheme.colors.destructive,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
             }
         }
 
@@ -175,14 +219,130 @@ internal fun UnifiedSessionTaskContent(
                             .background(AwanTheme.colors.sky.copy(alpha = 0.15f))
                             .padding(horizontal = 10.dp, vertical = 6.dp),
                     ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = AwanTheme.colors.sky,
+                                modifier = Modifier.size(13.dp),
+                            )
+                            AwanText(
+                                text = "${durationMins}m",
+                                style = AwanTheme.typography.caption.copy(
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AwanTheme.colors.sky,
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Task Related Sessions List (if multiple sessions exist for task)
+            if (detail.relatedSessions.isNotEmpty()) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         AwanText(
-                            text = stringResource(R.string.home_session_duration_value_with_icon, durationMins),
+                            text = stringResource(R.string.home_task_sessions_header),
                             style = AwanTheme.typography.caption.copy(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
+                                color = AwanTheme.colors.textSecondary,
+                                letterSpacing = 0.5.sp,
+                            ),
+                        )
+                        val doneCount = detail.relatedSessions.count { it.status.uppercase() == "COMPLETED" }
+                        AwanText(
+                            text = "$doneCount/${detail.relatedSessions.size} ${stringResource(R.string.home_status_completed)}",
+                            style = AwanTheme.typography.caption.copy(
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 color = AwanTheme.colors.sky,
                             ),
                         )
+                    }
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        detail.relatedSessions.forEachIndexed { index, s ->
+                            val isCurrent = s.id == detail.session.id
+                            val isSessionDone = s.status.uppercase() == "COMPLETED"
+                            val sStart = formatIsoTime(s.start)
+                            val sEnd = formatIsoTime(s.end)
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(
+                                        if (isCurrent) AwanTheme.colors.sky.copy(alpha = 0.08f)
+                                        else AwanTheme.colors.surface
+                                    )
+                                    .border(
+                                        width = if (isCurrent) 1.5.dp else 1.dp,
+                                        color = if (isCurrent) AwanTheme.colors.sky else AwanTheme.colors.line.copy(alpha = 0.4f),
+                                        shape = RoundedCornerShape(12.dp),
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isSessionDone) Icons.Default.CheckCircle else Icons.Default.Schedule,
+                                            contentDescription = null,
+                                            tint = if (isSessionDone) AwanTheme.colors.success else AwanTheme.colors.sky,
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                        AwanText(
+                                            text = stringResource(R.string.home_task_session_item, index + 1, sStart, sEnd),
+                                            style = AwanTheme.typography.body.copy(
+                                                fontSize = 12.5.sp,
+                                                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
+                                                color = AwanTheme.colors.textPrimary,
+                                            ),
+                                        )
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (isSessionDone) AwanTheme.colors.success.copy(alpha = 0.15f)
+                                                else AwanTheme.colors.line.copy(alpha = 0.3f)
+                                            )
+                                            .padding(horizontal = 8.dp, vertical = 3.dp),
+                                    ) {
+                                        AwanText(
+                                            text = if (isSessionDone) stringResource(R.string.home_status_completed)
+                                            else stringResource(R.string.home_status_scheduled),
+                                            style = AwanTheme.typography.caption.copy(
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSessionDone) AwanTheme.colors.success else AwanTheme.colors.textSecondary,
+                                            ),
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -194,21 +354,21 @@ internal fun UnifiedSessionTaskContent(
             ) {
                 if (detail.task.estimatedPoints > 0) {
                     InfoChip(
-                        icon = "🏆",
+                        icon = Icons.Default.Star,
                         label = stringResource(R.string.home_task_points_value, detail.task.estimatedPoints),
                         modifier = Modifier.weight(1f),
                     )
                 }
 
                 InfoChip(
-                    icon = if (detail.task.mandatory) "❗" else "💡",
+                    icon = if (detail.task.mandatory) Icons.Default.PushPin else Icons.Default.Lightbulb,
                     label = if (detail.task.mandatory) stringResource(R.string.home_task_mandatory)
                     else stringResource(R.string.home_task_optional),
                     modifier = Modifier.weight(1f),
                 )
 
                 InfoChip(
-                    icon = "🔀",
+                    icon = Icons.AutoMirrored.Filled.CallSplit,
                     label = if (detail.task.allowTaskSplitting) stringResource(R.string.home_task_splitting_allowed)
                     else stringResource(R.string.home_task_splitting_not_allowed),
                     modifier = Modifier.weight(1f),
@@ -229,16 +389,12 @@ internal fun UnifiedSessionTaskContent(
                 }
 
                 DetailRow(
-                    icon = "📊",
-                    title = stringResource(R.string.home_session_status_label),
+                    label = stringResource(R.string.home_session_status_label),
                     value = statusString,
-                    isBadge = true,
-                    isSuccessBadge = isCompleted,
                 )
 
                 DetailRow(
-                    icon = if (isLocked) "🔒" else "🔓",
-                    title = stringResource(R.string.home_session_locked_label),
+                    label = stringResource(R.string.home_session_locked_label),
                     value = if (isLocked) stringResource(R.string.home_session_locked_yes)
                     else stringResource(R.string.home_session_locked_no),
                 )
@@ -276,15 +432,13 @@ internal fun UnifiedSessionTaskContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    AwanText(
-                        text = if (isCompleted) "↩" else "✓",
-                        style = AwanTheme.typography.heading.copy(
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isCompleted) AwanTheme.colors.textPrimary else Color.White,
-                        ),
+                    Icon(
+                        imageVector = if (isCompleted) Icons.AutoMirrored.Filled.Undo else Icons.Default.Check,
+                        contentDescription = null,
+                        tint = if (isCompleted) AwanTheme.colors.textPrimary else Color.White,
+                        modifier = Modifier.size(16.dp),
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     AwanText(
                         text = if (isCompleted) stringResource(R.string.home_action_mark_pending)
                         else stringResource(R.string.home_action_mark_done),
@@ -324,11 +478,13 @@ internal fun UnifiedSessionTaskContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    AwanText(
-                        text = if (isLocked) "🔓" else "🔒",
-                        style = AwanTheme.typography.body.copy(fontSize = 13.sp),
+                    Icon(
+                        imageVector = if (isLocked) Icons.Default.LockOpen else Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = if (isLocked) AwanTheme.colors.sky else AwanTheme.colors.textPrimary,
+                        modifier = Modifier.size(15.dp),
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     AwanText(
                         text = if (isLocked) stringResource(R.string.home_action_unlock)
                         else stringResource(R.string.home_action_lock),

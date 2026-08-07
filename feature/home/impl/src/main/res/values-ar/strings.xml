@@ -77,4 +77,5 @@
     <string name="home_delete_option_session_subtitle">يحذف الفترة الزمنية المحددة لهذه الجلسة فقط.</string>
     <string name="home_delete_option_task_title">حذف المهمة وجميع الجلسات</string>
     <string name="home_delete_option_task_subtitle">يحذف المهمة وجميع الجلسات المرتبطة بها نهائياً.</string>
+    <string name="home_task_session_item">جلسة %1$d (%2$s - %3$s)</string>
 </resources>

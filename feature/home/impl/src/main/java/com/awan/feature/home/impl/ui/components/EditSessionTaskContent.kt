@@ -49,7 +49,6 @@ internal fun EditSessionTaskContent(
             .padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // Form Title Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -65,7 +64,6 @@ internal fun EditSessionTaskContent(
             )
         }
 
-        // Editable Task Title Field
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             AwanText(
                 text = stringResource(R.string.home_edit_label_title),
@@ -83,7 +81,6 @@ internal fun EditSessionTaskContent(
             )
         }
 
-        // Editable Description Field
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             AwanText(
                 text = stringResource(R.string.home_edit_label_description),
@@ -101,7 +98,6 @@ internal fun EditSessionTaskContent(
             )
         }
 
-        // Duration Options Selection for this Specific Session
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             AwanText(
                 text = stringResource(R.string.home_edit_label_duration),
@@ -151,7 +147,6 @@ internal fun EditSessionTaskContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Save & Cancel Action Buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
