@@ -65,4 +65,8 @@ class TaskRepositoryImpl @Inject constructor(
     override suspend fun deleteTask(taskId: String): Result<Unit> = withContext(ioDispatcher) {
         remoteDataSource.deleteTask(taskId)
     }
+
+    override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = withContext(ioDispatcher) {
+        remoteDataSource.getInboxTasks().map { list -> list.map { it.toWithSessionsModel() } }
+    }
 }
