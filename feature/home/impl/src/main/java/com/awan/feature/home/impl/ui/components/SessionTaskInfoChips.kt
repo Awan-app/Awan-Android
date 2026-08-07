@@ -4,17 +4,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -24,7 +27,7 @@ import com.awan.app.core.designsystem.AwanTheme
 
 @Composable
 internal fun InfoChip(
-    icon: String,
+    icon: ImageVector,
     label: String,
     modifier: Modifier = Modifier,
 ) {
@@ -44,8 +47,13 @@ internal fun InfoChip(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
-            AwanText(text = icon, style = AwanTheme.typography.caption.copy(fontSize = 12.sp))
-            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = AwanTheme.colors.sky,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(modifier = Modifier.width(6.dp))
             AwanText(
                 text = label,
                 style = AwanTheme.typography.caption.copy(
@@ -62,58 +70,29 @@ internal fun InfoChip(
 
 @Composable
 internal fun DetailRow(
-    icon: String,
-    title: String,
+    label: String,
     value: String,
-    isBadge: Boolean = false,
-    isSuccessBadge: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            AwanText(text = icon, style = AwanTheme.typography.body.copy(fontSize = 14.sp))
-            Spacer(modifier = Modifier.width(8.dp))
-            AwanText(
-                text = title,
-                style = AwanTheme.typography.body.copy(
-                    fontSize = 14.sp,
-                    color = AwanTheme.colors.textSecondary,
-                ),
-            )
-        }
-
-        if (isBadge) {
-            val bg = if (isSuccessBadge) AwanTheme.colors.success.copy(alpha = 0.15f)
-            else AwanTheme.colors.sky.copy(alpha = 0.12f)
-            val fg = if (isSuccessBadge) AwanTheme.colors.success else AwanTheme.colors.sky
-
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(bg)
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-            ) {
-                AwanText(
-                    text = value,
-                    style = AwanTheme.typography.caption.copy(
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = fg,
-                    ),
-                )
-            }
-        } else {
-            AwanText(
-                text = value,
-                style = AwanTheme.typography.body.copy(
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AwanTheme.colors.textPrimary,
-                ),
-            )
-        }
+        AwanText(
+            text = label,
+            style = AwanTheme.typography.body.copy(
+                fontSize = 13.sp,
+                color = AwanTheme.colors.textSecondary,
+            ),
+        )
+        AwanText(
+            text = value,
+            style = AwanTheme.typography.body.copy(
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AwanTheme.colors.textPrimary,
+            ),
+        )
     }
 }

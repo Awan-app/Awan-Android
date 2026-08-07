@@ -17,6 +17,16 @@ internal fun calculateDurationMinutes(startIso: String, endIso: String): Int? {
     }
 }
 
+internal fun calculateEndIso(startIso: String, durationMinutes: Int): String? {
+    return try {
+        val start = LocalDateTime.parse(startIso)
+        val end = start.plusMinutes(durationMinutes.toLong())
+        end.toString()
+    } catch (e: Exception) {
+        null
+    }
+}
+
 internal fun formatIsoDate(isoString: String): String {
     return try {
         val dt = LocalDateTime.parse(isoString)

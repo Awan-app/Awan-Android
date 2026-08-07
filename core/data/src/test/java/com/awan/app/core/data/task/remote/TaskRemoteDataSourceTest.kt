@@ -46,6 +46,11 @@ private open class FakeTaskApiService : TaskApiService {
 
     override suspend fun getTask(taskId: String): TaskInfoResponse = error("not used")
 
+    override suspend fun updateTask(
+        taskId: String,
+        request: com.awan.app.core.network.dto.task.TaskUpdateRequest,
+    ): TaskInfoResponse = error("not used")
+
     override suspend fun getTasksByDate(date: String): List<TaskWithSessionsDto> = error("not used")
 
     override suspend fun scheduleTask(request: ScheduleTaskRequest): TaskScheduleResponse =
