@@ -3,6 +3,8 @@ package com.awan.feature.profile.impl.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -32,6 +34,7 @@ fun ProfileHeaderCard(
     profile: Profile,
     uiState: ProfileState,
     onEditClick: () -> Unit,
+    onPictureClick: () -> Unit = {},
 ) {
     val isDark = uiState.useDarkTheme
 
@@ -53,7 +56,13 @@ fun ProfileHeaderCard(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(mascotBgColor),
+                    .background(mascotBgColor)
+                    .clickable(
+                        enabled = profile.profilePictureUrl != null,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onPictureClick
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 if (profile.profilePictureUrl != null) {

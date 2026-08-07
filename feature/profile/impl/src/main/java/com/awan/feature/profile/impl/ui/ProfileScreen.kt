@@ -13,6 +13,7 @@ import com.awan.feature.profile.impl.presentation.ProfileState
 import com.awan.feature.profile.impl.R as ProfileR
 import com.awan.feature.profile.impl.ui.components.EditPersonalInfoSheet
 import com.awan.feature.profile.impl.ui.components.ProfileShimmer
+import com.awan.feature.profile.impl.ui.components.ProfilePicturePreview
 import kotlinx.coroutines.flow.Flow
 
 @Composable
@@ -25,6 +26,7 @@ fun ProfileScreen(
 ) {
     var showEditSheet by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showPicturePreview by remember { mutableStateOf(false) }
 
     ObserveAsEvents(events) { event ->
         when (event) {
@@ -46,10 +48,18 @@ fun ProfileScreen(
                 uiState = uiState,
                 onAction = onAction,
                 onEditClick = { showEditSheet = true },
+                onPictureClick = { showPicturePreview = true },
                 onDailyZonesClick = onDailyZonesClick,
                 onSettingsClick = onSettingsClick,
                 onLogoutClick = { showLogoutDialog = true }
             )
+
+            if (showPicturePreview && uiState.profile.profilePictureUrl != null) {
+                ProfilePicturePreview(
+                    pictureUrl = uiState.profile.profilePictureUrl.toString(),
+                    onDismiss = { showPicturePreview = false }
+                )
+            }
 
             if (showEditSheet) {
                 EditPersonalInfoSheet(

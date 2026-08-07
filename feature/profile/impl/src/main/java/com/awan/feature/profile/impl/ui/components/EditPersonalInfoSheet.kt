@@ -1,5 +1,11 @@
 package com.awan.feature.profile.impl.ui.components
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +27,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -54,9 +62,11 @@ fun EditPersonalInfoSheet(
     var birthDate by remember { mutableStateOf(initialBirthDate) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showPhotoSheet by remember { mutableStateOf(false) }
+    var showCameraRationaleDialog by remember { mutableStateOf(false) }
+    var showCameraSettingsDialog by remember { mutableStateOf(false) }
     
     val context = LocalContext.current
-    var tempPhotoUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -72,16 +82,53 @@ fun EditPersonalInfoSheet(
         }
     }
 
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
-
-    fun launchCamera() {
-        val file = File(context.cacheDir, "profile_picture_${System.currentTimeMillis()}.jpg")
+    fun launchCameraInternal() {
+        val imagesDir = File(context.cacheDir, "profile_images")
+        if (!imagesDir.exists()) {
+            imagesDir.mkdirs()
+        }
+        val file = File(imagesDir, "profile_picture_${System.currentTimeMillis()}.jpg")
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         tempPhotoUri = uri
         cameraLauncher.launch(uri)
     }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            launchCameraInternal()
+        } else {
+            val activity = context as? ComponentActivity
+            val showRationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
+                activity,
+                Manifest.permission.CAMERA
+            )
+            if (showRationale) {
+                showCameraRationaleDialog = true
+            } else {
+                showCameraSettingsDialog = true
+            }
+        }
+    }
+
+    fun requestCameraPermissionAndLaunch() {
+        val permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+            launchCameraInternal()
+        } else {
+            val activity = context as? ComponentActivity
+            if (activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)) {
+                showCameraRationaleDialog = true
+            } else {
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        }
+    }
+
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
 
     val birthDateFormat = remember {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC)
@@ -285,13 +332,46 @@ fun EditPersonalInfoSheet(
     if (showPhotoSheet) {
         ProfilePictureSheet(
             onDismiss = { showPhotoSheet = false },
-            onCameraClick = { launchCamera() },
+            onCameraClick = { requestCameraPermissionAndLaunch() },
             onGalleryClick = {
                 galleryLauncher.launch(
                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                 )
             },
             onDeleteClick = if (profilePictureUrl != null || pendingPictureUri != null) onDeletePicture else null
+        )
+    }
+
+    if (showCameraRationaleDialog) {
+        AwanDialog(
+            title = stringResource(ProfileR.string.profile_camera_permission_rationale_title),
+            body = stringResource(ProfileR.string.profile_camera_permission_rationale_message),
+            primaryLabel = stringResource(ProfileR.string.profile_grant_permission),
+            onPrimary = {
+                showCameraRationaleDialog = false
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            },
+            secondaryLabel = stringResource(ProfileR.string.profile_cancel),
+            onSecondary = { showCameraRationaleDialog = false },
+            onDismiss = { showCameraRationaleDialog = false }
+        )
+    }
+
+    if (showCameraSettingsDialog) {
+        AwanDialog(
+            title = stringResource(ProfileR.string.profile_camera_permission_settings_title),
+            body = stringResource(ProfileR.string.profile_camera_permission_settings_message),
+            primaryLabel = stringResource(ProfileR.string.profile_open_settings),
+            onPrimary = {
+                showCameraSettingsDialog = false
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
+                }
+                context.startActivity(intent)
+            },
+            secondaryLabel = stringResource(ProfileR.string.profile_cancel),
+            onSecondary = { showCameraSettingsDialog = false },
+            onDismiss = { showCameraSettingsDialog = false }
         )
     }
 
