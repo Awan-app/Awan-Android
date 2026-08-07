@@ -27,11 +27,24 @@ internal fun formatSelectedDate(date: LocalDate): UiText {
     }
 }
 
+enum class DeleteTargetType {
+    SESSION,
+    TASK,
+}
+
 data class SessionDetailDialogState(
     val sessionId: String,
     val isLoading: Boolean = true,
     val detail: SessionTaskDetail? = null,
     val errorMessage: UiText? = null,
+    val isEditing: Boolean = false,
+    val editTitle: String = "",
+    val editDescription: String = "",
+    val editDurationMinutes: Int = 30,
+    val isSaving: Boolean = false,
+    val showDeleteConfirmDialog: Boolean = false,
+    val isDeleting: Boolean = false,
+    val deleteTargetType: DeleteTargetType = DeleteTargetType.SESSION,
 )
 
 data class HomeUiState(

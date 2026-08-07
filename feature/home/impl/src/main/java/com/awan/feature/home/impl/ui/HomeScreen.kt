@@ -209,6 +209,16 @@ fun HomeScreen(
                 onRetry = viewModel::retryLoadSessionDetail,
                 onToggleStatus = viewModel::toggleSessionStatusFromDialog,
                 onToggleLock = viewModel::toggleSessionLockFromDialog,
+                onStartEditing = viewModel::startEditingSessionDetail,
+                onCancelEditing = viewModel::cancelEditingSessionDetail,
+                onTitleChange = viewModel::onEditTitleChanged,
+                onDescriptionChange = viewModel::onEditDescriptionChanged,
+                onDurationChange = viewModel::onEditDurationChanged,
+                onSaveEdits = viewModel::saveSessionDetailEdits,
+                onDeleteClick = viewModel::requestDeleteSession,
+                onSelectDeleteTarget = viewModel::selectDeleteTargetType,
+                onConfirmDelete = viewModel::confirmDeleteAction,
+                onCancelDelete = viewModel::dismissDeleteConfirmDialog,
             )
         }
 
