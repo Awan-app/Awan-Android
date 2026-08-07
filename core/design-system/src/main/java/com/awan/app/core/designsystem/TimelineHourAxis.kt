@@ -46,9 +46,11 @@ fun TimelineHourAxis(
         val hourTopY   = hourYOffsets[hour] ?: 0.dp
         val hourHeight = hourSlotHeights[hour] ?: 0.dp
 
-        val overlappingZone    = zones.find { hour >= it.startHour && hour < it.endHour }
-        val isMiddleCollapsed  = overlappingZone != null &&
-                overlappingZone.isCollapsed && hour > overlappingZone.startHour
+        val hStartMins = hour * 60
+        val hEndMins = (hour + 1) * 60
+        val overlappingZone = zones.find { hStartMins < it.endMinutes && hEndMins > it.startMinutes }
+        val isMiddleCollapsed = overlappingZone != null &&
+                overlappingZone.isCollapsed && hStartMins > overlappingZone.startMinutes
         if (isMiddleCollapsed) continue
 
         AwanText(

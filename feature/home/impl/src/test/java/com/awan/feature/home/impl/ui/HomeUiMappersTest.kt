@@ -1,53 +1,46 @@
 package com.awan.feature.home.impl.ui
 
-import com.awan.app.core.designsystem.ScheduleZone
-import com.awan.app.core.designsystem.TaskCategory
+import com.awan.app.core.domain.home.model.DayZone
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HomeUiMappersTest {
 
     @Test
-    fun `resolveNonOverlappingZones adjusts overlapping zones sequentially`() {
-        val zone1 = ScheduleZone(
-            id = "z1",
-            categoryId = "cat1",
-            category = TaskCategory.Study,
-            startHour = 8,
-            endHour = 12,
-        )
-        val zone2 = ScheduleZone(
-            id = "z2",
-            categoryId = "cat2",
-            category = TaskCategory.Work,
-            startHour = 10,
-            endHour = 14,
-        )
-        val zone3 = ScheduleZone(
-            id = "z3",
-            categoryId = "cat3",
-            category = TaskCategory.Personal,
-            startHour = 13,
-            endHour = 16,
+    fun `toUiZone maps non-integer hour zones accurately without overlap`() {
+        // Zone 1: 1:30 PM (90 mins) to 3:30 PM (210 mins)
+        val dayZone1 = DayZone(
+            id = "zone_1",
+            name = "Work Zone",
+            categoryId = "cat_1",
+            categoryName = "Work",
+            color = "#FF0000",
+            startMinutes = 90,
+            endMinutes = 210,
         )
 
-        val resolved = resolveNonOverlappingZones(listOf(zone1, zone2, zone3))
+        // Zone 2: 3:30 PM (210 mins) to 5:30 PM (330 mins)
+        val dayZone2 = DayZone(
+            id = "zone_2",
+            name = "Study Zone",
+            categoryId = "cat_2",
+            categoryName = "Study",
+            color = "#00FF00",
+            startMinutes = 210,
+            endMinutes = 330,
+        )
 
-        assertEquals(3, resolved.size)
-        // Zone 1 remains 8..12
-        assertEquals(8, resolved[0].startHour)
-        assertEquals(12, resolved[0].endHour)
-        // Zone 2 (duration 4h) adjusted to start at 12 -> 12..16
-        assertEquals(12, resolved[1].startHour)
-        assertEquals(16, resolved[1].endHour)
-        // Zone 3 (duration 3h) adjusted to start at 16 -> 16..19
-        assertEquals(16, resolved[2].startHour)
-        assertEquals(19, resolved[2].endHour)
+        val uiZone1 = dayZone1.toUiZone()
+        val uiZone2 = dayZone2.toUiZone()
 
-        // Verify no two zones overlap
-        for (i in 0 until resolved.size - 1) {
-            assertTrue(resolved[i].endHour <= resolved[i + 1].startHour)
-        }
+        assertEquals(90, uiZone1.startMinutes)
+        assertEquals(210, uiZone1.endMinutes)
+
+        assertEquals(210, uiZone2.startMinutes)
+        assertEquals(330, uiZone2.endMinutes)
+
+        // Verify Zone 1 (90..210) and Zone 2 (210..330) meet at 210 with zero minute overlap
+        val overlapMinutes = maxOf(0, minOf(uiZone1.endMinutes, uiZone2.endMinutes) - maxOf(uiZone1.startMinutes, uiZone2.startMinutes))
+        assertEquals(0, overlapMinutes)
     }
 }

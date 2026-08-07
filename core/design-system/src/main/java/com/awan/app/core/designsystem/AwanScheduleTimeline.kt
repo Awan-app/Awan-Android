@@ -155,7 +155,7 @@ fun AwanScheduleTimeline(
     )
 
     val activeZone = remember(zones, currentTimeMinutes) {
-        zones.find { currentTimeMinutes in (it.startHour * 60)..(it.endHour * 60) }
+        zones.find { currentTimeMinutes in it.startMinutes..it.endMinutes }
     }
     val activePointerColor = activeZone?.category?.color ?: AwanTheme.colors.sky
 
@@ -208,8 +208,8 @@ fun AwanScheduleTimeline(
                             .padding(start = axisWidthDp),
                     ) {
                         zones.forEach { zone ->
-                            val topY = contentTopPadding + (zone.startHour * effectiveHourHeightDpValue).dp
-                            val bandHeight = ((zone.endHour - zone.startHour) * effectiveHourHeightDpValue).dp
+                            val topY = contentTopPadding + ((zone.startMinutes.toDouble() / 60.0) * effectiveHourHeightDpValue).dp
+                            val bandHeight = (((zone.endMinutes - zone.startMinutes).toDouble() / 60.0) * effectiveHourHeightDpValue).dp
 
                             Box(
                                 modifier = Modifier
@@ -223,7 +223,7 @@ fun AwanScheduleTimeline(
                     }
 
                     zones.forEach { zone ->
-                        val topY = contentTopPadding + (zone.startHour * effectiveHourHeightDpValue).dp
+                        val topY = contentTopPadding + ((zone.startMinutes.toDouble() / 60.0) * effectiveHourHeightDpValue).dp
 
                         AwanText(
                             text = zone.category.name.uppercase(),

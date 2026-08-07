@@ -118,8 +118,8 @@ class HomeViewModel @Inject constructor(
                     id = orphanZoneId,
                     categoryId = orphanZoneId,
                     category = category,
-                    startHour = startMin / 60,
-                    endHour = ceilHour(endMin),
+                    startMinutes = startMin,
+                    endMinutes = endMin,
                     isCollapsed = false,
                 )
                 zones.add(synthetic)
@@ -133,18 +133,15 @@ class HomeViewModel @Inject constructor(
                 id = "zone_default",
                 categoryId = "personal",
                 category = TaskCategory.Personal,
-                startHour = (startMin / 60).coerceIn(0, 23),
-                endHour = ceilHour(endMin).coerceIn(1, 24),
+                startMinutes = startMin,
+                endMinutes = endMin,
                 isCollapsed = false,
             )
             zones.add(fallbackZone)
             zoneById[fallbackZone.id] = fallbackZone
         }
 
-        val resolvedZones = resolveNonOverlappingZones(zones)
-        val finalZoneById = resolvedZones.associateBy { it.id }
-
-        val sessions = schedule.sessions.mapNotNull { it.toUiSession(finalZoneById) }
+        val sessions = schedule.sessions.mapNotNull { it.toUiSession(zoneById) }
 
         val completedCount = sessions.count { it.status == TaskStatus.Completed }
         val (completedHours, totalHours) = calculateSessionHours(sessions)
@@ -155,7 +152,7 @@ class HomeViewModel @Inject constructor(
             state.copy(
                 isLoading = false,
                 errorMessage = null,
-                zones = resolvedZones,
+                zones = zones,
                 sessions = sessions,
                 subtitleText = subtitle,
                 completedSessionsCount = completedCount,
@@ -194,8 +191,8 @@ class HomeViewModel @Inject constructor(
             val matchedZone = state.zones.find { it.id == zoneId } ?: return@update state
             val zoneSessions = state.sessions.filter { it.zoneId == zoneId }
             val lastEnd = zoneSessions.maxOfOrNull { it.startMinutes + it.durationMinutes }
-                ?: (matchedZone.startHour * 60)
-            val newStart = if (lastEnd < matchedZone.endHour * 60) lastEnd else matchedZone.startHour * 60
+                ?: matchedZone.startMinutes
+            val newStart = if (lastEnd < matchedZone.endMinutes) lastEnd else matchedZone.startMinutes
 
             val titles = listOf("New Task Session", "Practice Exercise", "Deep Focus", "Review Notes")
             val newSession = ScheduleSession(
@@ -297,7 +294,7 @@ class HomeViewModel @Inject constructor(
                     val maxAllowedStart = (24 * 60 - session.durationMinutes).coerceAtLeast(0)
                     val clampedStartMinutes = newStartMinutes.coerceIn(0, maxAllowedStart)
                     val matchedZone = state.zones.find { zone ->
-                        clampedStartMinutes in (zone.startHour * 60)..(zone.endHour * 60)
+                        clampedStartMinutes in zone.startMinutes..zone.endMinutes
                     }
                     val updatedSession = session.copy(
                         startMinutes = clampedStartMinutes,
@@ -352,7 +349,7 @@ class HomeViewModel @Inject constructor(
             val movedItem = zoneSessions.removeAt(fromIndex)
             zoneSessions.add(toIndex, movedItem)
 
-            var currentStart = zone.startHour * 60
+            var currentStart = zone.startMinutes
             val resequencedZoneSessions = zoneSessions.map { session ->
                 val updated = session.copy(startMinutes = currentStart)
                 currentStart += session.durationMinutes

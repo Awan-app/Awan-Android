@@ -14,35 +14,10 @@ internal fun DayZone.toUiZone(): ScheduleZone = ScheduleZone(
     id = id,
     categoryId = categoryId,
     category = resolveCategoryWithColor(categoryName, color),
-    startHour = startMinutes / 60,
-    endHour = ceilHour(endMinutes),
+    startMinutes = startMinutes,
+    endMinutes = endMinutes,
     isCollapsed = false,
 )
-
-internal fun resolveNonOverlappingZones(zones: List<ScheduleZone>): List<ScheduleZone> {
-    if (zones.size <= 1) return zones
-
-    val sorted = zones.sortedBy { it.startHour }
-    val result = mutableListOf<ScheduleZone>()
-
-    var lastEndHour = 0
-
-    for (zone in sorted) {
-        val adjustedStart = zone.startHour.coerceAtLeast(lastEndHour).coerceIn(0, 23)
-        val originalDuration = (zone.endHour - zone.startHour).coerceAtLeast(1)
-        val adjustedEnd = (adjustedStart + originalDuration).coerceIn(adjustedStart + 1, 24)
-
-        val updatedZone = zone.copy(
-            startHour = adjustedStart,
-            endHour = adjustedEnd,
-        )
-
-        result.add(updatedZone)
-        lastEndHour = adjustedEnd
-    }
-
-    return result
-}
 
 internal fun DaySession.toUiSession(zoneById: Map<String, ScheduleZone>): ScheduleSession? {
     val zone = (if (zoneId != null) zoneById[zoneId] else null)
