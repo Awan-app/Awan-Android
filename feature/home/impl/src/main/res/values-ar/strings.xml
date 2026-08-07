@@ -58,4 +58,5 @@
     <string name="home_status_scheduled">مجدولة</string>
     <string name="home_status_in_progress">قيد التنفيذ</string>
     <string name="home_status_skipped">تم تخطيها</string>
+    <string name="home_session_duration_value_with_icon">⏱ %1$d دقيقة</string>
 </resources>

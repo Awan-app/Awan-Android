@@ -176,7 +176,7 @@ internal fun UnifiedSessionTaskContent(
                             .padding(horizontal = 10.dp, vertical = 6.dp),
                     ) {
                         AwanText(
-                            text = "⏱ " + stringResource(R.string.home_task_duration_value, durationMins),
+                            text = stringResource(R.string.home_session_duration_value_with_icon, durationMins),
                             style = AwanTheme.typography.caption.copy(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,

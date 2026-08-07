@@ -20,11 +20,11 @@ internal fun calculateDurationMinutes(startIso: String, endIso: String): Int? {
 internal fun formatIsoDate(isoString: String): String {
     return try {
         val dt = LocalDateTime.parse(isoString)
-        dt.format(DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH))
+        dt.format(DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault()))
     } catch (e: Exception) {
         try {
             val date = LocalDate.parse(isoString.take(10))
-            date.format(DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH))
+            date.format(DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault()))
         } catch (e: Exception) {
             isoString
         }
@@ -34,7 +34,7 @@ internal fun formatIsoDate(isoString: String): String {
 internal fun formatIsoTime(isoString: String): String {
     return try {
         val dt = LocalDateTime.parse(isoString)
-        dt.format(DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH))
+        dt.format(DateTimeFormatter.ofPattern("hh:mm a", Locale.getDefault()))
     } catch (e: Exception) {
         isoString
     }

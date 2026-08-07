@@ -479,7 +479,25 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            homeRepository.updateSessionLock(sessionId, newLocked)
+            val result = homeRepository.updateSessionLock(sessionId, newLocked)
+            if (result is Result.Error) {
+                _uiState.update { state ->
+                    val revertedSessions = state.sessions.map { session ->
+                        if (session.id == sessionId) {
+                            session.copy(isFixed = !newLocked)
+                        } else session
+                    }
+                    val revertedDetail = state.selectedSessionDetailState?.detail?.let { detail ->
+                        detail.copy(session = detail.session.copy(locked = !newLocked))
+                    }
+                    state.copy(
+                        sessions = revertedSessions,
+                        selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                            detail = revertedDetail
+                        )
+                    )
+                }
+            }
         }
     }
 
