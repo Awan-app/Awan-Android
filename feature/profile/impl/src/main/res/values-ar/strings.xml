@@ -90,6 +90,8 @@
     <string name="profile_pm">م</string>
     <string name="profile_user_placeholder">مستخدم</string>
     <string name="profile_error_logout">فشل تسجيل الخروج</string>
+    <string name="profile_update_picture">تحديث الصورة</string>
+    <string name="profile_delete_picture">حذف الصورة</string>
 
     <!-- Routines -->
     <string name="profile_routine_create">إنشاء روتين</string>

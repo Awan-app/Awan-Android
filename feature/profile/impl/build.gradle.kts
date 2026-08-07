@@ -16,6 +16,8 @@ dependencies {
     implementation(project(":core:design-system"))
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
     implementation(project(":core:navigation"))
     implementation(libs.androidx.appcompat)
 }

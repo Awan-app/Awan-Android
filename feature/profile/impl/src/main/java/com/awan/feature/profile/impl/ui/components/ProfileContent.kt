@@ -46,7 +46,9 @@ fun ProfileContent(
         ProfileHeaderCard(
             profile = profile,
             uiState = uiState,
-            onEditClick = onEditClick
+            onEditClick = onEditClick,
+            onUpdatePicture = { onAction(ProfileAction.UpdateProfilePicture(it)) },
+            onDeletePicture = { onAction(ProfileAction.DeleteProfilePicture) }
         )
 
         PreferencesCard(

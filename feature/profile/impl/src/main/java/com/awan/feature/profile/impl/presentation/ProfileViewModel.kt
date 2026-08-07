@@ -6,7 +6,9 @@ import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.auth.usecase.LogoutUseCase
+import com.awan.app.core.domain.image.repository.ImageRepository
 import com.awan.app.core.domain.profile.model.Profile
+import com.awan.app.core.domain.profile.usecase.DeleteProfilePictureUseCase
 import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
 import com.awan.app.core.domain.profile.usecase.GetUserDataUseCase
 import com.awan.app.core.domain.profile.usecase.ObserveProfileUseCase
@@ -14,6 +16,7 @@ import com.awan.app.core.domain.profile.usecase.SetDarkThemeUseCase
 import com.awan.app.core.domain.profile.usecase.SetLocaleUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateBirthDateUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateProfilePartialUseCase
+import com.awan.app.core.domain.profile.usecase.UpdateProfilePictureUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateSessionSettingsUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateSleepScheduleUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateTimezoneUseCase
@@ -38,6 +41,9 @@ class ProfileViewModel @Inject constructor(
     private val updateTimezoneUseCase: UpdateTimezoneUseCase,
     private val updateProfilePartialUseCase: UpdateProfilePartialUseCase,
     private val updateBirthDateUseCase: UpdateBirthDateUseCase,
+    private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
+    private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
+    private val imageRepository: ImageRepository,
     private val getUserDataUseCase: GetUserDataUseCase,
     private val setDarkThemeUseCase: SetDarkThemeUseCase,
     private val setLocaleUseCase: SetLocaleUseCase,
@@ -69,6 +75,8 @@ class ProfileViewModel @Inject constructor(
                 action.lastName,
                 action.birthDate
             )
+            is ProfileAction.UpdateProfilePicture -> updateProfilePicture(action.uri)
+            ProfileAction.DeleteProfilePicture -> deleteProfilePicture()
             ProfileAction.Logout -> logout()
         }
     }
@@ -145,6 +153,78 @@ class ProfileViewModel @Inject constructor(
                         fieldError = null
                     )
                 }
+            }
+        }
+    }
+
+    private fun updateProfilePicture(uri: String) {
+        if (_uiState.value.isUpdatingField) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdatingField = true, fieldError = null) }
+
+            val imageResult = imageRepository.read(uri)
+            if (imageResult is Result.Error) {
+                _uiState.update {
+                    it.copy(
+                        isUpdatingField = false,
+                        fieldError = imageResult.error.toUiText()
+                    )
+                }
+                return@launch
+            }
+
+            val imageBytes = (imageResult as Result.Success).data
+
+            when (val result = updateProfilePictureUseCase(imageBytes.bytes, imageBytes.mimeType)) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isUpdatingField = false,
+                            profile = result.data,
+                            fieldError = null,
+                        )
+                    }
+                }
+
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isUpdatingField = false,
+                            fieldError = result.error.toUiText(),
+                        )
+                    }
+                }
+
+                Result.Loading -> Unit
+            }
+        }
+    }
+
+    private fun deleteProfilePicture() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdatingField = true, fieldError = null) }
+            when (val result = deleteProfilePictureUseCase()) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isUpdatingField = false,
+                            profile = result.data,
+                            fieldError = null,
+                        )
+                    }
+                }
+
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isUpdatingField = false,
+                            fieldError = result.error.toUiText(),
+                        )
+                    }
+                }
+
+                Result.Loading -> Unit
             }
         }
     }
