@@ -9,6 +9,8 @@ data class Profile(
     val points: Int?,
     val streak: Int?,
     val maxStreak: Int?,
+    val profilePictureUrl: String?,
+    val isNew: Boolean?,
     val preferences: UserPreferences?
 )
 

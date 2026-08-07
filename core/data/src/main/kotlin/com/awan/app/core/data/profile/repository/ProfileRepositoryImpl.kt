@@ -83,6 +83,8 @@ class ProfileRepositoryImpl @Inject constructor(
                 points = newProfile.points ?: existing.points,
                 streak = newProfile.streak ?: existing.streak,
                 maxStreak = newProfile.maxStreak ?: existing.maxStreak,
+                profilePictureUrl = newProfile.profilePictureUrl,
+                isNew = newProfile.isNew ?: existing.isNew,
                 preferences = if (newPrefs != null) {
                     val existingPrefs = existing.preferences
                     if (existingPrefs == null) {
@@ -129,6 +131,55 @@ class ProfileRepositoryImpl @Inject constructor(
         profileRemoteDataSource.updateProfileBirthDate(
             UpdateBirthDateRequest(birthDate = birthDate),
         ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
+
+    override suspend fun updateProfilePicture(imageBytes: ByteArray, mimeType: String): Result<Profile> =
+        profileRemoteDataSource.updateProfilePicture(imageBytes, mimeType)
+            .map { response ->
+                val userId = authTokenProvider.getUserId() ?: ""
+                val existing = userDao.getUserWithPreferences(userId)?.asExternalModel()
+                val updated = existing?.copy(profilePictureUrl = response.profilePictureUrl)
+                    ?: Profile(
+                        id = userId,
+                        email = null,
+                        firstName = null,
+                        lastName = null,
+                        birthDate = null,
+                        points = 0,
+                        streak = 0,
+                        maxStreak = 0,
+                        profilePictureUrl = response.profilePictureUrl,
+                        isNew = false,
+                        preferences = null
+                    )
+                updated
+            }.suspendOnSuccess { updateLocalCache(it) }
+
+    override suspend fun deleteProfilePicture(): Result<Profile> =
+        profileRemoteDataSource.deleteProfilePicture()
+            .map {
+                val userId = authTokenProvider.getUserId() ?: ""
+                val existing = userDao.getUserWithPreferences(userId)?.asExternalModel()
+                val updated = existing?.copy(profilePictureUrl = null)
+                    ?: Profile(
+                        id = userId,
+                        email = null,
+                        firstName = null,
+                        lastName = null,
+                        birthDate = null,
+                        points = 0,
+                        streak = 0,
+                        maxStreak = 0,
+                        profilePictureUrl = null,
+                        isNew = false,
+                        preferences = null
+                    )
+                updated
+            }.suspendOnSuccess {
+                // We need a way to tell updateLocalCache to actually set it to null.
+                // Currently updateLocalCache does: profilePictureUrl = newProfile.profilePictureUrl ?: existing.profilePictureUrl
+                // So I will update updateLocalCache to NOT use the Elvis operator for profilePictureUrl if we want to support nulling it.
+                updateLocalCache(it)
+            }
 
     override suspend fun updateProfilePartial(
         firstName: String?,

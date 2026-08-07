@@ -1,5 +1,6 @@
 package com.awan.app.core.network.api
 
+import com.awan.app.core.network.dto.profile.ProfilePictureResponse
 import com.awan.app.core.network.dto.profile.ProfileResponse
 import com.awan.app.core.network.dto.profile.AwardPointsRequest
 import com.awan.app.core.network.dto.profile.DeductPointsRequest
@@ -10,9 +11,13 @@ import com.awan.app.core.network.dto.profile.UpdateSchedulingTypeRequest
 import com.awan.app.core.network.dto.profile.UpdateSessionSettingsRequest
 import com.awan.app.core.network.dto.profile.UpdateSleepScheduleRequest
 import com.awan.app.core.network.dto.profile.UpdateTimezoneRequest
+import okhttp3.MultipartBody
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.PATCH
+import retrofit2.http.Part
 
 interface ProfileApiService {
 
@@ -24,6 +29,13 @@ interface ProfileApiService {
 
     @PATCH("v1/users/me/profile/birth-date")
     suspend fun updateProfileBirthDate(@Body request: UpdateBirthDateRequest): ProfileResponse
+
+    @Multipart
+    @PATCH("v1/users/me/profile/picture")
+    suspend fun updateProfilePicture(@Part image: MultipartBody.Part): ProfilePictureResponse
+
+    @DELETE("v1/users/me/profile/picture")
+    suspend fun deleteProfilePicture()
 
     @PATCH("v1/users/me")
     suspend fun updateProfilePartial(@Body request: UpdateProfilePartialRequest): ProfileResponse
