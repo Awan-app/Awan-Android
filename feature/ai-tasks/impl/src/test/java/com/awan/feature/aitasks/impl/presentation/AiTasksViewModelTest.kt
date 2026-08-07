@@ -86,6 +86,8 @@ class AiTasksViewModelTest {
         override suspend fun scheduleTask(taskId: String) = error("not used")
 
         override suspend fun deleteTask(taskId: String): Result<Unit> = error("not used")
+
+        override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = error("not used")
     }
 
     private class FakeCategoryRepository(private val categories: List<Category>) : CategoryRepository {
