@@ -21,6 +21,7 @@ import com.awan.app.core.network.dto.onboarding.CompleteOnboardingResponse
 import com.awan.app.core.network.api.SessionApiService
 import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.session.UpdateSessionRequest
+import com.awan.app.core.network.dto.task.TaskInfoResponse
 
 class HomeRemoteDataSourceImpl @Inject constructor(
     private val zonesApiService: ZoneApiService,
@@ -94,5 +95,23 @@ class HomeRemoteDataSourceImpl @Inject constructor(
     override suspend fun unlockSession(sessionId: String): Result<SessionDto> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             sessionApiService.unlockSession(sessionId)
+        }
+
+    override suspend fun updateTask(
+        taskId: String,
+        request: com.awan.app.core.network.dto.task.TaskUpdateRequest,
+    ): Result<TaskInfoResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.updateTask(taskId, request)
+        }
+
+    override suspend fun deleteSession(sessionId: String): Result<Unit> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            sessionApiService.deleteSession(sessionId)
+        }
+
+    override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.deleteTask(taskId, cascade)
         }
 }

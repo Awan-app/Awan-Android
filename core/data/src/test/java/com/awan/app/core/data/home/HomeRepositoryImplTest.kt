@@ -44,6 +44,12 @@ private class FakeHomeRemoteDataSource : HomeRemoteDataSource {
 
     override suspend fun lockSession(sessionId: String): Result<SessionDto> = sessionResult
     override suspend fun unlockSession(sessionId: String): Result<SessionDto> = sessionResult
+    override suspend fun updateTask(
+        taskId: String,
+        request: com.awan.app.core.network.dto.task.TaskUpdateRequest,
+    ): Result<TaskInfoResponse> = taskResult
+    override suspend fun deleteSession(sessionId: String): Result<Unit> = Result.Success(Unit)
+    override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = Result.Success(Unit)
 }
 
 private class FakeUserDao : UserDao {

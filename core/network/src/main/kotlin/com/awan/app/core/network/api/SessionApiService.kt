@@ -31,4 +31,9 @@ interface SessionApiService {
     suspend fun unlockSession(
         @Path("sessionId") sessionId: String,
     ): SessionDto
+
+    @retrofit2.http.DELETE("v1/sessions/{sessionId}")
+    suspend fun deleteSession(
+        @Path("sessionId") sessionId: String,
+    )
 }

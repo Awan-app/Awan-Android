@@ -27,4 +27,5 @@ data class TaskDetailInfo(
 data class SessionTaskDetail(
     val session: SessionDetailInfo,
     val task: TaskDetailInfo,
+    val relatedSessions: List<SessionDetailInfo> = emptyList(),
 )

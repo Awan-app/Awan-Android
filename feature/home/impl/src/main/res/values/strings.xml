@@ -59,4 +59,22 @@
     <string name="home_status_in_progress">In Progress</string>
     <string name="home_status_skipped">Skipped</string>
     <string name="home_session_duration_value_with_icon">⏱ %1$d min</string>
+    <string name="home_edit_session_title">Edit Session &amp; Task</string>
+    <string name="home_edit_label_title">Task Title</string>
+    <string name="home_edit_placeholder_title">Enter task title…</string>
+    <string name="home_edit_label_description">Description</string>
+    <string name="home_edit_placeholder_description">Enter task description…</string>
+    <string name="home_edit_label_duration">Duration</string>
+    <string name="home_edit_label_points">Estimated Points</string>
+    <string name="home_action_save">Save Changes</string>
+    <string name="home_action_cancel">Cancel</string>
+    <string name="home_action_edit">Edit</string>
+    <string name="home_action_delete">Delete</string>
+    <string name="home_task_sessions_header">Task Sessions</string>
+    <string name="home_delete_dialog_title">Delete Confirmation</string>
+    <string name="home_delete_dialog_subtitle">Choose what you would like to delete:</string>
+    <string name="home_delete_option_session_title">Delete This Session Only</string>
+    <string name="home_delete_option_session_subtitle">Removes only this scheduled time slot.</string>
+    <string name="home_delete_option_task_title">Delete Task &amp; All Sessions</string>
+    <string name="home_delete_option_task_subtitle">Removes the task and all associated sessions permanently.</string>
 </resources>

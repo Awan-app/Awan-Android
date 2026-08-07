@@ -24,4 +24,15 @@ interface HomeRepository {
         sessionId: String,
         locked: Boolean,
     ): Result<Unit>
+    suspend fun updateTaskDetails(
+        taskId: String,
+        title: String? = null,
+        description: String? = null,
+        estimatedDuration: Int? = null,
+        estimatedPoints: Int? = null,
+        mandatory: Boolean? = null,
+        allowTaskSplitting: Boolean? = null,
+    ): Result<Unit>
+    suspend fun deleteSession(sessionId: String): Result<Unit>
+    suspend fun deleteTask(taskId: String): Result<Unit>
 }

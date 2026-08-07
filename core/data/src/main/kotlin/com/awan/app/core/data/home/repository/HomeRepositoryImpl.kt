@@ -240,4 +240,47 @@ class HomeRepositoryImpl @Inject constructor(
             else -> Result.Error(AppError.Unknown(Throwable("Failed to update session lock state")))
         }
     }
+
+    override suspend fun updateTaskDetails(
+        taskId: String,
+        title: String?,
+        description: String?,
+        estimatedDuration: Int?,
+        estimatedPoints: Int?,
+        mandatory: Boolean?,
+        allowTaskSplitting: Boolean?,
+    ): Result<Unit> {
+        val request = com.awan.app.core.network.dto.task.TaskUpdateRequest(
+            title = title,
+            description = description,
+            estimatedDuration = estimatedDuration,
+            estimatedPoints = estimatedPoints,
+            mandatory = mandatory,
+            allowTaskSplitting = allowTaskSplitting,
+        )
+        val result = remoteDataSource.updateTask(taskId, request)
+        return when (result) {
+            is Result.Success -> Result.Success(Unit)
+            is Result.Error -> Result.Error(result.error)
+            else -> Result.Error(AppError.Unknown(Throwable("Failed to update task details")))
+        }
+    }
+
+    override suspend fun deleteSession(sessionId: String): Result<Unit> {
+        val result = remoteDataSource.deleteSession(sessionId)
+        return when (result) {
+            is Result.Success -> Result.Success(Unit)
+            is Result.Error -> Result.Error(result.error)
+            else -> Result.Error(AppError.Unknown(Throwable("Failed to delete session")))
+        }
+    }
+
+    override suspend fun deleteTask(taskId: String): Result<Unit> {
+        val result = remoteDataSource.deleteTask(taskId, cascade = true)
+        return when (result) {
+            is Result.Success -> Result.Success(Unit)
+            is Result.Error -> Result.Error(result.error)
+            else -> Result.Error(AppError.Unknown(Throwable("Failed to delete task")))
+        }
+    }
 }

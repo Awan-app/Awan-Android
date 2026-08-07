@@ -59,4 +59,22 @@
     <string name="home_status_in_progress">قيد التنفيذ</string>
     <string name="home_status_skipped">تم تخطيها</string>
     <string name="home_session_duration_value_with_icon">⏱ %1$d دقيقة</string>
+    <string name="home_edit_session_title">تعديل الجلسة والمهمة</string>
+    <string name="home_edit_label_title">عنوان المهمة</string>
+    <string name="home_edit_placeholder_title">أدخل عنوان المهمة…</string>
+    <string name="home_edit_label_description">الوصف</string>
+    <string name="home_edit_placeholder_description">أدخل وصف المهمة…</string>
+    <string name="home_edit_label_duration">المدة</string>
+    <string name="home_edit_label_points">النقاط التقديرية</string>
+    <string name="home_action_save">حفظ التغييرات</string>
+    <string name="home_action_cancel">إلغاء</string>
+    <string name="home_action_edit">تعديل</string>
+    <string name="home_action_delete">حذف</string>
+    <string name="home_task_sessions_header">جلسات المهمة</string>
+    <string name="home_delete_dialog_title">تأكيد الحذف</string>
+    <string name="home_delete_dialog_subtitle">اختر ما ترغب في حذفه:</string>
+    <string name="home_delete_option_session_title">حذف هذه الجلسة فقط</string>
+    <string name="home_delete_option_session_subtitle">يحذف الفترة الزمنية المحددة لهذه الجلسة فقط.</string>
+    <string name="home_delete_option_task_title">حذف المهمة وجميع الجلسات</string>
+    <string name="home_delete_option_task_subtitle">يحذف المهمة وجميع الجلسات المرتبطة بها نهائياً.</string>
 </resources>
