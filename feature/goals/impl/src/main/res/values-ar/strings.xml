@@ -13,4 +13,9 @@
     <string name="goals_error_retry">إعادة المحاولة</string>
     <string name="goals_card_state_expanded">موسع</string>
     <string name="goals_card_state_collapsed">مطوي</string>
+    <string name="inbox_status_scheduled">مجدول</string>
+    <string name="inbox_status_completed">مكتمل</string>
+    <string name="inbox_status_cancelled">ملغى</string>
+    <string name="inbox_status_missed">فائت</string>
+    <string name="inbox_status_unknown">غير معروف</string>
 </resources>

@@ -70,7 +70,7 @@ interface TaskApiService {
     ): TaskScheduleResponse
 
     @GET("v1/tasks/inbox")
-    suspend fun getInboxTasks(): List<TaskWithSessionsDto>
+    suspend fun getInboxTasks(): InboxTasksResponse
 
     @DELETE("v1/tasks/{taskId}")
     suspend fun deleteTask(

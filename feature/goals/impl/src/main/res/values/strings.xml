@@ -13,4 +13,9 @@
     <string name="goals_error_retry">Retry</string>
     <string name="goals_card_state_expanded">Expanded</string>
     <string name="goals_card_state_collapsed">Collapsed</string>
+    <string name="inbox_status_scheduled">Scheduled</string>
+    <string name="inbox_status_completed">Completed</string>
+    <string name="inbox_status_cancelled">Cancelled</string>
+    <string name="inbox_status_missed">Missed</string>
+    <string name="inbox_status_unknown">Unknown</string>
 </resources>

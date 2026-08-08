@@ -22,6 +22,9 @@ enum class InboxTaskDisplayStatus {
 
     /** Every session is CANCELLED. */
     Cancelled,
+
+    /** Sessions exist, but none are SCHEDULED, and they aren't all COMPLETED or CANCELLED (e.g. they are MISSED). */
+    Missed,
 }
 
 fun TaskWithSessions.deriveDisplayStatus(): InboxTaskDisplayStatus {
@@ -29,7 +32,8 @@ fun TaskWithSessions.deriveDisplayStatus(): InboxTaskDisplayStatus {
     val nonCancelled = sessions.filter { it.status != SessionStatus.CANCELLED }
     if (nonCancelled.isEmpty()) return InboxTaskDisplayStatus.Cancelled
     if (nonCancelled.all { it.status == SessionStatus.COMPLETED }) return InboxTaskDisplayStatus.Completed
-    return InboxTaskDisplayStatus.Active
+    if (sessions.any { it.status == SessionStatus.SCHEDULED }) return InboxTaskDisplayStatus.Active
+    return InboxTaskDisplayStatus.Missed
 }
 
 // ─── Session display filter ───────────────────────────────────────────────────
@@ -51,9 +55,10 @@ enum class InboxSessionFilter {
 data class InboxSessionUiModel(
     val id: String,
     val dateLabel: String,
-    val timeRange: String,
+    val startTime: String,
+    val endTime: String,
     /** Persisted status (Scheduled / Completed / Cancelled). */
-    val statusLabel: String,
+    val statusLabelRes: Int,
     /** True when this session is "Active now" (SCHEDULED and current time inside window). */
     val isActiveNow: Boolean,
     /** True when this session is "Missed" (SCHEDULED but window already passed). */
@@ -82,45 +87,9 @@ data class InboxUiState(
     val activeSessionFilters: Set<InboxSessionFilter> = emptySet(),
     /** The id of the task card currently expanded to show sessions. */
     val expandedTaskId: String? = null,
-) {
     /** Tasks visible after applying search and filter. */
-    val visibleTasks: List<InboxTaskUiModel>
-        get() {
-            var result = allTasks
-
-            // Status filter
-            if (activeStatusFilters.isNotEmpty()) {
-                result = result.filter { it.displayStatus in activeStatusFilters }
-            }
-
-            // Session-display filter — keep tasks that have at least one matching session
-            if (activeSessionFilters.isNotEmpty()) {
-                result = result.filter { task ->
-                    task.sessions.any { session ->
-                        (InboxSessionFilter.ActiveNow in activeSessionFilters && session.isActiveNow) ||
-                            (InboxSessionFilter.Missed in activeSessionFilters && session.isMissed)
-                    }
-                }
-            }
-
-            // Search
-            val q = searchQuery.trim()
-            if (q.isNotEmpty()) {
-                val lower = q.lowercase()
-                result = result.filter { task ->
-                    task.title.lowercase().contains(lower) ||
-                        task.description?.lowercase()?.contains(lower) == true ||
-                        task.sessions.any { s ->
-                            s.dateLabel.lowercase().contains(lower) ||
-                                s.timeRange.lowercase().contains(lower) ||
-                                s.statusLabel.lowercase().contains(lower)
-                        }
-                }
-            }
-
-            return result
-        }
-}
+    val visibleTasks: List<InboxTaskUiModel> = emptyList(),
+)
 
 sealed interface InboxAction {
     data class SearchQueryChanged(val query: String) : InboxAction
