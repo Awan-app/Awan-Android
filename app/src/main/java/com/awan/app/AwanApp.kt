@@ -66,6 +66,7 @@ import com.awan.feature.onboarding.impl.navigation.onboardingEntry
 import com.awan.feature.profile.api.DailyZonesRoute
 import com.awan.feature.profile.api.EditRoutineRoute
 import com.awan.feature.profile.impl.navigation.profileEntry
+import com.awan.feature.splash.api.SplashRoute
 import com.awan.feature.splash.impl.navigation.splashEntry
 import com.awan.feature.splash.impl.ui.SplashDestination
 
@@ -112,6 +113,8 @@ fun AwanApp(
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
     var onSelectHomeDate by remember { mutableStateOf<((LocalDate) -> Unit)?>(null) }
+    val currentRoute = appState.navigationState.currentKey
+    val showOfflineBanner = !isOnline && currentRoute != SplashRoute
 
     if (showAddTask && isOnline) {
         AddTaskSheet(
@@ -130,7 +133,7 @@ fun AwanApp(
     Box(modifier = modifier.fillMaxSize()) {
         androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
             AnimatedVisibility(
-                visible = !isOnline,
+                visible = showOfflineBanner,
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut(),
             ) {
