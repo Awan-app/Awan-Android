@@ -5,16 +5,24 @@ import com.awan.app.core.data.calendar.local.CalendarLocalDataSource
 import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSource
 import com.awan.app.core.datastore.auth.AuthTokenProvider
 import com.awan.app.core.domain.calendar.repository.CalendarSnapshot
+import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.network.dto.GoalResponse
 import com.awan.app.core.network.dto.UserProfileResponse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CalendarRepositoryImplTest {
+
+    private val onlineMonitor = object : NetworkConnectivityMonitor {
+        override val isOnline: Flow<Boolean> = flowOf(true)
+        override fun isCurrentlyOnline(): Boolean = true
+    }
+
     @Test
     fun refreshKeepsLocalGoalsMissingFromTheResponse() = runTest {
         val local = FakeCalendarLocalDataSource()
@@ -22,6 +30,7 @@ class CalendarRepositoryImplTest {
             remote = FakeRemoteDataSource(),
             authTokenProvider = FakeAuthTokenProvider(),
             local = local,
+            connectivityMonitor = onlineMonitor,
         )
 
         val result = repository.refresh()

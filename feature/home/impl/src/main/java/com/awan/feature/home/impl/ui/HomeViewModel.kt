@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -85,27 +86,33 @@ class HomeViewModel @Inject constructor(
     }
 
 
+    private var scheduleJob: Job? = null
+
     private fun loadScheduleForDate(date: LocalDate) {
-        viewModelScope.launch {
-            val today = LocalDate.now()
-            val isToday = date == today
-            val isPastDate = date.isBefore(today)
+        scheduleJob?.cancel()
 
-            _uiState.update { state ->
-                state.copy(
-                    isLoading = true,
-                    errorMessage = null,
-                    selectedDate = date,
-                    isToday = isToday,
-                    isPastDate = isPastDate,
-                    selectedDateText = formatSelectedDate(date),
-                )
-            }
+        val today = LocalDate.now()
+        val isToday = date == today
+        val isPastDate = date.isBefore(today)
 
-            when (val result = getDayScheduleUseCase(date)) {
-                is Result.Success -> applySchedule(result.data, isToday)
-                is Result.Error   -> _uiState.update { it.copy(isLoading = false, errorMessage = result.error.toReadableMessage()) }
-                is Result.Loading -> Unit // not emitted by suspend use case
+        _uiState.update { state ->
+            state.copy(
+                isLoading = true,
+                errorMessage = null,
+                selectedDate = date,
+                isToday = isToday,
+                isPastDate = isPastDate,
+                selectedDateText = formatSelectedDate(date),
+            )
+        }
+
+        scheduleJob = viewModelScope.launch {
+            getDayScheduleUseCase(date).collect { result ->
+                when (result) {
+                    is Result.Success -> applySchedule(result.data, isToday)
+                    is Result.Error   -> _uiState.update { it.copy(isLoading = false, errorMessage = result.error.toReadableMessage()) }
+                    is Result.Loading -> Unit
+                }
             }
         }
     }
@@ -346,37 +353,54 @@ class HomeViewModel @Inject constructor(
     }
 
     fun reorderSessionsInZone(zoneId: String, fromIndex: Int, toIndex: Int) {
-        _uiState.update { state ->
-            val zone = state.zones.find { it.id == zoneId } ?: return@update state
-            val zoneSessions = state.sessions.filter { it.zoneId == zoneId }.sortedBy { it.startMinutes }.toMutableList()
-            if (fromIndex !in zoneSessions.indices || toIndex !in zoneSessions.indices || fromIndex == toIndex) {
-                return@update state
+        val currentState = _uiState.value
+        val zone = currentState.zones.find { it.id == zoneId } ?: return
+        val zoneSessions = currentState.sessions.filter { it.zoneId == zoneId }.sortedBy { it.startMinutes }.toMutableList()
+        if (fromIndex !in zoneSessions.indices || toIndex !in zoneSessions.indices || fromIndex == toIndex) {
+            return
+        }
+
+        val movedItem = zoneSessions.removeAt(fromIndex)
+        zoneSessions.add(toIndex, movedItem)
+
+        var currentStart = zone.startHour * 60
+        val resequencedZoneSessions = zoneSessions.map { session ->
+            val updated = session.copy(startMinutes = currentStart)
+            currentStart += session.durationMinutes
+            updated
+        }
+
+        val date = currentState.selectedDate
+        val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
+
+        viewModelScope.launch {
+            for (session in resequencedZoneSessions) {
+                val startTime = date.atStartOfDay().plusMinutes(session.startMinutes.toLong())
+                val endTime = startTime.plusMinutes(session.durationMinutes.toLong())
+                val startIso = startTime.format(dtFormatter)
+                val endIso = endTime.format(dtFormatter)
+                val sessionStatusEnum = if (session.status == TaskStatus.Completed) {
+                    SessionStatus.COMPLETED
+                } else {
+                    SessionStatus.SCHEDULED
+                }
+
+                val result = homeRepository.updateSessionStatus(
+                    sessionId = session.id,
+                    status = sessionStatusEnum,
+                    startIso = startIso,
+                    endIso = endIso,
+                )
+                if (result is Result.Error) {
+                    _uiState.update { it.copy(errorMessage = result.error.toReadableMessage()) }
+                    loadScheduleForDate(date)
+                    break
+                }
             }
-
-            val movedItem = zoneSessions.removeAt(fromIndex)
-            zoneSessions.add(toIndex, movedItem)
-
-            var currentStart = zone.startMinutes
-            val resequencedZoneSessions = zoneSessions.map { session ->
-                val updated = session.copy(startMinutes = currentStart)
-                currentStart += session.durationMinutes
-                updated
-            }
-
-            val resequencedMap = resequencedZoneSessions.associateBy { it.id }
-            val updatedSessions = state.sessions.map { session ->
-                resequencedMap[session.id] ?: session
-            }.sortedBy { it.startMinutes }
-
-            val (completedHours, totalHours) = calculateSessionHours(updatedSessions)
-            state.copy(
-                sessions = updatedSessions,
-                completedHours = completedHours,
-                totalHours = totalHours,
-                progressSegments = buildProgressSegments(updatedSessions),
-            )
+            loadScheduleForDate(date)
         }
     }
+
 
     private fun calculateSessionHours(sessions: List<ScheduleSession>): Pair<Double, Double> {
         val completedMins = sessions.filter { it.status == TaskStatus.Completed }.sumOf { it.durationMinutes }

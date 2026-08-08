@@ -1,12 +1,20 @@
 package com.awan.app.core.data.template
 
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.database.dao.TemplateDao
+import com.awan.app.core.database.dao.ZoneDao
+import com.awan.app.core.database.model.TemplateDayOfWeekEntity
+import com.awan.app.core.database.model.TemplateEntity
+import com.awan.app.core.database.model.ZoneEntity
 import com.awan.app.core.data.template.remote.TemplateRemoteDataSource
+import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.domain.zones.model.Zone
 import com.awan.app.core.network.dto.zone.CreateTemplateRequest
 import com.awan.app.core.network.dto.zone.WeeklyTemplateDto as TemplateResponse
 import com.awan.app.core.network.dto.zone.ZoneDto as ZoneResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -31,7 +39,44 @@ class TemplateRepositoryImplTest {
         }
     }
 
-    private val repository = TemplateRepositoryImpl(remoteDataSource, UnconfinedTestDispatcher())
+    private val fakeTemplateDao = object : TemplateDao {
+        override suspend fun upsertTemplate(template: TemplateEntity) {}
+        override suspend fun upsertTemplates(templates: List<TemplateEntity>) {}
+        override fun observeAllTemplates(): Flow<List<TemplateEntity>> = flowOf(emptyList())
+        override fun observeTemplate(templateId: String): Flow<TemplateEntity?> = flowOf(null)
+        override suspend fun getTemplate(templateId: String): TemplateEntity? = null
+        override suspend fun deleteTemplate(templateId: String) {}
+        override suspend fun upsertDays(days: List<TemplateDayOfWeekEntity>) {}
+        override fun observeDaysForTemplate(templateId: String): Flow<List<TemplateDayOfWeekEntity>> = flowOf(emptyList())
+        override suspend fun getDayAssignment(dayOfWeek: String): TemplateDayOfWeekEntity? = null
+        override suspend fun deleteDaysForTemplate(templateId: String) {}
+        override suspend fun getMinExpiryTime(): Long? = null
+    }
+
+    private val fakeZoneDao = object : ZoneDao {
+        override suspend fun upsertZone(zone: ZoneEntity) {}
+        override suspend fun upsertZones(zones: List<ZoneEntity>) {}
+        override fun observeZone(zoneId: String): Flow<ZoneEntity?> = flowOf(null)
+        override suspend fun getZone(zoneId: String): ZoneEntity? = null
+        override fun observeZonesForTemplate(templateId: String): Flow<List<ZoneEntity>> = flowOf(emptyList())
+        override fun observeZonesForOverride(overrideId: String): Flow<List<ZoneEntity>> = flowOf(emptyList())
+        override suspend fun deleteZone(zoneId: String) {}
+        override suspend fun deleteZonesForTemplate(templateId: String) {}
+        override suspend fun deleteZonesForOverride(overrideId: String) {}
+    }
+
+    private val onlineMonitor = object : NetworkConnectivityMonitor {
+        override val isOnline: Flow<Boolean> = flowOf(true)
+        override fun isCurrentlyOnline(): Boolean = true
+    }
+
+    private val repository = TemplateRepositoryImpl(
+        remoteDataSource = remoteDataSource,
+        templateDao = fakeTemplateDao,
+        zoneDao = fakeZoneDao,
+        connectivityMonitor = onlineMonitor,
+        ioDispatcher = UnconfinedTestDispatcher(),
+    )
 
     @Test
     fun `sends every enabled zone with formatted times and an RGB color`() = runTest {
@@ -65,8 +110,6 @@ class TemplateRepositoryImplTest {
 
     @Test
     fun `a zone running past midnight is truncated at the end of the day`() = runTest {
-        // 23:30 -> 00:30 next day: endMinutes 1470 would format as 00:30:00 and be rejected as
-        // not-after-start, so it is cut at 23:59:59 instead.
         val zones = listOf(Zone("study", "Study", 0, startMinutes = 1410, endMinutes = 1470))
 
         repository.createWeeklyTemplate(zones)

@@ -141,6 +141,16 @@ class AddTaskViewModelTest {
             confirmCalls += sessionId
             return nextConfirmResult ?: Result.Error(AppError.Network)
         }
+
+        override suspend fun createGoal(title: String, description: String?, targetDate: String?): Result<Goal> = error("not used")
+        override suspend fun getInboxGoal(): Result<Goal> = error("not used")
+        override suspend fun getGoal(goalId: String): Result<Goal> = error("not used")
+        override suspend fun deleteGoal(goalId: String): Result<Unit> = error("not used")
+        override suspend fun getDecompositionTranscript(sessionId: String): Result<com.awan.app.core.model.GoalDecompositionTranscript> = error("not used")
+        override suspend fun cancelDecomposition(sessionId: String): Result<Unit> = error("not used")
+        override suspend fun scheduleGoal(goalId: String): Result<Unit> = error("not used")
+        override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.model.GoalScheduleProposal> = error("not used")
+        override suspend fun confirmGoalSchedule(goalId: String, sessions: List<com.awan.app.core.model.ProposedGoalSession>): Result<Unit> = error("not used")
     }
 
     private class FakeZoneRepository(private val zones: List<DayZone>) : ZonesRepository {

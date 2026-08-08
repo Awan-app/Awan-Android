@@ -29,4 +29,5 @@ data class GoalEntity(
      * The Inbox goal cannot be renamed or deleted.
      */
     val isInbox: Boolean,
+    val expiryTime: Long = 0L,
 )

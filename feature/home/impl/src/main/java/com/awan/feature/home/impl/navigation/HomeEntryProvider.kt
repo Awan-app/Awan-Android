@@ -10,12 +10,14 @@ fun EntryProviderScope<Route>.homeEntry(
     onLogout: () -> Unit,
     onNavigateToCalendar: () -> Unit = {},
     onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
+    onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
 ) {
     entry<HomeRoute> {
         HomeScreen(
             onLogout = onLogout,
             onNavigateToCalendar = onNavigateToCalendar,
             onRegisterSelectDate = onRegisterSelectDate,
+            onNavigateToAddTask = onNavigateToAddTask,
         )
     }
 }
