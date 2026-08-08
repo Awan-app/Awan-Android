@@ -26,5 +26,7 @@ class Migration3To4Test {
 
         assertTrue(sqlExecuted.any { it.contains("ALTER TABLE `users` ADD COLUMN `profilePictureUrl` TEXT") })
         assertTrue(sqlExecuted.any { it.contains("ALTER TABLE `users` ADD COLUMN `isNew` INTEGER NOT NULL DEFAULT 0") })
+        assertTrue(sqlExecuted.any { it.contains("CREATE TABLE IF NOT EXISTS `tasks_v4`") })
+        assertTrue(sqlExecuted.any { it.contains("DROP TABLE `tasks`") })
     }
 }

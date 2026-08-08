@@ -197,6 +197,7 @@ abstract class AwanDatabase : RoomDatabase() {
 
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
+                // 1. Ensure users table columns exist
                 val existingColumns = mutableSetOf<String>()
                 try {
                     val cursor = db.query("PRAGMA table_info(`users`)")
@@ -210,12 +211,70 @@ abstract class AwanDatabase : RoomDatabase() {
                     }
                 } catch (_: Exception) {
                 }
+                if (!existingColumns.contains("expiryTime")) {
+                    db.execSQL("ALTER TABLE `users` ADD COLUMN `expiryTime` INTEGER NOT NULL DEFAULT 0")
+                }
                 if (!existingColumns.contains("profilePictureUrl")) {
                     db.execSQL("ALTER TABLE `users` ADD COLUMN `profilePictureUrl` TEXT")
                 }
                 if (!existingColumns.contains("isNew")) {
                     db.execSQL("ALTER TABLE `users` ADD COLUMN `isNew` INTEGER NOT NULL DEFAULT 0")
                 }
+
+                // 2. Recreate tasks table without goalId FK
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `tasks_v4` (
+                        `id` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `description` TEXT,
+                        `estimatedDuration` INTEGER NOT NULL,
+                        `status` TEXT NOT NULL,
+                        `mandatory` INTEGER NOT NULL,
+                        `estimatedPoints` INTEGER NOT NULL,
+                        `allowTaskSplitting` INTEGER NOT NULL,
+                        `goalId` TEXT,
+                        `categoryId` TEXT,
+                        `expiryTime` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+                    )
+                    """.trimIndent()
+                )
+
+                val taskColumns = mutableSetOf<String>()
+                try {
+                    val cursor = db.query("PRAGMA table_info(`tasks`)")
+                    cursor.use {
+                        val nameIndex = it.getColumnIndex("name")
+                        while (it.moveToNext()) {
+                            if (nameIndex != -1) {
+                                taskColumns.add(it.getString(nameIndex))
+                            }
+                        }
+                    }
+                } catch (_: Exception) {
+                }
+
+                val selectExpiry = if (taskColumns.contains("expiryTime")) "`expiryTime`" else "0 AS `expiryTime`"
+
+                db.execSQL(
+                    """
+                    INSERT INTO `tasks_v4` (
+                        `id`, `title`, `description`, `estimatedDuration`, `status`,
+                        `mandatory`, `estimatedPoints`, `allowTaskSplitting`, `goalId`, `categoryId`, `expiryTime`
+                    )
+                    SELECT
+                        `id`, `title`, `description`, `estimatedDuration`, `status`,
+                        `mandatory`, `estimatedPoints`, `allowTaskSplitting`, `goalId`, `categoryId`, $selectExpiry
+                    FROM `tasks`
+                    """.trimIndent()
+                )
+
+                db.execSQL("DROP TABLE `tasks`")
+                db.execSQL("ALTER TABLE `tasks_v4` RENAME TO `tasks`")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_tasks_goalId` ON `tasks` (`goalId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_tasks_categoryId` ON `tasks` (`categoryId`)")
             }
         }
     }
