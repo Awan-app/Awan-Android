@@ -6,7 +6,9 @@ import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.auth.usecase.LogoutUseCase
+import com.awan.app.core.domain.image.usecase.ReadImageUseCase
 import com.awan.app.core.domain.profile.model.Profile
+import com.awan.app.core.domain.profile.usecase.DeleteProfilePictureUseCase
 import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
 import com.awan.app.core.domain.profile.usecase.GetUserDataUseCase
 import com.awan.app.core.domain.profile.usecase.ObserveProfileUseCase
@@ -14,18 +16,14 @@ import com.awan.app.core.domain.profile.usecase.SetDarkThemeUseCase
 import com.awan.app.core.domain.profile.usecase.SetLocaleUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateBirthDateUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateProfilePartialUseCase
+import com.awan.app.core.domain.profile.usecase.UpdateProfilePictureUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateSessionSettingsUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateSleepScheduleUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateTimezoneUseCase
 import com.awan.feature.profile.impl.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -38,6 +36,9 @@ class ProfileViewModel @Inject constructor(
     private val updateTimezoneUseCase: UpdateTimezoneUseCase,
     private val updateProfilePartialUseCase: UpdateProfilePartialUseCase,
     private val updateBirthDateUseCase: UpdateBirthDateUseCase,
+    private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
+    private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
+    private val readImage: ReadImageUseCase,
     private val getUserDataUseCase: GetUserDataUseCase,
     private val setDarkThemeUseCase: SetDarkThemeUseCase,
     private val setLocaleUseCase: SetLocaleUseCase,
@@ -47,7 +48,7 @@ class ProfileViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ProfileState())
     val uiState: StateFlow<ProfileState> = _uiState.asStateFlow()
 
-    private val _events = Channel<ProfileEvent>()
+    private val _events = Channel<ProfileEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
     init {
@@ -69,6 +70,12 @@ class ProfileViewModel @Inject constructor(
                 action.lastName,
                 action.birthDate
             )
+            is ProfileAction.UpdateProfilePicture -> {
+                _uiState.update { it.copy(pendingPicture = PendingPicture.Picked(action.uri), fieldError = null) }
+            }
+            ProfileAction.DeleteProfilePicture -> {
+                _uiState.update { it.copy(pendingPicture = PendingPicture.Clear, fieldError = null) }
+            }
             ProfileAction.Logout -> logout()
         }
     }
@@ -122,9 +129,12 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun updatePersonalInfo(firstName: String, lastName: String, birthDate: String) {
+        if (_uiState.value.isUpdatingField) return
+
         viewModelScope.launch {
             _uiState.update { it.copy(isUpdatingField = true, fieldError = null) }
 
+            // 1. Update Profile Info (Name & BirthDate)
             val nameResult = updateProfilePartialUseCase(firstName = firstName, lastName = lastName)
             if (nameResult is Result.Error) {
                 _uiState.update { it.copy(isUpdatingField = false, fieldError = nameResult.error.toUiText()) }
@@ -137,15 +147,61 @@ class ProfileViewModel @Inject constructor(
                 return@launch
             }
 
-            if (nameResult is Result.Success && birthDateResult is Result.Success) {
-                _uiState.update {
-                    it.copy(
-                        isUpdatingField = false,
-                        profile = birthDateResult.data,
-                        fieldError = null
-                    )
+            val pending = _uiState.value.pendingPicture
+            if (pending != null) {
+                _uiState.update { it.copy(isUploadingPicture = true) }
+                when (pending) {
+                    PendingPicture.Clear -> {
+                        val deleteResult = deleteProfilePictureUseCase()
+                        if (deleteResult is Result.Error) {
+                            _uiState.update {
+                                it.copy(
+                                    isUpdatingField = false,
+                                    isUploadingPicture = false,
+                                    fieldError = deleteResult.error.toUiText()
+                                )
+                            }
+                            return@launch
+                        }
+                    }
+                    is PendingPicture.Picked -> {
+                        val imageResult = readImage(pending.uri)
+                        if (imageResult is Result.Error) {
+                            _uiState.update {
+                                it.copy(
+                                    isUpdatingField = false,
+                                    isUploadingPicture = false,
+                                    fieldError = imageResult.error.toUiText()
+                                )
+                            }
+                            return@launch
+                        }
+
+                        val imageBytes = (imageResult as Result.Success).data
+                        val uploadResult = updateProfilePictureUseCase(imageBytes.bytes, imageBytes.mimeType)
+                        if (uploadResult is Result.Error) {
+                            _uiState.update {
+                                it.copy(
+                                    isUpdatingField = false,
+                                    isUploadingPicture = false,
+                                    fieldError = uploadResult.error.toUiText()
+                                )
+                            }
+                            return@launch
+                        }
+                    }
                 }
             }
+
+            _uiState.update {
+                it.copy(
+                    isUpdatingField = false,
+                    isUploadingPicture = false,
+                    pendingPicture = null,
+                    fieldError = null
+                )
+            }
+            _events.send(ProfileEvent.UpdateSuccess)
         }
     }
 

@@ -1,6 +1,5 @@
 package com.awan.feature.addtask.ui.components
 
-import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -23,13 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
-import com.awan.app.core.designsystem.AwanButton
-import com.awan.app.core.designsystem.AwanButtonVariant
-import com.awan.app.core.designsystem.AwanIconButton
-import com.awan.app.core.designsystem.AwanText
-import com.awan.app.core.designsystem.AwanTheme
-import com.awan.app.core.designsystem.AwanUriImage
+import com.awan.app.core.designsystem.*
 import com.awan.feature.addtask.R
 import com.composables.icons.lucide.Camera
 import com.composables.icons.lucide.Image as LucideImageIcon
@@ -95,12 +88,6 @@ private fun PickImageButtons(onImagePicked: (String) -> Unit, modifier: Modifier
             }
         }
     }
-}
-
-private fun createCameraOutputUri(context: Context): Uri {
-    val dir = File(context.cacheDir, "images").apply { mkdirs() }
-    val file = File(dir, "ai_task_${System.currentTimeMillis()}.jpg")
-    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 }
 
 @Composable

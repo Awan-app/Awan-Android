@@ -42,6 +42,8 @@ class HomeRepositoryImpl @Inject constructor(
                     points = points,
                     streak = streak,
                     maxStreak = dto.maxStreak ?: 0,
+                    profilePictureUrl = dto.profilePictureUrl,
+                    isNew = dto.isNew ?: false,
                 )
             )
             return Result.Success(
