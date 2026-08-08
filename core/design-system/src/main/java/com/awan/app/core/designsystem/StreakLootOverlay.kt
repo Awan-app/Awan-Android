@@ -214,7 +214,7 @@ fun StreakLootOverlay(
 /** Rolls the streak number from its old value to its new one as the flame catches. */
 @Composable
 private fun StreakCounter(oldValue: Int, newValue: Int, ignited: Boolean) {
-    Row(verticalAlignment = Alignment.Bottom) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         AnimatedContent(
             targetState = if (ignited) newValue else oldValue,
             transitionSpec = {
@@ -239,7 +239,6 @@ private fun StreakCounter(oldValue: Int, newValue: Int, ignited: Boolean) {
                 fontSize = 17.sp,
                 color = Color.White.copy(alpha = 0.85f),
             ),
-            modifier = Modifier.padding(bottom = 12.dp),
         )
     }
 }
