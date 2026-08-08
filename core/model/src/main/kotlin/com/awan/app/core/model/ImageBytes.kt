@@ -6,7 +6,7 @@ package com.awan.app.core.model
  */
 class ImageBytes(val bytes: ByteArray, val mimeType: String) {
     companion object {
-        /** What `POST /v1/ai/image-to-tasks` and Profile enforcement; reads compress down to it. */
-        const val MAX_BYTES = 5 * 1024 * 1024
+        /** What `POST /v1/ai/image-to-tasks` enforces; reads compress down to it. */
+        const val MAX_BYTES = 10 * 1024 * 1024
     }
 }

@@ -39,11 +39,7 @@ class ImageRepositoryImpl @Inject constructor(
         val (dimensions, outMimeType) = dimensionsWithOptions
 
         val effectiveMime = (resolverMime ?: outMimeType)?.lowercase()
-        val isSupported = effectiveMime == "image/jpeg" || 
-                effectiveMime == "image/jpg" || 
-                effectiveMime == "image/png" || 
-                effectiveMime == "image/webp" ||
-                (effectiveMime != null && effectiveMime.startsWith("image/"))
+        val isSupported = effectiveMime in SUPPORTED_MIME_TYPES
         if (!isSupported) return@withContext undecodable()
 
         val sampleSize = sampleSizeFor(dimensions)
@@ -119,5 +115,6 @@ class ImageRepositoryImpl @Inject constructor(
         const val JPEG_QUALITY = 85
         const val MIN_JPEG_QUALITY = 40
         const val QUALITY_STEP = 15
+        val SUPPORTED_MIME_TYPES = setOf("image/jpeg", "image/jpg", "image/png", "image/webp")
     }
 }
