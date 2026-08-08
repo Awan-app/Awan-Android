@@ -5,6 +5,7 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.datastore.UserPreferencesDataSource
 import com.awan.app.core.datastore.model.UserPreferencesData
+import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.domain.onboarding.model.DayBounds
 import com.awan.app.core.domain.profile.model.UserProfile
@@ -20,6 +21,7 @@ import com.awan.app.core.domain.zones.model.Zone
 import com.awan.app.core.model.DayZone
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -39,6 +41,11 @@ class OnboardingRepositoryImplTest {
     private lateinit var fakeZonesRepository: FakeZonesRepository
     private lateinit var repository: OnboardingRepositoryImpl
 
+    private val onlineMonitor = object : NetworkConnectivityMonitor {
+        override val isOnline: Flow<Boolean> = flowOf(true)
+        override fun isCurrentlyOnline(): Boolean = true
+    }
+
     @Before
     fun setUp() {
         fakeRemoteDataSource = FakeOnboardingRemoteDataSource()
@@ -50,6 +57,7 @@ class OnboardingRepositoryImplTest {
             zonesRepository = fakeZonesRepository,
             userPreferencesDataSource = fakePreferencesDataSource,
             userDao = fakeUserDao,
+            connectivityMonitor = onlineMonitor,
             ioDispatcher = testDispatcher,
         )
     }
@@ -163,11 +171,12 @@ class OnboardingRepositoryImplTest {
 
     @Test
     fun `an account with no categories gets no template rather than an error`() = runTest(testDispatcher.scheduler) {
-        val result = repository.completeOnboarding(onboardingData())
+        val result = repository.completeOnboarding(onboardingData(zones = emptyList()))
 
         assertTrue(result is Result.Success)
         assertNull(fakeZonesRepository.createdZones)
     }
+
 
     private fun onboardingData(zones: List<Zone> = Zone.defaults) = OnboardingData(
         profile = UserProfile(firstName = "Sarah", lastName = "Connor"),
@@ -228,6 +237,7 @@ class OnboardingRepositoryImplTest {
 
         override suspend fun getUserWithPreferences(userId: String): com.awan.app.core.database.model.UserWithPreferences? =
             null
+        override suspend fun getMinExpiryTime(): Long? = null
     }
 
     private class FakeZonesRepository : ZonesRepository {

@@ -58,8 +58,10 @@ fun HomeScreen(
     onLogout: () -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
     onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
+    onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
@@ -189,7 +191,7 @@ fun HomeScreen(
                             isToday = uiState.isToday,
                             isPastDate = uiState.isPastDate,
                             onToggleZoneCollapse = viewModel::toggleZoneCollapse,
-                            onAddSessionToZone = viewModel::addSessionToZone,
+                            onAddSessionToZone = { zoneId -> onNavigateToAddTask(zoneId, uiState.selectedDate) },
                             onSessionStatusToggle = viewModel::toggleSessionStatus,
                             onSessionClick = viewModel::onSessionClicked,
                             onSessionMoved = viewModel::moveSession,

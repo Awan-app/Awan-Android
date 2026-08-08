@@ -75,6 +75,13 @@ interface TaskApiService {
         @Path("date") date: String,
     ): List<TaskWithSessionsDto>
 
+    @GET("v1/tasks/range")
+    suspend fun getTasksByRange(
+        @Query("startDate") startDate: String,
+        @Query("endDate") endDate: String,
+    ): Map<String, List<TaskWithSessionsDto>>
+
+
     @POST("v1/schedule/task")
     suspend fun scheduleTask(
         @Body request: ScheduleTaskRequest,

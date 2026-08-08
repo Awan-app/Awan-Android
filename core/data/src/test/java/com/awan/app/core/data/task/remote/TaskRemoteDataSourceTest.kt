@@ -53,6 +53,11 @@ private open class FakeTaskApiService : TaskApiService {
 
     override suspend fun getTasksByDate(date: String): List<TaskWithSessionsDto> = error("not used")
 
+    override suspend fun getTasksByRange(
+        startDate: String,
+        endDate: String,
+    ): Map<String, List<TaskWithSessionsDto>> = error("not used")
+
     override suspend fun scheduleTask(request: ScheduleTaskRequest): TaskScheduleResponse =
         error("not used")
 

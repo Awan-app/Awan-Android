@@ -16,4 +16,5 @@ import androidx.room.PrimaryKey
 data class TemplateEntity(
     @PrimaryKey val id: String,
     val name: String,
+    val expiryTime: Long = 0L,
 )

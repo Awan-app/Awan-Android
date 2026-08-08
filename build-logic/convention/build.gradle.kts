@@ -68,5 +68,10 @@ gradlePlugin {
             id = "awan.android.navigation"
             implementationClass = "AndroidNavigationConventionPlugin"
         }
+        // Wires WorkManager runtime + Hilt Work into Android modules.
+        register("androidWorkManager") {
+            id = "awan.android.workmanager"
+            implementationClass = "AndroidWorkManagerConventionPlugin"
+        }
     }
-}
+}
