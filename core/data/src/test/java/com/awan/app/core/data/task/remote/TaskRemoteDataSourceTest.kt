@@ -14,6 +14,7 @@ import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
+import com.awan.app.core.network.dto.task.InboxTasksResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -51,7 +52,7 @@ private open class FakeTaskApiService : TaskApiService {
 
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Unit = error("not used")
 
-    override suspend fun getInboxTasks(): List<TaskWithSessionsDto> = error("not used")
+    override suspend fun getInboxTasks(): InboxTasksResponse = error("not used")
 }
 
 private fun dataSource(api: TaskApiService, json: Json, dispatcher: kotlinx.coroutines.CoroutineDispatcher) =
