@@ -23,6 +23,7 @@ fun ProfileScreen(
     onAction: (ProfileAction) -> Unit,
     onDailyZonesClick: () -> Unit = {},
     onSettingsClick: (String) -> Unit = {},
+    onLogout: () -> Unit = {},
 ) {
     var showEditSheet by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -30,7 +31,7 @@ fun ProfileScreen(
 
     ObserveAsEvents(events) { event ->
         when (event) {
-            ProfileEvent.LogoutSuccess -> { /* Handled by navigation */ }
+            ProfileEvent.LogoutSuccess -> onLogout()
             ProfileEvent.UpdateSuccess -> { showEditSheet = false }
         }
     }
