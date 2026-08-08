@@ -66,6 +66,8 @@ class OnboardingRepositoryImpl @Inject constructor(
                         points = response.points ?: 0,
                         streak = response.streak ?: 0,
                         maxStreak = response.maxStreak ?: 0,
+                        profilePictureUrl = response.profilePictureUrl,
+                        isNew = false,
                     ),
                 )
                 Result.Success(Unit)

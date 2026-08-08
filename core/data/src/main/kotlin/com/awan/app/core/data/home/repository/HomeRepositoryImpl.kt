@@ -15,6 +15,9 @@ import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.model.UserEntity
 import com.awan.app.core.domain.home.model.SessionStatus
 import com.awan.app.core.domain.home.model.UserProfileInfo
+import com.awan.app.core.model.SessionDetailInfo
+import com.awan.app.core.model.SessionTaskDetail
+import com.awan.app.core.model.TaskDetailInfo
 
 @Singleton
 class HomeRepositoryImpl @Inject constructor(
@@ -42,6 +45,8 @@ class HomeRepositoryImpl @Inject constructor(
                     points = points,
                     streak = streak,
                     maxStreak = dto.maxStreak ?: 0,
+                    profilePictureUrl = dto.profilePictureUrl,
+                    isNew = dto.isNew ?: false,
                 )
             )
             return Result.Success(
@@ -105,6 +110,63 @@ class HomeRepositoryImpl @Inject constructor(
         return Result.Success(schedule)
     }
 
+    override suspend fun getSessionDetail(sessionId: String): Result<SessionTaskDetail> {
+        val sessionResult = remoteDataSource.getSession(sessionId)
+        if (sessionResult is Result.Error) {
+            return Result.Error(sessionResult.error)
+        }
+        if (sessionResult !is Result.Success) {
+            return Result.Error(AppError.Unknown(Throwable("Failed to fetch session")))
+        }
+
+        val sessionDto = sessionResult.data
+        val taskId = sessionDto.taskId
+        if (taskId.isNullOrBlank()) {
+            return Result.Error(AppError.Unknown(Throwable("Session does not have a valid taskId")))
+        }
+
+        val taskResult = remoteDataSource.getTask(taskId)
+        if (taskResult is Result.Error) {
+            return Result.Error(taskResult.error)
+        }
+        if (taskResult !is Result.Success) {
+            return Result.Error(AppError.Unknown(Throwable("Failed to fetch task")))
+        }
+
+        val taskDto = taskResult.data
+
+        val sessionDetailInfo = SessionDetailInfo(
+            id = sessionDto.id,
+            start = sessionDto.start,
+            end = sessionDto.end,
+            status = sessionDto.status ?: "SCHEDULED",
+            locked = sessionDto.locked,
+            zoneId = sessionDto.zoneId,
+            taskId = taskId,
+        )
+
+        val taskDetailInfo = TaskDetailInfo(
+            id = taskDto.id,
+            title = taskDto.title,
+            description = taskDto.description,
+            estimatedDuration = taskDto.estimatedDuration,
+            status = taskDto.status ?: "SCHEDULED",
+            mandatory = taskDto.mandatory ?: false,
+            estimatedPoints = taskDto.estimatedPoints ?: 0,
+            allowTaskSplitting = taskDto.allowTaskSplitting ?: false,
+            goalId = taskDto.goalId,
+            categoryName = taskDto.category?.name,
+            dependsOnTaskIds = taskDto.dependsOnTaskIds ?: emptyList(),
+        )
+
+        return Result.Success(
+            SessionTaskDetail(
+                session = sessionDetailInfo,
+                task = taskDetailInfo,
+            )
+        )
+    }
+
 
     @Suppress("NewApi")
     private suspend fun resolveZoneFallback(date: LocalDate, dateStr: String): List<ZoneDto> {
@@ -131,6 +193,7 @@ class HomeRepositoryImpl @Inject constructor(
     override suspend fun updateSessionStatus(
         sessionId: String,
         status: SessionStatus,
+        locked: Boolean?,
         startIso: String?,
         endIso: String?,
     ): Result<Unit> {
@@ -143,6 +206,7 @@ class HomeRepositoryImpl @Inject constructor(
         val result = remoteDataSource.updateSession(
             sessionId = sessionId,
             status = statusString,
+            locked = locked,
             startIso = startIso,
             endIso = endIso,
         )
@@ -160,6 +224,65 @@ class HomeRepositoryImpl @Inject constructor(
             }
             is Result.Error -> Result.Error(result.error)
             else -> Result.Error(AppError.Unknown(Throwable("Failed to update session status")))
+        }
+    }
+
+    override suspend fun updateSessionLock(
+        sessionId: String,
+        locked: Boolean,
+    ): Result<Unit> {
+        val result = if (locked) {
+            remoteDataSource.lockSession(sessionId)
+        } else {
+            remoteDataSource.unlockSession(sessionId)
+        }
+        return when (result) {
+            is Result.Success -> Result.Success(Unit)
+            is Result.Error -> Result.Error(result.error)
+            else -> Result.Error(AppError.Unknown(Throwable("Failed to update session lock state")))
+        }
+    }
+
+    override suspend fun updateTaskDetails(
+        taskId: String,
+        title: String?,
+        description: String?,
+        estimatedDuration: Int?,
+        estimatedPoints: Int?,
+        mandatory: Boolean?,
+        allowTaskSplitting: Boolean?,
+    ): Result<Unit> {
+        val request = com.awan.app.core.network.dto.task.TaskUpdateRequest(
+            title = title,
+            description = description,
+            estimatedDuration = estimatedDuration,
+            estimatedPoints = estimatedPoints,
+            mandatory = mandatory,
+            allowTaskSplitting = allowTaskSplitting,
+        )
+        val result = remoteDataSource.updateTask(taskId, request)
+        return when (result) {
+            is Result.Success -> Result.Success(Unit)
+            is Result.Error -> Result.Error(result.error)
+            else -> Result.Error(AppError.Unknown(Throwable("Failed to update task details")))
+        }
+    }
+
+    override suspend fun deleteSession(sessionId: String): Result<Unit> {
+        val result = remoteDataSource.deleteSession(sessionId)
+        return when (result) {
+            is Result.Success -> Result.Success(Unit)
+            is Result.Error -> Result.Error(result.error)
+            else -> Result.Error(AppError.Unknown(Throwable("Failed to delete session")))
+        }
+    }
+
+    override suspend fun deleteTask(taskId: String): Result<Unit> {
+        val result = remoteDataSource.deleteTask(taskId, cascade = true)
+        return when (result) {
+            is Result.Success -> Result.Success(Unit)
+            is Result.Error -> Result.Error(result.error)
+            else -> Result.Error(AppError.Unknown(Throwable("Failed to delete task")))
         }
     }
 }

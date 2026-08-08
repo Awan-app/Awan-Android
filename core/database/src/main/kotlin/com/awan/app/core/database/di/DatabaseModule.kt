@@ -34,7 +34,8 @@ object DatabaseModule {
         context,
         AwanDatabase::class.java,
         "awan-database",
-    ).build()
+    ).fallbackToDestructiveMigration(dropAllTables = true)
+        .build()
 
     @Provides
     fun providesUserDao(database: AwanDatabase): UserDao =

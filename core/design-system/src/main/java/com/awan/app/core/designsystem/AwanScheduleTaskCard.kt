@@ -60,6 +60,7 @@ fun AwanScheduleTaskCard(
     isDragging: Boolean = false,
     displayMode: SessionDisplayMode = SessionDisplayMode.Full,
     onStatusToggle: (() -> Unit)? = null,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val isCompleted = status is TaskStatus.Completed
@@ -79,10 +80,16 @@ fun AwanScheduleTaskCard(
         label = "cardBg",
     )
 
+    val cardModifier = if (onClick != null && !isDragging) {
+        modifier.clickable(onClick = onClick)
+    } else {
+        modifier
+    }
+
     when (displayMode) {
         SessionDisplayMode.Pill -> {
             Box(
-                modifier = modifier
+                modifier = cardModifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(8.dp))
                     .background(
@@ -103,7 +110,7 @@ fun AwanScheduleTaskCard(
 
         SessionDisplayMode.Compact -> {
             Box(
-                modifier = modifier
+                modifier = cardModifier
                     .fillMaxSize()
                     .shadow(
                         elevation = if (isDragging) 0.dp else 1.dp,
@@ -159,7 +166,7 @@ fun AwanScheduleTaskCard(
 
         SessionDisplayMode.Full -> {
             Box(
-                modifier = modifier
+                modifier = cardModifier
                     .fillMaxSize()
                     .shadow(
                         elevation = if (isDragging) 0.dp else 2.dp,

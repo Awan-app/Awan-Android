@@ -39,9 +39,19 @@ import kotlin.time.Duration.Companion.milliseconds
 
 
 
+import com.awan.app.core.domain.home.usecase.GetSessionDetailUseCase
+import com.awan.app.core.domain.home.usecase.UpdateTaskDetailUseCase
+import com.awan.app.core.domain.home.usecase.DeleteSessionUseCase
+import com.awan.app.core.domain.home.usecase.DeleteTaskUseCase
+import com.awan.feature.home.impl.ui.components.calculateDurationMinutes
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getDayScheduleUseCase: GetDayScheduleUseCase,
+    private val getSessionDetailUseCase: GetSessionDetailUseCase,
+    private val updateTaskDetailUseCase: UpdateTaskDetailUseCase,
+    private val deleteSessionUseCase: DeleteSessionUseCase,
+    private val deleteTaskUseCase: DeleteTaskUseCase,
     private val homeRepository: HomeRepository,
 ) : ViewModel() {
 
@@ -115,8 +125,8 @@ class HomeViewModel @Inject constructor(
                     id = orphanZoneId,
                     categoryId = orphanZoneId,
                     category = category,
-                    startHour = startMin / 60,
-                    endHour = ceilHour(endMin),
+                    startMinutes = startMin,
+                    endMinutes = endMin,
                     isCollapsed = false,
                 )
                 zones.add(synthetic)
@@ -130,8 +140,8 @@ class HomeViewModel @Inject constructor(
                 id = "zone_default",
                 categoryId = "personal",
                 category = TaskCategory.Personal,
-                startHour = (startMin / 60).coerceIn(0, 23),
-                endHour = ceilHour(endMin).coerceIn(1, 24),
+                startMinutes = startMin,
+                endMinutes = endMin,
                 isCollapsed = false,
             )
             zones.add(fallbackZone)
@@ -188,8 +198,8 @@ class HomeViewModel @Inject constructor(
             val matchedZone = state.zones.find { it.id == zoneId } ?: return@update state
             val zoneSessions = state.sessions.filter { it.zoneId == zoneId }
             val lastEnd = zoneSessions.maxOfOrNull { it.startMinutes + it.durationMinutes }
-                ?: (matchedZone.startHour * 60)
-            val newStart = if (lastEnd < matchedZone.endHour * 60) lastEnd else matchedZone.startHour * 60
+                ?: matchedZone.startMinutes
+            val newStart = if (lastEnd < matchedZone.endMinutes) lastEnd else matchedZone.startMinutes
 
             val titles = listOf("New Task Session", "Practice Exercise", "Deep Focus", "Review Notes")
             val newSession = ScheduleSession(
@@ -291,7 +301,7 @@ class HomeViewModel @Inject constructor(
                     val maxAllowedStart = (24 * 60 - session.durationMinutes).coerceAtLeast(0)
                     val clampedStartMinutes = newStartMinutes.coerceIn(0, maxAllowedStart)
                     val matchedZone = state.zones.find { zone ->
-                        clampedStartMinutes in (zone.startHour * 60)..(zone.endHour * 60)
+                        clampedStartMinutes in zone.startMinutes..zone.endMinutes
                     }
                     val updatedSession = session.copy(
                         startMinutes = clampedStartMinutes,
@@ -346,7 +356,7 @@ class HomeViewModel @Inject constructor(
             val movedItem = zoneSessions.removeAt(fromIndex)
             zoneSessions.add(toIndex, movedItem)
 
-            var currentStart = zone.startHour * 60
+            var currentStart = zone.startMinutes
             val resequencedZoneSessions = zoneSessions.map { session ->
                 val updated = session.copy(startMinutes = currentStart)
                 currentStart += session.durationMinutes
@@ -377,6 +387,363 @@ class HomeViewModel @Inject constructor(
     fun fixConflict()     = _uiState.update { it.copy(hasConflict = false) }
     fun dismissConflict() = _uiState.update { it.copy(hasConflict = false) }
 
+
+    fun onSessionClicked(sessionId: String) {
+        _uiState.update { state ->
+            state.copy(
+                selectedSessionDetailState = SessionDetailDialogState(
+                    sessionId = sessionId,
+                    isLoading = true,
+                )
+            )
+        }
+        viewModelScope.launch {
+            when (val result = getSessionDetailUseCase(sessionId)) {
+                is Result.Success -> {
+                    _uiState.update { state ->
+                        val taskId = result.data.task.id
+                        val taskSessions = state.sessions.filter { it.taskId == taskId }.map { s ->
+                            val startMins = s.startMinutes
+                            val endMins = s.startMinutes + s.durationMinutes
+                            val startStr = com.awan.app.core.designsystem.formatTime(startMins)
+                            val endStr = com.awan.app.core.designsystem.formatTime(endMins)
+                            val isDone = s.status == com.awan.app.core.designsystem.TaskStatus.Completed
+                            com.awan.app.core.model.SessionDetailInfo(
+                                id = s.id,
+                                start = startStr,
+                                end = endStr,
+                                status = if (isDone) "COMPLETED" else "SCHEDULED",
+                                locked = s.isFixed,
+                                zoneId = s.zoneId,
+                                taskId = taskId,
+                            )
+                        }
+                        val enrichedDetail = result.data.copy(relatedSessions = taskSessions)
+                        state.copy(
+                            selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                                isLoading = false,
+                                detail = enrichedDetail,
+                                errorMessage = null,
+                            )
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update { state ->
+                        state.copy(
+                            selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                                isLoading = false,
+                                errorMessage = result.error.toReadableMessage(),
+                            )
+                        )
+                    }
+                }
+                else -> Unit
+            }
+        }
+    }
+
+    fun dismissSessionDetail() {
+        _uiState.update { state ->
+            state.copy(selectedSessionDetailState = null)
+        }
+    }
+
+    fun retryLoadSessionDetail() {
+        val currentSessionId = uiState.value.selectedSessionDetailState?.sessionId ?: return
+        onSessionClicked(currentSessionId)
+    }
+
+    fun toggleSessionStatusFromDialog() {
+        val currentDialogState = uiState.value.selectedSessionDetailState ?: return
+        val currentDetail = currentDialogState.detail ?: return
+        val sessionId = currentDialogState.sessionId
+
+        val isCurrentlyCompleted = currentDetail.session.status.uppercase() == "COMPLETED"
+        val newStatusStr = if (isCurrentlyCompleted) "SCHEDULED" else "COMPLETED"
+
+        toggleSessionStatus(sessionId)
+
+        _uiState.update { state ->
+            val updatedDetail = state.selectedSessionDetailState?.detail?.let { detail ->
+                detail.copy(
+                    session = detail.session.copy(status = newStatusStr),
+                    task = detail.task.copy(status = newStatusStr),
+                )
+            }
+            state.copy(
+                selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                    detail = updatedDetail
+                )
+            )
+        }
+    }
+
+    fun toggleSessionLockFromDialog() {
+        val currentDialogState = uiState.value.selectedSessionDetailState ?: return
+        val currentDetail = currentDialogState.detail ?: return
+        val sessionId = currentDialogState.sessionId
+
+        val newLocked = !currentDetail.session.locked
+
+        _uiState.update { state ->
+            val updatedSessions = state.sessions.map { session ->
+                if (session.id == sessionId) {
+                    session.copy(isFixed = newLocked)
+                } else session
+            }
+            val updatedDetail = state.selectedSessionDetailState?.detail?.let { detail ->
+                detail.copy(session = detail.session.copy(locked = newLocked))
+            }
+            state.copy(
+                sessions = updatedSessions,
+                selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                    detail = updatedDetail
+                )
+            )
+        }
+
+        viewModelScope.launch {
+            val result = homeRepository.updateSessionLock(sessionId, newLocked)
+            if (result is Result.Error) {
+                _uiState.update { state ->
+                    val revertedSessions = state.sessions.map { session ->
+                        if (session.id == sessionId) {
+                            session.copy(isFixed = !newLocked)
+                        } else session
+                    }
+                    val revertedDetail = state.selectedSessionDetailState?.detail?.let { detail ->
+                        detail.copy(session = detail.session.copy(locked = !newLocked))
+                    }
+                    state.copy(
+                        sessions = revertedSessions,
+                        selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                            detail = revertedDetail
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    fun startEditingSessionDetail() {
+        _uiState.update { state ->
+            val dialogState = state.selectedSessionDetailState ?: return@update state
+            val detail = dialogState.detail ?: return@update state
+            val duration = calculateDurationMinutes(detail.session.start, detail.session.end)
+                ?: detail.task.estimatedDuration ?: 30
+
+            state.copy(
+                selectedSessionDetailState = dialogState.copy(
+                    isEditing = true,
+                    editTitle = detail.task.title,
+                    editDescription = detail.task.description ?: "",
+                    editDurationMinutes = duration,
+                )
+            )
+        }
+    }
+
+    fun cancelEditingSessionDetail() {
+        _uiState.update { state ->
+            val dialogState = state.selectedSessionDetailState ?: return@update state
+            state.copy(
+                selectedSessionDetailState = dialogState.copy(isEditing = false)
+            )
+        }
+    }
+
+    fun onEditTitleChanged(newTitle: String) {
+        _uiState.update { state ->
+            val dialogState = state.selectedSessionDetailState ?: return@update state
+            state.copy(
+                selectedSessionDetailState = dialogState.copy(editTitle = newTitle)
+            )
+        }
+    }
+
+    fun onEditDescriptionChanged(newDesc: String) {
+        _uiState.update { state ->
+            val dialogState = state.selectedSessionDetailState ?: return@update state
+            state.copy(
+                selectedSessionDetailState = dialogState.copy(editDescription = newDesc)
+            )
+        }
+    }
+
+    fun onEditDurationChanged(newDuration: Int) {
+        _uiState.update { state ->
+            val dialogState = state.selectedSessionDetailState ?: return@update state
+            state.copy(
+                selectedSessionDetailState = dialogState.copy(editDurationMinutes = newDuration)
+            )
+        }
+    }
+
+    fun saveSessionDetailEdits() {
+        val dialogState = uiState.value.selectedSessionDetailState ?: return
+        val detail = dialogState.detail ?: return
+        val sessionId = detail.session.id
+        val taskId = detail.task.id
+        val newDuration = dialogState.editDurationMinutes
+
+        _uiState.update { state ->
+            state.copy(
+                selectedSessionDetailState = state.selectedSessionDetailState?.copy(isSaving = true)
+            )
+        }
+
+        viewModelScope.launch {
+            // 1. Update task title & description
+            val taskResult = updateTaskDetailUseCase(
+                taskId = taskId,
+                title = dialogState.editTitle,
+                description = dialogState.editDescription,
+            )
+
+            // 2. Update specific session end time if duration changed
+            val currentDuration = calculateDurationMinutes(detail.session.start, detail.session.end) ?: 30
+            var newEndIso = detail.session.end
+            if (newDuration != currentDuration) {
+                val calculatedEnd = com.awan.feature.home.impl.ui.components.calculateEndIso(detail.session.start, newDuration)
+                if (calculatedEnd != null) {
+                    newEndIso = calculatedEnd
+                    val currentStatus = if (detail.session.status.uppercase() == "COMPLETED") {
+                        com.awan.app.core.domain.home.model.SessionStatus.COMPLETED
+                    } else {
+                        com.awan.app.core.domain.home.model.SessionStatus.SCHEDULED
+                    }
+                    homeRepository.updateSessionStatus(
+                        sessionId = sessionId,
+                        status = currentStatus,
+                        startIso = detail.session.start,
+                        endIso = calculatedEnd,
+                    )
+                }
+            }
+
+            if (taskResult is Result.Success) {
+                _uiState.update { state ->
+                    val updatedDetail = state.selectedSessionDetailState?.detail?.let { d ->
+                        val updatedSession = d.session.copy(end = newEndIso)
+                        val updatedRelatedSessions = d.relatedSessions.map { s ->
+                            if (s.id == sessionId) s.copy(end = newEndIso) else s
+                        }
+                        d.copy(
+                            session = updatedSession,
+                            task = d.task.copy(
+                                title = dialogState.editTitle,
+                                description = dialogState.editDescription,
+                            ),
+                            relatedSessions = updatedRelatedSessions,
+                        )
+                    }
+
+                    // Update local schedule sessions: durationMinutes ONLY for this specific session!
+                    val updatedSessions = state.sessions.map { s ->
+                        if (s.id == sessionId) {
+                            s.copy(
+                                taskTitle = dialogState.editTitle,
+                                durationMinutes = newDuration,
+                            )
+                        } else if (s.taskId == taskId) {
+                            s.copy(taskTitle = dialogState.editTitle)
+                        } else s
+                    }
+
+                    state.copy(
+                        sessions = updatedSessions,
+                        selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                            isEditing = false,
+                            isSaving = false,
+                            detail = updatedDetail,
+                        )
+                    )
+                }
+            } else {
+                _uiState.update { state ->
+                    state.copy(
+                        selectedSessionDetailState = state.selectedSessionDetailState?.copy(isSaving = false)
+                    )
+                }
+            }
+        }
+    }
+
+    fun requestDeleteSession() {
+        _uiState.update { state ->
+            val dialogState = state.selectedSessionDetailState ?: return@update state
+            state.copy(
+                selectedSessionDetailState = dialogState.copy(
+                    showDeleteConfirmDialog = true,
+                    deleteTargetType = DeleteTargetType.SESSION,
+                )
+            )
+        }
+    }
+
+    fun selectDeleteTargetType(type: DeleteTargetType) {
+        _uiState.update { state ->
+            val dialogState = state.selectedSessionDetailState ?: return@update state
+            state.copy(
+                selectedSessionDetailState = dialogState.copy(deleteTargetType = type)
+            )
+        }
+    }
+
+    fun dismissDeleteConfirmDialog() {
+        _uiState.update { state ->
+            val dialogState = state.selectedSessionDetailState ?: return@update state
+            state.copy(
+                selectedSessionDetailState = dialogState.copy(
+                    showDeleteConfirmDialog = false,
+                    isDeleting = false,
+                )
+            )
+        }
+    }
+
+    fun confirmDeleteAction() {
+        val dialogState = uiState.value.selectedSessionDetailState ?: return
+        val detail = dialogState.detail ?: return
+        val sessionId = detail.session.id
+        val taskId = detail.task.id
+        val deleteType = dialogState.deleteTargetType
+
+        _uiState.update { state ->
+            state.copy(
+                selectedSessionDetailState = state.selectedSessionDetailState?.copy(isDeleting = true)
+            )
+        }
+
+        viewModelScope.launch {
+            val result = if (deleteType == DeleteTargetType.SESSION) {
+                deleteSessionUseCase(sessionId)
+            } else {
+                deleteTaskUseCase(taskId)
+            }
+
+            if (result is Result.Success) {
+                _uiState.update { state ->
+                    val updatedSessions = if (deleteType == DeleteTargetType.SESSION) {
+                        state.sessions.filterNot { it.id == sessionId }
+                    } else {
+                        state.sessions.filterNot { it.taskId == taskId }
+                    }
+                    state.copy(
+                        sessions = updatedSessions,
+                        selectedSessionDetailState = null,
+                    )
+                }
+            } else {
+                _uiState.update { state ->
+                    state.copy(
+                        selectedSessionDetailState = state.selectedSessionDetailState?.copy(isDeleting = false)
+                    )
+                }
+            }
+        }
+    }
 
     private fun updateCurrentTime() {
         val cal = Calendar.getInstance()

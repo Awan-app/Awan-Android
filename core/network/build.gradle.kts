@@ -14,7 +14,7 @@ val localProperties = Properties().apply {
 }
 
 val awanBaseUrl = localProperties.getProperty("awan.base.url") 
-    ?: "https://backend-production-dec8.up.railway.app/api/"
+    ?: "https://backend-production-c701.up.railway.app/api/"
 val awanBaseUrlFormatted = "\"$awanBaseUrl\""
 
 android {
