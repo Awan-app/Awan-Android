@@ -178,6 +178,7 @@ private class FakeTaskDao : TaskDao {
     override suspend fun deleteAllDependenciesForTask(taskId: String) {}
     override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}
     override suspend fun deleteTasksByGoal(goalId: String) {}
+    override suspend fun nullifyOrphanedGoalReferences() {}
 }
 
 private class FakeCategoryDao : CategoryDao {

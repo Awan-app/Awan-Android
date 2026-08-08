@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -144,7 +145,7 @@ fun AwanApp(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
             AnimatedVisibility(
                 visible = showOfflineBanner,
                 enter = expandVertically() + fadeIn(),

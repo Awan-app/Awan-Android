@@ -72,6 +72,8 @@ class OfflineSyncCoordinator @Inject constructor(
         if (!syncScheduleRange(startDate, endDate, forceRefresh)) success = false
         if (!syncZonesAndTemplates(forceRefresh)) success = false
 
+        taskDao.nullifyOrphanedGoalReferences()
+
         success
     }
 
