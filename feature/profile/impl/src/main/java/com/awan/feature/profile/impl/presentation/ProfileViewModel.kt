@@ -71,10 +71,10 @@ class ProfileViewModel @Inject constructor(
                 action.birthDate
             )
             is ProfileAction.UpdateProfilePicture -> {
-                _uiState.update { it.copy(pendingProfilePictureUri = action.uri, fieldError = null) }
+                _uiState.update { it.copy(pendingPicture = PendingPicture.Picked(action.uri), fieldError = null) }
             }
             ProfileAction.DeleteProfilePicture -> {
-                _uiState.update { it.copy(pendingProfilePictureUri = "delete", fieldError = null) }
+                _uiState.update { it.copy(pendingPicture = PendingPicture.Clear, fieldError = null) }
             }
             ProfileAction.Logout -> logout()
         }
@@ -147,45 +147,48 @@ class ProfileViewModel @Inject constructor(
                 return@launch
             }
 
-            val pendingUri = _uiState.value.pendingProfilePictureUri
-            if (pendingUri != null) {
+            val pending = _uiState.value.pendingPicture
+            if (pending != null) {
                 _uiState.update { it.copy(isUploadingPicture = true) }
-                if (pendingUri == "delete") {
-                    val deleteResult = deleteProfilePictureUseCase()
-                    if (deleteResult is Result.Error) {
-                        _uiState.update {
-                            it.copy(
-                                isUpdatingField = false,
-                                isUploadingPicture = false,
-                                fieldError = deleteResult.error.toUiText()
-                            )
+                when (pending) {
+                    PendingPicture.Clear -> {
+                        val deleteResult = deleteProfilePictureUseCase()
+                        if (deleteResult is Result.Error) {
+                            _uiState.update {
+                                it.copy(
+                                    isUpdatingField = false,
+                                    isUploadingPicture = false,
+                                    fieldError = deleteResult.error.toUiText()
+                                )
+                            }
+                            return@launch
                         }
-                        return@launch
                     }
-                } else {
-                    val imageResult = readImage(pendingUri)
-                    if (imageResult is Result.Error) {
-                        _uiState.update {
-                            it.copy(
-                                isUpdatingField = false,
-                                isUploadingPicture = false,
-                                fieldError = imageResult.error.toUiText()
-                            )
+                    is PendingPicture.Picked -> {
+                        val imageResult = readImage(pending.uri)
+                        if (imageResult is Result.Error) {
+                            _uiState.update {
+                                it.copy(
+                                    isUpdatingField = false,
+                                    isUploadingPicture = false,
+                                    fieldError = imageResult.error.toUiText()
+                                )
+                            }
+                            return@launch
                         }
-                        return@launch
-                    }
 
-                    val imageBytes = (imageResult as Result.Success).data
-                    val uploadResult = updateProfilePictureUseCase(imageBytes.bytes, imageBytes.mimeType)
-                    if (uploadResult is Result.Error) {
-                        _uiState.update {
-                            it.copy(
-                                isUpdatingField = false,
-                                isUploadingPicture = false,
-                                fieldError = uploadResult.error.toUiText()
-                            )
+                        val imageBytes = (imageResult as Result.Success).data
+                        val uploadResult = updateProfilePictureUseCase(imageBytes.bytes, imageBytes.mimeType)
+                        if (uploadResult is Result.Error) {
+                            _uiState.update {
+                                it.copy(
+                                    isUpdatingField = false,
+                                    isUploadingPicture = false,
+                                    fieldError = uploadResult.error.toUiText()
+                                )
+                            }
+                            return@launch
                         }
-                        return@launch
                     }
                 }
             }
@@ -194,7 +197,7 @@ class ProfileViewModel @Inject constructor(
                 it.copy(
                     isUpdatingField = false,
                     isUploadingPicture = false,
-                    pendingProfilePictureUri = null,
+                    pendingPicture = null,
                     fieldError = null
                 )
             }

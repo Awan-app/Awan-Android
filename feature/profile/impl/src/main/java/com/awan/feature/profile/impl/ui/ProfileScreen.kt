@@ -67,7 +67,7 @@ fun ProfileScreen(
                     initialLastName = uiState.profile.lastName ?: "",
                     initialBirthDate = uiState.profile.birthDate ?: "",
                     profilePictureUrl = uiState.profile.profilePictureUrl,
-                    pendingPictureUri = uiState.pendingProfilePictureUri,
+                    pendingPicture = uiState.pendingPicture,
                     error = uiState.fieldError,
                     onDismiss = { showEditSheet = false },
                     onSave = { first, last, birth ->

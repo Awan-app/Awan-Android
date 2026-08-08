@@ -2,5 +2,4 @@
 <paths>
     <cache-path name="ai_task_images" path="images/" />
     <cache-path name="profile_images" path="profile_images/" />
-    <cache-path name="cache_root" path="." />
 </paths>

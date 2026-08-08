@@ -3,6 +3,11 @@ package com.awan.feature.profile.impl.presentation
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.profile.model.Profile
 
+sealed interface PendingPicture {
+    data object Clear : PendingPicture
+    data class Picked(val uri: String) : PendingPicture
+}
+
 data class ProfileState(
     val profile: Profile? = null,
     val isLoading: Boolean = false,
@@ -12,5 +17,5 @@ data class ProfileState(
     val isUpdatingField: Boolean = false,
     val isUploadingPicture: Boolean = false,
     val fieldError: UiText? = null,
-    val pendingProfilePictureUri: String? = null,
+    val pendingPicture: PendingPicture? = null,
 )

@@ -15,11 +15,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.awan.app.core.designsystem.AwanRemoteImage
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.profile.impl.R as ProfileR
 
 @Composable
 fun ProfilePicturePreview(
@@ -70,7 +72,7 @@ fun ProfilePicturePreview(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
+                    contentDescription = stringResource(ProfileR.string.profile_close),
                     tint = Color.White
                 )
             }

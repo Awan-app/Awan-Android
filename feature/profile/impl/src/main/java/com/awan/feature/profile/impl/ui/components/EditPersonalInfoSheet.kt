@@ -28,11 +28,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.designsystem.*
+import com.awan.feature.profile.impl.presentation.PendingPicture
 import com.awan.feature.profile.impl.R as ProfileR
-import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -45,7 +44,7 @@ fun EditPersonalInfoSheet(
     initialLastName: String,
     initialBirthDate: String,
     profilePictureUrl: String?,
-    pendingPictureUri: String?,
+    pendingPicture: PendingPicture?,
     error: UiText?,
     onDismiss: () -> Unit,
     onSave: (String, String, String) -> Unit,
@@ -79,12 +78,7 @@ fun EditPersonalInfoSheet(
     }
 
     fun launchCameraInternal() {
-        val imagesDir = File(context.cacheDir, "profile_images")
-        if (!imagesDir.exists()) {
-            imagesDir.mkdirs()
-        }
-        val file = File(imagesDir, "profile_picture_${System.currentTimeMillis()}.jpg")
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val uri = createCameraOutputUri(context, "profile_images")
         tempPhotoUri = uri
         cameraLauncher.launch(uri)
     }
@@ -174,10 +168,10 @@ fun EditPersonalInfoSheet(
                         contentAlignment = Alignment.Center
                     ) {
                         // Priority: Pending (Preview) > Current URL > Placeholder
-                        val imageSource = when {
-                            pendingPictureUri == "delete" -> null
-                            pendingPictureUri != null -> pendingPictureUri
-                            else -> profilePictureUrl
+                        val imageSource = when (pendingPicture) {
+                            PendingPicture.Clear -> null
+                            is PendingPicture.Picked -> pendingPicture.uri
+                            null -> profilePictureUrl
                         }
 
                         if (imageSource != null) {
@@ -329,7 +323,7 @@ fun EditPersonalInfoSheet(
                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                 )
             },
-            onDeleteClick = if (profilePictureUrl != null || pendingPictureUri != null) onDeletePicture else null
+            onDeleteClick = if (profilePictureUrl != null || pendingPicture != null) onDeletePicture else null
         )
     }
 
