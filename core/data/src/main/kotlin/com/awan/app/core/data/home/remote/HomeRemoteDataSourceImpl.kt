@@ -19,6 +19,7 @@ import com.awan.app.core.network.api.UserApiService
 import com.awan.app.core.network.dto.onboarding.CompleteOnboardingResponse
 
 import com.awan.app.core.network.api.SessionApiService
+import com.awan.app.core.network.dto.session.CompleteSessionResponse
 import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.session.UpdateSessionRequest
 
@@ -57,20 +58,30 @@ class HomeRemoteDataSourceImpl @Inject constructor(
             userApiService.getUserProfile()
         }
 
-    override suspend fun updateSession(
+    override suspend fun completeSession(sessionId: String): Result<CompleteSessionResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            sessionApiService.completeSession(sessionId)
+        }
+
+    override suspend fun uncompleteSession(sessionId: String): Result<SessionDto> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            sessionApiService.uncompleteSession(sessionId)
+        }
+
+    override suspend fun cancelSession(sessionId: String): Result<SessionDto> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            sessionApiService.cancelSession(sessionId)
+        }
+
+    override suspend fun moveSession(
         sessionId: String,
-        status: String?,
-        startIso: String?,
-        endIso: String?,
+        startIso: String,
+        endIso: String,
     ): Result<SessionDto> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             sessionApiService.updateSession(
                 sessionId = sessionId,
-                request = UpdateSessionRequest(
-                    start = startIso,
-                    end = endIso,
-                    status = status,
-                ),
+                request = UpdateSessionRequest(start = startIso, end = endIso),
             )
         }
 }

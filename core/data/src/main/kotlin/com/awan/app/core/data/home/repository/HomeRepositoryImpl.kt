@@ -2,8 +2,11 @@ package com.awan.app.core.data.home.repository
 
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.data.gamification.GamificationEventBus
+import com.awan.app.core.data.gamification.mapper.toDomain
 import com.awan.app.core.data.home.mapper.HomeMapper
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
+import com.awan.app.core.domain.gamification.model.SessionReward
 import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.network.dto.zone.ZoneDto
@@ -20,6 +23,7 @@ import com.awan.app.core.domain.home.model.UserProfileInfo
 class HomeRepositoryImpl @Inject constructor(
     private val remoteDataSource: HomeRemoteDataSource,
     private val userDao: UserDao,
+    private val eventBus: GamificationEventBus,
 ) : HomeRepository {
 
     private val scheduleCache = java.util.concurrent.ConcurrentHashMap<LocalDate, DaySchedule>()
@@ -130,38 +134,64 @@ class HomeRepositoryImpl @Inject constructor(
         return emptyList()
     }
 
-    override suspend fun updateSessionStatus(
-        sessionId: String,
-        status: SessionStatus,
-        startIso: String?,
-        endIso: String?,
-    ): Result<Unit> {
-        val statusString = when (status) {
-            SessionStatus.COMPLETED -> "COMPLETED"
-            SessionStatus.IN_PROGRESS -> "IN_PROGRESS"
-            SessionStatus.CANCELLED -> "CANCELLED"
-            SessionStatus.SCHEDULED -> "SCHEDULED"
-        }
-        val result = remoteDataSource.updateSession(
-            sessionId = sessionId,
-            status = statusString,
-            startIso = startIso,
-            endIso = endIso,
-        )
-        return when (result) {
+    override suspend fun completeSession(sessionId: String): Result<SessionReward> =
+        when (val result = remoteDataSource.completeSession(sessionId)) {
             is Result.Success -> {
-                scheduleCache.forEach { (date, cachedSchedule) ->
-                    if (cachedSchedule.sessions.any { it.id == sessionId }) {
-                        val updatedSessions = cachedSchedule.sessions.map { session ->
-                            if (session.id == sessionId) session.copy(status = status) else session
-                        }
-                        scheduleCache[date] = cachedSchedule.copy(sessions = updatedSessions)
-                    }
-                }
-                Result.Success(Unit)
+                patchCachedStatus(sessionId, SessionStatus.COMPLETED)
+                val reward = result.data.reward.toDomain()
+                // Published here rather than from the caller so any future path that completes a
+                // session celebrates identically, without each one remembering to.
+                eventBus.publishSessionReward(reward)
+                Result.Success(reward)
             }
             is Result.Error -> Result.Error(result.error)
-            else -> Result.Error(AppError.Unknown(Throwable("Failed to update session status")))
+            Result.Loading -> unexpectedLoading()
+        }
+
+    override suspend fun uncompleteSession(sessionId: String): Result<Unit> =
+        // Nothing is published: undoing a completion does not take the points back, so there is no
+        // change to celebrate and reversing the animation would misrepresent the balance.
+        patchOnSuccess(remoteDataSource.uncompleteSession(sessionId), sessionId, SessionStatus.SCHEDULED)
+
+    override suspend fun cancelSession(sessionId: String): Result<Unit> =
+        patchOnSuccess(remoteDataSource.cancelSession(sessionId), sessionId, SessionStatus.CANCELLED)
+
+    override suspend fun moveSession(
+        sessionId: String,
+        startIso: String,
+        endIso: String,
+    ): Result<Unit> =
+        when (val result = remoteDataSource.moveSession(sessionId, startIso, endIso)) {
+            is Result.Success -> Result.Success(Unit)
+            is Result.Error -> Result.Error(result.error)
+            Result.Loading -> unexpectedLoading()
+        }
+
+    private fun patchOnSuccess(
+        result: Result<*>,
+        sessionId: String,
+        status: SessionStatus,
+    ): Result<Unit> = when (result) {
+        is Result.Success -> {
+            patchCachedStatus(sessionId, status)
+            Result.Success(Unit)
+        }
+        is Result.Error -> Result.Error(result.error)
+        Result.Loading -> unexpectedLoading()
+    }
+
+    /** Keeps the day's cached copy in step so a re-read does not resurrect the old status. */
+    private fun patchCachedStatus(sessionId: String, status: SessionStatus) {
+        scheduleCache.forEach { (date, cachedSchedule) ->
+            if (cachedSchedule.sessions.any { it.id == sessionId }) {
+                val updatedSessions = cachedSchedule.sessions.map { session ->
+                    if (session.id == sessionId) session.copy(status = status) else session
+                }
+                scheduleCache[date] = cachedSchedule.copy(sessions = updatedSessions)
+            }
         }
     }
+
+    private fun unexpectedLoading(): Result.Error =
+        Result.Error(AppError.Unknown(Throwable("Session call returned Loading")))
 }

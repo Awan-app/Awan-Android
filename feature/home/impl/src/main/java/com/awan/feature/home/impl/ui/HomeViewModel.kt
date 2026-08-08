@@ -27,9 +27,11 @@ import com.awan.app.core.designsystem.TaskStatus
 import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.domain.home.model.DaySession
 import com.awan.app.core.domain.home.model.DayZone
-import com.awan.app.core.domain.home.model.SessionStatus
-import com.awan.app.core.domain.home.repository.HomeRepository
+import com.awan.app.core.domain.home.usecase.CompleteSessionUseCase
 import com.awan.app.core.domain.home.usecase.GetDayScheduleUseCase
+import com.awan.app.core.domain.home.usecase.GetUserProfileUseCase
+import com.awan.app.core.domain.home.usecase.MoveSessionUseCase
+import com.awan.app.core.domain.home.usecase.UncompleteSessionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,7 +55,10 @@ private const val DAILY_GIFT_ALREADY_CLAIMED = "DAILY_GIFT_ALREADY_CLAIMED"
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getDayScheduleUseCase: GetDayScheduleUseCase,
-    private val homeRepository: HomeRepository,
+    private val getUserProfileUseCase: GetUserProfileUseCase,
+    private val completeSessionUseCase: CompleteSessionUseCase,
+    private val uncompleteSessionUseCase: UncompleteSessionUseCase,
+    private val moveSessionUseCase: MoveSessionUseCase,
     private val observeGamificationProgressUseCase: ObserveGamificationProgressUseCase,
     private val refreshGamificationProgressUseCase: RefreshGamificationProgressUseCase,
     private val getWheelConfigUseCase: GetWheelConfigUseCase,
@@ -78,7 +83,7 @@ class HomeViewModel @Inject constructor(
 
     private fun loadUserProfile() {
         viewModelScope.launch {
-            when (val result = homeRepository.getUserProfile()) {
+            when (val result = getUserProfileUseCase()) {
                 is Result.Success -> {
                     val user = result.data
                     val name = user.firstName.takeIf { it.isNotBlank() } ?: "User"
@@ -360,28 +365,40 @@ class HomeViewModel @Inject constructor(
         }
 
         val sessionToSync = targetSession ?: return
-        val sessionStatusEnum = if (isCompleting) {
-            SessionStatus.COMPLETED
-        } else {
-            SessionStatus.SCHEDULED
-        }
-
-        val date = _uiState.value.selectedDate
-        val startTime = date.atStartOfDay().plusMinutes(sessionToSync.startMinutes.toLong())
-        val endTime = startTime.plusMinutes(sessionToSync.durationMinutes.toLong())
-        val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
-        val startIso = startTime.format(dtFormatter)
-        val endIso = endTime.format(dtFormatter)
+        val previousStatus = sessionToSync.status
 
         viewModelScope.launch {
-            homeRepository.updateSessionStatus(
-                sessionId = sessionToSync.id,
-                status = sessionStatusEnum,
-                startIso = startIso,
-                endIso = endIso,
+            val result = if (isCompleting) {
+                // The reward reaches the celebration through the data layer's bus, and carries the
+                // new balance with it — re-reading progress here would race the star-by-star
+                // count-up and snap the badge straight to the final total.
+                completeSessionUseCase(sessionToSync.id)
+            } else {
+                uncompleteSessionUseCase(sessionToSync.id).also {
+                    // Points are not clawed back, but the contract is silent on the streak, so the
+                    // only way the badges stay honest is to ask.
+                    if (it is Result.Success) refreshGamificationProgressUseCase()
+                }
+            }
+
+            if (result is Result.Error) restoreSessionStatus(sessionId, previousStatus)
+        }
+    }
+
+    /** Puts the optimistic flip back when the server refused it, so the tick cannot lie. */
+    private fun restoreSessionStatus(sessionId: String, previousStatus: TaskStatus) {
+        _uiState.update { state ->
+            val updated = state.sessions.map { session ->
+                if (session.id == sessionId) session.copy(status = previousStatus) else session
+            }
+            val (completedHours, totalHours) = calculateSessionHours(updated)
+            state.copy(
+                sessions = updated,
+                completedSessionsCount = updated.count { it.status == TaskStatus.Completed },
+                completedHours = completedHours,
+                totalHours = totalHours,
+                progressSegments = buildProgressSegments(updated),
             )
-            // The server owns the balance, so re-read it rather than guessing the delta locally.
-            refreshGamificationProgressUseCase()
         }
     }
 
@@ -425,13 +442,10 @@ class HomeViewModel @Inject constructor(
         val endIso = endTime.format(dtFormatter)
 
         viewModelScope.launch {
-            homeRepository.updateSessionStatus(
+            // Times only. A move must never touch status — that is what the dedicated
+            // complete/uncomplete endpoints are for.
+            moveSessionUseCase(
                 sessionId = sessionToSync.id,
-                status = if (sessionToSync.status == TaskStatus.Completed) {
-                    SessionStatus.COMPLETED
-                } else {
-                    SessionStatus.SCHEDULED
-                },
                 startIso = startIso,
                 endIso = endIso,
             )
