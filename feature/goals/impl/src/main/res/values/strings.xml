@@ -18,4 +18,15 @@
     <string name="inbox_status_cancelled">Cancelled</string>
     <string name="inbox_status_missed">Missed</string>
     <string name="inbox_status_unknown">Unknown</string>
+    <string name="inbox_status_drafted">Drafted</string>
+    <string name="inbox_status_active">Active</string>
+    <string name="inbox_title">Inbox</string>
+    <string name="inbox_search_placeholder">Search tasks...</string>
+    <string name="inbox_filter_active_now">Active Now</string>
+    <string name="inbox_filter_missed">Missed</string>
+    <string name="inbox_no_sessions">No sessions attached.</string>
+    <string name="inbox_empty_title">All caught up!</string>
+    <string name="inbox_empty_subtitle">You have no tasks in your inbox.</string>
+    <string name="inbox_error_title">Failed to load inbox tasks</string>
+    <string name="inbox_error_retry">Retry</string>
 </resources>

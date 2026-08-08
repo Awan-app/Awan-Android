@@ -18,4 +18,15 @@
     <string name="inbox_status_cancelled">ملغى</string>
     <string name="inbox_status_missed">فائت</string>
     <string name="inbox_status_unknown">غير معروف</string>
+    <string name="inbox_status_drafted">مسودة</string>
+    <string name="inbox_status_active">نشط</string>
+    <string name="inbox_title">الوارد</string>
+    <string name="inbox_search_placeholder">البحث في المهام...</string>
+    <string name="inbox_filter_active_now">نشط الآن</string>
+    <string name="inbox_filter_missed">فائت</string>
+    <string name="inbox_no_sessions">لا توجد جلسات مرتبطة.</string>
+    <string name="inbox_empty_title">كل شيء مكتمل!</string>
+    <string name="inbox_empty_subtitle">لا توجد لديك مهام في الوارد.</string>
+    <string name="inbox_error_title">فشل تحميل المهام</string>
+    <string name="inbox_error_retry">إعادة المحاولة</string>
 </resources>

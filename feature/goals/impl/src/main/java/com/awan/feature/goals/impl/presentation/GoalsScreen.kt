@@ -64,18 +64,11 @@ fun GoalsScreen(
     val colors = AwanTheme.colors
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(colors.background),
+        modifier = modifier.fillMaxSize(),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding(),
+            modifier = Modifier.fillMaxSize(),
         ) {
-            GoalsHeader()
-
-            Spacer(modifier = Modifier.height(12.dp))
 
             GoalsTabRow(
                 selectedTab = state.tab,
@@ -135,23 +128,7 @@ fun GoalsScreen(
     }
 }
 
-@Composable
-private fun GoalsHeader() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-    ) {
-        AwanText(
-            text = stringResource(R.string.goals_title),
-            style = AwanTheme.typography.display.copy(
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = AwanTheme.colors.textPrimary,
-            ),
-        )
-    }
-}
+
 
 @Composable
 private fun GoalsTabRow(
