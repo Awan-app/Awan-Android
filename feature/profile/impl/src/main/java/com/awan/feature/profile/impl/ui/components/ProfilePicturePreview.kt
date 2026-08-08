@@ -14,7 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -68,12 +67,12 @@ fun ProfilePicturePreview(
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
                     .padding(16.dp)
-                    .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(50))
+                    .background(AwanTheme.colors.ink.copy(alpha = 0.3f), RoundedCornerShape(50))
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = stringResource(ProfileR.string.profile_close),
-                    tint = Color.White
+                    tint = AwanTheme.colors.surface
                 )
             }
         }

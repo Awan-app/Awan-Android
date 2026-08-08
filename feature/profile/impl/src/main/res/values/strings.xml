@@ -90,8 +90,6 @@
     <string name="profile_pm">PM</string>
     <string name="profile_user_placeholder">User</string>
     <string name="profile_error_logout">Failed to logout</string>
-    <string name="profile_update_picture">Update picture</string>
-    <string name="profile_delete_picture">Delete picture</string>
     <string name="profile_camera">Camera</string>
     <string name="profile_gallery">Gallery</string>
     <string name="profile_remove_photo">Remove photo</string>
