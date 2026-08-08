@@ -10,6 +10,7 @@ import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
+import com.awan.app.core.network.dto.task.InboxTasksResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.http.Body
