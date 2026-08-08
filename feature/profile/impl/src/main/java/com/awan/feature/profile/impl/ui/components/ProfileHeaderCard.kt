@@ -15,14 +15,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.request.crossfade
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.feature.profile.impl.helpers.ProfileHelper
@@ -66,14 +61,8 @@ fun ProfileHeaderCard(
                 contentAlignment = Alignment.Center
             ) {
                 if (profile.profilePictureUrl != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(profile.profilePictureUrl)
-                            .crossfade(true)
-                            .memoryCacheKey("${profile.profilePictureUrl}_${System.currentTimeMillis() / 10000}")
-                            .build(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
+                    AwanRemoteImage(
+                        url = profile.profilePictureUrl,
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
@@ -114,7 +103,7 @@ fun ProfileHeaderCard(
                     )
                 }
 
-                if (uiState.isUpdatingField) {
+                if (uiState.isUploadingPicture) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()

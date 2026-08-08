@@ -6,7 +6,7 @@ import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.auth.usecase.LogoutUseCase
-import com.awan.app.core.domain.image.repository.ImageRepository
+import com.awan.app.core.domain.image.usecase.ReadImageUseCase
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.usecase.DeleteProfilePictureUseCase
 import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
@@ -22,6 +22,7 @@ import com.awan.app.core.domain.profile.usecase.UpdateSleepScheduleUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateTimezoneUseCase
 import com.awan.feature.profile.impl.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -37,7 +38,7 @@ class ProfileViewModel @Inject constructor(
     private val updateBirthDateUseCase: UpdateBirthDateUseCase,
     private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
     private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
-    private val imageRepository: ImageRepository,
+    private val readImage: ReadImageUseCase,
     private val getUserDataUseCase: GetUserDataUseCase,
     private val setDarkThemeUseCase: SetDarkThemeUseCase,
     private val setLocaleUseCase: SetLocaleUseCase,
@@ -47,8 +48,8 @@ class ProfileViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ProfileState())
     val uiState: StateFlow<ProfileState> = _uiState.asStateFlow()
 
-    private val _events = MutableSharedFlow<ProfileEvent>()
-    val events = _events.asSharedFlow()
+    private val _events = Channel<ProfileEvent>(Channel.BUFFERED)
+    val events = _events.receiveAsFlow()
 
     init {
         loadProfile()
@@ -128,6 +129,8 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun updatePersonalInfo(firstName: String, lastName: String, birthDate: String) {
+        if (_uiState.value.isUpdatingField) return
+
         viewModelScope.launch {
             _uiState.update { it.copy(isUpdatingField = true, fieldError = null) }
 
@@ -146,23 +149,42 @@ class ProfileViewModel @Inject constructor(
 
             val pendingUri = _uiState.value.pendingProfilePictureUri
             if (pendingUri != null) {
+                _uiState.update { it.copy(isUploadingPicture = true) }
                 if (pendingUri == "delete") {
                     val deleteResult = deleteProfilePictureUseCase()
                     if (deleteResult is Result.Error) {
-                        _uiState.update { it.copy(isUpdatingField = false, fieldError = deleteResult.error.toUiText()) }
+                        _uiState.update {
+                            it.copy(
+                                isUpdatingField = false,
+                                isUploadingPicture = false,
+                                fieldError = deleteResult.error.toUiText()
+                            )
+                        }
                         return@launch
                     }
                 } else {
-                    val imageResult = imageRepository.read(pendingUri)
+                    val imageResult = readImage(pendingUri)
                     if (imageResult is Result.Error) {
-                        _uiState.update { it.copy(isUpdatingField = false, fieldError = imageResult.error.toUiText()) }
+                        _uiState.update {
+                            it.copy(
+                                isUpdatingField = false,
+                                isUploadingPicture = false,
+                                fieldError = imageResult.error.toUiText()
+                            )
+                        }
                         return@launch
                     }
 
                     val imageBytes = (imageResult as Result.Success).data
                     val uploadResult = updateProfilePictureUseCase(imageBytes.bytes, imageBytes.mimeType)
                     if (uploadResult is Result.Error) {
-                        _uiState.update { it.copy(isUpdatingField = false, fieldError = uploadResult.error.toUiText()) }
+                        _uiState.update {
+                            it.copy(
+                                isUpdatingField = false,
+                                isUploadingPicture = false,
+                                fieldError = uploadResult.error.toUiText()
+                            )
+                        }
                         return@launch
                     }
                 }
@@ -171,83 +193,12 @@ class ProfileViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isUpdatingField = false,
+                    isUploadingPicture = false,
                     pendingProfilePictureUri = null,
                     fieldError = null
                 )
             }
-            _events.emit(ProfileEvent.UpdateSuccess)
-        }
-    }
-
-    private fun updateProfilePicture(uri: String) {
-        if (_uiState.value.isUpdatingField) return
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isUpdatingField = true, fieldError = null) }
-
-            val imageResult = imageRepository.read(uri)
-            if (imageResult is Result.Error) {
-                _uiState.update {
-                    it.copy(
-                        isUpdatingField = false,
-                        fieldError = imageResult.error.toUiText()
-                    )
-                }
-                return@launch
-            }
-
-            val imageBytes = (imageResult as Result.Success).data
-
-            when (val result = updateProfilePictureUseCase(imageBytes.bytes, imageBytes.mimeType)) {
-                is Result.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            isUpdatingField = false,
-                            profile = result.data,
-                            fieldError = null,
-                        )
-                    }
-                }
-
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(
-                            isUpdatingField = false,
-                            fieldError = result.error.toUiText(),
-                        )
-                    }
-                }
-
-                Result.Loading -> Unit
-            }
-        }
-    }
-
-    private fun deleteProfilePicture() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isUpdatingField = true, fieldError = null) }
-            when (val result = deleteProfilePictureUseCase()) {
-                is Result.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            isUpdatingField = false,
-                            profile = result.data,
-                            fieldError = null,
-                        )
-                    }
-                }
-
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(
-                            isUpdatingField = false,
-                            fieldError = result.error.toUiText(),
-                        )
-                    }
-                }
-
-                Result.Loading -> Unit
-            }
+            _events.send(ProfileEvent.UpdateSuccess)
         }
     }
 
@@ -255,7 +206,7 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             when (logoutUseCase()) {
-                is Result.Success -> _events.emit(ProfileEvent.LogoutSuccess)
+                is Result.Success -> _events.send(ProfileEvent.LogoutSuccess)
                 is Result.Error -> {
                     _uiState.update {
                         it.copy(

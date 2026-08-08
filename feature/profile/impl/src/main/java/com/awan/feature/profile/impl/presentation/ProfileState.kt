@@ -10,6 +10,7 @@ data class ProfileState(
     val useDarkTheme: Boolean = false,
     val language: String = "en",
     val isUpdatingField: Boolean = false,
+    val isUploadingPicture: Boolean = false,
     val fieldError: UiText? = null,
     val pendingProfilePictureUri: String? = null,
 )

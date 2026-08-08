@@ -15,14 +15,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.request.crossfade
+import com.awan.app.core.designsystem.AwanRemoteImage
 import com.awan.app.core.designsystem.AwanTheme
 
 @Composable
@@ -58,13 +54,8 @@ fun ProfilePicturePreview(
                     .background(AwanTheme.colors.surface)
                     .clickable(enabled = false) { }
             ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(pictureUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
+                AwanRemoteImage(
+                    url = pictureUrl,
                     modifier = Modifier.fillMaxSize()
                 )
             }
