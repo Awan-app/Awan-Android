@@ -45,6 +45,31 @@ class HomeRepositoryImpl @Inject constructor(
 ) : HomeRepository {
 
     override suspend fun getUserProfile(): Result<UserProfileInfo> = withContext(ioDispatcher) {
+        if (connectivityMonitor.isCurrentlyOnline()) {
+            val result = remoteDataSource.getUserProfile()
+            if (result is Result.Success) {
+                val dto = result.data
+                val firstName = dto.firstName ?: "User"
+                val lastName = dto.lastName ?: ""
+                val points = dto.points ?: 0
+                val streak = dto.streak ?: 0
+                userDao.upsertUser(
+                    UserEntity(
+                        id = dto.id,
+                        email = dto.email ?: "",
+                        firstName = firstName,
+                        lastName = lastName,
+                        birthDate = dto.birthDate,
+                        points = points,
+                        streak = streak,
+                        maxStreak = dto.maxStreak ?: 0,
+                        profilePictureUrl = dto.profilePictureUrl,
+                        isNew = dto.isNew ?: false,
+                    )
+                )
+            }
+        }
+
         val cachedUser = userDao.getFirstUser()
         if (cachedUser != null) {
             Result.Success(

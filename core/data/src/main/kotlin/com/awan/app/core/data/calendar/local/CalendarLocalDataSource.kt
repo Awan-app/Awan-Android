@@ -43,9 +43,29 @@ class CalendarLocalDataSourceImpl @Inject constructor(
 
     override suspend fun upsertCalendar(profile: UserProfileResponse, goals: List<GoalResponse>) =
         database.withTransaction {
+            val existing = userDao.getUser(profile.id)
             userDao.upsertUserWithPreferences(
-                UserEntity(profile.id, profile.email, profile.firstName, profile.lastName, profile.birthDate, profile.points, profile.streak, profile.maxStreak),
-                UserPreferencesEntity(profile.id, profile.preferences?.timezone.orEmpty(), profile.preferences?.preferredSessionDuration ?: 0, profile.preferences?.bufferBetweenSessions ?: 0, profile.preferences?.wakeupTime.orEmpty(), profile.preferences?.sleepTime.orEmpty(), profile.preferences?.schedulingType ?: "BALANCED"),
+                UserEntity(
+                    id = profile.id,
+                    email = profile.email,
+                    firstName = profile.firstName,
+                    lastName = profile.lastName,
+                    birthDate = profile.birthDate,
+                    points = profile.points,
+                    streak = profile.streak,
+                    maxStreak = profile.maxStreak,
+                    profilePictureUrl = profile.profilePictureUrl ?: existing?.profilePictureUrl,
+                    isNew = profile.isNew ?: existing?.isNew ?: false,
+                ),
+                UserPreferencesEntity(
+                    userId = profile.id,
+                    timezone = profile.preferences?.timezone.orEmpty(),
+                    preferredSessionDuration = profile.preferences?.preferredSessionDuration ?: 0,
+                    bufferBetweenSessions = profile.preferences?.bufferBetweenSessions ?: 0,
+                    wakeupTime = profile.preferences?.wakeupTime.orEmpty(),
+                    sleepTime = profile.preferences?.sleepTime.orEmpty(),
+                    schedulingType = profile.preferences?.schedulingType ?: "BALANCED",
+                ),
             )
             goalDao.upsertGoals(goals.map(GoalResponse::asEntity))
         }

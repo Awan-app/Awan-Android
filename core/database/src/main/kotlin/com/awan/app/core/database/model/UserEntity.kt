@@ -28,4 +28,8 @@ data class UserEntity(
     /** Highest streak ever achieved. */
     val maxStreak: Int,
     val expiryTime: Long = 0L,
+    /** URL to the user's profile picture. */
+    val profilePictureUrl: String? = null,
+    /** Whether the user is new and hasn't completed onboarding. */
+    val isNew: Boolean = false,
 )

@@ -33,7 +33,15 @@ class ImageRepositoryImpl @Inject constructor(
      */
     override suspend fun read(uri: String): Result<ImageBytes> = withContext(ioDispatcher) {
         val parsed = Uri.parse(uri)
-        val dimensions = decodeDimensions(parsed) ?: return@withContext undecodable()
+        val resolverMime = context.contentResolver.getType(parsed)
+
+        val dimensionsWithOptions = decodeDimensions(parsed) ?: return@withContext undecodable()
+        val (dimensions, outMimeType) = dimensionsWithOptions
+
+        val effectiveMime = (resolverMime ?: outMimeType)?.lowercase()
+        val isSupported = effectiveMime in SUPPORTED_MIME_TYPES
+        if (!isSupported) return@withContext undecodable()
+
         val sampleSize = sampleSizeFor(dimensions)
         val bitmap = runCatching {
             context.contentResolver.openInputStream(parsed)?.use { stream ->
@@ -47,13 +55,15 @@ class ImageRepositoryImpl @Inject constructor(
 
     private fun undecodable() = Result.Error(AppError.Validation(ValidationReason.IMAGE_TYPE_UNSUPPORTED))
 
-    private fun decodeDimensions(uri: Uri): ImageDimensions? {
+    private fun decodeDimensions(uri: Uri): Pair<ImageDimensions, String?>? {
         val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         // A bounds-only decode always returns null; the dimensions it wrote are the only signal.
         runCatching {
             context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
         }
-        return ImageDimensions(options.outWidth, options.outHeight).takeIf { it.width > 0 && it.height > 0 }
+        val dims = ImageDimensions(options.outWidth, options.outHeight).takeIf { it.width > 0 && it.height > 0 }
+            ?: return null
+        return Pair(dims, options.outMimeType)
     }
 
     /** Coarse power-of-two downsample during decode, so a huge photo never fully loads before scaling. */
@@ -105,5 +115,6 @@ class ImageRepositoryImpl @Inject constructor(
         const val JPEG_QUALITY = 85
         const val MIN_JPEG_QUALITY = 40
         const val QUALITY_STEP = 15
+        val SUPPORTED_MIME_TYPES = setOf("image/jpeg", "image/jpg", "image/png", "image/webp")
     }
 }

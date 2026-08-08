@@ -70,7 +70,10 @@ class ProfileRepositoryImpl @Inject constructor(
             }
             .flowOn(ioDispatcher)
 
-    private suspend fun updateLocalCache(newProfile: Profile) {
+    private suspend fun updateLocalCache(
+        newProfile: Profile,
+        keepExistingPictureIfNull: Boolean = true,
+    ) {
         val userId = newProfile.id ?: authTokenProvider.getUserId() ?: return
         val existing = userDao.getUserWithPreferences(userId)?.asExternalModel()
 
@@ -86,6 +89,12 @@ class ProfileRepositoryImpl @Inject constructor(
                 points = newProfile.points ?: existing.points,
                 streak = newProfile.streak ?: existing.streak,
                 maxStreak = newProfile.maxStreak ?: existing.maxStreak,
+                profilePictureUrl = if (keepExistingPictureIfNull) {
+                    newProfile.profilePictureUrl ?: existing.profilePictureUrl
+                } else {
+                    newProfile.profilePictureUrl
+                },
+                isNew = newProfile.isNew ?: existing.isNew,
                 preferences = if (newPrefs != null) {
                     val existingPrefs = existing.preferences
                     if (existingPrefs == null) {
@@ -120,7 +129,7 @@ class ProfileRepositoryImpl @Inject constructor(
         if (connectivityMonitor.isCurrentlyOnline()) {
             val result = profileRemoteDataSource.getProfileInfo()
                 .map { it.toDomain() }
-                .suspendOnSuccess { updateLocalCache(it) }
+                .suspendOnSuccess { updateLocalCache(it, keepExistingPictureIfNull = false) }
             if (result is Result.Success) return result
         }
         if (userId != null) {
@@ -150,6 +159,53 @@ class ProfileRepositoryImpl @Inject constructor(
             UpdateBirthDateRequest(birthDate = birthDate),
         ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
     }
+
+    override suspend fun updateProfilePicture(imageBytes: ByteArray, mimeType: String): Result<Profile> =
+        profileRemoteDataSource.updateProfilePicture(imageBytes, mimeType)
+            .map { response ->
+                val userId = authTokenProvider.getUserId() ?: ""
+                val existing = userDao.getUserWithPreferences(userId)?.asExternalModel()
+                val updated = existing?.copy(profilePictureUrl = response.profilePictureUrl)
+                    ?: Profile(
+                        id = userId,
+                        email = null,
+                        firstName = null,
+                        lastName = null,
+                        birthDate = null,
+                        points = 0,
+                        streak = 0,
+                        maxStreak = 0,
+                        profilePictureUrl = response.profilePictureUrl,
+                        isNew = false,
+                        preferences = null
+                    )
+                updated
+            }.suspendOnSuccess { updateLocalCache(it) }
+
+    override suspend fun deleteProfilePicture(): Result<Profile> =
+        profileRemoteDataSource.deleteProfilePicture()
+            .map {
+                val userId = authTokenProvider.getUserId() ?: ""
+                val existing = userDao.getUserWithPreferences(userId)?.asExternalModel()
+                val updated = existing?.copy(profilePictureUrl = null)
+                    ?: Profile(
+                        id = userId,
+                        email = null,
+                        firstName = null,
+                        lastName = null,
+                        birthDate = null,
+                        points = 0,
+                        streak = 0,
+                        maxStreak = 0,
+                        profilePictureUrl = null,
+                        isNew = false,
+                        preferences = null
+                    )
+                updated
+            }.suspendOnSuccess {
+                // Explicit delete should clear the cached URL, so we pass keepExistingPictureIfNull = false
+                updateLocalCache(it, keepExistingPictureIfNull = false)
+            }
 
     override suspend fun updateProfilePartial(
         firstName: String?,

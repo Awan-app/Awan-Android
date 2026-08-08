@@ -18,6 +18,8 @@ internal fun ProfileResponse.toDomain(): Profile = Profile(
     points = points,
     streak = streak,
     maxStreak = maxStreak,
+    profilePictureUrl = profilePictureUrl,
+    isNew = isNew,
     preferences = preferences?.toDomain(),
 )
 
@@ -39,6 +41,8 @@ internal fun UserWithPreferences.asExternalModel(): Profile = Profile(
     points = user.points,
     streak = user.streak,
     maxStreak = user.maxStreak,
+    profilePictureUrl = user.profilePictureUrl,
+    isNew = user.isNew,
     preferences = preferences?.asExternalModel(),
 )
 
@@ -60,6 +64,8 @@ internal fun Profile.asEntity(): UserEntity = UserEntity(
     points = points ?: 0,
     streak = streak ?: 0,
     maxStreak = maxStreak ?: 0,
+    profilePictureUrl = profilePictureUrl,
+    isNew = isNew ?: false,
 )
 
 internal fun UserPreferences.asEntity(userId: String): UserPreferencesEntity = UserPreferencesEntity(

@@ -132,6 +132,8 @@ private class FakeProfileRemoteDataSource : ProfileRemoteDataSource {
     override suspend fun resetStreak() = error("not used")
     override suspend fun awardPoints(request: AwardPointsRequest) = error("not used")
     override suspend fun deductPoints(request: DeductPointsRequest) = error("not used")
+    override suspend fun updateProfilePicture(imageBytes: ByteArray, mimeType: String) = error("not used")
+    override suspend fun deleteProfilePicture() = error("not used")
 }
 
 private class FakeZonesRemoteDataSource : ZonesRemoteDataSource {

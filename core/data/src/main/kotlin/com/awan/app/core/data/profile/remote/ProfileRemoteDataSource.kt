@@ -2,6 +2,7 @@ package com.awan.app.core.data.profile.remote
 
 import com.awan.app.core.network.dto.profile.AwardPointsRequest
 import com.awan.app.core.network.dto.profile.DeductPointsRequest
+import com.awan.app.core.network.dto.profile.ProfilePictureResponse
 import com.awan.app.core.network.dto.profile.ProfileResponse
 import com.awan.app.core.network.dto.profile.UpdateBirthDateRequest
 import com.awan.app.core.network.dto.profile.UpdateNameRequest
@@ -24,6 +25,13 @@ interface ProfileRemoteDataSource {
     suspend fun updateProfileBirthDate(
         request: UpdateBirthDateRequest,
     ): Result<ProfileResponse>
+
+    suspend fun updateProfilePicture(
+        imageBytes: ByteArray,
+        mimeType: String,
+    ): Result<ProfilePictureResponse>
+
+    suspend fun deleteProfilePicture(): Result<Unit>
 
     suspend fun updateProfilePartial(
         request: UpdateProfilePartialRequest,

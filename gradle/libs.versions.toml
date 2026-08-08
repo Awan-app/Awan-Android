@@ -49,6 +49,7 @@ hiltWork = "1.4.0"
 # New — Lottie
 lottie = "6.6.2"
 composeIcons = "2.2.1"
+coil = "3.0.4"
 
 # New — java.time on minSdk 24
 desugarJdkLibs = "2.1.5"
@@ -140,6 +141,8 @@ compose-icons-lucide-cmp = { group = "com.composables", name = "icons-lucide-cmp
 
 # Lottie
 lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", version.ref = "lottie" }
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 
 # Core library desugaring — java.time below API 26
 android-desugarJdkLibs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }

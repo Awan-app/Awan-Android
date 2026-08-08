@@ -1,6 +1,7 @@
 package com.awan.app.core.designsystem
 
 import android.content.ContentResolver
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -11,11 +12,23 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 
 /** Every call site here draws a small thumbnail; a full camera photo would be ~50 MB in memory. */
 private const val ThumbnailMaxEdgePx = 512
+
+/**
+ * Creates a unique `content://` URI for a camera to write to, backed by a file in the app's cache.
+ * Authority matches `${applicationId}.fileprovider` as declared in the manifest.
+ */
+fun createCameraOutputUri(context: Context, subDir: String = "images"): Uri {
+    val dir = File(context.cacheDir, subDir).apply { mkdirs() }
+    val file = File(dir, "captured_${System.currentTimeMillis()}.jpg")
+    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+}
 
 /**
  * Decodes a `content://` (or any resolver-readable) [uri] into a bitmap and draws it. Renders

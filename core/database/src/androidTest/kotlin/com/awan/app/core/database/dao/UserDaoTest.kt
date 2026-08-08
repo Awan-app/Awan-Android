@@ -44,6 +44,8 @@ class UserDaoTest {
         points = points,
         streak = 0,
         maxStreak = 0,
+        profilePictureUrl = null,
+        isNew = false,
     )
 
     private fun prefs(userId: String = "u1") = UserPreferencesEntity(
