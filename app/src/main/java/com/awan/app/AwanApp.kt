@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
 import com.awan.app.core.designsystem.AwanTheme
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
@@ -110,6 +111,7 @@ fun AwanApp(
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
+    var onSelectHomeDate by remember { mutableStateOf<((LocalDate) -> Unit)?>(null) }
 
     if (showAddTask && isOnline) {
         AddTaskSheet(
@@ -186,9 +188,13 @@ fun AwanApp(
             homeEntry(
                 onLogout = { navigator.replaceAll(LoginRoute) },
                 onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
+                onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
             )
             calendarEntry(
-                onDateSelected = { /* consumed within calendar screen */ },
+                onDateSelected = { date ->
+                    onSelectHomeDate?.invoke(date)
+                    navigator.goBack()
+                },
                 onBack = { navigator.goBack() },
             )
             chatEntry()
