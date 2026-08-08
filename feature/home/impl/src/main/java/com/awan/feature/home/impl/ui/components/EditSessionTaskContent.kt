@@ -156,7 +156,10 @@ internal fun EditSessionTaskContent(
                 variant = AwanButtonVariant.Secondary,
                 modifier = Modifier.weight(1f),
             ) {
-                AwanText(text = stringResource(R.string.home_action_cancel))
+                AwanText(
+                    text = stringResource(R.string.home_action_cancel),
+                    style = AwanTheme.typography.button,
+                )
             }
 
             AwanButton(
@@ -172,7 +175,10 @@ internal fun EditSessionTaskContent(
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    AwanText(text = stringResource(R.string.home_action_save))
+                    AwanText(
+                        text = stringResource(R.string.home_action_save),
+                        style = AwanTheme.typography.button,
+                    )
                 }
             }
         }

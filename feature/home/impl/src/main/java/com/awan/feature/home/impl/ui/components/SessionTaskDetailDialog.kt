@@ -169,7 +169,10 @@ fun SessionTaskDetailDialog(
                             onClick = onRetry,
                             variant = AwanButtonVariant.Primary,
                         ) {
-                            AwanText(text = stringResource(R.string.retry))
+                            AwanText(
+                                text = stringResource(R.string.retry),
+                                style = AwanTheme.typography.button,
+                            )
                         }
                     }
                 }

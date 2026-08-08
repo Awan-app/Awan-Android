@@ -122,7 +122,10 @@ internal fun DeleteSessionTaskContent(
                 enabled = !isDeleting,
                 modifier = Modifier.weight(1f),
             ) {
-                AwanText(text = stringResource(R.string.home_action_cancel))
+                AwanText(
+                    text = stringResource(R.string.home_action_cancel),
+                    style = AwanTheme.typography.button,
+                )
             }
 
             AwanButton(
@@ -139,7 +142,10 @@ internal fun DeleteSessionTaskContent(
                 },
                 modifier = Modifier.weight(1f),
             ) {
-                AwanText(text = stringResource(R.string.home_action_delete))
+                AwanText(
+                    text = stringResource(R.string.home_action_delete),
+                    style = AwanTheme.typography.button,
+                )
             }
         }
     }
