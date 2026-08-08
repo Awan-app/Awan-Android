@@ -116,12 +116,13 @@ fun AwanApp(
     val currentRoute = appState.navigationState.currentKey
     val showOfflineBanner = !isOnline && currentRoute != SplashRoute
 
+    val offlineExplanation = stringResource(R.string.app_offline_lock_explanation)
     val context = androidx.compose.ui.platform.LocalContext.current
     androidx.compose.runtime.LaunchedEffect(showAddTask, isOnline) {
         if (showAddTask && !isOnline) {
             android.widget.Toast.makeText(
                 context,
-                context.getString(R.string.app_offline_lock_explanation),
+                offlineExplanation,
                 android.widget.Toast.LENGTH_LONG
             ).show()
             showAddTask = false
