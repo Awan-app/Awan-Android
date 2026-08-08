@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -85,27 +86,33 @@ class HomeViewModel @Inject constructor(
     }
 
 
+    private var scheduleJob: Job? = null
+
     private fun loadScheduleForDate(date: LocalDate) {
-        viewModelScope.launch {
-            val today = LocalDate.now()
-            val isToday = date == today
-            val isPastDate = date.isBefore(today)
+        scheduleJob?.cancel()
 
-            _uiState.update { state ->
-                state.copy(
-                    isLoading = true,
-                    errorMessage = null,
-                    selectedDate = date,
-                    isToday = isToday,
-                    isPastDate = isPastDate,
-                    selectedDateText = formatSelectedDate(date),
-                )
-            }
+        val today = LocalDate.now()
+        val isToday = date == today
+        val isPastDate = date.isBefore(today)
 
-            when (val result = getDayScheduleUseCase(date)) {
-                is Result.Success -> applySchedule(result.data, isToday)
-                is Result.Error   -> _uiState.update { it.copy(isLoading = false, errorMessage = result.error.toReadableMessage()) }
-                is Result.Loading -> Unit // not emitted by suspend use case
+        _uiState.update { state ->
+            state.copy(
+                isLoading = true,
+                errorMessage = null,
+                selectedDate = date,
+                isToday = isToday,
+                isPastDate = isPastDate,
+                selectedDateText = formatSelectedDate(date),
+            )
+        }
+
+        scheduleJob = viewModelScope.launch {
+            getDayScheduleUseCase(date).collect { result ->
+                when (result) {
+                    is Result.Success -> applySchedule(result.data, isToday)
+                    is Result.Error   -> _uiState.update { it.copy(isLoading = false, errorMessage = result.error.toReadableMessage()) }
+                    is Result.Loading -> Unit
+                }
             }
         }
     }

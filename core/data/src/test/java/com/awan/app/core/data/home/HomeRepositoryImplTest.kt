@@ -18,6 +18,8 @@ import com.awan.app.core.network.dto.zone.WeeklyTemplateDto
 import com.awan.app.core.network.dto.zone.ZoneDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -222,10 +224,26 @@ class HomeRepositoryImplTest {
         val sessionId = "session-error"
         val error = AppError.Network
         fakeRemote.sessionResult = Result.Error(error)
-
         val result = repository.getSessionDetail(sessionId)
 
         assertTrue(result is Result.Error)
         assertEquals(error, (result as Result.Error).error)
+    }
+
+    @Test
+    fun `getDaySchedule emits schedule reactively from sessionDao flow`() = runTest {
+        val fakeRemote = FakeHomeRemoteDataSource()
+        val repository = createRepository(fakeRemote)
+        val date = java.time.LocalDate.now()
+
+        val results = mutableListOf<Result<com.awan.app.core.domain.home.model.DaySchedule>>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.getDaySchedule(date).collect { results.add(it) }
+        }
+
+        assertTrue(results.isNotEmpty())
+        assertTrue(results.first() is Result.Success)
+        val schedule = (results.first() as Result.Success).data
+        assertEquals(date, schedule.date)
     }
 }

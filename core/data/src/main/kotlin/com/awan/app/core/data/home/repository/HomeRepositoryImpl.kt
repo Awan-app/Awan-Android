@@ -21,7 +21,10 @@ import com.awan.app.core.domain.home.model.UserProfileInfo
 import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import android.util.Log
 import com.awan.app.core.data.common.extractTimeFromIso
@@ -89,44 +92,46 @@ class HomeRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getDaySchedule(date: LocalDate): Result<DaySchedule> = withContext(ioDispatcher) {
+    override fun getDaySchedule(date: LocalDate): Flow<Result<DaySchedule>> {
         val dateStr = date.toString()
 
-        val sessionEntities = sessionDao.getSessionsForDate(dateStr)
+        return sessionDao.observeSessionsForDate(dateStr)
+            .map { sessionEntities ->
+                val daySessions = sessionEntities.mapNotNull { s ->
+                    val task = taskDao.getTask(s.taskId) ?: return@mapNotNull null
+                    val category = task.categoryId?.let { categoryDao.getCategory(it) }
+                    val startLocalTime = parseLocalTime(s.startTime)
+                    val endLocalTime = parseLocalTime(s.endTime)
+                    val startMinutes = startLocalTime.hour * 60 + startLocalTime.minute
+                    val durationMinutes = run {
+                        val endMinutes = endLocalTime.hour * 60 + endLocalTime.minute
+                        if (endMinutes > startMinutes) endMinutes - startMinutes else 0
+                    }
 
-        val daySessions = sessionEntities.mapNotNull { s ->
-            val task = taskDao.getTask(s.taskId) ?: return@mapNotNull null
-            val category = task.categoryId?.let { categoryDao.getCategory(it) }
-            val startLocalTime = parseLocalTime(s.startTime)
-            val endLocalTime = parseLocalTime(s.endTime)
-            val startMinutes = startLocalTime.hour * 60 + startLocalTime.minute
-            val durationMinutes = run {
-                val endMinutes = endLocalTime.hour * 60 + endLocalTime.minute
-                if (endMinutes > startMinutes) endMinutes - startMinutes else 0
+                    DaySession(
+                        id = s.id,
+                        taskId = task.id,
+                        taskTitle = task.title,
+                        zoneId = s.zoneId,
+                        startMinutes = startMinutes,
+                        durationMinutes = durationMinutes,
+                        status = mapStatus(s.status),
+                        locked = s.locked,
+                        points = task.estimatedPoints,
+                        categoryId = task.categoryId,
+                        categoryName = category?.name,
+                    )
+                }
+
+                Result.Success(
+                    DaySchedule(
+                        date = date,
+                        zones = resolveZonesForDate(dateStr, date),
+                        sessions = daySessions,
+                    )
+                )
             }
-
-            DaySession(
-                id = s.id,
-                taskId = task.id,
-                taskTitle = task.title,
-                zoneId = s.zoneId,
-                startMinutes = startMinutes,
-                durationMinutes = durationMinutes,
-                status = mapStatus(s.status),
-                locked = s.locked,
-                points = task.estimatedPoints,
-                categoryId = task.categoryId,
-                categoryName = category?.name,
-            )
-        }
-
-        Result.Success(
-            DaySchedule(
-                date = date,
-                zones = resolveZonesForDate(dateStr, date),
-                sessions = daySessions,
-            )
-        )
+            .flowOn(ioDispatcher)
     }
 
     override suspend fun getSessionDetail(sessionId: String): Result<SessionTaskDetail> {
