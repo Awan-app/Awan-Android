@@ -67,7 +67,10 @@ class ProfileRepositoryImpl @Inject constructor(
             }
             .flowOn(ioDispatcher)
 
-    private suspend fun updateLocalCache(newProfile: Profile) {
+    private suspend fun updateLocalCache(
+        newProfile: Profile,
+        keepExistingPictureIfNull: Boolean = true,
+    ) {
         val userId = newProfile.id ?: authTokenProvider.getUserId() ?: return
         val existing = userDao.getUserWithPreferences(userId)?.asExternalModel()
 
@@ -83,7 +86,11 @@ class ProfileRepositoryImpl @Inject constructor(
                 points = newProfile.points ?: existing.points,
                 streak = newProfile.streak ?: existing.streak,
                 maxStreak = newProfile.maxStreak ?: existing.maxStreak,
-                profilePictureUrl = newProfile.profilePictureUrl,
+                profilePictureUrl = if (keepExistingPictureIfNull) {
+                    newProfile.profilePictureUrl ?: existing.profilePictureUrl
+                } else {
+                    newProfile.profilePictureUrl
+                },
                 isNew = newProfile.isNew ?: existing.isNew,
                 preferences = if (newPrefs != null) {
                     val existingPrefs = existing.preferences
@@ -117,7 +124,7 @@ class ProfileRepositoryImpl @Inject constructor(
     override suspend fun getProfile(): Result<Profile> =
         profileRemoteDataSource.getProfileInfo()
             .map { it.toDomain() }
-            .suspendOnSuccess { updateLocalCache(it) }
+            .suspendOnSuccess { updateLocalCache(it, keepExistingPictureIfNull = false) }
 
     override suspend fun updateName(
         firstName: String,
@@ -175,10 +182,8 @@ class ProfileRepositoryImpl @Inject constructor(
                     )
                 updated
             }.suspendOnSuccess {
-                // We need a way to tell updateLocalCache to actually set it to null.
-                // Currently updateLocalCache does: profilePictureUrl = newProfile.profilePictureUrl ?: existing.profilePictureUrl
-                // So I will update updateLocalCache to NOT use the Elvis operator for profilePictureUrl if we want to support nulling it.
-                updateLocalCache(it)
+                // Explicit delete should clear the cached URL, so we pass keepExistingPictureIfNull = false
+                updateLocalCache(it, keepExistingPictureIfNull = false)
             }
 
     override suspend fun updateProfilePartial(
