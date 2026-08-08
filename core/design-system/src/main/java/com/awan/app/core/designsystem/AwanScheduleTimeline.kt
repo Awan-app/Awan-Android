@@ -68,6 +68,7 @@ fun AwanScheduleTimeline(
     onToggleZoneCollapse: (zoneId: String) -> Unit = {},
     onAddSessionToZone: (zoneId: String) -> Unit = {},
     onSessionStatusToggle: (sessionId: String) -> Unit = {},
+    onSessionClick: (sessionId: String) -> Unit = {},
     onSessionMoved: (sessionId: String, newStartMinutes: Int) -> Unit = { _, _ -> },
     onReorderSessionsInZone: (zoneId: String, fromIndex: Int, toIndex: Int) -> Unit = { _, _, _ -> },
     scrollState: ScrollState = rememberScrollState(),
@@ -154,7 +155,7 @@ fun AwanScheduleTimeline(
     )
 
     val activeZone = remember(zones, currentTimeMinutes) {
-        zones.find { currentTimeMinutes in (it.startHour * 60)..(it.endHour * 60) }
+        zones.find { currentTimeMinutes in it.startMinutes..it.endMinutes }
     }
     val activePointerColor = activeZone?.category?.color ?: AwanTheme.colors.sky
 
@@ -207,8 +208,8 @@ fun AwanScheduleTimeline(
                             .padding(start = axisWidthDp),
                     ) {
                         zones.forEach { zone ->
-                            val topY = contentTopPadding + (zone.startHour * effectiveHourHeightDpValue).dp
-                            val bandHeight = ((zone.endHour - zone.startHour) * effectiveHourHeightDpValue).dp
+                            val topY = contentTopPadding + ((zone.startMinutes.toDouble() / 60.0) * effectiveHourHeightDpValue).dp
+                            val bandHeight = (((zone.endMinutes - zone.startMinutes).toDouble() / 60.0) * effectiveHourHeightDpValue).dp
 
                             Box(
                                 modifier = Modifier
@@ -222,7 +223,7 @@ fun AwanScheduleTimeline(
                     }
 
                     zones.forEach { zone ->
-                        val topY = contentTopPadding + (zone.startHour * effectiveHourHeightDpValue).dp
+                        val topY = contentTopPadding + ((zone.startMinutes.toDouble() / 60.0) * effectiveHourHeightDpValue).dp
 
                         AwanText(
                             text = zone.category.name.uppercase(),
@@ -315,6 +316,7 @@ fun AwanScheduleTimeline(
                                     displayMode = displayMode,
                                     onSessionMoved = onSessionMoved,
                                     onSessionStatusToggle = onSessionStatusToggle,
+                                    onSessionClick = onSessionClick,
                                 )
                             }
                         }
