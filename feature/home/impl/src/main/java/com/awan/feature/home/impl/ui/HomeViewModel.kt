@@ -127,7 +127,9 @@ class HomeViewModel @Inject constructor(
 
     fun spinWheel() {
         if (_uiState.value.isSpinning || pendingSpin != null) return
-        _uiState.update { it.copy(isSpinning = true) }
+        // Clears any message left by a previous failed attempt, so a retry does not spin under the
+        // error it is retrying.
+        _uiState.update { it.copy(isSpinning = true, wheelResult = null) }
 
         viewModelScope.launch {
             when (val result = spinWheelUseCase()) {
