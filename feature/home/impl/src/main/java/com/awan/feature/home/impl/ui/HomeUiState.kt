@@ -9,6 +9,7 @@ import com.awan.app.core.designsystem.ScheduleCategory
 import com.awan.app.core.designsystem.ScheduleSession
 import com.awan.app.core.designsystem.ScheduleTask
 import com.awan.app.core.designsystem.ScheduleZone
+import com.awan.app.core.domain.gamification.model.WheelSegment
 import com.awan.feature.home.impl.R
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -53,4 +54,12 @@ data class HomeUiState(
     val conflictMessage: String = "",
     val isLoading: Boolean = false,
     val errorMessage: UiText? = null,
+    val hasFreeSpin: Boolean = false,
+    val isWheelOpen: Boolean = false,
+    val isSpinning: Boolean = false,
+    /** Wedges in wheel order; the screen resolves their labels. */
+    val wheelSegments: List<WheelSegment> = emptyList(),
+    /** Non-null once the server has decided the outcome — the cue for the wheel to land. */
+    val landingSegmentId: String? = null,
+    val wheelResult: UiText? = null,
 )

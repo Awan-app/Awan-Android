@@ -26,6 +26,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.awan.app.MainActivityUiState.*
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.LocalRewardAnchors
+import com.awan.app.core.designsystem.RewardAnchors
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import com.awan.feature.calendar.api.CalendarRoute
@@ -89,9 +91,13 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+            // App-scoped so a reward earned on one screen can still fly to a badge on another.
+            val rewardAnchors = remember { RewardAnchors() }
+
             CompositionLocalProvider(
                 LocalConfiguration provides updatedConfiguration,
                 LocalLayoutDirection provides layoutDirection,
+                LocalRewardAnchors provides rewardAnchors,
             ) {
                 val appState = rememberAwanAppState(
                     startKey = SplashRoute,
@@ -115,6 +121,7 @@ class MainActivity : AppCompatActivity() {
                     AwanApp(
                         appState = appState,
                         sessionExpiredEvents = viewModel.sessionExpired,
+                        rewardEvents = viewModel.rewardEvents,
                     )
                 }
             }

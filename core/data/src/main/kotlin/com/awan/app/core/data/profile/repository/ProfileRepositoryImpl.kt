@@ -17,8 +17,6 @@ import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.repository.ProfileRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import com.awan.app.core.network.dto.profile.AwardPointsRequest
-import com.awan.app.core.network.dto.profile.DeductPointsRequest
 import com.awan.app.core.network.dto.profile.UpdateBirthDateRequest
 import com.awan.app.core.network.dto.profile.UpdateNameRequest
 import com.awan.app.core.network.dto.profile.UpdateProfilePartialRequest
@@ -239,25 +237,5 @@ class ProfileRepositoryImpl @Inject constructor(
     override suspend fun updateSchedulingType(schedulingType: String): Result<Profile> =
         profileRemoteDataSource.updateSchedulingType(
             UpdateSchedulingTypeRequest(schedulingType = schedulingType),
-        ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
-
-    override suspend fun incrementStreak(): Result<Profile> =
-        profileRemoteDataSource.incrementStreak()
-            .map { it.toDomain() }
-            .suspendOnSuccess { updateLocalCache(it) }
-
-    override suspend fun resetStreak(): Result<Profile> =
-        profileRemoteDataSource.resetStreak()
-            .map { it.toDomain() }
-            .suspendOnSuccess { updateLocalCache(it) }
-
-    override suspend fun awardPoints(points: Int): Result<Profile> =
-        profileRemoteDataSource.awardPoints(
-            AwardPointsRequest(points = points),
-        ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
-
-    override suspend fun deductPoints(points: Int): Result<Profile> =
-        profileRemoteDataSource.deductPoints(
-            DeductPointsRequest(points = points),
         ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
 }

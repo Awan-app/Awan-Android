@@ -42,6 +42,10 @@ import com.awan.app.core.designsystem.AwanScheduleAlertCard
 import com.awan.app.core.designsystem.AwanScheduleTimeline
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.AwanWheelBadge
+import com.awan.app.core.designsystem.AwanWheelOverlay
+import com.awan.app.core.designsystem.WheelSegmentUi
+import com.awan.app.core.designsystem.R as DesignSystemR
 import com.awan.feature.home.impl.R
 import java.time.LocalDate
 
@@ -198,6 +202,34 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+
+        if (uiState.hasFreeSpin && !uiState.isWheelOpen) {
+            AwanWheelBadge(
+                onClick = viewModel::openWheel,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 4.dp, end = 16.dp),
+            )
+        }
+
+        if (uiState.isWheelOpen) {
+            val itemWedgeLabel = stringResource(DesignSystemR.string.ds_wheel_item_wedge)
+            AwanWheelOverlay(
+                segments = uiState.wheelSegments.map { segment ->
+                    WheelSegmentUi(
+                        id = segment.id,
+                        label = if (segment.isItem) itemWedgeLabel else segment.coins.toString(),
+                        isItem = segment.isItem,
+                    )
+                },
+                landingSegmentId = uiState.landingSegmentId,
+                resultText = uiState.wheelResult?.asString(),
+                isSpinning = uiState.isSpinning,
+                onSpin = viewModel::spinWheel,
+                onClose = viewModel::closeWheel,
+            )
         }
 
         if (uiState.hasConflict) {

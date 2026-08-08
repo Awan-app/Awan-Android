@@ -11,6 +11,9 @@ import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSourceImpl
 import com.awan.app.core.data.category.CategoryRepositoryImpl
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSourceImpl
+import com.awan.app.core.data.gamification.remote.GamificationRemoteDataSource
+import com.awan.app.core.data.gamification.remote.GamificationRemoteDataSourceImpl
+import com.awan.app.core.data.gamification.repository.GamificationRepositoryImpl
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
 import com.awan.app.core.data.home.remote.HomeRemoteDataSourceImpl
 import com.awan.app.core.data.home.repository.HomeRepositoryImpl
@@ -42,6 +45,7 @@ import com.awan.app.core.domain.profile.repository.ProfileRepository
 import com.awan.app.core.domain.profile.repository.UserDataRepository
 import com.awan.app.core.domain.task.repository.AiTaskRepository
 import com.awan.app.core.domain.template.repository.TemplateRepository
+import com.awan.app.core.domain.gamification.repository.GamificationRepository
 import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.domain.zones.repository.ZonesRepository
 import dagger.Binds
@@ -185,6 +189,18 @@ internal abstract class DataModule {
     abstract fun bindHomeRepository(
         impl: HomeRepositoryImpl,
     ): HomeRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGamificationRemoteDataSource(
+        impl: GamificationRemoteDataSourceImpl,
+    ): GamificationRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindGamificationRepository(
+        impl: GamificationRepositoryImpl,
+    ): GamificationRepository
 
     @Binds
     @Singleton

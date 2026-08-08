@@ -26,6 +26,7 @@ import com.awan.app.core.common.R as CommonR
 import com.awan.app.core.designsystem.AwanBottomNavBar
 import com.awan.app.core.designsystem.BottomNavItem
 import com.awan.app.core.designsystem.ObserveAsEvents
+import com.awan.app.core.domain.gamification.model.RewardEvent
 import com.awan.core.navigation.NavigationState
 import com.awan.core.navigation.Navigator
 import com.awan.core.navigation.Route
@@ -99,6 +100,7 @@ private fun NavigationState.rememberDecoratedEntries(
 fun AwanApp(
     appState: AwanAppState,
     sessionExpiredEvents: Flow<Unit>,
+    rewardEvents: Flow<RewardEvent>,
     modifier: Modifier = Modifier,
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
@@ -232,8 +234,13 @@ fun AwanApp(
                 onFabClick = {
                     showAddTask = true
                 },
+                anchoredItemId = TopLevelDestination.PROFILE.name,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
+
+        // Last child of the root Box: above every screen and the bottom bar, and in the same
+        // coordinate space as the anchors it animates between — which a Dialog would not be.
+        RewardOverlayHost(rewardEvents = rewardEvents)
     }
 }
