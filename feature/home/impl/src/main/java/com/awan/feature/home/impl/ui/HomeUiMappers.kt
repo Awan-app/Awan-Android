@@ -14,8 +14,8 @@ internal fun DayZone.toUiZone(): ScheduleZone = ScheduleZone(
     id = id,
     categoryId = categoryId,
     category = resolveCategoryWithColor(categoryName, color),
-    startHour = startMinutes / 60,
-    endHour = ceilHour(endMinutes),
+    startMinutes = startMinutes,
+    endMinutes = endMinutes,
     isCollapsed = false,
 )
 

@@ -59,6 +59,17 @@ interface TaskApiService {
         @Part("note") note: RequestBody?,
     ): TaskProposalResponse
 
+    @GET("v1/tasks/{taskId}")
+    suspend fun getTask(
+        @Path("taskId") taskId: String,
+    ): TaskInfoResponse
+
+    @retrofit2.http.PATCH("v1/tasks/{taskId}")
+    suspend fun updateTask(
+        @Path("taskId") taskId: String,
+        @Body request: com.awan.app.core.network.dto.task.TaskUpdateRequest,
+    ): TaskInfoResponse
+
     @GET("v1/tasks/date/{date}")
     suspend fun getTasksByDate(
         @Path("date") date: String,
