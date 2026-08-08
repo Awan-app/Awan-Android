@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun ProfileRouteScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
     onDailyZonesClick: () -> Unit,
+    onCategoryManagementClick: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -29,6 +30,7 @@ fun ProfileRouteScreen(
         uiState = uiState,
         onAction = viewModel::onAction,
         onDailyZonesClick = onDailyZonesClick,
+        onCategoryManagementClick = onCategoryManagementClick,
         onSettingsClick = { },
     )
 }

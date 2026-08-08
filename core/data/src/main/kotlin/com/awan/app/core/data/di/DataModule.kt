@@ -44,6 +44,10 @@ import com.awan.app.core.domain.task.repository.AiTaskRepository
 import com.awan.app.core.domain.template.repository.TemplateRepository
 import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.domain.zones.repository.ZonesRepository
+import com.awan.app.core.data.zones.remote.SessionRemoteDataSource
+import com.awan.app.core.data.zones.remote.SessionRemoteDataSourceImpl
+import com.awan.app.core.data.zones.repository.SessionRepositoryImpl
+import com.awan.app.core.domain.zones.repository.SessionRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -172,6 +176,18 @@ internal abstract class DataModule {
     abstract fun bindZonesRepository(
         impl: ZonesRepositoryImpl,
     ): ZonesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSessionRemoteDataSource(
+        impl: SessionRemoteDataSourceImpl,
+    ): SessionRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindSessionRepository(
+        impl: SessionRepositoryImpl,
+    ): SessionRepository
 
 
     @Binds

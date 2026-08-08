@@ -18,6 +18,7 @@ fun ProfileScreen(
     uiState: ProfileState,
     onAction: (ProfileAction) -> Unit,
     onDailyZonesClick: () -> Unit = {},
+    onCategoryManagementClick: () -> Unit = {},
     onSettingsClick: (String) -> Unit = {},
 ) {
     var showEditSheet by remember { mutableStateOf(false) }
@@ -37,6 +38,7 @@ fun ProfileScreen(
                 onAction = onAction,
                 onEditClick = { showEditSheet = true },
                 onDailyZonesClick = onDailyZonesClick,
+                onCategoryManagementClick = onCategoryManagementClick,
                 onSettingsClick = onSettingsClick,
                 onLogoutClick = { showLogoutDialog = true }
             )

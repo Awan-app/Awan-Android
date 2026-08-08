@@ -26,6 +26,7 @@ fun ProfileContent(
     onAction: (ProfileAction) -> Unit,
     onEditClick: () -> Unit,
     onDailyZonesClick: () -> Unit,
+    onCategoryManagementClick: () -> Unit,
     onSettingsClick: (String) -> Unit,
     onLogoutClick: () -> Unit,
 ) {
@@ -53,6 +54,7 @@ fun ProfileContent(
             profile = profile,
             uiState = uiState,
             onDailyZonesClick = onDailyZonesClick,
+            onCategoryManagementClick = onCategoryManagementClick,
             onUpdateSleepSchedule = { wake, sleep -> onAction(ProfileAction.UpdateSleepSchedule(wake, sleep)) },
             onUpdateSessionDuration = { onAction(ProfileAction.UpdateSessionDuration(it)) },
             onUpdateTimezone = { onAction(ProfileAction.UpdateTimezone(it)) }

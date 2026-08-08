@@ -1,5 +1,6 @@
 package com.awan.app.core.network.dto.session
 
+import com.awan.app.core.network.dto.category.CategoryDto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -11,5 +12,6 @@ data class SessionDto(
     @SerialName("status") val status: String? = null,
     @SerialName("locked") val locked: Boolean = false,
     @SerialName("zoneId") val zoneId: String? = null,
-    @SerialName("taskId") val taskId: String? = null
+    @SerialName("taskId") val taskId: String? = null,
+    @SerialName("category") val category: CategoryDto? = null
 )

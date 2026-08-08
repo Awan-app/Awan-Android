@@ -1,5 +1,6 @@
 package com.awan.app.core.data.zones.mapper
 
+import com.awan.app.core.data.category.toModel
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.model.Session
@@ -9,6 +10,10 @@ import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.zone.TemplateOverrideDto
 import com.awan.app.core.network.dto.zone.WeeklyTemplateDto
 import com.awan.app.core.network.dto.zone.ZoneDto
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
+private val SessionDateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
 // The server reads `categoryId` and writes back a nested `category`. Reading the id off that nested
 // object here is what lets a load-edit-save round-trip keep its category without every call site
@@ -21,7 +26,8 @@ fun ZoneDto.toDomain(): DailyZone = DailyZone(
     color = color ?: "#2E8BFF",
     templateId = templateId,
     templateOverrideId = templateOverrideId,
-    categoryId = categoryId ?: category?.id
+    categoryId = categoryId ?: category?.id,
+    category = category?.toModel()
 )
 
 fun DailyZone.toDto(): ZoneDto = ZoneDto(
@@ -45,22 +51,25 @@ fun WeeklyTemplateDto.toDomain(): WeeklyTemplate = WeeklyTemplate(
             null // Handle invalid data explicitly by skipping it instead of defaulting to MONDAY
         }
     },
-    zones = zones.map { it.toDomain() }
+    zones = zones.map { it.toDomain() },
+    category = category?.toModel()
 )
 
 fun TemplateOverrideDto.toDomain(): TemplateOverride = TemplateOverride(
     id = id,
     name = name,
     dateOfDay = dateOfDay,
-    zones = zones.map { it.toDomain() }
+    zones = zones.map { it.toDomain() },
+    category = category?.toModel()
 )
 
 fun SessionDto.toDomain(): Session = Session(
     id = id,
-    start = start,
-    end = end,
+    start = LocalDateTime.parse(start, SessionDateTimeFormatter),
+    end = LocalDateTime.parse(end, SessionDateTimeFormatter),
     status = status ?: "SCHEDULED",
     locked = locked,
     zoneId = zoneId,
-    taskId = taskId
+    taskId = taskId,
+    category = category?.toModel()
 )

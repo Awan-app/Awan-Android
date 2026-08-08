@@ -69,6 +69,10 @@
     <string name="profile_daily_zones_edit_default">تعديل الروتين الافتراضي</string>
     <string name="profile_daily_zones_no_zones">لا توجد مناطق في هذا الروتين</string>
     <string name="profile_daily_zones_no_zones_hint">أضف مناطق لتشكيل يومك.</string>
+    <string name="profile_categories_title">الفئات</string>
+    <string name="profile_category_add">إضافة فئة</string>
+    <string name="profile_category_edit">تعديل الفئة</string>
+    <string name="profile_category_name_placeholder">مثال: عمل، دراسة، صحة</string>
     <string name="profile_logout_confirm_title">هل ستغادرنا قريباً؟</string>
     <string name="profile_logout_confirm_subtitle">هل أنت متأكد من أنك تريد تسجيل الخروج من حسابك؟</string>
 
@@ -139,6 +143,8 @@
     <string name="profile_zone_save_changes">حفظ التغييرات</string>
     <string name="profile_zone_delete">حذف المنطقة</string>
     <string name="profile_zone_confirm">تأكيد</string>
+    <string name="profile_zone_category">الفئة</string>
+    <string name="profile_zone_category_empty">لا توجد فئات بعد</string>
     <string name="profile_zone_new_placeholder">منطقة جديدة</string>
 
     <string name="profile_validation_routine_name_empty">اسم الروتين لا يمكن أن يكون فارغاً</string>

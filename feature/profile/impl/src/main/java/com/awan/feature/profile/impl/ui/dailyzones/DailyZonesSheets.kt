@@ -4,17 +4,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
+import com.awan.app.core.model.Category
 import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
+import com.awan.feature.profile.impl.ui.components.CategoryPickerRow
 import com.awan.feature.profile.impl.ui.components.TimeInputBox
 import com.awan.feature.profile.impl.ui.components.ZoneColorPicker
 
@@ -22,21 +26,23 @@ import com.awan.feature.profile.impl.ui.components.ZoneColorPicker
 @Composable
 fun AddEditZoneSheet(
     zone: DailyZone?,
+    availableCategories: List<Category>,
     defaultStartTime: String? = null,
     onDismiss: () -> Unit,
     onConfirm: (DailyZone) -> Unit,
     onDelete: (DailyZone) -> Unit = {},
+    canDelete: Boolean = true,
     isSaving: Boolean = false
 ) {
     var name by remember { mutableStateOf(zone?.name ?: "") }
     
     val initialStartTime = remember(zone, defaultStartTime) {
-        zone?.startTime ?: defaultStartTime ?: "09:00"
+        zone?.startTime ?: defaultStartTime ?: "09:00:00"
     }
     
     val initialEndTime = remember(zone, initialStartTime) {
         zone?.endTime ?: run {
-            val startMins = DailyZonesHelper.parseTimeToMinutes(initialStartTime) ?: 0
+            val startMins = DailyZonesHelper.parseTimeToMinutes(initialStartTime) ?: 540
             DailyZonesHelper.formatMinutesToTime(startMins + 60)
         }
     }
@@ -44,6 +50,7 @@ fun AddEditZoneSheet(
     var startTime by remember { mutableStateOf(initialStartTime) }
     var endTime by remember { mutableStateOf(initialEndTime) }
     var color by remember { mutableStateOf(zone?.color ?: "#2EAAFF") }
+    var selectedCategoryId by remember { mutableStateOf(zone?.categoryId ?: availableCategories.firstOrNull()?.id) }
 
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
@@ -74,14 +81,6 @@ fun AddEditZoneSheet(
         )
     }
 
-    val previewZone = DailyZone(
-        id = zone?.id,
-        name = name,
-        startTime = startTime,
-        endTime = endTime,
-        color = color
-    )
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -96,10 +95,19 @@ fun AddEditZoneSheet(
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            AwanText(
-                text = if (zone == null) stringResource(R.string.profile_zone_add) else stringResource(R.string.profile_zone_edit),
-                style = AwanTheme.styles.titleText
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AwanText(
+                    text = if (zone == null) stringResource(R.string.profile_zone_add) else stringResource(R.string.profile_zone_edit),
+                    style = AwanTheme.styles.titleText
+                )
+                AwanIconButton(onClick = onDismiss, contentDescription = stringResource(R.string.profile_close)) {
+                    Icon(Icons.Default.Close, null, tint = AwanTheme.colors.textSecondary)
+                }
+            }
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 AwanText(
@@ -115,6 +123,13 @@ fun AddEditZoneSheet(
                     placeholder = stringResource(R.string.profile_zone_name_placeholder)
                 )
             }
+
+            CategoryPickerRow(
+                label = stringResource(R.string.profile_zone_category),
+                selectedCategoryId = selectedCategoryId,
+                categories = availableCategories,
+                onCategorySelected = { selectedCategoryId = it }
+            )
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TimeInputBox(
@@ -136,13 +151,6 @@ fun AddEditZoneSheet(
                 onColorSelected = { color = it }
             )
 
-            AddEditZonePreview(
-                previewZone = previewZone,
-                isEdit = zone != null
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 AwanButton(
                     onClick = {
@@ -152,24 +160,16 @@ fun AddEditZoneSheet(
                                 name = name,
                                 startTime = startTime,
                                 endTime = endTime,
-                                color = color
+                                color = color,
+                                categoryId = selectedCategoryId
                             )
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = name.isNotBlank() && !isSaving,
+                    enabled = name.isNotBlank() && selectedCategoryId != null && !isSaving,
                     isLoading = isSaving
                 ) {
                     AwanText(text = if (zone == null) stringResource(R.string.profile_zone_add) else stringResource(R.string.profile_zone_save_changes))
-                }
-
-                AwanButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth(),
-                    variant = AwanButtonVariant.Secondary,
-                    enabled = !isSaving
-                ) {
-                    AwanText(text = stringResource(R.string.profile_cancel))
                 }
 
                 if (zone != null) {
@@ -178,7 +178,7 @@ fun AddEditZoneSheet(
                         modifier = Modifier.fillMaxWidth(),
                         variant = AwanButtonVariant.Destructive,
                         icon = Icons.Default.Delete,
-                        enabled = !isSaving
+                        enabled = !isSaving && canDelete
                     ) {
                         AwanText(text = stringResource(R.string.profile_zone_delete))
                     }

@@ -68,14 +68,16 @@ fun EditRoutineScreen(
             zone = editingZone ?: DailyZone(
                 id = null,
                 name = "",
-                startTime = uiState.zones.lastOrNull()?.endTime ?: "09:00",
+                startTime = uiState.zones.lastOrNull()?.endTime ?: "09:00:00",
                 endTime = uiState.zones.lastOrNull()?.endTime?.let { 
                     DailyZonesHelper.parseTimeToMinutes(it)?.let { minutes ->
                         DailyZonesHelper.formatMinutesToTime(minutes + 60)
                     }
-                } ?: "10:00",
-                color = "#2EAAFF"
+                } ?: "10:00:00",
+                color = "#2EAAFF",
+                categoryId = uiState.availableCategories.firstOrNull()?.id
             ),
+            availableCategories = uiState.availableCategories,
             isNew = editingZone == null,
             onDismiss = {
                 showZoneSheet = false
@@ -95,7 +97,8 @@ fun EditRoutineScreen(
                     showZoneDeleteConfirm = zone
                     showZoneSheet = false
                 }
-            }
+            },
+            canDelete = uiState.zones.size > 1
         )
     }
 

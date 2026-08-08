@@ -18,6 +18,7 @@ fun PreferencesCard(
     profile: Profile,
     uiState: ProfileState,
     onDailyZonesClick: () -> Unit,
+    onCategoryManagementClick: () -> Unit,
     onUpdateSleepSchedule: (String, String) -> Unit,
     onUpdateSessionDuration: (Int) -> Unit,
     onUpdateTimezone: (String) -> Unit,
@@ -36,6 +37,14 @@ fun PreferencesCard(
                 subtitle = stringResource(ProfileR.string.profile_daily_zones_subtitle),
                 onClick = onDailyZonesClick,
                 showDivider = true
+            )
+
+            PreferenceRow(
+                icon = Icons.Default.Category,
+                title = stringResource(ProfileR.string.profile_categories_title),
+                onClick = onCategoryManagementClick,
+                showDivider = true,
+                iconColor = AwanTheme.colors.zoneLavender
             )
             
             ExpandableSessionDurationItem(

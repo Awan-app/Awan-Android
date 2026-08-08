@@ -40,7 +40,7 @@ import com.awan.app.core.database.model.ZoneEntity
         TemplateOverrideEntity::class,
         ZoneEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class AwanDatabase : RoomDatabase() {

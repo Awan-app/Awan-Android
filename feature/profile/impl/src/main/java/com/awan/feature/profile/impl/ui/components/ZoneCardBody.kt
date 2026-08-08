@@ -61,6 +61,15 @@ fun ZoneCardBody(
                         color = if (zone.name.isBlank()) AwanTheme.colors.textSecondary else AwanTheme.colors.textPrimary
                     )
                 )
+                zone.category?.name?.let { categoryName ->
+                    AwanText(
+                        text = categoryName,
+                        style = AwanTheme.styles.captionText.copy(
+                            color = zoneColor,
+                            textStyle = AwanTheme.styles.captionText.textStyle.copy(fontWeight = FontWeight.Medium)
+                        )
+                    )
+                }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)

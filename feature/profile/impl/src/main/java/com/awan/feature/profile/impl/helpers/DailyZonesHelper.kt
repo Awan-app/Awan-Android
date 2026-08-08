@@ -97,8 +97,8 @@ object DailyZonesHelper {
         }
     }
 
-    fun getCurrentDay(): DayOfWeek {
-        val javaDay = LocalDate.now().dayOfWeek
+    fun getCurrentDay(date: LocalDate = LocalDate.now()): DayOfWeek {
+        val javaDay = date.dayOfWeek
         return when (javaDay) {
             java.time.DayOfWeek.MONDAY -> DayOfWeek.MONDAY
             java.time.DayOfWeek.TUESDAY -> DayOfWeek.TUESDAY
@@ -118,6 +118,6 @@ object DailyZonesHelper {
     fun formatMinutesToTime(minutes: Int): String {
         val h = (minutes / 60) % 24
         val m = minutes % 60
-        return String.format(Locale.US, "%02d:%02d", h, m)
+        return String.format(Locale.US, "%02d:%02d:00", h, m)
     }
 }

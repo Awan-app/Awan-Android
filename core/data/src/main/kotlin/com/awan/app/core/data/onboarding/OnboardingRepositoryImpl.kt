@@ -138,11 +138,11 @@ class OnboardingRepositoryImpl @Inject constructor(
     }
 
     private fun formatMinutesToTimeShort(minutes: Int): String {
-        if (minutes >= DayBounds.MINUTES_PER_DAY) return "23:59"
+        if (minutes >= DayBounds.MINUTES_PER_DAY) return "23:59:00"
         val totalMinutes = minutes.mod(DayBounds.MINUTES_PER_DAY)
         val hours = totalMinutes / 60
         val mins = totalMinutes % 60
-        return String.format(Locale.US, "%02d:%02d", hours, mins)
+        return String.format(Locale.US, "%02d:%02d:00", hours, mins)
     }
 
     // The API doc pins this to 400 ONBOARDING_ALREADY_COMPLETED while the deployed backend answers 409,
