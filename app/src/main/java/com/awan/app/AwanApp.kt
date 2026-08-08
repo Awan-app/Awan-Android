@@ -1,11 +1,26 @@
 package com.awan.app
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.WifiOff
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -15,7 +30,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.awan.app.core.designsystem.AwanTheme
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.entryProvider
@@ -109,18 +127,37 @@ fun AwanApp(
 
     Box(modifier = modifier.fillMaxSize()) {
         androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
-            if (!isOnline) {
-                androidx.compose.material3.Surface(
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.errorContainer,
-                    modifier = Modifier.fillMaxWidth()
+            AnimatedVisibility(
+                visible = !isOnline,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                Surface(
+                    color = AwanTheme.colors.streakSurface,
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    androidx.compose.material3.Text(
-                        text = androidx.compose.ui.res.stringResource(R.string.app_offline_banner_text),
-                        color = androidx.compose.material3.MaterialTheme.colorScheme.onErrorContainer,
-                        style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.WifiOff,
+                            contentDescription = null,
+                            tint = AwanTheme.colors.streakIcon,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(R.string.app_offline_banner_text),
+                            color = AwanTheme.colors.streakIcon,
+                            style = AwanTheme.typography.caption,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
             }
 
