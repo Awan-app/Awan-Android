@@ -164,7 +164,28 @@ abstract class AwanDatabase : RoomDatabase() {
 
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE `users` ADD COLUMN `expiryTime` INTEGER NOT NULL DEFAULT 0")
+                val existingColumns = mutableSetOf<String>()
+                try {
+                    val cursor = db.query("PRAGMA table_info(`users`)")
+                    cursor.use {
+                        val nameIndex = it.getColumnIndex("name")
+                        while (it.moveToNext()) {
+                            if (nameIndex != -1) {
+                                existingColumns.add(it.getString(nameIndex))
+                            }
+                        }
+                    }
+                } catch (_: Exception) {
+                }
+                if (!existingColumns.contains("expiryTime")) {
+                    db.execSQL("ALTER TABLE `users` ADD COLUMN `expiryTime` INTEGER NOT NULL DEFAULT 0")
+                }
+                if (!existingColumns.contains("profilePictureUrl")) {
+                    db.execSQL("ALTER TABLE `users` ADD COLUMN `profilePictureUrl` TEXT")
+                }
+                if (!existingColumns.contains("isNew")) {
+                    db.execSQL("ALTER TABLE `users` ADD COLUMN `isNew` INTEGER NOT NULL DEFAULT 0")
+                }
                 db.execSQL("ALTER TABLE `categories` ADD COLUMN `expiryTime` INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE `goals` ADD COLUMN `expiryTime` INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE `tasks` ADD COLUMN `expiryTime` INTEGER NOT NULL DEFAULT 0")
@@ -176,7 +197,25 @@ abstract class AwanDatabase : RoomDatabase() {
 
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Version bump to align identity hash post-schema update
+                val existingColumns = mutableSetOf<String>()
+                try {
+                    val cursor = db.query("PRAGMA table_info(`users`)")
+                    cursor.use {
+                        val nameIndex = it.getColumnIndex("name")
+                        while (it.moveToNext()) {
+                            if (nameIndex != -1) {
+                                existingColumns.add(it.getString(nameIndex))
+                            }
+                        }
+                    }
+                } catch (_: Exception) {
+                }
+                if (!existingColumns.contains("profilePictureUrl")) {
+                    db.execSQL("ALTER TABLE `users` ADD COLUMN `profilePictureUrl` TEXT")
+                }
+                if (!existingColumns.contains("isNew")) {
+                    db.execSQL("ALTER TABLE `users` ADD COLUMN `isNew` INTEGER NOT NULL DEFAULT 0")
+                }
             }
         }
     }
