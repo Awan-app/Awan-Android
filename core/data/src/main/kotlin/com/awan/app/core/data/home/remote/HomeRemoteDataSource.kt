@@ -8,6 +8,8 @@ import com.awan.app.core.network.dto.zone.ZoneDto
 import com.awan.app.core.network.dto.onboarding.CompleteOnboardingResponse
 import com.awan.app.core.network.dto.session.SessionDto
 
+import com.awan.app.core.network.dto.task.TaskInfoResponse
+
 interface HomeRemoteDataSource {
     suspend fun getZonesByDate(date: String): Result<List<ZoneDto>>
     suspend fun getTasksByDate(date: String): Result<List<TaskWithSessionsDto>>
@@ -18,10 +20,28 @@ interface HomeRemoteDataSource {
 
     suspend fun getUserProfile(): Result<CompleteOnboardingResponse>
 
+    suspend fun getSession(sessionId: String): Result<SessionDto>
+
+    suspend fun getTask(taskId: String): Result<TaskInfoResponse>
+
     suspend fun updateSession(
         sessionId: String,
         status: String? = null,
+        locked: Boolean? = null,
         startIso: String? = null,
         endIso: String? = null,
     ): Result<SessionDto>
+
+    suspend fun lockSession(sessionId: String): Result<SessionDto>
+
+    suspend fun unlockSession(sessionId: String): Result<SessionDto>
+
+    suspend fun updateTask(
+        taskId: String,
+        request: com.awan.app.core.network.dto.task.TaskUpdateRequest,
+    ): Result<TaskInfoResponse>
+
+    suspend fun deleteSession(sessionId: String): Result<Unit>
+
+    suspend fun deleteTask(taskId: String, cascade: Boolean = true): Result<Unit>
 }

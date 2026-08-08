@@ -29,6 +29,9 @@ interface UserDao {
     @Query("DELETE FROM users WHERE id = :userId")
     suspend fun deleteUser(userId: String)
 
+    @Query("SELECT MIN(expiryTime) FROM users LIMIT 1")
+    suspend fun getMinExpiryTime(): Long?
+
     // ── UserPreferencesEntity ─────────────────────────────────────────────────
 
     @Upsert

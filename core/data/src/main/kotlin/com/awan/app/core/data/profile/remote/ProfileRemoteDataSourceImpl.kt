@@ -6,6 +6,7 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.ProfileApiService
 import com.awan.app.core.network.dto.profile.AwardPointsRequest
 import com.awan.app.core.network.dto.profile.DeductPointsRequest
+import com.awan.app.core.network.dto.profile.ProfilePictureResponse
 import com.awan.app.core.network.dto.profile.ProfileResponse
 import com.awan.app.core.network.dto.profile.UpdateBirthDateRequest
 import com.awan.app.core.network.dto.profile.UpdateNameRequest
@@ -17,6 +18,9 @@ import com.awan.app.core.network.dto.profile.UpdateTimezoneRequest
 import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
 
 class ProfileRemoteDataSourceImpl @Inject constructor(
@@ -52,6 +56,32 @@ class ProfileRemoteDataSourceImpl @Inject constructor(
             json = json,
         ) {
             profileApiService.updateProfileBirthDate(request)
+        }
+
+    override suspend fun updateProfilePicture(
+        imageBytes: ByteArray,
+        mimeType: String,
+    ): Result<ProfilePictureResponse> =
+        safeApiCall(
+            dispatcher = ioDispatcher,
+            json = json,
+        ) {
+            val extension = when (mimeType.lowercase()) {
+                "image/png" -> "png"
+                "image/webp" -> "webp"
+                else -> "jpg"
+            }
+            val requestFile = imageBytes.toRequestBody(mimeType.toMediaTypeOrNull())
+            val body = MultipartBody.Part.createFormData("image", "profile_picture.$extension", requestFile)
+            profileApiService.updateProfilePicture(body)
+        }
+
+    override suspend fun deleteProfilePicture(): Result<Unit> =
+        safeApiCall(
+            dispatcher = ioDispatcher,
+            json = json,
+        ) {
+            profileApiService.deleteProfilePicture()
         }
 
     override suspend fun updateProfilePartial(

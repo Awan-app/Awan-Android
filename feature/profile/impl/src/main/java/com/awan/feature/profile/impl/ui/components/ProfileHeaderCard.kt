@@ -3,6 +3,8 @@ package com.awan.feature.profile.impl.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -27,6 +29,7 @@ fun ProfileHeaderCard(
     profile: Profile,
     uiState: ProfileState,
     onEditClick: () -> Unit,
+    onPictureClick: () -> Unit = {},
 ) {
     val isDark = uiState.useDarkTheme
 
@@ -49,44 +52,71 @@ fun ProfileHeaderCard(
                     .size(80.dp)
                     .clip(CircleShape)
                     .background(mascotBgColor)
-                    .padding(8.dp),
+                    .clickable(
+                        enabled = profile.profilePictureUrl != null,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onPictureClick
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                val celestialColor by animateColorAsState(
-                    targetValue = if (isDark) AwanTheme.colors.textPrimary else AwanTheme.colors.zoneTangerine,
-                    animationSpec = tween(1000, easing = LinearOutSlowInEasing),
-                    label = "celestialColor"
-                )
+                if (profile.profilePictureUrl != null) {
+                    AwanRemoteImage(
+                        url = profile.profilePictureUrl,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    val celestialColor by animateColorAsState(
+                        targetValue = if (isDark) AwanTheme.colors.textPrimary else AwanTheme.colors.zoneTangerine,
+                        animationSpec = tween(1000, easing = LinearOutSlowInEasing),
+                        label = "celestialColor"
+                    )
 
-                val celestialRotation by animateFloatAsState(
-                    targetValue = if (isDark) -15f else 0f,
-                    animationSpec = tween(1000, easing = LinearOutSlowInEasing),
-                    label = "celestialRotation"
-                )
+                    val celestialRotation by animateFloatAsState(
+                        targetValue = if (isDark) -15f else 0f,
+                        animationSpec = tween(1000, easing = LinearOutSlowInEasing),
+                        label = "celestialRotation"
+                    )
 
-                Icon(
-                    imageVector = if (isDark) Icons.Default.NightsStay else Icons.Default.WbSunny,
-                    contentDescription = null,
-                    tint = celestialColor.copy(alpha = 0.7f),
-                    modifier = Modifier
-                        .size(32.dp)
-                        .align(Alignment.TopEnd)
-                        .offset(x = 4.dp, y = (-4).dp)
-                        .graphicsLayer {
-                            rotationZ = celestialRotation
+                    Icon(
+                        imageVector = if (isDark) Icons.Default.NightsStay else Icons.Default.WbSunny,
+                        contentDescription = null,
+                        tint = celestialColor.copy(alpha = 0.7f),
+                        modifier = Modifier
+                            .size(32.dp)
+                            .align(Alignment.TopEnd)
+                            .offset(x = 4.dp, y = (-4).dp)
+                            .graphicsLayer {
+                                rotationZ = celestialRotation
+                            }
+                    )
+
+                    AwanMascot(
+                        expression = if (isDark) MascotExpression.Idle else MascotExpression.Greet,
+                        blinkEnabled = !isDark,
+                        width = 64.dp,
+                        modifier = Modifier.graphicsLayer {
+                            val scale = if (!isDark) 1.1f else 1.0f
+                            scaleX = scale
+                            scaleY = scale
                         }
-                )
+                    )
+                }
 
-                AwanMascot(
-                    expression = if (isDark) MascotExpression.Idle else MascotExpression.Greet,
-                    blinkEnabled = !isDark,
-                    width = 64.dp,
-                    modifier = Modifier.graphicsLayer {
-                        val scale = if (!isDark) 1.1f else 1.0f
-                        scaleX = scale
-                        scaleY = scale
+                if (uiState.isUploadingPicture) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(AwanTheme.colors.surface.copy(alpha = 0.6f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(28.dp),
+                            color = AwanTheme.colors.sky,
+                            strokeWidth = 3.dp
+                        )
                     }
-                )
+                }
             }
             
             Column(modifier = Modifier.weight(1f)) {

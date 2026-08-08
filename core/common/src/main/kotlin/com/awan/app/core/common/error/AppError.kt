@@ -4,6 +4,7 @@ sealed class AppError {
     data object Network : AppError()
     data object Timeout : AppError()
     data object Unauthorized : AppError()
+    data object NotFound : AppError()
     data class Server(val code: Int) : AppError()
     data class Api(
         val code: Int,

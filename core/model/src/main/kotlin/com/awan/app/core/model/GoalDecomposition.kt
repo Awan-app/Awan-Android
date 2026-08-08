@@ -47,3 +47,21 @@ data class ProposedTask(
     /** Gamification points. Null if the backend omitted it. */
     val estimatedPoints: Int?,
 )
+
+/** Full transcript of a decomposition session. */
+data class GoalDecompositionTranscript(
+    val sessionId: String,
+    val status: String,
+    val messages: List<DecompositionMessage>,
+    val hasProposal: Boolean,
+    val confirmedGoalId: String?,
+    val createdAt: String?,
+    val updatedAt: String?,
+)
+
+/** A message block in a decomposition transcript. */
+data class DecompositionMessage(
+    val role: String,
+    val blocks: List<GoalDecompositionBlock>,
+)
+

@@ -31,6 +31,9 @@ interface TemplateDao {
     @Query("DELETE FROM templates WHERE id = :templateId")
     suspend fun deleteTemplate(templateId: String)
 
+    @Query("SELECT MIN(expiryTime) FROM templates")
+    suspend fun getMinExpiryTime(): Long?
+
     // ── TemplateDayOfWeekEntity ───────────────────────────────────────────────
 
     @Upsert
