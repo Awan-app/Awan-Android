@@ -7,6 +7,7 @@ fun AppError.toUiText(): UiText = when (this) {
     AppError.Network -> UiText.StringResource(R.string.error_network)
     AppError.Timeout -> UiText.StringResource(R.string.error_timeout)
     AppError.Unauthorized -> UiText.StringResource(R.string.error_unauthorized)
+    AppError.NotFound -> UiText.StringResource(R.string.error_not_found)
     is AppError.Server -> UiText.StringResource(R.string.error_server)
     is AppError.Api -> when {
         errorCode == "OTP_LOCKED" -> UiText.StringResource(R.string.error_otp_attempts_exceeded)
@@ -32,6 +33,10 @@ fun AppError.toUiText(): UiText = when (this) {
             ?: UiText.StringResource(R.string.error_unknown)
     }
     AppError.Serialization -> UiText.StringResource(R.string.error_serialization)
-    is AppError.Validation -> UiText.StringResource(R.string.error_validation)
+    is AppError.Validation -> when (reason) {
+        ValidationReason.IMAGE_TOO_LARGE -> UiText.StringResource(R.string.error_image_too_large)
+        ValidationReason.IMAGE_TYPE_UNSUPPORTED -> UiText.StringResource(R.string.error_image_type_unsupported)
+        else -> UiText.StringResource(R.string.error_validation)
+    }
     is AppError.Unknown -> UiText.StringResource(R.string.error_unknown)
 }

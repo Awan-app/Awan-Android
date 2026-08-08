@@ -94,6 +94,16 @@
     <string name="profile_pm">م</string>
     <string name="profile_user_placeholder">مستخدم</string>
     <string name="profile_error_logout">فشل تسجيل الخروج</string>
+    <string name="profile_camera">الكاميرا</string>
+    <string name="profile_gallery">المعرض</string>
+    <string name="profile_remove_photo">إزالة الصورة</string>
+    <string name="profile_photo_sheet_title">صورة الملف الشخصي</string>
+    <string name="profile_camera_permission_rationale_title">إذن الكاميرا مطلوب</string>
+    <string name="profile_camera_permission_rationale_message">يلزم إذن الوصول إلى الكاميرا لالتقاط صورة لملفك الشخصي.</string>
+    <string name="profile_camera_permission_settings_title">الوصول إلى الكاميرا معطل</string>
+    <string name="profile_camera_permission_settings_message">تم تمكين الرفض الدائم لإذن الكاميرا. يرجى تفعيل إذن الكاميرا من إعدادات جهازك لالتقاط صورة.</string>
+    <string name="profile_grant_permission">منح الإذن</string>
+    <string name="profile_open_settings">فتح الإعدادات</string>
 
     <!-- Routines -->
     <string name="profile_routine_create">إنشاء روتين</string>

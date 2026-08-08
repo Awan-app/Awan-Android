@@ -5,10 +5,11 @@ import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.domain.home.repository.HomeRepository
 import java.time.LocalDate
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 
 class GetDayScheduleUseCase @Inject constructor(
     private val homeRepository: HomeRepository,
 ) {
-    suspend operator fun invoke(date: LocalDate): Result<DaySchedule> =
+    operator fun invoke(date: LocalDate): Flow<Result<DaySchedule>> =
         homeRepository.getDaySchedule(date)
 }

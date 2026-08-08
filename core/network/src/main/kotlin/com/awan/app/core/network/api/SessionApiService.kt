@@ -52,6 +52,6 @@ interface SessionApiService {
 
     @DELETE("v1/sessions/{sessionId}")
     suspend fun deleteSession(
-        @Path("sessionId") sessionId: String
+        @Path("sessionId") sessionId: String,
     )
 }

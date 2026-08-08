@@ -13,5 +13,7 @@ data class ProfileResponse(
     @SerialName("points") val points: Int? = null,
     @SerialName("streak") val streak: Int? = null,
     @SerialName("maxStreak") val maxStreak: Int? = null,
+    @SerialName("profilePictureUrl") val profilePictureUrl: String? = null,
+    @SerialName("isNew") val isNew: Boolean? = null,
     @SerialName("preferences") val preferences: UserPreferencesResponse? = null,
 )

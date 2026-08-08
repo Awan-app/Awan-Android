@@ -24,6 +24,16 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE goalId = :goalId")
     fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>>
 
+    /** Observe all Inbox tasks (goalId IS NULL). */
+    @Query("SELECT * FROM tasks WHERE goalId IS NULL")
+    fun observeInboxTasks(): Flow<List<TaskEntity>>
+
+    @Query("SELECT * FROM tasks")
+    fun observeAllTasks(): Flow<List<TaskEntity>>
+
+    @Query("SELECT * FROM tasks")
+    suspend fun getAllTasks(): List<TaskEntity>
+
     @Query("SELECT * FROM tasks WHERE id = :taskId")
     fun observeTask(taskId: String): Flow<TaskEntity?>
 
@@ -82,4 +92,8 @@ interface TaskDao {
 
     @Query("DELETE FROM tasks WHERE goalId = :goalId")
     suspend fun deleteTasksByGoal(goalId: String)
+
+    /** Convert tasks referencing deleted or non-existent goals into Inbox tasks. */
+    @Query("UPDATE tasks SET goalId = NULL WHERE goalId IS NOT NULL AND goalId NOT IN (SELECT id FROM goals)")
+    suspend fun nullifyOrphanedGoalReferences()
 }

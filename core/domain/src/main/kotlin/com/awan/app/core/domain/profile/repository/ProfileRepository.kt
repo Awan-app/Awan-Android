@@ -10,6 +10,11 @@ interface ProfileRepository {
     suspend fun getProfile(): Result<Profile>
     suspend fun updateName(firstName: String, lastName: String): Result<Profile>
     suspend fun updateBirthDate(birthDate: String): Result<Profile>
+
+    suspend fun updateProfilePicture(imageBytes: ByteArray, mimeType: String): Result<Profile>
+
+    suspend fun deleteProfilePicture(): Result<Profile>
+
     suspend fun updateProfilePartial(
         firstName: String? = null,
         lastName: String? = null,

@@ -25,6 +25,7 @@ fun ProfileContent(
     uiState: ProfileState,
     onAction: (ProfileAction) -> Unit,
     onEditClick: () -> Unit,
+    onPictureClick: () -> Unit,
     onDailyZonesClick: () -> Unit,
     onCategoryManagementClick: () -> Unit,
     onSettingsClick: (String) -> Unit,
@@ -47,7 +48,8 @@ fun ProfileContent(
         ProfileHeaderCard(
             profile = profile,
             uiState = uiState,
-            onEditClick = onEditClick
+            onEditClick = onEditClick,
+            onPictureClick = onPictureClick
         )
 
         PreferencesCard(

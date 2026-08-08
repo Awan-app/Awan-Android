@@ -10,4 +10,7 @@
     <string name="navigation_goals">الأهداف</string>
     <string name="navigation_profile">الملف الشخصي</string>
     <string name="navigation_add_task">أضف مهمة</string>
+    <string name="app_offline_banner_text">أنت غير متصل بالإنترنت. تعديل البيانات والمزامنة غير متاحة.</string>
+    <string name="app_offline_lock_explanation">هذا الإجراء يتطلب اتصالات بالإنترنت.</string>
 </resources>
+

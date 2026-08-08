@@ -176,3 +176,42 @@ private fun String?.toTaskStatus(): TaskStatus =
 
 private fun String?.toSessionStatus(): SessionStatus =
     runCatching { SessionStatus.valueOf(orEmpty()) }.getOrDefault(SessionStatus.UNKNOWN)
+
+internal fun TaskInfoResponse.toEntity(
+    goalId: String? = this.goalId,
+    categoryId: String? = this.category?.id,
+    expiryTime: Long = 0L
+): com.awan.app.core.database.model.TaskEntity = com.awan.app.core.database.model.TaskEntity(
+    id = id,
+    title = title,
+    description = description,
+    estimatedDuration = estimatedDuration ?: 0,
+    status = status ?: "SCHEDULED",
+    mandatory = mandatory ?: false,
+    estimatedPoints = estimatedPoints ?: 0,
+    allowTaskSplitting = allowTaskSplitting ?: false,
+    goalId = goalId,
+    categoryId = categoryId,
+    expiryTime = expiryTime,
+)
+
+internal fun com.awan.app.core.network.dto.session.SessionDto.toEntity(
+    taskId: String,
+    date: String,
+    expiryTime: Long = 0L
+): com.awan.app.core.database.model.SessionEntity {
+    val sessionDate = if (start.length >= 10) start.substring(0, 10) else date
+    val startTime = if (start.length >= 19) start.substring(11, 19) else "00:00:00"
+    val endTime = if (end.length >= 19) end.substring(11, 19) else "00:00:00"
+    return com.awan.app.core.database.model.SessionEntity(
+        id = id,
+        taskId = this.taskId ?: taskId,
+        zoneId = zoneId,
+        date = sessionDate,
+        startTime = startTime,
+        endTime = endTime,
+        status = status ?: "SCHEDULED",
+        locked = locked,
+        expiryTime = expiryTime,
+    )
+}
