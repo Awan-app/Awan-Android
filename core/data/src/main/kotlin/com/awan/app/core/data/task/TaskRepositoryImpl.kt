@@ -24,6 +24,8 @@ import com.awan.app.core.model.TaskWithSessionsDraft
 import com.awan.app.core.network.dto.task.AiTextToTasksRequest
 import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.data.common.extractDateFromIso
+import com.awan.app.core.data.common.extractTimeFromIso
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -42,10 +44,7 @@ class TaskRepositoryImpl @Inject constructor(
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : TaskRepository {
 
-    private suspend fun sanitizeGoalId(goalId: String?): String? {
-        if (goalId == null) return null
-        return if (goalDao.getGoal(goalId) != null) goalId else null
-    }
+
 
     override suspend fun createTask(draft: TaskDraft): Result<Task> = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) {
@@ -58,18 +57,7 @@ class TaskRepositoryImpl @Inject constructor(
             if (categoryEntity != null) {
                 categoryDao.upsertCategory(categoryEntity)
             }
-            val taskEntity = TaskEntity(
-                id = dto.id,
-                title = dto.title,
-                description = dto.description,
-                estimatedDuration = dto.estimatedDuration ?: 0,
-                status = dto.status ?: "SCHEDULED",
-                mandatory = dto.mandatory ?: false,
-                estimatedPoints = dto.estimatedPoints ?: 0,
-                allowTaskSplitting = dto.allowTaskSplitting ?: false,
-                goalId = sanitizeGoalId(dto.goalId),
-                categoryId = dto.category?.id,
-            )
+            val taskEntity = dto.toEntity()
             taskDao.upsertTask(taskEntity)
             Result.Success(dto.toTaskModel())
         } else {
@@ -92,31 +80,11 @@ class TaskRepositoryImpl @Inject constructor(
             if (categoryEntity != null) {
                 categoryDao.upsertCategory(categoryEntity)
             }
-            val taskEntity = TaskEntity(
-                id = t.id,
-                title = t.title,
-                description = t.description,
-                estimatedDuration = t.estimatedDuration ?: 0,
-                status = t.status ?: "SCHEDULED",
-                mandatory = t.mandatory ?: false,
-                estimatedPoints = t.estimatedPoints ?: 0,
-                allowTaskSplitting = t.allowTaskSplitting ?: false,
-                goalId = sanitizeGoalId(t.goalId),
-                categoryId = t.category?.id,
-            )
+            val taskEntity = t.toEntity()
             taskDao.upsertTask(taskEntity)
 
             val sessionEntities = dto.sessions.map { s ->
-                SessionEntity(
-                    id = s.id,
-                    taskId = s.taskId ?: t.id,
-                    zoneId = s.zoneId,
-                    date = if (s.start.length >= 10) s.start.substring(0, 10) else "",
-                    startTime = if (s.start.length >= 19) s.start.substring(11, 19) else "00:00:00",
-                    endTime = if (s.end.length >= 19) s.end.substring(11, 19) else "00:00:00",
-                    status = s.status ?: "SCHEDULED",
-                    locked = s.locked,
-                )
+                s.toEntity(taskId = t.id, date = "")
             }
             if (sessionEntities.isNotEmpty()) {
                 sessionDao.upsertSessions(sessionEntities)
@@ -144,31 +112,11 @@ class TaskRepositoryImpl @Inject constructor(
                 if (categoryEntity != null) {
                     categoryDao.upsertCategory(categoryEntity)
                 }
-                val taskEntity = TaskEntity(
-                    id = t.id,
-                    title = t.title,
-                    description = t.description,
-                    estimatedDuration = t.estimatedDuration ?: 0,
-                    status = t.status ?: "SCHEDULED",
-                    mandatory = t.mandatory ?: false,
-                    estimatedPoints = t.estimatedPoints ?: 0,
-                    allowTaskSplitting = t.allowTaskSplitting ?: false,
-                    goalId = sanitizeGoalId(t.goalId),
-                    categoryId = t.category?.id,
-                )
+                val taskEntity = t.toEntity()
                 taskDao.upsertTask(taskEntity)
 
                 val sessionEntities = item.sessions.map { s ->
-                    SessionEntity(
-                        id = s.id,
-                        taskId = s.taskId ?: t.id,
-                        zoneId = s.zoneId,
-                        date = if (s.start.length >= 10) s.start.substring(0, 10) else "",
-                        startTime = if (s.start.length >= 19) s.start.substring(11, 19) else "00:00:00",
-                        endTime = if (s.end.length >= 19) s.end.substring(11, 19) else "00:00:00",
-                        status = s.status ?: "SCHEDULED",
-                        locked = s.locked,
-                    )
+                    s.toEntity(taskId = t.id, date = "")
                 }
                 if (sessionEntities.isNotEmpty()) {
                     sessionDao.upsertSessions(sessionEntities)

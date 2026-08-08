@@ -78,6 +78,7 @@ private class FakeCategoryDao : CategoryDao {
     override suspend fun getCategory(id: String): CategoryEntity? = null
     override suspend fun deleteCategory(id: String) {}
     override suspend fun deleteAllCategories() {}
+    override suspend fun getMinExpiryTime(): Long? = null
 }
 
 private class FakeSessionDao : SessionDao {
@@ -248,6 +249,7 @@ private class FakeGoalDao : com.awan.app.core.database.dao.GoalDao {
     override fun observeInboxGoal(): Flow<com.awan.app.core.database.model.GoalEntity?> = MutableStateFlow(null)
     override suspend fun deleteGoal(goalId: String) {}
     override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
+    override suspend fun getMinExpiryTime(): Long? = null
 }
 
     private fun buildRepository(

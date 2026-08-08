@@ -171,11 +171,12 @@ class OnboardingRepositoryImplTest {
 
     @Test
     fun `an account with no categories gets no template rather than an error`() = runTest(testDispatcher.scheduler) {
-        val result = repository.completeOnboarding(onboardingData())
+        val result = repository.completeOnboarding(onboardingData(zones = emptyList()))
 
         assertTrue(result is Result.Success)
         assertNull(fakeZonesRepository.createdZones)
     }
+
 
     private fun onboardingData(zones: List<Zone> = Zone.defaults) = OnboardingData(
         profile = UserProfile(firstName = "Sarah", lastName = "Connor"),
@@ -236,6 +237,7 @@ class OnboardingRepositoryImplTest {
 
         override suspend fun getUserWithPreferences(userId: String): com.awan.app.core.database.model.UserWithPreferences? =
             null
+        override suspend fun getMinExpiryTime(): Long? = null
     }
 
     private class FakeZonesRepository : ZonesRepository {

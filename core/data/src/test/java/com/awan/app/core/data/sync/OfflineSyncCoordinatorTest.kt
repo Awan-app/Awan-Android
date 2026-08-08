@@ -96,9 +96,19 @@ private class FakeGoalRemoteDataSource(
     private val goalsResult: Result<List<GoalInfoResponse>> = Result.Success(emptyList()),
 ) : GoalRemoteDataSource {
     override suspend fun getGoals(): Result<List<GoalInfoResponse>> = goalsResult
+    override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest) = error("not used")
+    override suspend fun getInboxGoal() = error("not used")
+    override suspend fun getGoal(goalId: String) = error("not used")
+    override suspend fun deleteGoal(goalId: String) = error("not used")
     override suspend fun continueDecomposition(request: GoalDecomposeRequest) = error("not used")
     override suspend fun confirmDecomposition(sessionId: String) = error("not used")
+    override suspend fun getDecompositionTranscript(sessionId: String) = error("not used")
+    override suspend fun cancelDecomposition(sessionId: String) = error("not used")
+    override suspend fun scheduleGoal(goalId: String) = error("not used")
+    override suspend fun proposeGoalSchedule(goalId: String) = error("not used")
+    override suspend fun confirmGoalSchedule(request: com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest) = error("not used")
 }
+
 
 private class FakeCategoryRemoteDataSource(
     private val categoriesResult: Result<List<CategoryDto>> = Result.Success(emptyList()),
@@ -179,6 +189,7 @@ private class FakeCategoryDao : CategoryDao {
     override suspend fun getCategory(id: String): CategoryEntity? = null
     override suspend fun deleteCategory(id: String) {}
     override suspend fun deleteAllCategories() {}
+    override suspend fun getMinExpiryTime(): Long? = null
 }
 
 private class FakeSessionDao : SessionDao {
@@ -207,6 +218,7 @@ private class FakeGoalDao : GoalDao {
     override fun observeInboxGoal(): Flow<GoalEntity?> = MutableStateFlow(null)
     override suspend fun deleteGoal(goalId: String) {}
     override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
+    override suspend fun getMinExpiryTime(): Long? = null
 }
 
 private class FakeUserDao : UserDao {
@@ -222,6 +234,7 @@ private class FakeUserDao : UserDao {
     override suspend fun getPreferences(userId: String): UserPreferencesEntity? = null
     override fun observeUserWithPreferences(userId: String): Flow<UserWithPreferences?> = MutableStateFlow(null)
     override suspend fun getUserWithPreferences(userId: String): UserWithPreferences? = null
+    override suspend fun getMinExpiryTime(): Long? = null
 }
 
 private class FakeZoneDao : ZoneDao {
@@ -250,6 +263,7 @@ private class FakeTemplateDao : TemplateDao {
     override fun observeDaysForTemplate(templateId: String): Flow<List<TemplateDayOfWeekEntity>> = flowOf(emptyList())
     override suspend fun getDayAssignment(dayOfWeek: String): TemplateDayOfWeekEntity? = null
     override suspend fun deleteDaysForTemplate(templateId: String) {}
+    override suspend fun getMinExpiryTime(): Long? = null
 }
 
 private class FakeTemplateOverrideDao : TemplateOverrideDao {
@@ -276,6 +290,7 @@ private class FakeCachedScheduleDateDao : CachedScheduleDateDao {
     override suspend fun getCachedDatesInRange(startDate: String, endDate: String): List<String> =
         cachedDates.filter { it >= startDate && it <= endDate }
     override suspend fun clearAll() { upserted.clear(); cachedDates.clear() }
+    override suspend fun getMinExpiryTimeForRange(startDate: String, endDate: String): Long? = null
 }
 
 private val onlineMonitor = object : NetworkConnectivityMonitor {

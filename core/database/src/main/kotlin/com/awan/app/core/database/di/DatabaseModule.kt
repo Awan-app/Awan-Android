@@ -39,6 +39,7 @@ object DatabaseModule {
         "awan-database",
     )
         .addMigrations(AwanDatabase.MIGRATION_1_2)
+        .addMigrations(AwanDatabase.MIGRATION_2_3)
         .build()
 
     @Provides

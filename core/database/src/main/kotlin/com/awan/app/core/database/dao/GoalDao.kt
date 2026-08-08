@@ -18,4 +18,5 @@ interface GoalDao {
     @Query("SELECT * FROM goals WHERE isInbox = 1 LIMIT 1") fun observeInboxGoal(): Flow<GoalEntity?>
     @Query("DELETE FROM goals WHERE id = :goalId") suspend fun deleteGoal(goalId: String)
     @Query("SELECT id FROM goals WHERE status = 'ACTIVE' AND isInbox = 0") suspend fun getActiveNonInboxGoalIds(): List<String>
+    @Query("SELECT MIN(expiryTime) FROM goals") suspend fun getMinExpiryTime(): Long?
 }

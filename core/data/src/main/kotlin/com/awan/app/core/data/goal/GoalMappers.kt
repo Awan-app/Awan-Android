@@ -13,22 +13,20 @@ internal fun GoalStatusDto.toModel(): GoalStatus = when (this) {
     GoalStatusDto.UNKNOWN -> GoalStatus.UNKNOWN
 }
 
-internal fun GoalInfoResponse.toModel(): Goal {
-    val (extractedEmoji, cleanTitle) = if (title.isNotEmpty()) {
-        val firstCodePoint = title.codePointAt(0)
-        val charCount = Character.charCount(firstCodePoint)
-        val type = Character.getType(firstCodePoint)
-        if (type == Character.OTHER_SYMBOL.toInt() || type == Character.SURROGATE.toInt()) {
-            val emojiStr = title.take(charCount)
-            val rest = title.substring(charCount).trim()
-            emojiStr to rest
-        } else {
-            "🎯" to title
-        }
+private fun extractEmojiAndTitle(title: String): Pair<String, String> {
+    if (title.isEmpty()) return "🎯" to title
+    val firstCodePoint = title.codePointAt(0)
+    val charCount = Character.charCount(firstCodePoint)
+    val type = Character.getType(firstCodePoint)
+    return if (type == Character.OTHER_SYMBOL.toInt() || type == Character.SURROGATE.toInt()) {
+        title.take(charCount) to title.substring(charCount).trim()
     } else {
         "🎯" to title
     }
+}
 
+internal fun GoalInfoResponse.toModel(): Goal {
+    val (extractedEmoji, cleanTitle) = extractEmojiAndTitle(title)
     return Goal(
         id = id,
         title = cleanTitle,
@@ -45,21 +43,7 @@ internal fun GoalInfoResponse.toModel(): Goal {
  * contain a leading emoji; this mapper extracts it with the same logic.
  */
 internal fun GoalEntity.toModel(): Goal {
-    val (extractedEmoji, cleanTitle) = if (title.isNotEmpty()) {
-        val firstCodePoint = title.codePointAt(0)
-        val charCount = Character.charCount(firstCodePoint)
-        val type = Character.getType(firstCodePoint)
-        if (type == Character.OTHER_SYMBOL.toInt() || type == Character.SURROGATE.toInt()) {
-            val emojiStr = title.take(charCount)
-            val rest = title.substring(charCount).trim()
-            emojiStr to rest
-        } else {
-            "🎯" to title
-        }
-    } else {
-        "🎯" to title
-    }
-
+    val (extractedEmoji, cleanTitle) = extractEmojiAndTitle(title)
     val goalStatus = runCatching { GoalStatus.valueOf(status) }.getOrDefault(GoalStatus.UNKNOWN)
     return Goal(
         id = id,

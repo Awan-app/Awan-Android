@@ -1,10 +1,17 @@
 package com.awan.app.core.network.api
 
-import kotlinx.serialization.json.JsonObject
 import com.awan.app.core.network.dto.GoalDecomposeResponse
 import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.PageResponse
+import com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse
+import com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest
+import com.awan.app.core.network.dto.goal.CreateGoalRequest
+import com.awan.app.core.network.dto.goal.GoalDecompositionTranscriptResponse
+import com.awan.app.core.network.dto.goal.ScheduleGoalRequest
+import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import kotlinx.serialization.json.JsonObject
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -18,6 +25,25 @@ interface GoalApiService {
         @Query("expand") expand: Boolean = true,
     ): PageResponse<GoalInfoResponse>
 
+    @POST("v1/goals")
+    suspend fun createGoal(
+        @Body request: CreateGoalRequest,
+    ): GoalInfoResponse
+
+    @GET("v1/goals/inbox")
+    suspend fun getInboxGoal(): GoalInfoResponse
+
+    @GET("v1/goals/{goalId}")
+    suspend fun getGoal(
+        @Path("goalId") goalId: String,
+        @Query("expand") expand: Boolean = false,
+    ): GoalInfoResponse
+
+    @DELETE("v1/goals/{goalId}")
+    suspend fun deleteGoal(
+        @Path("goalId") goalId: String,
+    )
+
     /** `POST v1/ai/goal-decompose` — continue or start a decomposition session. */
     @POST("v1/ai/goal-decompose")
     suspend fun decomposeGoal(
@@ -29,4 +55,35 @@ interface GoalApiService {
     suspend fun confirmDecomposition(
         @Path("sessionId") sessionId: String,
     ): GoalInfoResponse
+
+    /** `GET v1/ai/goal-decompose/{sessionId}` — get full decomposition transcript. */
+    @GET("v1/ai/goal-decompose/{sessionId}")
+    suspend fun getDecompositionTranscript(
+        @Path("sessionId") sessionId: String,
+    ): GoalDecompositionTranscriptResponse
+
+    /** `POST v1/ai/goal-decompose/{sessionId}/cancel` — cancel active decomposition session. */
+    @POST("v1/ai/goal-decompose/{sessionId}/cancel")
+    suspend fun cancelDecomposition(
+        @Path("sessionId") sessionId: String,
+    )
+
+    /** `POST v1/schedule` — schedule all unscheduled tasks for a goal. */
+    @POST("v1/schedule")
+    suspend fun scheduleGoal(
+        @Body request: ScheduleGoalRequest,
+    ): TaskScheduleResponse
+
+    /** `POST v1/ai/schedule` — proposal for scheduling goal tasks. */
+    @POST("v1/ai/schedule")
+    suspend fun proposeGoalSchedule(
+        @Body request: ScheduleGoalRequest,
+    ): AiGoalScheduleProposalResponse
+
+    /** `POST v1/ai/schedule/confirm` — confirm accepted proposed sessions. */
+    @POST("v1/ai/schedule/confirm")
+    suspend fun confirmGoalSchedule(
+        @Body request: ConfirmAiScheduleRequest,
+    )
 }
+

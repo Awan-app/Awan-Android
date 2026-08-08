@@ -27,10 +27,13 @@ import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
+import com.awan.app.core.data.task.toEntity
 import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import com.awan.app.core.data.common.extractDateFromIso
+import com.awan.app.core.data.common.extractTimeFromIso
 import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
@@ -58,122 +61,114 @@ class OfflineSyncCoordinator @Inject constructor(
     suspend fun syncAll(
         startDate: LocalDate = LocalDate.now(),
         endDate: LocalDate = startDate.plusDays(6),
+        forceRefresh: Boolean = false
     ): Boolean = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) return@withContext false
 
         var success = true
-        if (!syncProfile()) success = false
-        if (!syncCategories()) success = false
-        if (!syncGoals()) success = false
-        if (!syncScheduleRange(startDate, endDate)) success = false
-        if (!syncZonesAndTemplates()) success = false
+        if (!syncProfile(forceRefresh)) success = false
+        if (!syncCategories(forceRefresh)) success = false
+        if (!syncGoals(forceRefresh)) success = false
+        if (!syncScheduleRange(startDate, endDate, forceRefresh)) success = false
+        if (!syncZonesAndTemplates(forceRefresh)) success = false
 
         success
     }
 
-    suspend fun syncScheduleRange(startDate: LocalDate, endDate: LocalDate): Boolean =
-        withContext(ioDispatcher) {
-            if (!connectivityMonitor.isCurrentlyOnline()) return@withContext false
+    suspend fun syncScheduleRange(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        forceRefresh: Boolean = false
+    ): Boolean = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) return@withContext false
 
-            val startStr = startDate.toString()
-            val endStr = endDate.toString()
+        val startStr = startDate.toString()
+        val endStr = endDate.toString()
 
-            val result = taskRemoteDataSource.getTasksByRange(startStr, endStr)
-            if (result is Result.Success) {
-                val rangeMap = result.data
-                val nowIso = Instant.now().toString()
-
-                val tasksToUpsert = mutableListOf<TaskEntity>()
-                val categoriesToUpsert = mutableListOf<CategoryEntity>()
-                val sessionsToUpsert = mutableListOf<SessionEntity>()
-
-                val datesInRange = mutableListOf<String>()
-                var current = startDate
-                while (!current.isAfter(endDate)) {
-                    datesInRange.add(current.toString())
-                    current = current.plusDays(1)
-                }
-
-                for ((dateStr, tasksWithSessions) in rangeMap) {
-                    for (item in tasksWithSessions) {
-                        val t = item.task
-                        val categoryEntity = t.category?.let { CategoryEntity(id = it.id, name = it.name) }
-                        if (categoryEntity != null) {
-                            categoriesToUpsert.add(categoryEntity)
-                        }
-
-                        tasksToUpsert.add(
-                            TaskEntity(
-                                id = t.id,
-                                title = t.title,
-                                description = t.description,
-                                estimatedDuration = t.estimatedDuration ?: 0,
-                                status = t.status ?: "SCHEDULED",
-                                mandatory = t.mandatory ?: false,
-                                estimatedPoints = t.estimatedPoints ?: 0,
-                                allowTaskSplitting = t.allowTaskSplitting ?: false,
-                                goalId = t.goalId,
-                                categoryId = t.category?.id,
-                            )
-                        )
-
-                        for (s in item.sessions) {
-                            val sessionDate = if (s.start.length >= 10) s.start.substring(0, 10) else dateStr
-                            val startTime = if (s.start.length >= 19) s.start.substring(11, 19) else "00:00:00"
-                            val endTime = if (s.end.length >= 19) s.end.substring(11, 19) else "00:00:00"
-
-                            sessionsToUpsert.add(
-                                SessionEntity(
-                                    id = s.id,
-                                    taskId = s.taskId ?: t.id,
-                                    zoneId = s.zoneId,
-                                    date = sessionDate,
-                                    startTime = startTime,
-                                    endTime = endTime,
-                                    status = s.status ?: "SCHEDULED",
-                                    locked = s.locked,
-                                )
-                            )
-                        }
-                    }
-                }
-
-                if (categoriesToUpsert.isNotEmpty()) {
-                    categoryDao.upsertCategories(categoriesToUpsert.distinctBy { it.id })
-                }
-
-                val existingGoalIds = goalDao.getAllGoals().mapTo(HashSet()) { it.id }
-                val validCategoryIds = categoriesToUpsert.mapTo(HashSet()) { it.id }
-                categoryDao.getAllCategories().mapTo(validCategoryIds) { it.id }
-
-                val sanitizedTasksToUpsert = tasksToUpsert.map { task ->
-                    val validGoalId = task.goalId?.takeIf { it in existingGoalIds }
-                    val validCategoryId = task.categoryId?.takeIf { it in validCategoryIds }
-                    if (validGoalId != task.goalId || validCategoryId != task.categoryId) {
-                        task.copy(goalId = validGoalId, categoryId = validCategoryId)
-                    } else {
-                        task
-                    }
-                }
-
-                if (sanitizedTasksToUpsert.isNotEmpty()) {
-                    taskDao.upsertTasks(sanitizedTasksToUpsert.distinctBy { it.id })
-                }
-                sessionDao.replaceSessionsForDates(datesInRange, sessionsToUpsert.distinctBy { it.id })
-                cachedScheduleDateDao.upsertCachedDates(
-                    datesInRange.map { CachedScheduleDateEntity(date = it, lastSyncedAt = nowIso) }
-                )
-
-                true
-            } else {
-                false
+        if (!forceRefresh) {
+            val minExpiry = cachedScheduleDateDao.getMinExpiryTimeForRange(startStr, endStr)
+            if (minExpiry != null && minExpiry > System.currentTimeMillis()) {
+                return@withContext true
             }
         }
 
-    suspend fun syncGoals(): Boolean = withContext(ioDispatcher) {
+        val result = taskRemoteDataSource.getTasksByRange(startStr, endStr)
+        if (result is Result.Success) {
+            val rangeMap = result.data
+            val nowIso = Instant.now().toString()
+            val scheduleExpiry = SyncTtl.computeExpiry(SyncTtl.SCHEDULE_TTL_MS)
+            val categoriesExpiry = SyncTtl.computeExpiry(SyncTtl.CATEGORIES_TTL_MS)
+
+            val tasksToUpsert = mutableListOf<TaskEntity>()
+            val categoriesToUpsert = mutableListOf<CategoryEntity>()
+            val sessionsToUpsert = mutableListOf<SessionEntity>()
+
+            val datesInRange = mutableListOf<String>()
+            var current = startDate
+            while (!current.isAfter(endDate)) {
+                datesInRange.add(current.toString())
+                current = current.plusDays(1)
+            }
+
+            for ((dateStr, tasksWithSessions) in rangeMap) {
+                for (item in tasksWithSessions) {
+                    val t = item.task
+                    val categoryEntity = t.category?.let { CategoryEntity(id = it.id, name = it.name, expiryTime = categoriesExpiry) }
+                    if (categoryEntity != null) {
+                        categoriesToUpsert.add(categoryEntity)
+                    }
+
+                    tasksToUpsert.add(t.toEntity(expiryTime = scheduleExpiry))
+
+                    for (s in item.sessions) {
+                        sessionsToUpsert.add(s.toEntity(taskId = t.id, date = dateStr, expiryTime = scheduleExpiry))
+                    }
+                }
+            }
+
+            if (categoriesToUpsert.isNotEmpty()) {
+                categoryDao.upsertCategories(categoriesToUpsert.distinctBy { it.id })
+            }
+
+            val validCategoryIds = categoriesToUpsert.mapTo(HashSet()) { it.id }
+            categoryDao.getAllCategories().mapTo(validCategoryIds) { it.id }
+
+            val sanitizedTasksToUpsert = tasksToUpsert.map { task ->
+                val validCategoryId = task.categoryId?.takeIf { it in validCategoryIds }
+                if (validCategoryId != task.categoryId) {
+                    task.copy(categoryId = validCategoryId)
+                } else {
+                    task
+                }
+            }
+
+            if (sanitizedTasksToUpsert.isNotEmpty()) {
+                taskDao.upsertTasks(sanitizedTasksToUpsert.distinctBy { it.id })
+            }
+            sessionDao.replaceSessionsForDates(datesInRange, sessionsToUpsert.distinctBy { it.id })
+            cachedScheduleDateDao.upsertCachedDates(
+                datesInRange.map { CachedScheduleDateEntity(date = it, lastSyncedAt = nowIso, expiryTime = scheduleExpiry) }
+            )
+
+            true
+        } else {
+            false
+        }
+    }
+
+    suspend fun syncGoals(forceRefresh: Boolean = false): Boolean = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) return@withContext false
+
+        if (!forceRefresh) {
+            val minExpiry = goalDao.getMinExpiryTime()
+            if (minExpiry != null && minExpiry > System.currentTimeMillis()) {
+                return@withContext true
+            }
+        }
+
         val result = goalRemoteDataSource.getGoals()
         if (result is Result.Success) {
+            val expiry = SyncTtl.computeExpiry(SyncTtl.GOALS_TTL_MS)
             val entities = result.data.map {
                 GoalEntity(
                     id = it.id,
@@ -183,6 +178,7 @@ class OfflineSyncCoordinator @Inject constructor(
                     targetDate = it.targetDate,
                     createdAt = it.createdAt ?: "",
                     isInbox = it.inbox,
+                    expiryTime = expiry
                 )
             }
             goalDao.upsertGoals(entities)
@@ -192,11 +188,20 @@ class OfflineSyncCoordinator @Inject constructor(
         }
     }
 
-    suspend fun syncCategories(): Boolean = withContext(ioDispatcher) {
+    suspend fun syncCategories(forceRefresh: Boolean = false): Boolean = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) return@withContext false
+
+        if (!forceRefresh) {
+            val minExpiry = categoryDao.getMinExpiryTime()
+            if (minExpiry != null && minExpiry > System.currentTimeMillis()) {
+                return@withContext true
+            }
+        }
+
         val result = categoryRemoteDataSource.getCategories()
         if (result is Result.Success) {
-            val entities = result.data.map { CategoryEntity(id = it.id, name = it.name) }
+            val expiry = SyncTtl.computeExpiry(SyncTtl.CATEGORIES_TTL_MS)
+            val entities = result.data.map { CategoryEntity(id = it.id, name = it.name, expiryTime = expiry) }
             categoryDao.upsertCategories(entities)
             true
         } else {
@@ -204,12 +209,22 @@ class OfflineSyncCoordinator @Inject constructor(
         }
     }
 
-    suspend fun syncProfile(): Boolean = withContext(ioDispatcher) {
+    suspend fun syncProfile(forceRefresh: Boolean = false): Boolean = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) return@withContext false
+
+        if (!forceRefresh) {
+            val minExpiry = userDao.getMinExpiryTime()
+            if (minExpiry != null && minExpiry > System.currentTimeMillis()) {
+                return@withContext true
+            }
+        }
+
         val result = profileRemoteDataSource.getProfileInfo()
         if (result is Result.Success) {
             val res = result.data
             val userId = res.id ?: return@withContext false
+            val expiry = SyncTtl.computeExpiry(SyncTtl.PROFILE_TTL_MS)
+            
             userDao.upsertUser(
                 UserEntity(
                     id = userId,
@@ -220,6 +235,7 @@ class OfflineSyncCoordinator @Inject constructor(
                     points = res.points ?: 0,
                     streak = res.streak ?: 0,
                     maxStreak = res.maxStreak ?: 0,
+                    expiryTime = expiry
                 )
             )
             res.preferences?.let { prefs ->
@@ -232,6 +248,8 @@ class OfflineSyncCoordinator @Inject constructor(
                         wakeupTime = prefs.wakeupTime ?: "08:00:00",
                         sleepTime = prefs.sleepTime ?: "22:00:00",
                         schedulingType = prefs.schedulingType ?: "BALANCED",
+                        // Note: Depending on existing entity fields, we might or might not need expiryTime here,
+                        // assuming UserEntity handles the primary TTL for profile.
                     )
                 )
             }
@@ -241,14 +259,25 @@ class OfflineSyncCoordinator @Inject constructor(
         }
     }
 
-    suspend fun syncZonesAndTemplates(): Boolean = withContext(ioDispatcher) {
+    suspend fun syncZonesAndTemplates(forceRefresh: Boolean = false): Boolean = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) return@withContext false
+
+        if (!forceRefresh) {
+            val minExpiry = templateDao.getMinExpiryTime()
+            if (minExpiry != null && minExpiry > System.currentTimeMillis()) {
+                return@withContext true
+            }
+        }
+
+        val expiry = SyncTtl.computeExpiry(SyncTtl.TEMPLATES_TTL_MS)
+        
         val tplRes = zonesRemoteDataSource.getTemplates()
         if (tplRes is Result.Success) {
             val tplEntities = tplRes.data.map {
                 TemplateEntity(
                     id = it.id,
                     name = it.name,
+                    expiryTime = expiry
                 )
             }
             templateDao.upsertTemplates(tplEntities)

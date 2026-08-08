@@ -12,4 +12,5 @@ data class CategoryEntity(
     val name: String,
     val colorHex: String? = null,
     val icon: String? = null,
+    val expiryTime: Long = 0L,
 )

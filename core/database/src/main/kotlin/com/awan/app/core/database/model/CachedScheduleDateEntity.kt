@@ -13,4 +13,5 @@ data class CachedScheduleDateEntity(
     @PrimaryKey val date: String,
     /** ISO-8601 string of when this date was last synced. */
     val lastSyncedAt: String,
+    val expiryTime: Long = 0L,
 )

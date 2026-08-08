@@ -35,6 +35,11 @@ class GoalRepositoryTest {
             expand: Boolean,
         ): PageResponse<GoalInfoResponse> = error("Not implemented")
 
+        override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): GoalInfoResponse = error("Not implemented")
+        override suspend fun getInboxGoal(): GoalInfoResponse = error("Not implemented")
+        override suspend fun getGoal(goalId: String, expand: Boolean): GoalInfoResponse = error("Not implemented")
+        override suspend fun deleteGoal(goalId: String) = error("Not implemented")
+
         override suspend fun decomposeGoal(
             request: kotlinx.serialization.json.JsonObject,
         ): com.awan.app.core.network.dto.GoalDecomposeResponse = error("Not implemented")
@@ -42,21 +47,31 @@ class GoalRepositoryTest {
         override suspend fun confirmDecomposition(
             sessionId: String,
         ): GoalInfoResponse = error("Not implemented")
+
+        override suspend fun getDecompositionTranscript(sessionId: String): com.awan.app.core.network.dto.goal.GoalDecompositionTranscriptResponse = error("Not implemented")
+        override suspend fun cancelDecomposition(sessionId: String) = error("Not implemented")
+        override suspend fun scheduleGoal(request: com.awan.app.core.network.dto.goal.ScheduleGoalRequest): com.awan.app.core.network.dto.task.TaskScheduleResponse = error("Not implemented")
+        override suspend fun proposeGoalSchedule(request: com.awan.app.core.network.dto.goal.ScheduleGoalRequest): com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse = error("Not implemented")
+        override suspend fun confirmGoalSchedule(request: com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest) = error("Not implemented")
     }
 
-    private class FakeGoalRemoteDataSource(
+    private open class FakeGoalRemoteDataSource(
         var response: Result<List<GoalInfoResponse>> = Result.Success(emptyList()),
     ) : GoalRemoteDataSource {
         override suspend fun getGoals(): Result<List<GoalInfoResponse>> = response
-
-        override suspend fun continueDecomposition(
-            request: com.awan.app.core.network.dto.GoalDecomposeRequest,
-        ): Result<com.awan.app.core.network.dto.GoalDecomposeResponse> = error("Not implemented")
-
-        override suspend fun confirmDecomposition(
-            sessionId: String,
-        ): Result<GoalInfoResponse> = error("Not implemented")
+        override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
+        override suspend fun getInboxGoal(): Result<GoalInfoResponse> = error("Not implemented")
+        override suspend fun getGoal(goalId: String): Result<GoalInfoResponse> = error("Not implemented")
+        override suspend fun deleteGoal(goalId: String): Result<Unit> = error("Not implemented")
+        override suspend fun continueDecomposition(request: com.awan.app.core.network.dto.GoalDecomposeRequest): Result<com.awan.app.core.network.dto.GoalDecomposeResponse> = error("Not implemented")
+        override suspend fun confirmDecomposition(sessionId: String): Result<GoalInfoResponse> = error("Not implemented")
+        override suspend fun getDecompositionTranscript(sessionId: String): Result<com.awan.app.core.network.dto.goal.GoalDecompositionTranscriptResponse> = error("Not implemented")
+        override suspend fun cancelDecomposition(sessionId: String): Result<Unit> = error("Not implemented")
+        override suspend fun scheduleGoal(goalId: String): Result<com.awan.app.core.network.dto.task.TaskScheduleResponse> = error("Not implemented")
+        override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse> = error("Not implemented")
+        override suspend fun confirmGoalSchedule(request: com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest): Result<Unit> = error("Not implemented")
     }
+
 
     private class FakeGoalDao(
         private val stored: List<GoalEntity> = emptyList(),
@@ -72,6 +87,7 @@ class GoalRepositoryTest {
         override fun observeInboxGoal(): Flow<GoalEntity?> = MutableStateFlow(null)
         override suspend fun deleteGoal(goalId: String) {}
         override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
+        override suspend fun getMinExpiryTime(): Long? = null
     }
 
     @Test
@@ -125,9 +141,15 @@ class GoalRepositoryTest {
             ),
         )
         val dao = FakeGoalDao(stored = storedEntities)
+        val onlineMonitor = object : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
+            override val isOnline: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.flowOf(true)
+            override fun isCurrentlyOnline(): Boolean = true
+        }
         val repository = GoalRepositoryImpl(
+
             remoteDataSource = FakeGoalRemoteDataSource(),
             goalDao = dao,
+            connectivityMonitor = onlineMonitor,
         )
 
         val result = repository.getGoals()
@@ -142,10 +164,16 @@ class GoalRepositoryTest {
 
     @Test
     fun `repository returns empty list when Room has no goals`() = runTest(testDispatcher) {
+        val onlineMonitor = object : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
+            override val isOnline: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.flowOf(true)
+            override fun isCurrentlyOnline(): Boolean = true
+        }
         val repository = GoalRepositoryImpl(
             remoteDataSource = FakeGoalRemoteDataSource(),
             goalDao = FakeGoalDao(stored = emptyList()),
+            connectivityMonitor = onlineMonitor,
         )
+
 
         val result = repository.getGoals()
 

@@ -29,4 +29,7 @@ interface CategoryDao {
 
     @Query("DELETE FROM categories")
     suspend fun deleteAllCategories()
+
+    @Query("SELECT MIN(expiryTime) FROM categories")
+    suspend fun getMinExpiryTime(): Long?
 }

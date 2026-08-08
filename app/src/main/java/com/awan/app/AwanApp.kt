@@ -116,6 +116,18 @@ fun AwanApp(
     val currentRoute = appState.navigationState.currentKey
     val showOfflineBanner = !isOnline && currentRoute != SplashRoute
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(showAddTask, isOnline) {
+        if (showAddTask && !isOnline) {
+            android.widget.Toast.makeText(
+                context,
+                context.getString(R.string.app_offline_lock_explanation),
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            showAddTask = false
+        }
+    }
+
     if (showAddTask && isOnline) {
         AddTaskSheet(
             onDismiss = { showAddTask = false },
@@ -192,7 +204,11 @@ fun AwanApp(
                 onLogout = { navigator.replaceAll(LoginRoute) },
                 onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
                 onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
+                onNavigateToAddTask = { _, _ ->
+                    showAddTask = true
+                },
             )
+
             calendarEntry(
                 onDateSelected = { date ->
                     onSelectHomeDate?.invoke(date)

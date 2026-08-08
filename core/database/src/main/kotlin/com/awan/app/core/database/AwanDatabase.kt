@@ -48,7 +48,7 @@ import com.awan.app.core.database.model.ZoneEntity
         SessionEntity::class,
         CachedScheduleDateEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class AwanDatabase : RoomDatabase() {
@@ -159,6 +159,18 @@ abstract class AwanDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `users` ADD COLUMN `expiryTime` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `categories` ADD COLUMN `expiryTime` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `goals` ADD COLUMN `expiryTime` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `tasks` ADD COLUMN `expiryTime` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `sessions` ADD COLUMN `expiryTime` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `templates` ADD COLUMN `expiryTime` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `cached_schedule_dates` ADD COLUMN `expiryTime` INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

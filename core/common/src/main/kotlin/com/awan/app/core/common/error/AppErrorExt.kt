@@ -7,6 +7,7 @@ fun AppError.toUiText(): UiText = when (this) {
     AppError.Network -> UiText.StringResource(R.string.error_network)
     AppError.Timeout -> UiText.StringResource(R.string.error_timeout)
     AppError.Unauthorized -> UiText.StringResource(R.string.error_unauthorized)
+    AppError.NotFound -> UiText.StringResource(R.string.error_not_found)
     is AppError.Server -> UiText.StringResource(R.string.error_server)
     is AppError.Api -> when {
         errorCode == "OTP_LOCKED" -> UiText.StringResource(R.string.error_otp_attempts_exceeded)

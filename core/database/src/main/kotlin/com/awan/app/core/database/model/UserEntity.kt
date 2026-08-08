@@ -27,4 +27,5 @@ data class UserEntity(
     val streak: Int,
     /** Highest streak ever achieved. */
     val maxStreak: Int,
+    val expiryTime: Long = 0L,
 )

@@ -15,4 +15,5 @@
     <string name="error_otp_attempts_exceeded">Too many attempts. Request a new code.</string>
     <string name="error_otp_expired">Your code has expired. Request a new one.</string>
     <string name="error_too_many_requests">Too many requests. Please try again later.</string>
+    <string name="error_not_found">Requested item was not found.</string>
 </resources>

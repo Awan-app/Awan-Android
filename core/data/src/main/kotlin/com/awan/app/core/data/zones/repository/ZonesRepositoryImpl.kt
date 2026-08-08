@@ -12,6 +12,7 @@ import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
 import com.awan.app.core.database.dao.TemplateDao
 import com.awan.app.core.database.dao.TemplateOverrideDao
 import com.awan.app.core.database.dao.ZoneDao
+import com.awan.app.core.database.model.ZoneEntity
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
@@ -28,8 +29,10 @@ import com.awan.app.core.network.dto.zone.UpdateTemplateRequest
 import com.awan.app.core.network.dto.zone.UpdateZoneRequest
 import com.awan.app.core.network.dto.zone.UpdateZonesRequest
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
@@ -49,10 +52,13 @@ class ZonesRepositoryImpl @Inject constructor(
         return null
     }
 
+    /**
+     * Resolves effective zones for a date from Room (SSOT).
+     * Resolution: override for date → template for day-of-week → empty list.
+     */
     override suspend fun getZonesForDate(date: LocalDate): Result<List<DayZone>> = withContext(ioDispatcher) {
-        checkOnline()?.let { return@withContext it }
-        zonesRemoteDataSource.getEffectiveZones(date.format(DateTimeFormatter.ISO_LOCAL_DATE))
-            .map { zones -> zones.mapNotNull { it.toModel() } }
+        val zones = resolveZoneEntitiesForDate(date)
+        Result.Success(zones.map { it.toDayZone() })
     }
 
     override suspend fun getTemplates(): Result<List<WeeklyTemplate>> = withContext(ioDispatcher) {
@@ -111,8 +117,7 @@ class ZonesRepositoryImpl @Inject constructor(
                 name = zone.name,
                 startTime = zone.startTime,
                 endTime = zone.endTime,
-                color = zone.color,
-                categoryId = zone.categoryId
+                color = zone.color
             )
         ).map { it.toDomain() }
     }
@@ -187,8 +192,7 @@ class ZonesRepositoryImpl @Inject constructor(
                 name = zone.name,
                 startTime = zone.startTime,
                 endTime = zone.endTime,
-                color = zone.color,
-                categoryId = zone.categoryId
+                color = zone.color
             )
         ).map { it.toDomain() }
     }
@@ -220,8 +224,8 @@ class ZonesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getEffectiveZones(date: String): Result<List<DailyZone>> = withContext(ioDispatcher) {
-        checkOnline()?.let { return@withContext it }
-        zonesRemoteDataSource.getEffectiveZones(date).map { list -> list.map { it.toDomain() } }
+        val zones = resolveZoneEntitiesForDate(LocalDate.parse(date))
+        Result.Success(zones.map { it.toDailyZone() })
     }
 
     override suspend fun updateZone(
@@ -235,8 +239,7 @@ class ZonesRepositoryImpl @Inject constructor(
                 name = zone.name,
                 startTime = zone.startTime,
                 endTime = zone.endTime,
-                color = zone.color,
-                categoryId = zone.categoryId
+                color = zone.color
             )
         ).map { it.toDomain() }
     }
@@ -245,4 +248,47 @@ class ZonesRepositoryImpl @Inject constructor(
         checkOnline()?.let { return@withContext it }
         zonesRemoteDataSource.deleteZone(zoneId)
     }
+
+    /**
+     * Resolves zone entities for a date from Room:
+     * 1. Check for a template override for this specific date
+     * 2. If no override, find the template that owns this day-of-week
+     * 3. Return zone entities from the owning parent, or empty list
+     */
+    private suspend fun resolveZoneEntitiesForDate(date: LocalDate): List<ZoneEntity> {
+        // 1. Check for override
+        val override = templateOverrideDao.getOverrideForDate(date.toString())
+        if (override != null) {
+            return zoneDao.observeZonesForOverride(override.id).first()
+        }
+        // 2. Find template for this day-of-week
+        val dayOfWeekStr = date.dayOfWeek.name // e.g. "MONDAY"
+        val dayAssignment = templateDao.getDayAssignment(dayOfWeekStr)
+        if (dayAssignment != null) {
+            return zoneDao.observeZonesForTemplate(dayAssignment.templateId).first()
+        }
+        // 3. No zones for this date
+        return emptyList()
+    }
+
+    private fun ZoneEntity.toDayZone(): DayZone {
+        val startLocalTime = try { LocalTime.parse(startTime) } catch (_: Exception) { LocalTime.of(0, 0) }
+        val endLocalTime = try { LocalTime.parse(endTime) } catch (_: Exception) { LocalTime.of(0, 0) }
+        return DayZone(
+            id = id,
+            name = name,
+            startTime = startLocalTime,
+            endTime = endLocalTime,
+            colorHex = color,
+            category = null,
+        )
+    }
+
+    private fun ZoneEntity.toDailyZone(): DailyZone = DailyZone(
+        id = id,
+        name = name,
+        startTime = startTime,
+        endTime = endTime,
+        color = color.orEmpty(),
+    )
 }

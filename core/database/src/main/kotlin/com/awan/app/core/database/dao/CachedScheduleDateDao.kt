@@ -26,4 +26,7 @@ interface CachedScheduleDateDao {
 
     @Query("DELETE FROM cached_schedule_dates")
     suspend fun clearAll()
+
+    @Query("SELECT MIN(expiryTime) FROM cached_schedule_dates WHERE date >= :startDate AND date <= :endDate")
+    suspend fun getMinExpiryTimeForRange(startDate: String, endDate: String): Long?
 }

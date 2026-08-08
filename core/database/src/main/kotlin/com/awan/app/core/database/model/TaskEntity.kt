@@ -16,12 +16,6 @@ import androidx.room.PrimaryKey
     tableName = "tasks",
     foreignKeys = [
         ForeignKey(
-            entity = GoalEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["goalId"],
-            onDelete = ForeignKey.NO_ACTION,
-        ),
-        ForeignKey(
             entity = CategoryEntity::class,
             parentColumns = ["id"],
             childColumns = ["categoryId"],
@@ -51,4 +45,5 @@ data class TaskEntity(
     val goalId: String? = null,
     /** Optional foreign key to [CategoryEntity]. */
     val categoryId: String? = null,
+    val expiryTime: Long = 0L,
 )

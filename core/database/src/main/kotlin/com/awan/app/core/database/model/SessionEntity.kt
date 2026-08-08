@@ -39,4 +39,5 @@ data class SessionEntity(
     /** One of: `SCHEDULED`, `COMPLETED`, `CANCELLED` */
     val status: String,
     val locked: Boolean,
+    val expiryTime: Long = 0L,
 )
