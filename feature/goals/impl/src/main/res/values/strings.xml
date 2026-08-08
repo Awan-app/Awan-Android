@@ -3,6 +3,7 @@
     <string name="goals_title">My Goals</string>
     <string name="goals_tab_active">Active</string>
     <string name="goals_tab_completed">Done</string>
+    <string name="goals_tab_badge_format">%1$s  %2$d</string>
     <string name="goals_progress_format">%1$d of %2$d tasks done</string>
     <string name="goals_progress_percentage">%1$d%%</string>
     <string name="goals_empty_active_title">No active goals yet</string>
@@ -10,6 +11,7 @@
     <string name="goals_empty_completed_title">No completed goals yet</string>
     <string name="goals_empty_completed_subtitle">Finish an active goal to see it here.</string>
     <string name="goals_error_title">Failed to load goals</string>
+    <string name="goals_error_emoji">☁️</string>
     <string name="goals_error_retry">Retry</string>
     <string name="goals_card_state_expanded">Expanded</string>
     <string name="goals_card_state_collapsed">Collapsed</string>

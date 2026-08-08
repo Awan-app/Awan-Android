@@ -27,7 +27,7 @@ class GoalRemoteDataSourceImpl @Inject constructor(
         request: GoalDecomposeRequest,
     ): Result<GoalDecomposeResponse> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
-            goalApiService.decomposeGoal(request.toJsonObject())
+            goalApiService.decomposeGoal(request)
         }
 
     override suspend fun confirmDecomposition(

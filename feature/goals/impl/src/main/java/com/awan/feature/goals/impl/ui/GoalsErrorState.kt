@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import android.annotation.SuppressLint
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -24,7 +23,6 @@ import com.awan.feature.goals.impl.R
  * Error state shown when the goals network request fails.
  * Includes a cloud emoji, error message, and a Retry button.
  */
-@SuppressLint("HardcodedText")
 @Composable
 internal fun GoalsErrorState(
     onRetry: () -> Unit,
@@ -38,7 +36,7 @@ internal fun GoalsErrorState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        AwanText(text = "☁️", style = AwanTheme.typography.display.copy(fontSize = 52.sp))
+        AwanText(text = stringResource(R.string.goals_error_emoji), style = AwanTheme.typography.display.copy(fontSize = 52.sp))
         Spacer(modifier = Modifier.height(16.dp))
         AwanText(
             text = stringResource(R.string.goals_error_title),

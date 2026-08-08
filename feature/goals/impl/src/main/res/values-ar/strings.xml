@@ -3,6 +3,7 @@
     <string name="goals_title">أهدافي</string>
     <string name="goals_tab_active">النشطة</string>
     <string name="goals_tab_completed">المكتملة</string>
+    <string name="goals_tab_badge_format">%1$s  %2$d</string>
     <string name="goals_progress_format">%1$d من %2$d مهمة منجزة</string>
     <string name="goals_progress_percentage">%1$d%%</string>
     <string name="goals_empty_active_title">لا توجد أهداف نشطة بعد</string>
@@ -10,6 +11,7 @@
     <string name="goals_empty_completed_title">لا توجد أهداف مكتملة بعد</string>
     <string name="goals_empty_completed_subtitle">أكمل هدفًا نشطًا لتعرضه هنا.</string>
     <string name="goals_error_title">فشل في تحميل الأهداف</string>
+    <string name="goals_error_emoji">☁️</string>
     <string name="goals_error_retry">إعادة المحاولة</string>
     <string name="goals_card_state_expanded">موسع</string>
     <string name="goals_card_state_collapsed">مطوي</string>

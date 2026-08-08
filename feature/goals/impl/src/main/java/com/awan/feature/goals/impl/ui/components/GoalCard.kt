@@ -79,7 +79,7 @@ internal fun GoalCard(
             .fillMaxWidth()
             .shadow(elevation = 2.dp, shape = cardShape, spotColor = Color(0x18000000))
             .clip(cardShape)
-            .background(Color.White),
+            .background(colors.surface),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
 
@@ -167,25 +167,24 @@ internal fun GoalCard(
                             val progressWidth = size.width * goal.progress.coerceIn(0f, 1f)
                             // Track
                             drawRoundRect(
-                                color = Color(0xFFEEF4FA),
+                                color = colors.line,
                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius),
                             )
-                            // Filled portion
+                            // Filled portion + dot
                             if (progressWidth > 0f) {
                                 drawRoundRect(
                                     color = accentColor,
                                     size = androidx.compose.ui.geometry.Size(progressWidth, trackH),
                                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius),
                                 )
+                                val dotR = trackH * 0.75f
+                                val dotX = (progressWidth - dotR).coerceAtLeast(dotR)
+                                drawCircle(
+                                    color = accentColor,
+                                    radius = dotR,
+                                    center = Offset(dotX, trackH / 2f),
+                                )
                             }
-                            // Dot at progress end
-                            val dotR = trackH * 0.75f
-                            val dotX = (progressWidth - dotR).coerceAtLeast(dotR)
-                            drawCircle(
-                                color = accentColor,
-                                radius = dotR,
-                                center = Offset(dotX, trackH / 2f),
-                            )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         AwanText(
@@ -223,7 +222,7 @@ internal fun GoalCard(
                         .padding(bottom = 14.dp),
                 ) {
                     HorizontalDivider(
-                        color = Color(0xFFEEF4FA),
+                        color = colors.line,
                         thickness = 1.dp,
                     )
                     Spacer(modifier = Modifier.height(10.dp))

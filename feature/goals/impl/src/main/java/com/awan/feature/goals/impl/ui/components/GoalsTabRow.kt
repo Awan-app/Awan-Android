@@ -42,7 +42,7 @@ internal fun GoalsTabRow(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clip(shape)
-            .background(Color(0xFFDDEEF9))
+            .background(AwanTheme.colors.line)
             .padding(4.dp),
     ) {
         GoalsTab.entries.forEach { tab ->
@@ -66,7 +66,7 @@ internal fun GoalsTabRow(
                             Modifier
                                 .shadow(elevation = 2.dp, shape = tabShape, spotColor = Color(0x22000000))
                                 .clip(tabShape)
-                                .background(Color.White)
+                                .background(AwanTheme.colors.surface)
                         } else {
                             Modifier.clip(tabShape)
                         },
@@ -79,7 +79,7 @@ internal fun GoalsTabRow(
                 contentAlignment = Alignment.Center,
             ) {
                 AwanText(
-                    text = "$label  $count",
+                    text = stringResource(R.string.goals_tab_badge_format, label, count),
                     style = AwanTheme.typography.button.copy(
                         color = if (isSelected) AwanTheme.colors.ink else AwanTheme.colors.textSecondary,
                         fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,

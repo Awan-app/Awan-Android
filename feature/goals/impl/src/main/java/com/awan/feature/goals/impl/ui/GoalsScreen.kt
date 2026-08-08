@@ -28,7 +28,7 @@ import com.awan.feature.goals.impl.R
 import com.awan.feature.goals.impl.presentation.GoalsAction
 import com.awan.feature.goals.impl.presentation.GoalsState
 import com.awan.feature.goals.impl.presentation.GoalsTab
-import com.awan.feature.goals.impl.ui.components.CompletedGoalColor
+import com.awan.feature.goals.impl.ui.components.completedGoalColor
 import com.awan.feature.goals.impl.ui.components.GoalCard
 import com.awan.feature.goals.impl.ui.components.GoalsMascotHeader
 import com.awan.feature.goals.impl.ui.components.GoalsTabRow
@@ -52,11 +52,11 @@ fun GoalsScreen(
         modifier = modifier
             .fillMaxSize()
             .background(
-                Brush.verticalGradient(
+                            Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFFCFEEFF),
-                        Color(0xFFE8F5FF),
-                        Color(0xFFF4FAFF),
+                        colors.backgroundStart,
+                        colors.background,
+                        colors.background,
                     ),
                 ),
             ),
@@ -135,8 +135,8 @@ fun GoalsScreen(
                             itemsIndexed(goals, key = { _, goal -> goal.id }) { index, goal ->
                                 GoalCard(
                                     goal = goal,
-                                    accentColor = if (isCompletedTab) CompletedGoalColor
-                                                  else goalAccentColor(index),
+                                    accentColor = if (isCompletedTab) completedGoalColor()
+                                              else goalAccentColor(index),
                                     isCompleted = isCompletedTab,
                                 )
                             }

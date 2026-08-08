@@ -1,19 +1,28 @@
 package com.awan.feature.goals.impl.ui.components
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import com.awan.app.core.designsystem.AwanTheme
 
 /** Accent colors — each goal card gets a distinct hue, assigned by list index. */
-internal val GoalColorPalette = listOf(
-    Color(0xFF7A64FF), // violet / purple
-    Color(0xFFFF9838), // tangerine / orange
-    Color(0xFF2EAAFF), // sky / blue
-    Color(0xFFFF6F91), // coral / pink
-    Color(0xFFFFC233), // sun / yellow
-    Color(0xFF9A7BFF), // lavender
-)
+@Composable
+internal fun goalAccentColors(): List<Color> = with(AwanTheme.colors) {
+    listOf(
+        zoneViolet,    // violet / purple
+        zoneTangerine, // tangerine / orange
+        zoneSky,       // sky / blue
+        zoneCoral,     // coral / pink
+        zoneSun,       // sun / yellow
+        zoneLavender,  // lavender
+    )
+}
 
-internal fun goalAccentColor(index: Int): Color =
-    GoalColorPalette[index % GoalColorPalette.size]
+@Composable
+internal fun goalAccentColor(index: Int): Color {
+    val palette = goalAccentColors()
+    return palette[index % palette.size]
+}
 
 /** Gold color used for every card on the Completed tab. */
-internal val CompletedGoalColor = Color(0xFFFFC233)
+@Composable
+internal fun completedGoalColor(): Color = AwanTheme.colors.zoneSun
