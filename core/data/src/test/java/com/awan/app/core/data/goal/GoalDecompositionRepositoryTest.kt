@@ -61,7 +61,7 @@ class GoalDecompositionRepositoryTest {
         override suspend fun deleteGoal(goalId: String) = error("Not implemented")
 
         override suspend fun decomposeGoal(
-            request: JsonObject,
+            request: com.awan.app.core.network.dto.GoalDecomposeRequest,
         ): GoalDecomposeResponse = error("Not implemented")
 
         override suspend fun confirmDecomposition(
