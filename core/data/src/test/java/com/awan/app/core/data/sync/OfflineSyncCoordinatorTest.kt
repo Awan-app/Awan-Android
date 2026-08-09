@@ -33,8 +33,6 @@ import com.awan.app.core.network.dto.GoalDecomposeRequest
 import com.awan.app.core.network.dto.GoalDecomposeResponse
 import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.category.CategoryDto
-import com.awan.app.core.network.dto.profile.AwardPointsRequest
-import com.awan.app.core.network.dto.profile.DeductPointsRequest
 import com.awan.app.core.network.dto.profile.ProfileResponse
 import com.awan.app.core.network.dto.profile.UpdateBirthDateRequest
 import com.awan.app.core.network.dto.profile.UpdateNameRequest
@@ -129,10 +127,6 @@ private class FakeProfileRemoteDataSource : ProfileRemoteDataSource {
     override suspend fun updateSessionSettings(request: UpdateSessionSettingsRequest) = error("not used")
     override suspend fun updateSleepSchedule(request: UpdateSleepScheduleRequest) = error("not used")
     override suspend fun updateSchedulingType(request: UpdateSchedulingTypeRequest) = error("not used")
-    override suspend fun incrementStreak() = error("not used")
-    override suspend fun resetStreak() = error("not used")
-    override suspend fun awardPoints(request: AwardPointsRequest) = error("not used")
-    override suspend fun deductPoints(request: DeductPointsRequest) = error("not used")
     override suspend fun updateProfilePicture(imageBytes: ByteArray, mimeType: String) = error("not used")
     override suspend fun deleteProfilePicture() = error("not used")
 }

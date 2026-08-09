@@ -4,6 +4,8 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.data.gamification.GamificationEventBus
+import com.awan.app.core.data.gamification.mapper.toDomain
 import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.dao.TaskDao
@@ -13,6 +15,8 @@ import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.UserEntity
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
+import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.domain.gamification.model.SessionReward
 import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.domain.home.model.DaySession
 import com.awan.app.core.domain.home.model.DayZone
@@ -40,6 +44,7 @@ import com.awan.app.core.model.TaskDetailInfo
 class HomeRepositoryImpl @Inject constructor(
     private val remoteDataSource: HomeRemoteDataSource,
     private val userDao: UserDao,
+    private val eventBus: GamificationEventBus,
     private val taskDao: TaskDao,
     private val sessionDao: SessionDao,
     private val zoneDao: ZoneDao,
@@ -191,46 +196,74 @@ class HomeRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun updateSessionStatus(
+    override suspend fun completeSession(sessionId: String): Result<SessionReward> =
+        withContext(ioDispatcher) {
+            if (!connectivityMonitor.isCurrentlyOnline()) {
+                return@withContext Result.Error(AppError.Network)
+            }
+            when (val result = remoteDataSource.completeSession(sessionId)) {
+                is Result.Success -> {
+                    cacheSession(result.data.session)
+                    val reward = result.data.reward.toDomain()
+                    // Published here rather than from the caller so any future path that completes
+                    // a session celebrates identically, without each one remembering to.
+                    eventBus.publishSessionReward(reward)
+                    Result.Success(reward)
+                }
+                is Result.Error -> Result.Error(result.error)
+                Result.Loading -> unexpectedLoading()
+            }
+        }
+
+    override suspend fun uncompleteSession(sessionId: String): Result<Unit> =
+        // Nothing is published: undoing a completion does not take the points back, so there is no
+        // change to celebrate and reversing the animation would misrepresent the balance.
+        applySessionChange { remoteDataSource.uncompleteSession(sessionId) }
+
+    override suspend fun cancelSession(sessionId: String): Result<Unit> =
+        applySessionChange { remoteDataSource.cancelSession(sessionId) }
+
+    override suspend fun moveSession(
         sessionId: String,
-        status: SessionStatus,
-        locked: Boolean?,
-        startIso: String?,
-        endIso: String?,
+        startIso: String,
+        endIso: String,
+    ): Result<Unit> = applySessionChange {
+        remoteDataSource.moveSession(sessionId, startIso, endIso)
+    }
+
+    private suspend fun applySessionChange(
+        call: suspend () -> Result<SessionDto>,
     ): Result<Unit> = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) {
             return@withContext Result.Error(AppError.Network)
         }
-        val statusString = when (status) {
-            SessionStatus.COMPLETED -> "COMPLETED"
-            SessionStatus.IN_PROGRESS -> "IN_PROGRESS"
-            SessionStatus.CANCELLED -> "CANCELLED"
-            SessionStatus.SCHEDULED -> "SCHEDULED"
-        }
-        val result = remoteDataSource.updateSession(
-            sessionId = sessionId,
-            status = statusString,
-            locked = locked,
-            startIso = startIso,
-            endIso = endIso,
-        )
-        if (result is Result.Success) {
-            val dto = result.data
-            val existing = sessionDao.getSession(sessionId)
-            if (existing != null) {
-                sessionDao.upsertSession(
-                    existing.copy(
-                        status = dto.status ?: statusString,
-                        startTime = extractTimeFromIso(dto.start, existing.startTime),
-                        endTime = extractTimeFromIso(dto.end, existing.endTime),
-                        locked = dto.locked,
-                    )
-                )
+        when (val result = call()) {
+            is Result.Success -> {
+                cacheSession(result.data)
+                Result.Success(Unit)
             }
-            Result.Success(Unit)
-        } else {
-            Result.Error((result as Result.Error).error)
+            is Result.Error -> Result.Error(result.error)
+            Result.Loading -> unexpectedLoading()
         }
+    }
+
+    /**
+     * Mirrors the server's copy of a session into Room, which the schedule flow observes — without
+     * this the timeline keeps showing the old state until something forces a refresh.
+     *
+     * The status falls back to what is already stored rather than to a guess, so moving a completed
+     * session cannot silently reopen it.
+     */
+    private suspend fun cacheSession(dto: SessionDto) {
+        val existing = sessionDao.getSession(dto.id) ?: return
+        sessionDao.upsertSession(
+            existing.copy(
+                status = dto.status ?: existing.status,
+                startTime = extractTimeFromIso(dto.start, existing.startTime),
+                endTime = extractTimeFromIso(dto.end, existing.endTime),
+                locked = dto.locked,
+            )
+        )
     }
 
     private fun parseLocalTime(timeStr: String): LocalTime {
@@ -340,4 +373,7 @@ class HomeRepositoryImpl @Inject constructor(
             else -> Result.Error(AppError.Unknown(Throwable("Failed to delete task")))
         }
     }
+
+    private fun unexpectedLoading(): Result.Error =
+        Result.Error(AppError.Unknown(Throwable("Session call returned Loading")))
 }

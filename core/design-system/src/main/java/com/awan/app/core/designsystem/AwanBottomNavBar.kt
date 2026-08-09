@@ -52,9 +52,12 @@ fun AwanBottomNavBar(
     onItemSelected: (BottomNavItem) -> Unit,
     onFabClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Id of the tab a won item should fly to. Null leaves the anchor unregistered. */
+    anchoredItemId: String? = null,
 ) {
     val navBarShape = RoundedCornerShape(22.dp)
     val navBarRimDepth = 4.dp
+    val rewardAnchors = LocalRewardAnchors.current
 
     Box(
         modifier = modifier
@@ -115,7 +118,18 @@ fun AwanBottomNavBar(
                                 item = item,
                                 isSelected = isSelected,
                                 onClick = { onItemSelected(item) },
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .then(
+                                        if (item.id == anchoredItemId) {
+                                            Modifier.rewardAnchor(
+                                                anchor = RewardAnchor.ProfileTab,
+                                                anchors = rewardAnchors,
+                                            )
+                                        } else {
+                                            Modifier
+                                        }
+                                    ),
                             )
                         }
                     }

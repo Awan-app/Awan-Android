@@ -33,12 +33,4 @@ interface ProfileRepository {
     suspend fun updateSleepSchedule(wakeupTime: String, sleepTime: String): Result<Profile>
 
     suspend fun updateSchedulingType(schedulingType: String): Result<Profile>
-
-    suspend fun incrementStreak(): Result<Profile>
-
-    suspend fun resetStreak(): Result<Profile>
-
-    suspend fun awardPoints(points: Int): Result<Profile>
-
-    suspend fun deductPoints(points: Int): Result<Profile>
 }

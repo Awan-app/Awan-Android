@@ -10,6 +10,12 @@ import com.awan.app.core.database.model.UserPreferencesEntity
 import com.awan.app.core.database.model.UserWithPreferences
 import com.awan.app.core.database.model.TemplateDayOfWeekEntity
 import com.awan.app.core.database.model.ZoneEntity
+import com.awan.app.core.data.gamification.GamificationEventBus
+import com.awan.app.core.domain.gamification.model.RewardEvent
+import com.awan.app.core.network.dto.gamification.PointsRewardDto
+import com.awan.app.core.network.dto.gamification.RewardDto
+import com.awan.app.core.network.dto.gamification.StreakRewardDto
+import com.awan.app.core.network.dto.session.CompleteSessionResponse
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
 import com.awan.app.core.data.home.repository.HomeRepositoryImpl
 import com.awan.app.core.network.dto.category.CategoryDto
@@ -33,6 +39,37 @@ import org.junit.Test
 private class FakeHomeRemoteDataSource : HomeRemoteDataSource {
     var sessionResult: Result<SessionDto> = Result.Error(AppError.Unknown())
     var taskResult: Result<TaskInfoResponse> = Result.Error(AppError.Unknown())
+    var reward: RewardDto? = null
+    var completeResult: Result<CompleteSessionResponse>? = null
+    var uncompleteCalls = 0
+    var moveCalls = 0
+
+    override suspend fun completeSession(sessionId: String): Result<CompleteSessionResponse> =
+        completeResult ?: Result.Success(
+            CompleteSessionResponse(
+                session = SessionDto(id = sessionId, start = START, end = END, status = "COMPLETED"),
+                reward = reward,
+            )
+        )
+
+    override suspend fun uncompleteSession(sessionId: String): Result<SessionDto> {
+        uncompleteCalls++
+        return Result.Success(
+            SessionDto(id = sessionId, start = START, end = END, status = "SCHEDULED")
+        )
+    }
+
+    override suspend fun cancelSession(sessionId: String): Result<SessionDto> =
+        Result.Success(SessionDto(id = sessionId, start = START, end = END, status = "CANCELLED"))
+
+    override suspend fun moveSession(
+        sessionId: String,
+        startIso: String,
+        endIso: String,
+    ): Result<SessionDto> {
+        moveCalls++
+        return Result.Success(SessionDto(id = sessionId, start = startIso, end = endIso))
+    }
 
     override suspend fun getZonesByDate(date: String): Result<List<ZoneDto>> = Result.Success(emptyList())
     override suspend fun getTasksByDate(date: String): Result<List<TaskWithSessionsDto>> = Result.Success(emptyList())
@@ -41,14 +78,6 @@ private class FakeHomeRemoteDataSource : HomeRemoteDataSource {
     override suspend fun getUserProfile(): Result<CompleteOnboardingResponse> = Result.Error(AppError.Unknown())
     override suspend fun getSession(sessionId: String): Result<SessionDto> = sessionResult
     override suspend fun getTask(taskId: String): Result<TaskInfoResponse> = taskResult
-    override suspend fun updateSession(
-        sessionId: String,
-        status: String?,
-        locked: Boolean?,
-        startIso: String?,
-        endIso: String?,
-    ): Result<SessionDto> = Result.Error(AppError.Unknown())
-
     override suspend fun lockSession(sessionId: String): Result<SessionDto> = sessionResult
     override suspend fun unlockSession(sessionId: String): Result<SessionDto> = sessionResult
     override suspend fun updateTask(
@@ -163,6 +192,8 @@ private class AlwaysOnlineMonitor : com.awan.app.core.domain.network.NetworkConn
 
 class HomeRepositoryImplTest {
 
+    private val eventBus = GamificationEventBus()
+
     private fun createRepository(
         fakeRemote: HomeRemoteDataSource,
         zoneDao: ZoneDao = FakeZoneDao(),
@@ -171,6 +202,7 @@ class HomeRepositoryImplTest {
         return HomeRepositoryImpl(
             remoteDataSource = fakeRemote,
             userDao = FakeUserDao(),
+            eventBus = eventBus,
             taskDao = FakeTaskDao(),
             sessionDao = FakeSessionDao(),
             zoneDao = zoneDao,
@@ -260,6 +292,97 @@ class HomeRepositoryImplTest {
         assertEquals(date, schedule.date)
     }
 
+    /** Collects on an unconfined dispatcher so emissions land before the assertions run. */
+    private fun runCollecting(
+        block: suspend (FakeHomeRemoteDataSource, List<RewardEvent>) -> Unit,
+    ) = runTest {
+        val fakeRemote = FakeHomeRemoteDataSource()
+        val collected = mutableListOf<RewardEvent>()
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
+            eventBus.rewards.collect(collected::add)
+        }
+        block(fakeRemote, collected)
+        job.cancel()
+    }
+
+    @Test
+    fun `completing publishes points then streak, in that order`() = runCollecting { remote, events ->
+        remote.reward = RewardDto(
+            points = PointsRewardDto(awarded = true, amount = 25, oldValue = 150, newValue = 175),
+            streak = StreakRewardDto(
+                updated = true,
+                oldValue = 5,
+                newValue = 6,
+                maxStreakBroken = true,
+                maxStreakNew = 7,
+            ),
+        )
+
+        val result = createRepository(remote).completeSession(SESSION_ID)
+
+        assertTrue(result is Result.Success)
+        assertEquals(2, events.size)
+        assertEquals(RewardEvent.Points(amount = 25, newTotal = 175), events[0])
+        assertTrue(events[1] is RewardEvent.Streak)
+        assertEquals(true, (events[1] as RewardEvent.Streak).maxStreakBroken)
+        assertEquals(7, (events[1] as RewardEvent.Streak).maxStreakNew)
+    }
+
+    @Test
+    fun `re-completing a session publishes nothing and returns an empty reward`() =
+        runCollecting { remote, events ->
+            remote.reward = RewardDto(
+                points = PointsRewardDto(awarded = false, amount = 25, oldValue = 150, newValue = 175),
+                streak = StreakRewardDto(updated = false, oldValue = 5, newValue = 6),
+            )
+
+            val result = createRepository(remote).completeSession(SESSION_ID)
+
+            assertTrue(events.isEmpty())
+            assertTrue((result as Result.Success).data.isEmpty)
+        }
+
+    @Test
+    fun `a completion with no reward block publishes nothing`() = runCollecting { remote, events ->
+        remote.reward = null
+
+        val result = createRepository(remote).completeSession(SESSION_ID)
+
+        assertTrue(events.isEmpty())
+        assertTrue((result as Result.Success).data.isEmpty)
+    }
+
+    @Test
+    fun `uncompleting publishes nothing - points are never taken back`() =
+        runCollecting { remote, events ->
+            val result = createRepository(remote).uncompleteSession(SESSION_ID)
+
+            assertTrue(result is Result.Success)
+            assertEquals(1, remote.uncompleteCalls)
+            assertTrue(events.isEmpty())
+        }
+
+    @Test
+    fun `moving a session publishes nothing and never sends a status`() =
+        runCollecting { remote, events ->
+            val result = createRepository(remote).moveSession(SESSION_ID, START, END)
+
+            assertTrue(result is Result.Success)
+            assertEquals(1, remote.moveCalls)
+            assertTrue(events.isEmpty())
+        }
+
+    @Test
+    fun `a failed completion publishes nothing`() = runCollecting { remote, events ->
+        remote.completeResult = Result.Error(AppError.Network)
+
+        val result = createRepository(remote).completeSession(SESSION_ID)
+
+        assertTrue(result is Result.Error)
+        assertTrue(events.isEmpty())
+        assertEquals(0, eventBus.progress.value.points)
+    }
+
     @Test
     fun `getDaySchedule preserves the Room zone name for Home labels`() = runTest {
         val date = java.time.LocalDate.of(2026, 8, 9)
@@ -292,3 +415,8 @@ class HomeRepositoryImplTest {
         assertEquals("Study", (result as Result.Success).data.zones.single().categoryName)
     }
 }
+
+private const val SESSION_ID = "session-1"
+private const val START = "2026-08-08T09:00:00"
+private const val END = "2026-08-08T10:00:00"
+
