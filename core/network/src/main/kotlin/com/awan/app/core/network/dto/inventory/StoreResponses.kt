@@ -6,11 +6,11 @@ import kotlinx.serialization.Serializable
 data class StoreItemResponse(
     val id: String,
     val name: String,
-    val description: String,
+    val description: String = "",
     val image: String? = null,
     val info: String? = null,
-    val price: Int,
-    val version: String,
+    val price: Int = 0,
+    val version: String = "",
     val type: String,
 )
 
