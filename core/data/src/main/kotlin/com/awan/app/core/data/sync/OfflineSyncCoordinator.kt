@@ -25,6 +25,7 @@ import com.awan.app.core.database.model.UserPreferencesEntity
 import com.awan.app.core.database.model.ZoneEntity
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
+import com.awan.app.core.data.goal.toEntity
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.data.task.toEntity
@@ -184,6 +185,25 @@ class OfflineSyncCoordinator @Inject constructor(
                 )
             }
             goalDao.upsertGoals(entities)
+
+            val allTasks = result.data.flatMap { goal ->
+                goal.tasks.map { it.toEntity(goalId = goal.id, expiryTime = expiry) }
+            }
+            if (allTasks.isNotEmpty()) {
+                taskDao.upsertTasks(allTasks)
+            }
+            
+            // Explicitly sync Inbox tasks
+            val inboxResult = goalRemoteDataSource.getInboxGoal()
+            if (inboxResult is Result.Success) {
+                val inboxGoalDto = inboxResult.data
+                goalDao.upsertGoal(inboxGoalDto.toEntity())
+                val inboxTasks = inboxGoalDto.tasks.map { it.toEntity(goalId = inboxGoalDto.id, expiryTime = expiry) }
+                if (inboxTasks.isNotEmpty()) {
+                    taskDao.upsertTasks(inboxTasks)
+                }
+            }
+
             true
         } else {
             false

@@ -31,6 +31,9 @@ interface SessionDao {
     @Query("SELECT * FROM sessions WHERE id = :id")
     suspend fun getSession(id: String): SessionEntity?
 
+    @Query("SELECT * FROM sessions")
+    suspend fun getAllSessions(): List<SessionEntity>
+
     @Query("DELETE FROM sessions WHERE date IN (:dates)")
     suspend fun deleteSessionsForDates(dates: List<String>)
 

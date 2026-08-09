@@ -26,7 +26,7 @@ class GoalRemoteDataSourceImpl @Inject constructor(
 
     override suspend fun getGoals(): Result<List<GoalInfoResponse>> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
-            goalApiService.listGoals().content
+            goalApiService.listGoals(includeInbox = true).content
         }
 
     override suspend fun createGoal(request: CreateGoalRequest): Result<GoalInfoResponse> =

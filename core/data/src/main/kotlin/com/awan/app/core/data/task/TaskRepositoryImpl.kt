@@ -26,6 +26,8 @@ import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
 import com.awan.app.core.data.common.extractDateFromIso
 import com.awan.app.core.data.common.extractTimeFromIso
+import com.awan.app.core.data.task.toModel
+import com.awan.app.core.data.task.toSessionModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -168,6 +170,19 @@ class TaskRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = withContext(ioDispatcher) {
-        remoteDataSource.getInboxTasks().map { list -> list.map { it.toWithSessionsModel() } }
+        val inboxGoal = goalDao.getAllGoals().find { it.isInbox }
+        val inboxGoalId = inboxGoal?.id
+        
+        // A task belongs to the inbox if it has no goalId OR if its goalId matches the special "Inbox" goal.
+        val tasks = taskDao.getAllTasks().filter { it.goalId == null || (inboxGoalId != null && it.goalId == inboxGoalId) }
+        val sessions = sessionDao.getAllSessions()
+        Result.Success(
+            tasks.map { entity ->
+                TaskWithSessions(
+                    task = entity.toModel(),
+                    sessions = sessions.filter { it.taskId == entity.id }.mapNotNull { it.toSessionModel() },
+                )
+            },
+        )
     }
 }
