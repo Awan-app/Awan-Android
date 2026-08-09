@@ -31,6 +31,11 @@ interface TaskRemoteDataSource {
         note: String?,
     ): Result<TaskProposalResponse>
 
+    suspend fun getTasksByRange(
+        startDate: String,
+        endDate: String,
+    ): Result<Map<String, List<TaskWithSessionsDto>>>
+
     suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse>
 
     suspend fun deleteTask(taskId: String): Result<Unit>
@@ -38,3 +43,4 @@ interface TaskRemoteDataSource {
     /** Fetches all inbox tasks (tasks with no goal) together with their sessions. */
     suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>>
 }
+

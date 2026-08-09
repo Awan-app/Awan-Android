@@ -70,10 +70,19 @@ class TaskRemoteDataSourceImpl @Inject constructor(
         taskApiService.proposeTasksFromImage(imagePart, notePart)
     }
 
+    override suspend fun getTasksByRange(
+        startDate: String,
+        endDate: String,
+    ): Result<Map<String, List<TaskWithSessionsDto>>> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.getTasksByRange(startDate, endDate)
+        }
+
     override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             taskApiService.scheduleTask(request)
         }
+
 
     override suspend fun deleteTask(taskId: String): Result<Unit> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {

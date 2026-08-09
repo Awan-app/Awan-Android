@@ -43,6 +43,7 @@ import com.awan.app.core.designsystem.AwanScheduleTimeline
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.home.impl.R
+import com.awan.feature.home.impl.ui.components.SessionTaskDetailDialog
 import java.time.LocalDate
 
 private sealed interface TimelineContentState {
@@ -57,8 +58,10 @@ fun HomeScreen(
     onLogout: () -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
     onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
+    onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
@@ -188,8 +191,9 @@ fun HomeScreen(
                             isToday = uiState.isToday,
                             isPastDate = uiState.isPastDate,
                             onToggleZoneCollapse = viewModel::toggleZoneCollapse,
-                            onAddSessionToZone = viewModel::addSessionToZone,
+                            onAddSessionToZone = { zoneId -> onNavigateToAddTask(zoneId, uiState.selectedDate) },
                             onSessionStatusToggle = viewModel::toggleSessionStatus,
+                            onSessionClick = viewModel::onSessionClicked,
                             onSessionMoved = viewModel::moveSession,
                             onReorderSessionsInZone = viewModel::reorderSessionsInZone,
                             scrollState = timelineScrollState,
@@ -198,6 +202,26 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+
+        uiState.selectedSessionDetailState?.let { dialogState ->
+            SessionTaskDetailDialog(
+                state = dialogState,
+                onDismiss = viewModel::dismissSessionDetail,
+                onRetry = viewModel::retryLoadSessionDetail,
+                onToggleStatus = viewModel::toggleSessionStatusFromDialog,
+                onToggleLock = viewModel::toggleSessionLockFromDialog,
+                onStartEditing = viewModel::startEditingSessionDetail,
+                onCancelEditing = viewModel::cancelEditingSessionDetail,
+                onTitleChange = viewModel::onEditTitleChanged,
+                onDescriptionChange = viewModel::onEditDescriptionChanged,
+                onDurationChange = viewModel::onEditDurationChanged,
+                onSaveEdits = viewModel::saveSessionDetailEdits,
+                onDeleteClick = viewModel::requestDeleteSession,
+                onSelectDeleteTarget = viewModel::selectDeleteTargetType,
+                onConfirmDelete = viewModel::confirmDeleteAction,
+                onCancelDelete = viewModel::dismissDeleteConfirmDialog,
+            )
         }
 
         if (uiState.hasConflict) {

@@ -3,7 +3,10 @@ package com.awan.app.core.database.di
 import android.content.Context
 import androidx.room.Room
 import com.awan.app.core.database.AwanDatabase
+import com.awan.app.core.database.dao.CachedScheduleDateDao
+import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
+import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.dao.TemplateDao
 import com.awan.app.core.database.dao.TemplateOverrideDao
@@ -34,7 +37,12 @@ object DatabaseModule {
         context,
         AwanDatabase::class.java,
         "awan-database",
-    ).build()
+    )
+        .addMigrations(AwanDatabase.MIGRATION_1_2)
+        .addMigrations(AwanDatabase.MIGRATION_2_3)
+        .addMigrations(AwanDatabase.MIGRATION_3_4)
+        .fallbackToDestructiveMigration(dropAllTables = true)
+        .build()
 
     @Provides
     fun providesUserDao(database: AwanDatabase): UserDao =
@@ -59,4 +67,16 @@ object DatabaseModule {
     @Provides
     fun providesZoneDao(database: AwanDatabase): ZoneDao =
         database.zoneDao()
+
+    @Provides
+    fun providesCategoryDao(database: AwanDatabase): CategoryDao =
+        database.categoryDao()
+
+    @Provides
+    fun providesSessionDao(database: AwanDatabase): SessionDao =
+        database.sessionDao()
+
+    @Provides
+    fun providesCachedScheduleDateDao(database: AwanDatabase): CachedScheduleDateDao =
+        database.cachedScheduleDateDao()
 }

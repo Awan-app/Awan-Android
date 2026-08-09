@@ -60,3 +60,20 @@ private fun GoalDecomposeBlockDto.toBlock(): GoalDecompositionBlock? = when (typ
 
     else -> null // Unknown/future block type — ignore safely
 }
+
+internal fun com.awan.app.core.network.dto.goal.GoalDecompositionTranscriptResponse.toTranscript(): com.awan.app.core.model.GoalDecompositionTranscript =
+    com.awan.app.core.model.GoalDecompositionTranscript(
+        sessionId = sessionId,
+        status = status,
+        messages = messages.map { msg ->
+            com.awan.app.core.model.DecompositionMessage(
+                role = msg.role,
+                blocks = msg.blocks.mapNotNull { it.toBlock() },
+            )
+        },
+        hasProposal = hasProposal,
+        confirmedGoalId = confirmedGoalId,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+    )
+

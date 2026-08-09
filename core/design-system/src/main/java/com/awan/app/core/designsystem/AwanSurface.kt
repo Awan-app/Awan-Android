@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.style.Style
 import androidx.compose.foundation.style.styleable
 import androidx.compose.runtime.Composable
+import android.annotation.SuppressLint
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,6 +41,7 @@ private fun DarkSurfacePreview() {
     SurfacePreview(darkTheme = true)
 }
 
+@SuppressLint("HardcodedText")
 @Composable
 private fun SurfacePreview(darkTheme: Boolean) {
     AwanTheme(dark = darkTheme, light = !darkTheme) {

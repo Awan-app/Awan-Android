@@ -35,8 +35,9 @@ import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.core.navigation.Route
 import com.awan.feature.goals.api.GoalsRoute
+import androidx.compose.ui.graphics.Brush
 import com.awan.feature.goals.impl.R
-import com.awan.feature.goals.impl.presentation.GoalsScreen
+import com.awan.feature.goals.impl.ui.GoalsScreen
 import com.awan.feature.goals.impl.presentation.GoalsViewModel
 import com.awan.feature.goals.impl.presentation.InboxScreen
 import com.awan.feature.goals.impl.presentation.InboxViewModel
@@ -64,21 +65,34 @@ fun GoalsRouteScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AwanTheme.colors.background)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        AwanTheme.colors.backgroundStart,
+                        AwanTheme.colors.background,
+                        AwanTheme.colors.background,
+                    ),
+                ),
+            )
             .statusBarsPadding()
     ) {
         // Shared Top Level Header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(top = 16.dp, bottom = 8.dp),
+            contentAlignment = Alignment.Center,
         ) {
+            val titleText = when (selectedTab) {
+                GoalsTopLevelTab.Goals -> stringResource(R.string.goals_title)
+                GoalsTopLevelTab.Inbox -> stringResource(R.string.inbox_title)
+            }
             AwanText(
-                text = stringResource(R.string.goals_title), // Or change to dynamically update based on tab
-                style = AwanTheme.typography.display.copy(
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AwanTheme.colors.textPrimary,
+                text = titleText,
+                style = AwanTheme.typography.title.copy(
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = AwanTheme.colors.ink,
                 ),
             )
         }

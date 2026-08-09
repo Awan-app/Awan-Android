@@ -46,6 +46,16 @@ class GoalsViewModelTest {
 
         override suspend fun confirmDecomposition(sessionId: String): Result<Goal> =
             error("Not used in GoalsViewModelTest")
+
+        override suspend fun createGoal(title: String, description: String?, targetDate: String?): Result<Goal> = error("Not implemented")
+        override suspend fun getInboxGoal(): Result<Goal> = error("Not implemented")
+        override suspend fun getGoal(goalId: String): Result<Goal> = error("Not implemented")
+        override suspend fun deleteGoal(goalId: String): Result<Unit> = error("Not implemented")
+        override suspend fun getDecompositionTranscript(sessionId: String): Result<com.awan.app.core.model.GoalDecompositionTranscript> = error("Not implemented")
+        override suspend fun cancelDecomposition(sessionId: String): Result<Unit> = error("Not implemented")
+        override suspend fun scheduleGoal(goalId: String): Result<Unit> = error("Not implemented")
+        override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.model.GoalScheduleProposal> = error("Not implemented")
+        override suspend fun confirmGoalSchedule(goalId: String, sessions: List<com.awan.app.core.model.ProposedGoalSession>): Result<Unit> = error("Not implemented")
     }
 
     @Test

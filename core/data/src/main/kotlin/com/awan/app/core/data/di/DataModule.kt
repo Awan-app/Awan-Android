@@ -37,6 +37,10 @@ import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
 import com.awan.app.core.data.zones.remote.ZonesRemoteDataSourceImpl
 import com.awan.app.core.data.zones.repository.ZonesRepositoryImpl
 import com.awan.app.core.domain.auth.repository.AuthRepository
+import com.awan.app.core.domain.goal.repository.GoalRepository
+import com.awan.app.core.data.goal.GoalRepositoryImpl
+import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
+import com.awan.app.core.data.goal.remote.GoalRemoteDataSourceImpl
 import com.awan.app.core.domain.calendar.repository.CalendarRepository
 import com.awan.app.core.domain.profile.repository.ProfileRepository
 import com.awan.app.core.domain.profile.repository.UserDataRepository
@@ -44,6 +48,8 @@ import com.awan.app.core.domain.task.repository.AiTaskRepository
 import com.awan.app.core.domain.template.repository.TemplateRepository
 import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.domain.zones.repository.ZonesRepository
+import com.awan.app.core.data.network.NetworkConnectivityMonitorImpl
+import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -189,13 +195,20 @@ internal abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindGoalRemoteDataSource(
-        impl: com.awan.app.core.data.goal.remote.GoalRemoteDataSourceImpl,
-    ): com.awan.app.core.data.goal.remote.GoalRemoteDataSource
+        impl: GoalRemoteDataSourceImpl,
+    ): GoalRemoteDataSource
 
     @Binds
     @Singleton
     abstract fun bindGoalRepository(
-        impl: com.awan.app.core.data.goal.GoalRepositoryImpl,
-    ): com.awan.app.core.domain.goal.repository.GoalRepository
+impl: GoalRepositoryImpl,
+    ): GoalRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNetworkConnectivityMonitor(
+        impl: NetworkConnectivityMonitorImpl,
+    ): NetworkConnectivityMonitor
+
 }
 

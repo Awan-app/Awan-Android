@@ -2,7 +2,13 @@ package com.awan.app.core.data.task
 
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.database.dao.SessionDao
+import com.awan.app.core.database.dao.TaskDao
+import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.TaskDependencyEntity
+import com.awan.app.core.database.model.TaskEntity
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
+import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.network.dto.task.AiTextToTasksRequest
 import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
@@ -17,6 +23,8 @@ import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -69,6 +77,11 @@ class AiTaskRepositoryImplTest {
             note: String?,
         ): Result<TaskProposalResponse> = error("not used")
 
+        override suspend fun getTasksByRange(
+            startDate: String,
+            endDate: String,
+        ): Result<Map<String, List<TaskWithSessionsDto>>> = error("not used")
+
         override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> =
             error("not used")
 
@@ -77,7 +90,51 @@ class AiTaskRepositoryImplTest {
         override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = error("not used")
     }
 
-    private val repository = AiTaskRepositoryImpl(remoteDataSource, UnconfinedTestDispatcher())
+    private val fakeTaskDao = object : TaskDao {
+        override suspend fun upsertTask(task: TaskEntity) {}
+        override suspend fun upsertTasks(tasks: List<TaskEntity>) {}
+        override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
+        override fun observeInboxTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
+        override fun observeAllTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
+        override suspend fun getAllTasks(): List<TaskEntity> = emptyList()
+        override fun observeTask(taskId: String): Flow<TaskEntity?> = flowOf(null)
+        override suspend fun getTask(taskId: String): TaskEntity? = null
+        override suspend fun deleteTask(taskId: String) {}
+        override suspend fun upsertDependency(dependency: TaskDependencyEntity) {}
+        override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
+        override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
+        override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+        override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+        override suspend fun deleteAllDependenciesForTask(taskId: String) {}
+        override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}
+        override suspend fun deleteTasksByGoal(goalId: String) {}
+        override suspend fun nullifyOrphanedGoalReferences() {}
+    }
+
+    private val fakeSessionDao = object : SessionDao {
+        override suspend fun upsertSession(session: SessionEntity) {}
+        override suspend fun upsertSessions(sessions: List<SessionEntity>) {}
+        override fun observeSessionsForDate(date: String): Flow<List<SessionEntity>> = flowOf(emptyList())
+        override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<SessionEntity>> = flowOf(emptyList())
+        override suspend fun getSessionsForDate(date: String): List<SessionEntity> = emptyList()
+        override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = emptyList()
+        override suspend fun getSession(id: String): SessionEntity? = null
+        override suspend fun deleteSessionsForDates(dates: List<String>) {}
+        override suspend fun deleteSession(id: String) {}
+    }
+
+    private val onlineMonitor = object : NetworkConnectivityMonitor {
+        override val isOnline: Flow<Boolean> = flowOf(true)
+        override fun isCurrentlyOnline(): Boolean = true
+    }
+
+    private val repository = AiTaskRepositoryImpl(
+        remoteDataSource = remoteDataSource,
+        taskDao = fakeTaskDao,
+        sessionDao = fakeSessionDao,
+        connectivityMonitor = onlineMonitor,
+        ioDispatcher = UnconfinedTestDispatcher(),
+    )
 
     private fun proposalWithSession(title: String, start: String, end: String) = Result.Success(
         TaskProposalResponse(

@@ -15,4 +15,7 @@
     <string name="error_otp_attempts_exceeded">Too many attempts. Request a new code.</string>
     <string name="error_otp_expired">Your code has expired. Request a new one.</string>
     <string name="error_too_many_requests">Too many requests. Please try again later.</string>
+    <string name="error_not_found">Requested item was not found.</string>
+    <string name="error_image_too_large">Image file size must not exceed 5 MB.</string>
+    <string name="error_image_type_unsupported">Unsupported image type. Only JPEG, PNG, and WebP are allowed.</string>
 </resources>

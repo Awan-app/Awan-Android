@@ -58,9 +58,7 @@ fun InboxScreen(
     val colors = AwanTheme.colors
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(colors.background),
+        modifier = modifier.fillMaxSize(),
     ) {
         Column(
             modifier = Modifier.fillMaxSize()

@@ -21,6 +21,7 @@ import com.awan.app.core.network.dto.onboarding.CompleteOnboardingResponse
 import com.awan.app.core.network.api.SessionApiService
 import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.session.UpdateSessionRequest
+import com.awan.app.core.network.dto.task.TaskInfoResponse
 
 class HomeRemoteDataSourceImpl @Inject constructor(
     private val zonesApiService: ZoneApiService,
@@ -57,9 +58,20 @@ class HomeRemoteDataSourceImpl @Inject constructor(
             userApiService.getUserProfile()
         }
 
+    override suspend fun getSession(sessionId: String): Result<SessionDto> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            sessionApiService.getSession(sessionId)
+        }
+
+    override suspend fun getTask(taskId: String): Result<com.awan.app.core.network.dto.task.TaskInfoResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.getTask(taskId)
+        }
+
     override suspend fun updateSession(
         sessionId: String,
         status: String?,
+        locked: Boolean?,
         startIso: String?,
         endIso: String?,
     ): Result<SessionDto> =
@@ -70,7 +82,36 @@ class HomeRemoteDataSourceImpl @Inject constructor(
                     start = startIso,
                     end = endIso,
                     status = status,
+                    locked = locked,
                 ),
             )
+        }
+
+    override suspend fun lockSession(sessionId: String): Result<SessionDto> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            sessionApiService.lockSession(sessionId)
+        }
+
+    override suspend fun unlockSession(sessionId: String): Result<SessionDto> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            sessionApiService.unlockSession(sessionId)
+        }
+
+    override suspend fun updateTask(
+        taskId: String,
+        request: com.awan.app.core.network.dto.task.TaskUpdateRequest,
+    ): Result<TaskInfoResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.updateTask(taskId, request)
+        }
+
+    override suspend fun deleteSession(sessionId: String): Result<Unit> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            sessionApiService.deleteSession(sessionId)
+        }
+
+    override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.deleteTask(taskId, cascade)
         }
 }
