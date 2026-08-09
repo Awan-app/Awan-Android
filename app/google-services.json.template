@@ -1,41 +1,41 @@
 {
   "project_info": {
-    "project_number": "786321941221",
-    "project_id": "awan-479f9",
-    "storage_bucket": "awan-479f9.firebasestorage.app"
+    "project_number": "YOUR_PROJECT_NUMBER",
+    "project_id": "YOUR_PROJECT_ID",
+    "storage_bucket": "YOUR_PROJECT_ID.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:786321941221:android:e276817a19a0057f13ea0c",
+        "mobilesdk_app_id": "YOUR_MOBILESDK_APP_ID",
         "android_client_info": {
           "package_name": "com.awan.app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "786321941221-cu02asse651cv7g4cno1qn0041qhpvl0.apps.googleusercontent.com",
+          "client_id": "YOUR_CLIENT_ID",
           "client_type": 1,
           "android_info": {
             "package_name": "com.awan.app",
-            "certificate_hash": "30722c047d97452253383c4487db52682c21efe2"
+            "certificate_hash": "YOUR_SHA1_CERTIFICATE_HASH"
           }
         },
         {
-          "client_id": "786321941221-7fqt6svpjnqieu157dn4ujueeernq5vd.apps.googleusercontent.com",
+          "client_id": "YOUR_WEB_CLIENT_ID",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAi-40cdGmhCxAOVH407r3MHmG0U63Ugpg"
+          "current_key": "YOUR_API_KEY"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "786321941221-7fqt6svpjnqieu157dn4ujueeernq5vd.apps.googleusercontent.com",
+              "client_id": "YOUR_WEB_CLIENT_ID",
               "client_type": 3
             }
           ]
