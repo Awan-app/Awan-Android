@@ -26,7 +26,7 @@ class GoalDecompositionMappersTest {
     private val productionJson = Json {
         ignoreUnknownKeys = true
         isLenient = true
-        explicitNulls = false
+        explicitNulls = true
         encodeDefaults = true
         coerceInputValues = true
     }
