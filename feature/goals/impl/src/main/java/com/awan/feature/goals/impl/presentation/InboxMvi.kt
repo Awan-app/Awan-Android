@@ -28,12 +28,19 @@ enum class InboxTaskDisplayStatus {
 }
 
 fun TaskWithSessions.deriveDisplayStatus(): InboxTaskDisplayStatus {
-    if (sessions.isEmpty()) return InboxTaskDisplayStatus.Drafted
+    if (sessions.isEmpty()) return InboxTaskDisplayStatus.Active
     val nonCancelled = sessions.filter { it.status != SessionStatus.CANCELLED }
     if (nonCancelled.isEmpty()) return InboxTaskDisplayStatus.Cancelled
     if (nonCancelled.all { it.status == SessionStatus.COMPLETED }) return InboxTaskDisplayStatus.Completed
-    if (sessions.any { it.status == SessionStatus.SCHEDULED }) return InboxTaskDisplayStatus.Active
-    return InboxTaskDisplayStatus.Missed
+    
+    // A task is only truly "Active" if it has at least one SCHEDULED session.
+    // If it has sessions but none are SCHEDULED (and they aren't all COMPLETED/CANCELLED),
+    // it counts as Missed (e.g. all sessions are MISSED).
+    return if (nonCancelled.any { it.status == SessionStatus.SCHEDULED }) {
+        InboxTaskDisplayStatus.Active
+    } else {
+        InboxTaskDisplayStatus.Missed
+    }
 }
 
 // ─── Session display filter ───────────────────────────────────────────────────
@@ -71,6 +78,9 @@ data class InboxTaskUiModel(
     val description: String?,
     val displayStatus: InboxTaskDisplayStatus,
     val sessions: List<InboxSessionUiModel>,
+    val progress: Float,
+    val completedCount: Int,
+    val totalCount: Int,
 )
 
 // ─── State & Actions ──────────────────────────────────────────────────────────

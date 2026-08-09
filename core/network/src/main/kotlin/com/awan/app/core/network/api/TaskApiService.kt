@@ -1,5 +1,6 @@
 package com.awan.app.core.network.api
 
+import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.task.AiTextToTasksRequest
 import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
@@ -10,7 +11,6 @@ import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
-import com.awan.app.core.network.dto.task.InboxTasksResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.http.Body
@@ -88,8 +88,8 @@ interface TaskApiService {
         @Body request: ScheduleTaskRequest,
     ): TaskScheduleResponse
 
-    @GET("v1/tasks/inbox")
-    suspend fun getInboxTasks(): InboxTasksResponse
+    @GET("v1/goals/inbox")
+    suspend fun getInboxTasks(): GoalInfoResponse
 
     @DELETE("v1/tasks/{taskId}")
     suspend fun deleteTask(

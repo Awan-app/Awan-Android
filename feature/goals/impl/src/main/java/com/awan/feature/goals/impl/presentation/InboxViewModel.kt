@@ -110,7 +110,7 @@ class InboxViewModel @Inject constructor(
                             isLoading = false,
                             isError = false,
                             allTasks = result.data.map { tws -> tws.toUiModel(now, dateFormatter, timeFormatter) },
-                        )
+                        ).copy(visibleTasks = filterTasks(it.copy(allTasks = result.data.map { tws -> tws.toUiModel(now, dateFormatter, timeFormatter) })))
                     }
                 }
                 is Result.Error -> updateState { it.copy(isLoading = false, isError = true) }
@@ -124,31 +124,40 @@ class InboxViewModel @Inject constructor(
         dateFormatter: DateTimeFormatter,
         timeFormatter: DateTimeFormatter
     ): InboxTaskUiModel {
+        val sessionModels = sessions.mapNotNull { session ->
+            val isScheduled = session.status == SessionStatus.SCHEDULED
+            val isBackendMissed = session.status == SessionStatus.MISSED
+            
+            InboxSessionUiModel(
+                id = session.id,
+                dateLabel = session.start.format(dateFormatter),
+                startTime = session.start.format(timeFormatter),
+                endTime = session.end.format(timeFormatter),
+                statusLabelRes = when (session.status) {
+                    SessionStatus.SCHEDULED -> R.string.inbox_status_scheduled
+                    SessionStatus.COMPLETED -> R.string.inbox_status_completed
+                    SessionStatus.CANCELLED -> R.string.inbox_status_cancelled
+                    SessionStatus.MISSED -> R.string.inbox_status_missed
+                    else -> R.string.inbox_status_unknown
+                },
+                isActiveNow = isScheduled && !now.isBefore(session.start) && !now.isAfter(session.end),
+                isMissed = isBackendMissed || (isScheduled && now.isAfter(session.end)),
+            )
+        }
+
+        val total = sessionModels.size
+        val completed = sessionModels.count { it.statusLabelRes == R.string.inbox_status_completed }
+        val progress = if (total == 0) 0f else completed.toFloat() / total
+
         return InboxTaskUiModel(
             id = task.id,
             title = task.title,
             description = task.description,
             displayStatus = deriveDisplayStatus(),
-            sessions = sessions.mapNotNull { session ->
-                val isScheduled = session.status == SessionStatus.SCHEDULED
-                val isBackendMissed = session.status == SessionStatus.MISSED
-                
-                InboxSessionUiModel(
-                    id = session.id,
-                    dateLabel = session.start.format(dateFormatter),
-                    startTime = session.start.format(timeFormatter),
-                    endTime = session.end.format(timeFormatter),
-                    statusLabelRes = when (session.status) {
-                        SessionStatus.SCHEDULED -> R.string.inbox_status_scheduled
-                        SessionStatus.COMPLETED -> R.string.inbox_status_completed
-                        SessionStatus.CANCELLED -> R.string.inbox_status_cancelled
-                        SessionStatus.MISSED -> R.string.inbox_status_missed
-                        else -> R.string.inbox_status_unknown
-                    },
-                    isActiveNow = isScheduled && !now.isBefore(session.start) && !now.isAfter(session.end),
-                    isMissed = isBackendMissed || (isScheduled && now.isAfter(session.end)),
-                )
-            },
+            sessions = sessionModels,
+            progress = progress,
+            completedCount = completed,
+            totalCount = total,
         )
     }
 }

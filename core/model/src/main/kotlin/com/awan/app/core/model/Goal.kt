@@ -8,13 +8,13 @@ data class Goal(
     val status: GoalStatus = GoalStatus.ACTIVE,
     val isInbox: Boolean = false,
     val emoji: String? = null,
-    val tasks: List<Task> = emptyList(),
+    val tasks: List<TaskWithSessions> = emptyList(),
 ) {
     val totalTasks: Int
         get() = tasks.size
 
     val completedTasks: Int
-        get() = tasks.count { it.status == TaskStatus.COMPLETED }
+        get() = tasks.count { it.task.status == TaskStatus.COMPLETED }
 
     val progress: Float
         get() = if (totalTasks == 0) 0f else completedTasks.toFloat() / totalTasks
