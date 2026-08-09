@@ -20,4 +20,5 @@ data class ProfileState(
     val fieldError: UiText? = null,
     val pendingPicture: PendingPicture? = null,
     val categories: List<Category> = emptyList(),
+    val equippedFrameImageUrl: String? = null,
 )

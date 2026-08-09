@@ -11,6 +11,8 @@ interface AuthRepository {
 
     suspend fun verifyOtp(email: String, code: String): Result<AuthSession>
 
+    suspend fun signInWithFirebase(idToken: String): Result<AuthSession>
+
     suspend fun logout(): Result<Unit>
 
     fun observeIsLoggedIn(): Flow<Boolean>

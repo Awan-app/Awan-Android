@@ -16,4 +16,8 @@ dependencies {
 
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.lottie.compose)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.play.services.auth)
 }

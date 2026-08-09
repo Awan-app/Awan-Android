@@ -11,6 +11,12 @@
     <string name="auth_continue_with_google">متابعة باستخدام Google</string>
     <string name="auth_rate_limited_banner">محاولات كثيرة جدًا. أعد المحاولة بعد %1$s.</string>
     <string name="auth_offline_banner">أنت غير متصل بالإنترنت — سنرسل الرمز عند إعادة الاتصال.</string>
+    <string name="auth_error_firebase_token_invalid">رمز التسجيل غير صالح. يرجى المحاولة مرة أخرى.</string>
+    <string name="auth_error_firebase_provider_not_allowed">تسجيل الدخول بواسطة Google غير متاح.</string>
+    <string name="auth_error_firebase_email_missing">لا يوجد بريد إلكتروني مرتبط بهذا الحساب.</string>
+    <string name="auth_error_firebase_email_not_verified">يرجى تأكيد بريدك الإلكتروني لدى Google.</string>
+    <string name="auth_error_firebase_not_configured">الخدمة غير متاحة حالياً، يرجى المحاولة لاحقاً.</string>
+    <string name="auth_error_google_sign_in_failed">فشل تسجيل الدخول باستخدام Google. يرجى المحاولة مرة أخرى.</string>
 
     <!-- OTP Screen -->
     <string name="auth_otp_title">تحقق من بريدك!</string>

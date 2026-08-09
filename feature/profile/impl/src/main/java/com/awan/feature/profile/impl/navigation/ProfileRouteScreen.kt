@@ -11,6 +11,7 @@ import com.awan.feature.profile.impl.ui.ProfileScreen
 fun ProfileRouteScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
     onDailyZonesClick: () -> Unit,
+    onInventoryClick: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -20,6 +21,7 @@ fun ProfileRouteScreen(
         events = viewModel.events,
         onAction = viewModel::onAction,
         onDailyZonesClick = onDailyZonesClick,
+        onInventoryClick = onInventoryClick,
         onSettingsClick = { },
         onLogout = onLogout,
     )

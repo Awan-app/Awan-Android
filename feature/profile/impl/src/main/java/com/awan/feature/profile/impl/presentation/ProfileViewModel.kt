@@ -8,6 +8,8 @@ import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.auth.usecase.LogoutUseCase
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.image.usecase.ReadImageUseCase
+import com.awan.app.core.domain.inventory.usecase.ObserveEquippedFrameUseCase
+import com.awan.app.core.domain.inventory.usecase.RefreshInventoryUseCase
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.usecase.DeleteProfilePictureUseCase
 import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
@@ -44,6 +46,8 @@ class ProfileViewModel @Inject constructor(
     private val setDarkThemeUseCase: SetDarkThemeUseCase,
     private val setLocaleUseCase: SetLocaleUseCase,
     private val logoutUseCase: LogoutUseCase,
+    private val observeEquippedFrameUseCase: ObserveEquippedFrameUseCase,
+    private val refreshInventoryUseCase: RefreshInventoryUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
 ) : ViewModel() {
 
@@ -58,6 +62,8 @@ class ProfileViewModel @Inject constructor(
         loadCategories()
         observeProfile()
         observePreferences()
+        observeEquippedFrame()
+        refreshInventory()
     }
 
     fun onAction(action: ProfileAction) {
@@ -104,6 +110,18 @@ class ProfileViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun observeEquippedFrame() {
+        viewModelScope.launch {
+            observeEquippedFrameUseCase().collectLatest { imageUrl ->
+                _uiState.update { it.copy(equippedFrameImageUrl = imageUrl) }
+            }
+        }
+    }
+
+    private fun refreshInventory() {
+        viewModelScope.launch { refreshInventoryUseCase() }
     }
 
     private fun setTheme(useDarkTheme: Boolean) {

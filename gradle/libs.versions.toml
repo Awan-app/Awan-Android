@@ -54,6 +54,10 @@ coil = "3.0.4"
 # New — java.time on minSdk 24
 desugarJdkLibs = "2.1.5"
 
+# Google Auth & Firebase
+firebaseBom = "33.9.0"
+googleServices = "4.4.2"
+
 [libraries]
 desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 androidx-compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
@@ -150,7 +154,13 @@ android-desugarJdkLibs = { group = "com.android.tools", name = "desugar_jdk_libs
 # Lucide Icons
 icons-lucide-android = { group = "com.composables", name = "icons-lucide-android", version.ref = "icons-lucide-android" }
 
+# Google Auth & Firebase
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
+play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version = "21.3.0" }
+
 [plugins]
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

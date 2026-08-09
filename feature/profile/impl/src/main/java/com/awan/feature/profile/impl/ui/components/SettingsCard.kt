@@ -14,6 +14,7 @@ import com.awan.feature.profile.impl.R as ProfileR
 @Composable
 fun SettingsCard(
     onSettingsClick: (String) -> Unit,
+    onInventoryClick: () -> Unit,
     onLogoutClick: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -36,6 +37,13 @@ fun SettingsCard(
                 onClick = { onSettingsClick("help") },
                 showDivider = true,
                 iconColor = AwanTheme.colors.meta
+            )
+            PreferenceRow(
+                icon = Icons.Default.AutoAwesome,
+                title = stringResource(ProfileR.string.profile_inventory),
+                onClick = onInventoryClick,
+                showDivider = true,
+                iconColor = AwanTheme.colors.sky
             )
             PreferenceRow(
                 icon = Icons.AutoMirrored.Filled.Logout,

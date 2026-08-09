@@ -5,8 +5,6 @@ import com.awan.app.core.database.dao.*
 import com.awan.app.core.database.model.*
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
-import com.awan.app.core.model.SessionStatus
-import com.awan.app.core.model.UpdateSessionParams
 import com.awan.app.core.network.dto.session.CompleteSessionResponse
 import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.task.TaskInfoResponse
@@ -20,11 +18,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
-import java.time.LocalDateTime
+
 
 private class FakeHomeRemoteDataSource : HomeRemoteDataSource {
     var lastUpdate: UpdateArgs? = null
