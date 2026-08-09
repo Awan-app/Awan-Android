@@ -7,7 +7,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
 import com.awan.core.navigation.Route
 import com.awan.feature.goals.api.GoalsRoute
-import com.awan.feature.goals.impl.presentation.GoalsScreen
+import com.awan.feature.goals.impl.ui.GoalsScreen
 import com.awan.feature.goals.impl.presentation.GoalsViewModel
 
 fun EntryProviderScope<Route>.goalsEntry() {

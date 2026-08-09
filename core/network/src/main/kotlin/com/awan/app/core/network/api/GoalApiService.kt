@@ -1,5 +1,6 @@
 package com.awan.app.core.network.api
 
+import com.awan.app.core.network.dto.GoalDecomposeRequest
 import com.awan.app.core.network.dto.GoalDecomposeResponse
 import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.PageResponse
@@ -47,7 +48,7 @@ interface GoalApiService {
     /** `POST v1/ai/goal-decompose` — continue or start a decomposition session. */
     @POST("v1/ai/goal-decompose")
     suspend fun decomposeGoal(
-        @Body request: JsonObject,
+        @Body request: GoalDecomposeRequest,
     ): GoalDecomposeResponse
 
     /** `POST v1/ai/goal-decompose/{sessionId}/confirm` — confirm the proposal and create the goal. */

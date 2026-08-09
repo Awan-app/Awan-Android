@@ -20,6 +20,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -61,7 +63,7 @@ class GoalDecompositionRepositoryTest {
         override suspend fun deleteGoal(goalId: String) = error("Not implemented")
 
         override suspend fun decomposeGoal(
-            request: JsonObject,
+            request: com.awan.app.core.network.dto.GoalDecomposeRequest,
         ): GoalDecomposeResponse = error("Not implemented")
 
         override suspend fun confirmDecomposition(
@@ -103,8 +105,8 @@ class GoalDecompositionRepositoryTest {
     fun `first continue call passes null sessionId and exact message`() = runTest(testDispatcher) {
         var capturedRequest: JsonObject? = null
         val api = object : FakeGoalApiService() {
-            override suspend fun decomposeGoal(request: JsonObject): GoalDecomposeResponse {
-                capturedRequest = request
+            override suspend fun decomposeGoal(request: com.awan.app.core.network.dto.GoalDecomposeRequest): GoalDecomposeResponse {
+                capturedRequest = json.encodeToJsonElement(request).jsonObject
                 return emptyDecomposeResponse
             }
         }
@@ -119,8 +121,8 @@ class GoalDecompositionRepositoryTest {
     fun `continuation call passes the returned sessionId and exact message`() = runTest(testDispatcher) {
         var capturedRequest: JsonObject? = null
         val api = object : FakeGoalApiService() {
-            override suspend fun decomposeGoal(request: JsonObject): GoalDecomposeResponse {
-                capturedRequest = request
+            override suspend fun decomposeGoal(request: com.awan.app.core.network.dto.GoalDecomposeRequest): GoalDecomposeResponse {
+                capturedRequest = json.encodeToJsonElement(request).jsonObject
                 return emptyDecomposeResponse
             }
         }
@@ -197,7 +199,7 @@ class GoalDecompositionRepositoryTest {
     @Test(expected = CancellationException::class)
     fun `CancellationException from decomposeGoal is rethrown by remote data source`() = runTest(testDispatcher) {
         val api = object : FakeGoalApiService() {
-            override suspend fun decomposeGoal(request: JsonObject): GoalDecomposeResponse {
+            override suspend fun decomposeGoal(request: com.awan.app.core.network.dto.GoalDecomposeRequest): GoalDecomposeResponse {
                 throw CancellationException("Cancelled")
             }
         }
