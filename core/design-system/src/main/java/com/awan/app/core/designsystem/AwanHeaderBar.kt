@@ -89,12 +89,12 @@ fun AwanHeaderBar(
                     Column {
                         AwanText(
                             text = "$greetingPrefix,",
-                            style = AwanTheme.typography.title,
+                            style = AwanTheme.styles.titleText,
                         )
                         Spacer(modifier = Modifier.height(1.dp))
                         AwanText(
                             text = displayName,
-                            style = AwanTheme.typography.title,
+                            style = AwanTheme.styles.titleText,
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                     }

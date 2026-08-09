@@ -8,6 +8,8 @@ import com.awan.app.core.network.dto.GoalProposalDto
 import com.awan.app.core.network.dto.ProposedTaskDto
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -24,7 +26,7 @@ class GoalDecompositionMappersTest {
     private val productionJson = Json {
         ignoreUnknownKeys = true
         isLenient = true
-        explicitNulls = false
+        explicitNulls = true
         encodeDefaults = true
         coerceInputValues = true
     }
@@ -37,7 +39,7 @@ class GoalDecompositionMappersTest {
         )
         val encoded = productionJson.encodeToString(
             JsonObject.serializer(),
-            request.toJsonObject(),
+            productionJson.encodeToJsonElement(request).jsonObject,
         )
 
         val expected = productionJson.parseToJsonElement(
@@ -56,7 +58,7 @@ class GoalDecompositionMappersTest {
         )
         val encoded = productionJson.encodeToString(
             JsonObject.serializer(),
-            request.toJsonObject(),
+            productionJson.encodeToJsonElement(request).jsonObject,
         )
 
         val expected = productionJson.parseToJsonElement(

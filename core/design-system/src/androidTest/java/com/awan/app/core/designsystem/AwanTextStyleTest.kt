@@ -97,4 +97,21 @@ class AwanTextStyleTest {
         assertEquals(AwanTypographyTokens.button.fontFamily, style.fontFamily)
         assertEquals(AwanTypographyTokens.button.fontSize, style.fontSize)
     }
+
+    @Test
+    fun headerGreeting_usesThemeTextColorInLightAndDarkModes() {
+        composeRule.setContent {
+            AwanTheme(dark = false) {
+                AwanHeaderBar(userName = "Awan", streakCount = 0)
+            }
+        }
+        assertEquals(LightAwanColors.textPrimary, composeRule.onNodeWithText("Good afternoon,").renderedStyle().color)
+
+        composeRule.setContent {
+            AwanTheme(dark = true) {
+                AwanHeaderBar(userName = "Awan", streakCount = 0)
+            }
+        }
+        assertEquals(DarkAwanColors.textPrimary, composeRule.onNodeWithText("Good afternoon,").renderedStyle().color)
+    }
 }

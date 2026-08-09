@@ -3,9 +3,13 @@ package com.awan.app.core.data.home
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.database.dao.UserDao
+import com.awan.app.core.database.dao.TemplateDao
+import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.UserEntity
 import com.awan.app.core.database.model.UserPreferencesEntity
 import com.awan.app.core.database.model.UserWithPreferences
+import com.awan.app.core.database.model.TemplateDayOfWeekEntity
+import com.awan.app.core.database.model.ZoneEntity
 import com.awan.app.core.data.gamification.GamificationEventBus
 import com.awan.app.core.domain.gamification.model.RewardEvent
 import com.awan.app.core.network.dto.gamification.PointsRewardDto
@@ -23,6 +27,7 @@ import com.awan.app.core.network.dto.zone.TemplateOverrideDto
 import com.awan.app.core.network.dto.zone.WeeklyTemplateDto
 import com.awan.app.core.network.dto.zone.ZoneDto
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -129,19 +134,23 @@ private class FakeSessionDao : com.awan.app.core.database.dao.SessionDao {
     override suspend fun deleteSession(id: String) {}
 }
 
-private class FakeZoneDao : com.awan.app.core.database.dao.ZoneDao {
+private class FakeZoneDao(
+    private val templateZones: List<ZoneEntity> = emptyList(),
+) : ZoneDao {
     override suspend fun upsertZone(zone: com.awan.app.core.database.model.ZoneEntity) {}
     override suspend fun upsertZones(zones: List<com.awan.app.core.database.model.ZoneEntity>) {}
     override fun observeZone(zoneId: String): Flow<com.awan.app.core.database.model.ZoneEntity?> = flowOf(null)
     override suspend fun getZone(zoneId: String): com.awan.app.core.database.model.ZoneEntity? = null
-    override fun observeZonesForTemplate(templateId: String): Flow<List<com.awan.app.core.database.model.ZoneEntity>> = flowOf(emptyList())
+    override fun observeZonesForTemplate(templateId: String): Flow<List<ZoneEntity>> = flowOf(templateZones)
     override fun observeZonesForOverride(overrideId: String): Flow<List<com.awan.app.core.database.model.ZoneEntity>> = flowOf(emptyList())
     override suspend fun deleteZone(zoneId: String) {}
     override suspend fun deleteZonesForTemplate(templateId: String) {}
     override suspend fun deleteZonesForOverride(overrideId: String) {}
 }
 
-private class FakeTemplateDao : com.awan.app.core.database.dao.TemplateDao {
+private class FakeTemplateDao(
+    private val dayAssignment: TemplateDayOfWeekEntity? = null,
+) : TemplateDao {
     override suspend fun upsertTemplate(template: com.awan.app.core.database.model.TemplateEntity) {}
     override suspend fun upsertTemplates(templates: List<com.awan.app.core.database.model.TemplateEntity>) {}
     override fun observeAllTemplates(): Flow<List<com.awan.app.core.database.model.TemplateEntity>> = flowOf(emptyList())
@@ -151,7 +160,7 @@ private class FakeTemplateDao : com.awan.app.core.database.dao.TemplateDao {
     override suspend fun getMinExpiryTime(): Long? = null
     override suspend fun upsertDays(days: List<com.awan.app.core.database.model.TemplateDayOfWeekEntity>) {}
     override fun observeDaysForTemplate(templateId: String): Flow<List<com.awan.app.core.database.model.TemplateDayOfWeekEntity>> = flowOf(emptyList())
-    override suspend fun getDayAssignment(dayOfWeek: String): com.awan.app.core.database.model.TemplateDayOfWeekEntity? = null
+    override suspend fun getDayAssignment(dayOfWeek: String): TemplateDayOfWeekEntity? = dayAssignment
     override suspend fun deleteDaysForTemplate(templateId: String) {}
 }
 
@@ -185,15 +194,19 @@ class HomeRepositoryImplTest {
 
     private val eventBus = GamificationEventBus()
 
-    private fun createRepository(fakeRemote: HomeRemoteDataSource): HomeRepositoryImpl {
+    private fun createRepository(
+        fakeRemote: HomeRemoteDataSource,
+        zoneDao: ZoneDao = FakeZoneDao(),
+        templateDao: TemplateDao = FakeTemplateDao(),
+    ): HomeRepositoryImpl {
         return HomeRepositoryImpl(
             remoteDataSource = fakeRemote,
             userDao = FakeUserDao(),
             eventBus = eventBus,
             taskDao = FakeTaskDao(),
             sessionDao = FakeSessionDao(),
-            zoneDao = FakeZoneDao(),
-            templateDao = FakeTemplateDao(),
+            zoneDao = zoneDao,
+            templateDao = templateDao,
             templateOverrideDao = FakeTemplateOverrideDao(),
             categoryDao = FakeCategoryDao(),
             connectivityMonitor = AlwaysOnlineMonitor(),
@@ -368,6 +381,38 @@ class HomeRepositoryImplTest {
         assertTrue(result is Result.Error)
         assertTrue(events.isEmpty())
         assertEquals(0, eventBus.progress.value.points)
+    }
+
+    @Test
+    fun `getDaySchedule preserves the Room zone name for Home labels`() = runTest {
+        val date = java.time.LocalDate.of(2026, 8, 9)
+        val repository = createRepository(
+            fakeRemote = FakeHomeRemoteDataSource(),
+            zoneDao = FakeZoneDao(
+                templateZones = listOf(
+                    ZoneEntity(
+                        id = "zone-study",
+                        name = "Study",
+                        startTime = "09:00:00",
+                        endTime = "12:00:00",
+                        color = "#4F46E5",
+                        templateId = "template-1",
+                        templateOverrideId = null,
+                    ),
+                ),
+            ),
+            templateDao = FakeTemplateDao(
+                dayAssignment = TemplateDayOfWeekEntity(
+                    dayOfWeek = date.dayOfWeek.name,
+                    templateId = "template-1",
+                ),
+            ),
+        )
+
+        val result = repository.getDaySchedule(date).first()
+
+        assertTrue(result is Result.Success)
+        assertEquals("Study", (result as Result.Success).data.zones.single().categoryName)
     }
 }
 

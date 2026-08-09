@@ -49,7 +49,7 @@ object NetworkModule {
     fun providesNetworkJson(): Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
-        explicitNulls = false
+        explicitNulls = true
         encodeDefaults = true
         coerceInputValues = true
     }
