@@ -92,6 +92,9 @@ fun EditRoutineScreen(
                 showZoneSheet = false
                 editingZone = null
             },
+            onAddCategory = { name ->
+                onAction(EditRoutineAction.CreateCategory(name))
+            },
             onDelete = editingZone?.let { zone ->
                 {
                     showZoneDeleteConfirm = zone

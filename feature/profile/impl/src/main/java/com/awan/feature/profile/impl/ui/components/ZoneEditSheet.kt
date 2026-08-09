@@ -26,6 +26,7 @@ fun ZoneEditSheet(
     availableCategories: List<Category>,
     onDismiss: () -> Unit,
     onConfirm: (DailyZone) -> Unit,
+    onAddCategory: (String) -> Unit,
     onDelete: (() -> Unit)? = null,
     canDelete: Boolean = true,
     isNew: Boolean = false
@@ -35,6 +36,17 @@ fun ZoneEditSheet(
     var endTime by remember(zone) { mutableStateOf(zone.endTime) }
     var color by remember(zone) { mutableStateOf(if (zone.color.startsWith("#")) zone.color else "#2EAAFF") }
     var selectedCategoryId by remember(zone) { mutableStateOf(zone.categoryId ?: availableCategories.firstOrNull()?.id) }
+    var pendingCategoryName by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(availableCategories) {
+        pendingCategoryName?.let { name ->
+            val newCat = availableCategories.find { it.name.equals(name, ignoreCase = true) }
+            if (newCat != null) {
+                selectedCategoryId = newCat.id
+                pendingCategoryName = null
+            }
+        }
+    }
 
     val startMins = DailyZonesHelper.parseTimeToMinutes(startTime)
     val endMins = DailyZonesHelper.parseTimeToMinutes(endTime)
@@ -92,7 +104,11 @@ fun ZoneEditSheet(
                 label = stringResource(R.string.profile_zone_category),
                 selectedCategoryId = selectedCategoryId,
                 categories = availableCategories,
-                onCategorySelected = { selectedCategoryId = it }
+                onCategorySelected = { selectedCategoryId = it },
+                onAddCategory = { name ->
+                    pendingCategoryName = name
+                    onAddCategory(name)
+                }
             )
 
             // Time Selection

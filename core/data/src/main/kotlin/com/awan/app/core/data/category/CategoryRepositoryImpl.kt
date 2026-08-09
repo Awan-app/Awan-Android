@@ -65,11 +65,5 @@ class CategoryRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun deleteCategory(categoryId: String): Result<Unit> {
-        // Backend currently returns 405 Method Not Allowed for DELETE /v1/categories/{id}
-        // as documented in docs/feature/onboarding/2026-08-05-required-zone-category.md
-        // So we perform local deletion only for now.
-        categoryDao.deleteCategory(categoryId)
-        return Result.Success(Unit)
-    }
+
 }

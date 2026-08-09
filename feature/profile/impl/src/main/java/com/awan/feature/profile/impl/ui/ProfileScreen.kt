@@ -22,7 +22,6 @@ fun ProfileScreen(
     events: Flow<ProfileEvent>,
     onAction: (ProfileAction) -> Unit,
     onDailyZonesClick: () -> Unit = {},
-    onCategoryManagementClick: () -> Unit = {},
     onSettingsClick: (String) -> Unit = {},
     onLogout: () -> Unit = {},
 ) {
@@ -52,7 +51,6 @@ fun ProfileScreen(
                 onEditClick = { showEditSheet = true },
                 onPictureClick = { showPicturePreview = true },
                 onDailyZonesClick = onDailyZonesClick,
-                onCategoryManagementClick = onCategoryManagementClick,
                 onSettingsClick = onSettingsClick,
                 onLogoutClick = { showLogoutDialog = true }
             )

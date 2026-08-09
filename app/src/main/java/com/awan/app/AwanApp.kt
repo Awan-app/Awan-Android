@@ -64,7 +64,6 @@ import com.awan.feature.marketplace.impl.navigation.marketplaceEntry
 import com.awan.feature.auth.api.OtpRoute
 import com.awan.feature.onboarding.api.OnboardingRoute
 import com.awan.feature.onboarding.impl.navigation.onboardingEntry
-import com.awan.feature.profile.api.CategoryManagementRoute
 import com.awan.feature.profile.api.DailyZonesRoute
 import com.awan.feature.profile.api.EditRoutineRoute
 import com.awan.feature.profile.impl.navigation.profileEntry
@@ -227,7 +226,6 @@ fun AwanApp(
                 onNavigateToEditRoutine = { templateId -> navigator.navigate(EditRoutineRoute(templateId)) },
                 onLogout = { navigator.replaceAll(LoginRoute) },
                 onBack = { navigator.goBack()},
-                onNavigateToCategoryManagement = { navigator.navigate(CategoryManagementRoute) },
             )
             goalPreviewEntry(
                 onBack = { navigator.goBack() },

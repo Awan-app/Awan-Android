@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
+import com.awan.app.core.domain.category.usecase.CreateCategoryUseCase
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
@@ -32,6 +33,7 @@ class EditRoutineViewModel @Inject constructor(
     private val getWeeklyTemplatesUseCase: GetWeeklyTemplatesUseCase,
     private val getWeeklyTemplateUseCase: GetWeeklyTemplateUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val createCategoryUseCase: CreateCategoryUseCase,
     private val createWeeklyTemplateUseCase: CreateWeeklyTemplateUseCase,
     private val updateWeeklyTemplateUseCase: UpdateWeeklyTemplateUseCase,
     private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase,
@@ -53,6 +55,7 @@ class EditRoutineViewModel @Inject constructor(
             is EditRoutineAction.UpdateZone -> updateZone(action.oldZone, action.newZone)
             is EditRoutineAction.DeleteZone -> deleteZone(action.zone)
             is EditRoutineAction.ReorderZones -> reorderZones(action.from, action.to)
+            is EditRoutineAction.CreateCategory -> createCategory(action.name)
             EditRoutineAction.SaveRoutine -> saveRoutine()
             EditRoutineAction.DeleteRoutine -> deleteRoutine()
         }
@@ -258,6 +261,29 @@ class EditRoutineViewModel @Inject constructor(
                     }
                     Result.Loading -> Unit
                 }
+            }
+        }
+    }
+
+    private fun createCategory(name: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true, error = null) }
+            when (val result = createCategoryUseCase(name)) {
+                is Result.Success -> {
+                    when (val catResult = getCategoriesUseCase()) {
+                        is Result.Success -> {
+                            _uiState.update { it.copy(isSaving = false, availableCategories = catResult.data) }
+                        }
+                        is Result.Error -> {
+                            _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(catResult.error)) }
+                        }
+                        Result.Loading -> Unit
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
+                }
+                Result.Loading -> Unit
             }
         }
     }

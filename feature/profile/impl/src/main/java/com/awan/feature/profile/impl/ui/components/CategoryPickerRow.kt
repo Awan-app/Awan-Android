@@ -4,7 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,9 +30,12 @@ fun CategoryPickerRow(
     selectedCategoryId: String?,
     categories: List<Category>,
     onCategorySelected: (String) -> Unit,
+    onAddCategory: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var newCategoryName by remember { mutableStateOf("") }
     val selected = categories.firstOrNull { it.id == selectedCategoryId }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -76,6 +85,71 @@ fun CategoryPickerRow(
                                 )
                             }
                         )
+                    }
+                }
+                HorizontalDivider(color = AwanTheme.colors.line)
+                AwanDropdownMenuItem(
+                    label = stringResource(R.string.profile_category_add),
+                    onClick = {
+                        expanded = false
+                        showAddDialog = true
+                    },
+                    leading = {
+                        Icon(Icons.Default.Add, null, tint = AwanTheme.colors.sky)
+                    }
+                )
+            }
+        }
+    }
+
+    if (showAddDialog) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { showAddDialog = false }) {
+            AwanCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                contentPadding = PaddingValues(20.dp)
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    AwanText(
+                        text = stringResource(R.string.profile_category_add),
+                        style = AwanTheme.styles.titleText
+                    )
+                    AwanTextField(
+                        value = newCategoryName,
+                        onValueChange = { newCategoryName = it },
+                        placeholder = stringResource(R.string.profile_category_name_placeholder),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        AwanButton(
+                            onClick = {
+                                showAddDialog = false
+                                newCategoryName = ""
+                            },
+                            modifier = Modifier.weight(1f),
+                            variant = AwanButtonVariant.Quiet
+                        ) {
+                            AwanText(stringResource(R.string.profile_cancel))
+                        }
+                        AwanButton(
+                            onClick = {
+                                if (newCategoryName.isNotBlank()) {
+                                    onAddCategory(newCategoryName)
+                                    showAddDialog = false
+                                    newCategoryName = ""
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = newCategoryName.isNotBlank()
+                        ) {
+                            AwanText(stringResource(R.string.profile_save))
+                        }
                     }
                 }
             }

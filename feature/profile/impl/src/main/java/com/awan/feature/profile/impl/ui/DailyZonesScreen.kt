@@ -75,6 +75,9 @@ fun DailyZonesScreen(
                 showAddZoneSheet = false
                 editingZone = null
             },
+            onAddCategory = { name ->
+                onAction(DailyZonesAction.CreateCategory(name))
+            },
             onDelete = { zone ->
                 showAddZoneSheet = false
                 editingZone = null
