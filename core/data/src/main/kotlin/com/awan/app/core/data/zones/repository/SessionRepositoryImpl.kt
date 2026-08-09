@@ -1,11 +1,13 @@
 package com.awan.app.core.data.zones.repository
 
+import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.result.map
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.data.zones.mapper.toDomain
 import com.awan.app.core.data.zones.mapper.toEntity
 import com.awan.app.core.data.zones.remote.SessionRemoteDataSource
+import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.domain.zones.model.Session
 import com.awan.app.core.domain.zones.repository.SessionRepository
 import com.awan.app.core.model.SessionStatus
@@ -18,6 +20,7 @@ import javax.inject.Inject
 class SessionRepositoryImpl @Inject constructor(
     private val sessionRemoteDataSource: SessionRemoteDataSource,
     private val sessionDao: SessionDao,
+    private val connectivityMonitor: NetworkConnectivityMonitor,
 ) : SessionRepository {
 
     private val sessionDateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
@@ -104,13 +107,33 @@ class SessionRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getSession(sessionId: String): Result<Session> =
-        sessionRemoteDataSource.getSession(sessionId).map { it.toDomain() }
+    override suspend fun getSession(sessionId: String): Result<Session> {
+        return when (val result = sessionRemoteDataSource.getSession(sessionId)) {
+            is Result.Success -> {
+                sessionDao.upsertSession(result.data.toEntity())
+                Result.Success(result.data.toDomain())
+            }
+
+            is Result.Error -> {
+                val cached = sessionDao.getSession(sessionId)
+                if (cached != null) {
+                    Result.Success(cached.toDomain())
+                } else {
+                    Result.Error(result.error)
+                }
+            }
+
+            Result.Loading -> Result.Loading
+        }
+    }
 
     override suspend fun updateSession(
         sessionId: String,
         params: UpdateSessionParams
     ): Result<Session> {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return Result.Error(AppError.Network)
+        }
         val result = sessionRemoteDataSource.updateSession(
             sessionId,
             UpdateSessionRequest(
@@ -126,6 +149,9 @@ class SessionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateSessionStatus(sessionId: String, status: SessionStatus): Result<Session> {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return Result.Error(AppError.Network)
+        }
         val result = sessionRemoteDataSource.updateSessionStatus(sessionId, status.name)
         if (result is Result.Success) {
             sessionDao.upsertSession(result.data.toEntity())
@@ -134,6 +160,9 @@ class SessionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun lockSession(sessionId: String): Result<Session> {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return Result.Error(AppError.Network)
+        }
         val result = sessionRemoteDataSource.lockSession(sessionId)
         if (result is Result.Success) {
             sessionDao.upsertSession(result.data.toEntity())
@@ -142,6 +171,9 @@ class SessionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun unlockSession(sessionId: String): Result<Session> {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return Result.Error(AppError.Network)
+        }
         val result = sessionRemoteDataSource.unlockSession(sessionId)
         if (result is Result.Success) {
             sessionDao.upsertSession(result.data.toEntity())
@@ -150,6 +182,9 @@ class SessionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteSession(sessionId: String): Result<Unit> {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return Result.Error(AppError.Network)
+        }
         val result = sessionRemoteDataSource.deleteSession(sessionId)
         if (result is Result.Success) {
             sessionDao.deleteSession(sessionId)

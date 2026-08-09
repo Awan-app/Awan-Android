@@ -1,6 +1,8 @@
 package com.awan.app.core.data.home.repository
 
+import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.data.gamification.GamificationEventBus
 import com.awan.app.core.database.dao.*
 import com.awan.app.core.database.model.*
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
@@ -18,19 +20,23 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import org.junit.Test
 
 
 private class FakeHomeRemoteDataSource : HomeRemoteDataSource {
     var lastUpdate: UpdateArgs? = null
+    var sessionResult: Result<SessionDto> = Result.Error(AppError.NotFound)
+    var taskResult: Result<TaskInfoResponse> = Result.Error(AppError.NotFound)
+
     data class UpdateArgs(val id: String, val status: String?, val locked: Boolean?, val start: String?, val end: String?)
 
     override suspend fun getZonesByDate(date: String): Result<List<ZoneDto>> = Result.Success(emptyList())
     override suspend fun getTasksByDate(date: String): Result<List<TaskWithSessionsDto>> = Result.Success(emptyList())
     override suspend fun getTemplates(): Result<List<WeeklyTemplateDto>> = Result.Success(emptyList())
     override suspend fun getTemplateOverrides(): Result<List<TemplateOverrideDto>> = Result.Success(emptyList())
-    override suspend fun getUserProfile(): Result<CompleteOnboardingResponse> = Result.Error(com.awan.app.core.common.error.AppError.Network)
-    override suspend fun getSession(sessionId: String): Result<SessionDto> = Result.Error(com.awan.app.core.common.error.AppError.NotFound)
-    override suspend fun getTask(taskId: String): Result<TaskInfoResponse> = Result.Error(com.awan.app.core.common.error.AppError.NotFound)
+    override suspend fun getUserProfile(): Result<CompleteOnboardingResponse> = Result.Error(AppError.Network)
+    override suspend fun getSession(sessionId: String): Result<SessionDto> = sessionResult
+    override suspend fun getTask(taskId: String): Result<TaskInfoResponse> = taskResult
 
     override suspend fun completeSession(sessionId: String): Result<CompleteSessionResponse> = error("")
     override suspend fun uncompleteSession(sessionId: String): Result<SessionDto> = error("")
@@ -141,5 +147,70 @@ class HomeRepositoryImplTest {
         override fun observeAllCategories(): Flow<List<CategoryEntity>> = flowOf(emptyList())
         override suspend fun deleteCategory(id: String) {}
         override suspend fun deleteAllCategories() {}
+    }
+
+    private fun createRepository(
+        fakeRemote: HomeRemoteDataSource,
+        sessionDao: SessionDao = dummySessionDao(),
+        taskDao: TaskDao = dummyTaskDao(),
+        connectivityMonitor: NetworkConnectivityMonitor = this.connectivityMonitor
+    ) = HomeRepositoryImpl(
+        remoteDataSource = fakeRemote,
+        userDao = dummyUserDao(),
+        eventBus = GamificationEventBus(),
+        taskDao = taskDao,
+        sessionDao = sessionDao,
+        zoneDao = dummyZoneDao(),
+        templateDao = dummyTemplateDao(),
+        templateOverrideDao = dummyTemplateOverrideDao(),
+        categoryDao = dummyCategoryDao(),
+        connectivityMonitor = connectivityMonitor,
+        ioDispatcher = UnconfinedTestDispatcher(),
+    )
+
+    @Test
+    fun `getSessionDetail returns cached data on remote failure`() = kotlinx.coroutines.test.runTest {
+        val sessionId = "session-123"
+        val taskId = "task-456"
+        
+        val cachedSession = SessionEntity(
+            id = sessionId,
+            taskId = taskId,
+            zoneId = "zone-1",
+            date = "2026-08-05",
+            startTime = "09:00:00",
+            endTime = "10:00:00",
+            status = "SCHEDULED",
+            locked = false
+        )
+        
+        val cachedTask = TaskEntity(
+            id = taskId,
+            title = "Cached Task",
+            description = null,
+            estimatedDuration = 60,
+            status = "SCHEDULED",
+            mandatory = false,
+            estimatedPoints = 5,
+            allowTaskSplitting = false,
+            goalId = null,
+            categoryId = null
+        )
+
+        val sessionDao = object : SessionDao by dummySessionDao() {
+            override suspend fun getSession(id: String) = if (id == sessionId) cachedSession else null
+        }
+        val taskDao = object : TaskDao by dummyTaskDao() {
+            override suspend fun getTask(id: String) = if (id == taskId) cachedTask else null
+        }
+
+        remoteDataSource.sessionResult = Result.Error(AppError.Network)
+        
+        val repository = createRepository(remoteDataSource, sessionDao, taskDao)
+        val result = repository.getSessionDetail(sessionId)
+
+        org.junit.Assert.assertTrue(result is Result.Success)
+        val data = (result as Result.Success).data
+        org.junit.Assert.assertEquals("Cached Task", data.task.title)
     }
 }

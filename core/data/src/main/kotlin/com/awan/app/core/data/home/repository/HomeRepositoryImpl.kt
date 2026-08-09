@@ -140,62 +140,94 @@ class HomeRepositoryImpl @Inject constructor(
             .flowOn(ioDispatcher)
     }
 
-    override suspend fun getSessionDetail(sessionId: String): Result<SessionTaskDetail> {
-        val sessionResult = remoteDataSource.getSession(sessionId)
-        if (sessionResult is Result.Error) {
-            return Result.Error(sessionResult.error)
-        }
-        if (sessionResult !is Result.Success) {
-            return Result.Error(AppError.Unknown(Throwable("Failed to fetch session")))
-        }
+    override suspend fun getSessionDetail(sessionId: String): Result<SessionTaskDetail> =
+        withContext(ioDispatcher) {
+            val sessionResult = remoteDataSource.getSession(sessionId)
+            val sessionDto = when (sessionResult) {
+                is Result.Success -> {
+                    cacheSession(sessionResult.data)
+                    sessionResult.data
+                }
+                is Result.Error -> {
+                    val cached = sessionDao.getSession(sessionId)
+                    if (cached != null) null else return@withContext Result.Error(sessionResult.error)
+                }
+                Result.Loading -> return@withContext Result.Loading
+            }
 
-        val sessionDto = sessionResult.data
-        val taskId = sessionDto.taskId
-        if (taskId.isNullOrBlank()) {
-            return Result.Error(AppError.Unknown(Throwable("Session does not have a valid taskId")))
-        }
+            val sessionDetailInfo = if (sessionDto != null) {
+                SessionDetailInfo(
+                    id = sessionDto.id,
+                    start = java.time.LocalDateTime.parse(sessionDto.start),
+                    end = java.time.LocalDateTime.parse(sessionDto.end),
+                    status = mapStatus(sessionDto.status),
+                    locked = sessionDto.locked,
+                    zoneId = sessionDto.zoneId,
+                    taskId = sessionDto.taskId ?: "",
+                )
+            } else {
+                val cached = sessionDao.getSession(sessionId)!!
+                SessionDetailInfo(
+                    id = cached.id,
+                    start = java.time.LocalDateTime.parse("${cached.date}T${cached.startTime}"),
+                    end = java.time.LocalDateTime.parse("${cached.date}T${cached.endTime}"),
+                    status = mapStatus(cached.status),
+                    locked = cached.locked,
+                    zoneId = cached.zoneId,
+                    taskId = cached.taskId,
+                )
+            }
 
-        val taskResult = remoteDataSource.getTask(taskId)
-        if (taskResult is Result.Error) {
-            return Result.Error(taskResult.error)
-        }
-        if (taskResult !is Result.Success) {
-            return Result.Error(AppError.Unknown(Throwable("Failed to fetch task")))
-        }
+            val taskId = sessionDetailInfo.taskId
+            val taskResult = remoteDataSource.getTask(taskId)
+            val taskDto = when (taskResult) {
+                is Result.Success -> taskResult.data
+                is Result.Error -> {
+                    val cached = taskDao.getTask(taskId)
+                    if (cached != null) null else return@withContext Result.Error(taskResult.error)
+                }
+                Result.Loading -> return@withContext Result.Loading
+            }
 
-        val taskDto = taskResult.data
+            val taskDetailInfo = if (taskDto != null) {
+                TaskDetailInfo(
+                    id = taskDto.id,
+                    title = taskDto.title,
+                    description = taskDto.description,
+                    estimatedDuration = taskDto.estimatedDuration,
+                    status = mapTaskStatus(taskDto.status),
+                    mandatory = taskDto.mandatory ?: false,
+                    estimatedPoints = taskDto.estimatedPoints ?: 0,
+                    allowTaskSplitting = taskDto.allowTaskSplitting ?: false,
+                    goalId = taskDto.goalId,
+                    categoryName = taskDto.category?.name,
+                    dependsOnTaskIds = taskDto.dependsOnTaskIds ?: emptyList(),
+                )
+            } else {
+                val cached = taskDao.getTask(taskId)!!
+                val category = cached.categoryId?.let { categoryDao.getCategory(it) }
+                TaskDetailInfo(
+                    id = cached.id,
+                    title = cached.title,
+                    description = cached.description,
+                    estimatedDuration = cached.estimatedDuration,
+                    status = mapTaskStatus(cached.status),
+                    mandatory = cached.mandatory,
+                    estimatedPoints = cached.estimatedPoints,
+                    allowTaskSplitting = cached.allowTaskSplitting,
+                    goalId = cached.goalId,
+                    categoryName = category?.name,
+                    dependsOnTaskIds = emptyList(), // Local fallback doesn't include deps for now
+                )
+            }
 
-        val sessionDetailInfo = SessionDetailInfo(
-            id = sessionDto.id,
-            start = java.time.LocalDateTime.parse(sessionDto.start),
-            end = java.time.LocalDateTime.parse(sessionDto.end),
-            status = mapStatus(sessionDto.status),
-            locked = sessionDto.locked,
-            zoneId = sessionDto.zoneId,
-            taskId = taskId,
-        )
-
-        val taskDetailInfo = TaskDetailInfo(
-            id = taskDto.id,
-            title = taskDto.title,
-            description = taskDto.description,
-            estimatedDuration = taskDto.estimatedDuration,
-            status = mapTaskStatus(taskDto.status),
-            mandatory = taskDto.mandatory ?: false,
-            estimatedPoints = taskDto.estimatedPoints ?: 0,
-            allowTaskSplitting = taskDto.allowTaskSplitting ?: false,
-            goalId = taskDto.goalId,
-            categoryName = taskDto.category?.name,
-            dependsOnTaskIds = taskDto.dependsOnTaskIds ?: emptyList(),
-        )
-
-        return Result.Success(
-            SessionTaskDetail(
-                session = sessionDetailInfo,
-                task = taskDetailInfo,
+            Result.Success(
+                SessionTaskDetail(
+                    session = sessionDetailInfo,
+                    task = taskDetailInfo,
+                )
             )
-        )
-    }
+        }
 
     override suspend fun completeSession(sessionId: String): Result<SessionReward> =
         withContext(ioDispatcher) {
@@ -358,7 +390,10 @@ class HomeRepositoryImpl @Inject constructor(
         estimatedPoints: Int?,
         mandatory: Boolean?,
         allowTaskSplitting: Boolean?,
-    ): Result<Unit> {
+    ): Result<Unit> = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return@withContext Result.Error(AppError.Network)
+        }
         val request = com.awan.app.core.network.dto.task.TaskUpdateRequest(
             title = title,
             description = description,
@@ -368,16 +403,19 @@ class HomeRepositoryImpl @Inject constructor(
             allowTaskSplitting = allowTaskSplitting,
         )
         val result = remoteDataSource.updateTask(taskId, request)
-        return when (result) {
+        when (result) {
             is Result.Success -> Result.Success(Unit)
             is Result.Error -> Result.Error(result.error)
             else -> Result.Error(AppError.Unknown(Throwable("Failed to update task details")))
         }
     }
 
-    override suspend fun deleteTask(taskId: String): Result<Unit> {
+    override suspend fun deleteTask(taskId: String): Result<Unit> = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return@withContext Result.Error(AppError.Network)
+        }
         val result = remoteDataSource.deleteTask(taskId, cascade = true)
-        return when (result) {
+        when (result) {
             is Result.Success -> Result.Success(Unit)
             is Result.Error -> Result.Error(result.error)
             else -> Result.Error(AppError.Unknown(Throwable("Failed to delete task")))
