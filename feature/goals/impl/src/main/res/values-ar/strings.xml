@@ -15,6 +15,7 @@
     <string name="goals_error_retry">إعادة المحاولة</string>
     <string name="goals_card_state_expanded">موسع</string>
     <string name="goals_card_state_collapsed">مطوي</string>
+    <string name="goal_no_tasks">لا توجد مهام مضافة لهذا الهدف بعد.</string>
     <string name="inbox_status_scheduled">مجدول</string>
     <string name="inbox_status_completed">مكتمل</string>
     <string name="inbox_status_cancelled">ملغى</string>
@@ -25,7 +26,7 @@
     <string name="inbox_title">الوارد</string>
     <string name="inbox_search_placeholder">البحث في المهام...</string>
     <string name="inbox_filter_active_now">نشط الآن</string>
-    <string name="inbox_filter_missed">فائت</string>
+    <string name="inbox_filter_missed">غير منجزة</string>
     <string name="inbox_no_sessions">لا توجد جلسات مرتبطة.</string>
     <string name="inbox_empty_title">كل شيء مكتمل!</string>
     <string name="inbox_empty_subtitle">لا توجد لديك مهام في الوارد.</string>

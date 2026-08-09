@@ -15,6 +15,7 @@
     <string name="goals_error_retry">Retry</string>
     <string name="goals_card_state_expanded">Expanded</string>
     <string name="goals_card_state_collapsed">Collapsed</string>
+    <string name="goal_no_tasks">No tasks added to this goal yet.</string>
     <string name="inbox_status_scheduled">Scheduled</string>
     <string name="inbox_status_completed">Completed</string>
     <string name="inbox_status_cancelled">Cancelled</string>
@@ -25,7 +26,7 @@
     <string name="inbox_title">Inbox</string>
     <string name="inbox_search_placeholder">Search tasks...</string>
     <string name="inbox_filter_active_now">Active Now</string>
-    <string name="inbox_filter_missed">Missed</string>
+    <string name="inbox_filter_missed">Unfinished</string>
     <string name="inbox_no_sessions">No sessions attached.</string>
     <string name="inbox_empty_title">All caught up!</string>
     <string name="inbox_empty_subtitle">You have no tasks in your inbox.</string>
