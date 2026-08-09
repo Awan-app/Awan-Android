@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_buying">فشل شراء العنصر. يرجى المحاولة مرة أخرى.</string>
+    <string name="error_equipping">فشل تجهيز العنصر. يرجى المحاولة مرة أخرى.</string>
+    <string name="marketplace_title">المتجر</string>
+    <string name="my_collection_title">مجموعتي</string>
+</resources>

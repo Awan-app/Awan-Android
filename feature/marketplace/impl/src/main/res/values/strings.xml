@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_buying">Failed to buy item. Please try again.</string>
+    <string name="error_equipping">Failed to equip item. Please try again.</string>
+    <string name="marketplace_title">Marketplace</string>
+    <string name="my_collection_title">My Collection</string>
+    <string name="category_all">All</string>
+    <string name="search_placeholder">Search items...</string>
+    <string name="item_owned">Owned</string>
+    <string name="action_equipped">Equipped</string>
+    <string name="action_equip">Equip</string>
+    <string name="action_buy">Buy for %1$d points</string>
+</resources>
