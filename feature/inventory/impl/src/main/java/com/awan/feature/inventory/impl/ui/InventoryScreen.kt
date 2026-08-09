@@ -349,52 +349,64 @@ internal fun CustomizationDetailsSheet(
     onEquip: () -> Unit,
 ) {
     val isEquipped = customization.isEquipped
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = AwanTheme.spacing.md, vertical = AwanTheme.spacing.sm),
-        verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
+            .verticalScroll(rememberScrollState()),
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1.4f)
-                .clip(AwanTheme.shapes.card)
-                .testTag("inventory-details-artwork")
-                .detailsArtworkEdgeShadow(
+                .padding(horizontal = AwanTheme.spacing.md, vertical = AwanTheme.spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.4f)
+                    .clip(AwanTheme.shapes.card)
+                    .testTag("inventory-details-artwork"),
+            ) {
+                CustomizationArt(
+                    customization = customization,
+                    modifier = Modifier.fillMaxSize(),
+                    showRarityBackdrop = false,
+                )
+            }
+            AwanText(customization.name, style = AwanTheme.styles.headingText)
+            AwanText(
+                stringResource(R.string.inventory_details_rarity, rarityLabel(customization.rarity)),
+                style = AwanTheme.styles.metaText.copy(color = rarityAccent(customization.rarity)),
+            )
+            AwanText(
+                stringResource(R.string.inventory_details_type, typeLabel(customization.type)),
+                style = AwanTheme.styles.metaText,
+            )
+            AwanText(customization.description, style = AwanTheme.styles.bodySecondaryText)
+            AwanButton(
+                onClick = onEquip,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = state.isOnline && !isEquipped,
+                isLoading = state.equippingItemId == customization.itemId,
+                variant = if (isEquipped) AwanButtonVariant.Secondary else AwanButtonVariant.Primary,
+            ) {
+                AwanText(
+                    stringResource(if (isEquipped) R.string.inventory_equipped else R.string.inventory_equip),
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .detailsSheetEdgeShadow(
                     accent = rarityAccent(customization.rarity),
+                    artworkAspectRatio = 1.4f,
+                    horizontalPadding = AwanTheme.spacing.md,
+                    topPadding = AwanTheme.spacing.sm,
                     edgeDepth = AwanTheme.spacing.lg,
                 ),
-        ) {
-            CustomizationArt(
-                customization = customization,
-                modifier = Modifier.fillMaxSize(),
-                showRarityBackdrop = false,
-            )
-        }
-        AwanText(customization.name, style = AwanTheme.styles.headingText)
-        AwanText(
-            stringResource(R.string.inventory_details_rarity, rarityLabel(customization.rarity)),
-            style = AwanTheme.styles.metaText.copy(color = rarityAccent(customization.rarity)),
         )
-        AwanText(
-            stringResource(R.string.inventory_details_type, typeLabel(customization.type)),
-            style = AwanTheme.styles.metaText,
-        )
-        AwanText(customization.description, style = AwanTheme.styles.bodySecondaryText)
-        AwanButton(
-            onClick = onEquip,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = state.isOnline && !isEquipped,
-            isLoading = state.equippingItemId == customization.itemId,
-            variant = if (isEquipped) AwanButtonVariant.Secondary else AwanButtonVariant.Primary,
-        ) {
-            AwanText(
-                stringResource(if (isEquipped) R.string.inventory_equipped else R.string.inventory_equip),
-            )
-        }
     }
 }
 
@@ -433,18 +445,27 @@ private fun CustomizationArt(
     }
 }
 
-private fun Modifier.detailsArtworkEdgeShadow(accent: Color, edgeDepth: Dp): Modifier = drawWithCache {
+private fun Modifier.detailsSheetEdgeShadow(
+    accent: Color,
+    artworkAspectRatio: Float,
+    horizontalPadding: Dp,
+    topPadding: Dp,
+    edgeDepth: Dp,
+) = drawWithCache {
+    val artworkWidth = (size.width - (horizontalPadding.toPx() * 2f)).coerceAtLeast(0f)
+    val artworkBottom = (topPadding.toPx() + artworkWidth / artworkAspectRatio)
+        .coerceAtMost(size.height)
     val edgeSize = edgeDepth.toPx().coerceAtMost(size.width / 2f)
     val edgeColor = accent.copy(alpha = 0.24f)
-    val leftBrush = Brush.horizontalGradient(
+    val leftBrush = Brush.linearGradient(
         colors = listOf(edgeColor, Color.Transparent),
-        startX = 0f,
-        endX = edgeSize,
+        start = Offset(0f, 0f),
+        end = Offset(edgeSize, artworkBottom),
     )
-    val rightBrush = Brush.horizontalGradient(
-        colors = listOf(Color.Transparent, edgeColor),
-        startX = size.width - edgeSize,
-        endX = size.width,
+    val rightBrush = Brush.linearGradient(
+        colors = listOf(edgeColor, Color.Transparent),
+        start = Offset(size.width, 0f),
+        end = Offset(size.width - edgeSize, artworkBottom),
     )
     val topBrush = Brush.verticalGradient(
         colors = listOf(edgeColor, Color.Transparent),
@@ -454,11 +475,11 @@ private fun Modifier.detailsArtworkEdgeShadow(accent: Color, edgeDepth: Dp): Mod
 
     onDrawWithContent {
         drawContent()
-        drawRect(leftBrush, topLeft = Offset.Zero, size = Size(edgeSize, size.height))
+        drawRect(leftBrush, topLeft = Offset.Zero, size = Size(edgeSize, artworkBottom))
         drawRect(
             rightBrush,
             topLeft = Offset(size.width - edgeSize, 0f),
-            size = Size(edgeSize, size.height),
+            size = Size(edgeSize, artworkBottom),
         )
         drawRect(topBrush, topLeft = Offset.Zero, size = Size(size.width, edgeSize))
     }

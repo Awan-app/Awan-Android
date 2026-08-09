@@ -29,6 +29,6 @@ Replace the centered radial gradient in the details bottom sheet with a rarity-t
 
 ## Implementation notes (what actually differed)
 
-- The details sheet now uses the full-width fixed-aspect artwork frame as the gradient host. Rarity-colored left, right, and top fades are drawn after the neutral artwork and clipped to that frame, so they stop before the detail fields.
-- The grid cards retain their existing radial rarity backdrop. Added a details artwork semantics tag and renamed the details preview to expose the edge-shadow treatment.
+- The details sheet now draws a rarity-colored left, right, and top overlay from the sheet bounds. Its diagonal side fades taper downward and stop at the fixed-aspect artwork bottom, leaving the item details below untreated.
+- The grid cards retain their existing radial rarity backdrop; the details artwork remains neutral. Added a details artwork semantics tag and renamed the details preview to expose the sheet-level edge-shadow treatment.
 - Inventory unit tests, lint, Android-test compilation, and `:app:assembleDebug` passed. Connected Compose execution remains unavailable because no Android device is connected.
