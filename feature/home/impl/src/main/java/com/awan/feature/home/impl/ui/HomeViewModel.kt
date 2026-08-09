@@ -467,11 +467,6 @@ class HomeViewModel @Inject constructor(
                 params = UpdateSessionParams(
                     start = startTime,
                     end = endTime,
-                    status = if (sessionToSync.status == TaskStatus.Completed) {
-                        SessionStatus.COMPLETED
-                    } else {
-                        SessionStatus.SCHEDULED
-                    }
                 )
             )
         }
