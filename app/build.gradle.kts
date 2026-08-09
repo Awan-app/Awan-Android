@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.awan.android.hilt)
     alias(libs.plugins.awan.android.workmanager)
     alias(libs.plugins.jetbrains.kotlin.serialization)
+    alias(libs.plugins.google.services)
 }
 
 

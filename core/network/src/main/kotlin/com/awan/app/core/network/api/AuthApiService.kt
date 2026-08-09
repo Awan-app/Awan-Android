@@ -1,6 +1,7 @@
 package com.awan.app.core.network.api
 
 import com.awan.app.core.network.dto.auth.AuthTokensDto
+import com.awan.app.core.network.dto.auth.FirebaseAuthRequest
 import com.awan.app.core.network.dto.auth.LogoutRequest
 import com.awan.app.core.network.dto.auth.RefreshTokenRequest
 import com.awan.app.core.network.dto.auth.RequestOtpRequest
@@ -17,6 +18,9 @@ interface AuthApiService {
 
     @POST("v1/auth/otp/verify")
     suspend fun verifyOtp(@Body request: VerifyOtpRequest): VerifyOtpResponse
+
+    @POST("v1/auth/firebase")
+    suspend fun firebaseAuth(@Body request: FirebaseAuthRequest): VerifyOtpResponse
 
     @POST("v1/auth/refresh")
     suspend fun refreshToken(@Body request: RefreshTokenRequest): AuthTokensDto
