@@ -47,39 +47,45 @@ fun AwanUserAvatar(
 
     Box(
         modifier = modifier
-            .then(avatarSemantics)
-            .clip(CircleShape)
-            .background(backgroundColor),
+            .then(avatarSemantics),
         contentAlignment = Alignment.Center,
     ) {
-        if (profilePictureUrl != null) {
-            AwanRemoteImage(url = profilePictureUrl, modifier = Modifier.fillMaxSize())
-        } else {
-            val celestialColor by animateColorAsState(
-                targetValue = if (isDark) AwanTheme.colors.textPrimary else AwanTheme.colors.zoneTangerine,
-                animationSpec = tween(1000, easing = LinearOutSlowInEasing),
-                label = "avatarCelestial",
-            )
-            Icon(
-                imageVector = if (isDark) Icons.Default.NightsStay else Icons.Default.WbSunny,
-                contentDescription = null,
-                tint = celestialColor.copy(alpha = 0.7f),
-                modifier = Modifier
-                    .size(32.dp)
-                    .align(Alignment.TopEnd)
-                    .offset(x = 4.dp, y = (-4).dp)
-                    .graphicsLayer { rotationZ = if (isDark) -15f else 0f },
-            )
-            AwanMascot(
-                expression = if (isDark) MascotExpression.Idle else MascotExpression.Greet,
-                blinkEnabled = !isDark,
-                width = 64.dp,
-                modifier = Modifier.graphicsLayer {
-                    val scale = if (isDark) 1f else 1.1f
-                    scaleX = scale
-                    scaleY = scale
-                },
-            )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(CircleShape)
+                .background(backgroundColor),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (profilePictureUrl != null) {
+                AwanRemoteImage(url = profilePictureUrl, modifier = Modifier.fillMaxSize())
+            } else {
+                val celestialColor by animateColorAsState(
+                    targetValue = if (isDark) AwanTheme.colors.textPrimary else AwanTheme.colors.zoneTangerine,
+                    animationSpec = tween(1000, easing = LinearOutSlowInEasing),
+                    label = "avatarCelestial",
+                )
+                Icon(
+                    imageVector = if (isDark) Icons.Default.NightsStay else Icons.Default.WbSunny,
+                    contentDescription = null,
+                    tint = celestialColor.copy(alpha = 0.7f),
+                    modifier = Modifier
+                        .size(32.dp)
+                        .align(Alignment.TopEnd)
+                        .offset(x = 4.dp, y = (-4).dp)
+                        .graphicsLayer { rotationZ = if (isDark) -15f else 0f },
+                )
+                AwanMascot(
+                    expression = if (isDark) MascotExpression.Idle else MascotExpression.Greet,
+                    blinkEnabled = !isDark,
+                    width = 64.dp,
+                    modifier = Modifier.graphicsLayer {
+                        val scale = if (isDark) 1f else 1.1f
+                        scaleX = scale
+                        scaleY = scale
+                    },
+                )
+            }
         }
         if (frameImageUrl != null) {
             AwanRemoteImage(

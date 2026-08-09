@@ -71,7 +71,10 @@ fun ProfileHeaderCard(
                 )
                 if (uiState.isUploadingPicture) {
                     Box(
-                        modifier = Modifier.fillMaxSize().background(AwanTheme.colors.surface.copy(alpha = 0.6f)),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(AwanTheme.colors.surface.copy(alpha = 0.6f)),
                         contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator(
