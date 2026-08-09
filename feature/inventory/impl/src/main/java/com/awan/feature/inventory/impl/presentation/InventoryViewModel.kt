@@ -61,7 +61,7 @@ class InventoryViewModel @Inject constructor(
             when (val result = refreshInventory()) {
                 is Result.Error -> _state.update { it.copy(isRefreshing = false, isLoading = false, error = result.error.toUiText()) }
                 is Result.Success -> _state.update { it.copy(isRefreshing = false, isLoading = false) }
-                Result.Loading -> Unit
+                Result.Loading -> _state.update { it.copy(isRefreshing = false, isLoading = false) }
             }
         }
     }
