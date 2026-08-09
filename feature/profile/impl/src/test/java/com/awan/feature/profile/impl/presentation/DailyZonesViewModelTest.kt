@@ -1,5 +1,6 @@
 package com.awan.feature.profile.impl.presentation
 
+import com.awan.app.core.domain.category.usecase.CreateCategoryUseCase
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
@@ -30,16 +31,19 @@ class DailyZonesViewModelTest {
     private val clock = Clock.fixed(Instant.parse("2026-08-10T10:00:00Z"), ZoneId.of("UTC")) // Monday
 
     private lateinit var zonesRepository: FakeZonesRepository
+    private lateinit var categoryRepository: FakeCategoryRepository
     private lateinit var viewModel: DailyZonesViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         zonesRepository = FakeZonesRepository()
+        categoryRepository = FakeCategoryRepository()
         viewModel = DailyZonesViewModel(
             getWeeklyTemplatesUseCase = GetWeeklyTemplatesUseCase(zonesRepository),
             getTemplateOverridesUseCase = GetTemplateOverridesUseCase(zonesRepository),
-            getCategoriesUseCase = GetCategoriesUseCase(FakeCategoryRepository()),
+            getCategoriesUseCase = GetCategoriesUseCase(categoryRepository),
+            createCategoryUseCase = CreateCategoryUseCase(categoryRepository),
             updateTemplateZonesUseCase = UpdateTemplateZonesUseCase(zonesRepository),
             updateOverrideZonesUseCase = UpdateOverrideZonesUseCase(zonesRepository),
             clock = clock
