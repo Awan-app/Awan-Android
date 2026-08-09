@@ -22,13 +22,15 @@ import com.awan.app.core.designsystem.TaskCategory
 import com.awan.app.core.designsystem.TaskStatus
 import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.model.SessionStatus
-import com.awan.app.core.model.UpdateSessionParams
 import com.awan.app.core.domain.home.usecase.GetDayScheduleUseCase
 import com.awan.app.core.domain.home.usecase.GetSessionDetailUseCase
 import com.awan.app.core.domain.home.usecase.UpdateTaskDetailUseCase
 import com.awan.app.core.domain.home.usecase.DeleteSessionUseCase
 import com.awan.app.core.domain.home.usecase.DeleteTaskUseCase
-import com.awan.app.core.domain.zones.usecase.UpdateSessionUseCase
+import com.awan.app.core.domain.home.usecase.CompleteSessionUseCase
+import com.awan.app.core.domain.home.usecase.UncompleteSessionUseCase
+import com.awan.app.core.domain.home.usecase.MoveSessionUseCase
+import com.awan.app.core.domain.home.usecase.UpdateSessionLockUseCase
 import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
 import com.awan.feature.home.impl.ui.components.calculateDurationMinutes
 import com.awan.feature.home.impl.ui.components.calculateEnd
@@ -61,7 +63,10 @@ class HomeViewModel @Inject constructor(
     private val updateTaskDetailUseCase: UpdateTaskDetailUseCase,
     private val deleteSessionUseCase: DeleteSessionUseCase,
     private val deleteTaskUseCase: DeleteTaskUseCase,
-    private val updateSessionUseCase: UpdateSessionUseCase,
+    private val completeSessionUseCase: CompleteSessionUseCase,
+    private val uncompleteSessionUseCase: UncompleteSessionUseCase,
+    private val moveSessionUseCase: MoveSessionUseCase,
+    private val updateSessionLockUseCase: UpdateSessionLockUseCase,
     private val getProfileUseCase: GetProfileUseCase,
 ) : ViewModel() {
 
@@ -382,23 +387,11 @@ class HomeViewModel @Inject constructor(
         val previousStatus = sessionToSync.status
 
         viewModelScope.launch {
-            val date = _uiState.value.selectedDate
-            val startTime = date.atStartOfDay().plusMinutes(sessionToSync.startMinutes.toLong())
-            val endTime = startTime.plusMinutes(sessionToSync.durationMinutes.toLong())
-            val sessionStatusEnum = if (isCompleting) {
-                SessionStatus.COMPLETED
+            val result = if (isCompleting) {
+                completeSessionUseCase(sessionId)
             } else {
-                SessionStatus.SCHEDULED
+                uncompleteSessionUseCase(sessionId)
             }
-
-            val result = updateSessionUseCase(
-                sessionId = sessionToSync.id,
-                params = UpdateSessionParams(
-                    start = startTime,
-                    end = endTime,
-                    status = sessionStatusEnum
-                )
-            )
             
             if (result is Result.Error) {
                 restoreSessionStatus(sessionId, previousStatus)
@@ -460,14 +453,13 @@ class HomeViewModel @Inject constructor(
         val date = _uiState.value.selectedDate
         val startTime = date.atStartOfDay().plusMinutes(sessionToSync.startMinutes.toLong())
         val endTime = startTime.plusMinutes(sessionToSync.durationMinutes.toLong())
+        val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
         viewModelScope.launch {
-            updateSessionUseCase(
+            moveSessionUseCase(
                 sessionId = sessionToSync.id,
-                params = UpdateSessionParams(
-                    start = startTime,
-                    end = endTime,
-                )
+                startIso = startTime.format(dtFormatter),
+                endIso = endTime.format(dtFormatter),
             )
         }
     }
@@ -491,24 +483,17 @@ class HomeViewModel @Inject constructor(
         }
 
         val date = currentState.selectedDate
+        val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
         viewModelScope.launch {
             for (session in resequencedZoneSessions) {
                 val startTime = date.atStartOfDay().plusMinutes(session.startMinutes.toLong())
                 val endTime = startTime.plusMinutes(session.durationMinutes.toLong())
-                val sessionStatusEnum = if (session.status == TaskStatus.Completed) {
-                    SessionStatus.COMPLETED
-                } else {
-                    SessionStatus.SCHEDULED
-                }
 
-                val result = updateSessionUseCase(
+                val result = moveSessionUseCase(
                     sessionId = session.id,
-                    params = UpdateSessionParams(
-                        start = startTime,
-                        end = endTime,
-                        status = sessionStatusEnum
-                    )
+                    startIso = startTime.format(dtFormatter),
+                    endIso = endTime.format(dtFormatter),
                 )
                 if (result is Result.Error) {
                     _uiState.update { it.copy(errorMessage = result.error.toReadableMessage()) }
@@ -646,9 +631,9 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val result = updateSessionUseCase(
+            val result = updateSessionLockUseCase(
                 sessionId = sessionId,
-                params = UpdateSessionParams(locked = newLocked)
+                locked = newLocked
             )
             if (result is Result.Error) {
                 _uiState.update { state ->
@@ -751,13 +736,11 @@ class HomeViewModel @Inject constructor(
             var newEnd = detail.session.end
             if (newDuration != currentDuration) {
                 newEnd = calculateEnd(detail.session.start, newDuration)
-                updateSessionUseCase(
+                val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                moveSessionUseCase(
                     sessionId = sessionId,
-                    params = UpdateSessionParams(
-                        start = detail.session.start,
-                        end = newEnd,
-                        status = detail.session.status
-                    )
+                    startIso = detail.session.start.format(dtFormatter),
+                    endIso = newEnd.format(dtFormatter),
                 )
             }
 
