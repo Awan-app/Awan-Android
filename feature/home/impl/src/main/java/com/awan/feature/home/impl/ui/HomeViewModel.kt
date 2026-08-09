@@ -19,7 +19,8 @@ import com.awan.app.core.designsystem.TaskStatus
 import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.domain.home.model.DaySession
 import com.awan.app.core.domain.home.model.DayZone
-import com.awan.app.core.domain.home.model.SessionStatus
+import com.awan.app.core.model.SessionStatus
+import com.awan.app.core.model.UpdateSessionParams
 import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.domain.home.usecase.GetDayScheduleUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,6 +46,7 @@ import com.awan.app.core.domain.home.usecase.UpdateTaskDetailUseCase
 import com.awan.app.core.domain.home.usecase.DeleteSessionUseCase
 import com.awan.app.core.domain.home.usecase.DeleteTaskUseCase
 import com.awan.feature.home.impl.ui.components.calculateDurationMinutes
+import com.awan.feature.home.impl.ui.components.calculateEnd
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -285,16 +287,15 @@ class HomeViewModel @Inject constructor(
         val date = _uiState.value.selectedDate
         val startTime = date.atStartOfDay().plusMinutes(sessionToSync.startMinutes.toLong())
         val endTime = startTime.plusMinutes(sessionToSync.durationMinutes.toLong())
-        val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
-        val startIso = startTime.format(dtFormatter)
-        val endIso = endTime.format(dtFormatter)
 
         viewModelScope.launch {
             homeRepository.updateSessionStatus(
                 sessionId = sessionToSync.id,
-                status = sessionStatusEnum,
-                startIso = startIso,
-                endIso = endIso,
+                params = UpdateSessionParams(
+                    start = startTime,
+                    end = endTime,
+                    status = sessionStatusEnum
+                )
             )
         }
     }
@@ -334,20 +335,19 @@ class HomeViewModel @Inject constructor(
         val date = _uiState.value.selectedDate
         val startTime = date.atStartOfDay().plusMinutes(sessionToSync.startMinutes.toLong())
         val endTime = startTime.plusMinutes(sessionToSync.durationMinutes.toLong())
-        val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
-        val startIso = startTime.format(dtFormatter)
-        val endIso = endTime.format(dtFormatter)
 
         viewModelScope.launch {
             homeRepository.updateSessionStatus(
                 sessionId = sessionToSync.id,
-                status = if (sessionToSync.status == TaskStatus.Completed) {
-                    SessionStatus.COMPLETED
-                } else {
-                    SessionStatus.SCHEDULED
-                },
-                startIso = startIso,
-                endIso = endIso,
+                params = UpdateSessionParams(
+                    start = startTime,
+                    end = endTime,
+                    status = if (sessionToSync.status == TaskStatus.Completed) {
+                        SessionStatus.COMPLETED
+                    } else {
+                        SessionStatus.SCHEDULED
+                    }
+                )
             )
         }
     }
@@ -371,14 +371,11 @@ class HomeViewModel @Inject constructor(
         }
 
         val date = currentState.selectedDate
-        val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
         viewModelScope.launch {
             for (session in resequencedZoneSessions) {
                 val startTime = date.atStartOfDay().plusMinutes(session.startMinutes.toLong())
                 val endTime = startTime.plusMinutes(session.durationMinutes.toLong())
-                val startIso = startTime.format(dtFormatter)
-                val endIso = endTime.format(dtFormatter)
                 val sessionStatusEnum = if (session.status == TaskStatus.Completed) {
                     SessionStatus.COMPLETED
                 } else {
@@ -387,9 +384,11 @@ class HomeViewModel @Inject constructor(
 
                 val result = homeRepository.updateSessionStatus(
                     sessionId = session.id,
-                    status = sessionStatusEnum,
-                    startIso = startIso,
-                    endIso = endIso,
+                    params = UpdateSessionParams(
+                        start = startTime,
+                        end = endTime,
+                        status = sessionStatusEnum
+                    )
                 )
                 if (result is Result.Error) {
                     _uiState.update { it.copy(errorMessage = result.error.toReadableMessage()) }
@@ -427,16 +426,14 @@ class HomeViewModel @Inject constructor(
                     _uiState.update { state ->
                         val taskId = result.data.task.id
                         val taskSessions = state.sessions.filter { it.taskId == taskId }.map { s ->
-                            val startMins = s.startMinutes
-                            val endMins = s.startMinutes + s.durationMinutes
-                            val startStr = com.awan.app.core.designsystem.formatTime(startMins)
-                            val endStr = com.awan.app.core.designsystem.formatTime(endMins)
+                            val startDateTime = state.selectedDate.atStartOfDay().plusMinutes(s.startMinutes.toLong())
+                            val endDateTime = startDateTime.plusMinutes(s.durationMinutes.toLong())
                             val isDone = s.status == com.awan.app.core.designsystem.TaskStatus.Completed
                             com.awan.app.core.model.SessionDetailInfo(
                                 id = s.id,
-                                start = startStr,
-                                end = endStr,
-                                status = if (isDone) "COMPLETED" else "SCHEDULED",
+                                start = startDateTime,
+                                end = endDateTime,
+                                status = if (isDone) SessionStatus.COMPLETED else SessionStatus.SCHEDULED,
                                 locked = s.isFixed,
                                 zoneId = s.zoneId,
                                 taskId = taskId,
@@ -483,16 +480,17 @@ class HomeViewModel @Inject constructor(
         val currentDetail = currentDialogState.detail ?: return
         val sessionId = currentDialogState.sessionId
 
-        val isCurrentlyCompleted = currentDetail.session.status.uppercase() == "COMPLETED"
-        val newStatusStr = if (isCurrentlyCompleted) "SCHEDULED" else "COMPLETED"
+        val isCurrentlyCompleted = currentDetail.session.status == SessionStatus.COMPLETED
+        val newStatus = if (isCurrentlyCompleted) SessionStatus.SCHEDULED else SessionStatus.COMPLETED
+        val newTaskStatus = if (isCurrentlyCompleted) com.awan.app.core.model.TaskStatus.SCHEDULED else com.awan.app.core.model.TaskStatus.COMPLETED
 
         toggleSessionStatus(sessionId)
 
         _uiState.update { state ->
             val updatedDetail = state.selectedSessionDetailState?.detail?.let { detail ->
                 detail.copy(
-                    session = detail.session.copy(status = newStatusStr),
-                    task = detail.task.copy(status = newStatusStr),
+                    session = detail.session.copy(status = newStatus),
+                    task = detail.task.copy(status = newTaskStatus),
                 )
             }
             state.copy(
@@ -626,32 +624,26 @@ class HomeViewModel @Inject constructor(
             )
 
             // 2. Update specific session end time if duration changed
-            val currentDuration = calculateDurationMinutes(detail.session.start, detail.session.end) ?: 30
-            var newEndIso = detail.session.end
+            val currentDuration = calculateDurationMinutes(detail.session.start, detail.session.end)
+            var newEnd = detail.session.end
             if (newDuration != currentDuration) {
-                val calculatedEnd = com.awan.feature.home.impl.ui.components.calculateEndIso(detail.session.start, newDuration)
-                if (calculatedEnd != null) {
-                    newEndIso = calculatedEnd
-                    val currentStatus = if (detail.session.status.uppercase() == "COMPLETED") {
-                        com.awan.app.core.domain.home.model.SessionStatus.COMPLETED
-                    } else {
-                        com.awan.app.core.domain.home.model.SessionStatus.SCHEDULED
-                    }
-                    homeRepository.updateSessionStatus(
-                        sessionId = sessionId,
-                        status = currentStatus,
-                        startIso = detail.session.start,
-                        endIso = calculatedEnd,
+                newEnd = calculateEnd(detail.session.start, newDuration)
+                homeRepository.updateSessionStatus(
+                    sessionId = sessionId,
+                    params = UpdateSessionParams(
+                        start = detail.session.start,
+                        end = newEnd,
+                        status = detail.session.status
                     )
-                }
+                )
             }
 
             if (taskResult is Result.Success) {
                 _uiState.update { state ->
                     val updatedDetail = state.selectedSessionDetailState?.detail?.let { d ->
-                        val updatedSession = d.session.copy(end = newEndIso)
+                        val updatedSession = d.session.copy(end = newEnd)
                         val updatedRelatedSessions = d.relatedSessions.map { s ->
-                            if (s.id == sessionId) s.copy(end = newEndIso) else s
+                            if (s.id == sessionId) s.copy(end = newEnd) else s
                         }
                         d.copy(
                             session = updatedSession,

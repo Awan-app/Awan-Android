@@ -16,7 +16,6 @@ import com.awan.app.core.data.home.remote.HomeRemoteDataSource
 import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.domain.home.model.DaySession
 import com.awan.app.core.domain.home.model.DayZone
-import com.awan.app.core.domain.home.model.SessionStatus
 import com.awan.app.core.domain.home.model.UserProfileInfo
 import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
@@ -33,8 +32,11 @@ import java.time.LocalTime
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.awan.app.core.model.SessionDetailInfo
+import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.SessionTaskDetail
 import com.awan.app.core.model.TaskDetailInfo
+import com.awan.app.core.model.TaskStatus
+import com.awan.app.core.model.UpdateSessionParams
 
 @Singleton
 class HomeRepositoryImpl @Inject constructor(
@@ -161,9 +163,9 @@ class HomeRepositoryImpl @Inject constructor(
 
         val sessionDetailInfo = SessionDetailInfo(
             id = sessionDto.id,
-            start = sessionDto.start,
-            end = sessionDto.end,
-            status = sessionDto.status ?: "SCHEDULED",
+            start = java.time.LocalDateTime.parse(sessionDto.start),
+            end = java.time.LocalDateTime.parse(sessionDto.end),
+            status = mapStatus(sessionDto.status),
             locked = sessionDto.locked,
             zoneId = sessionDto.zoneId,
             taskId = taskId,
@@ -174,7 +176,7 @@ class HomeRepositoryImpl @Inject constructor(
             title = taskDto.title,
             description = taskDto.description,
             estimatedDuration = taskDto.estimatedDuration,
-            status = taskDto.status ?: "SCHEDULED",
+            status = mapTaskStatus(taskDto.status),
             mandatory = taskDto.mandatory ?: false,
             estimatedPoints = taskDto.estimatedPoints ?: 0,
             allowTaskSplitting = taskDto.allowTaskSplitting ?: false,
@@ -193,26 +195,17 @@ class HomeRepositoryImpl @Inject constructor(
 
     override suspend fun updateSessionStatus(
         sessionId: String,
-        status: SessionStatus,
-        locked: Boolean?,
-        startIso: String?,
-        endIso: String?,
+        params: UpdateSessionParams,
     ): Result<Unit> = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) {
             return@withContext Result.Error(AppError.Network)
         }
-        val statusString = when (status) {
-            SessionStatus.COMPLETED -> "COMPLETED"
-            SessionStatus.IN_PROGRESS -> "IN_PROGRESS"
-            SessionStatus.CANCELLED -> "CANCELLED"
-            SessionStatus.SCHEDULED -> "SCHEDULED"
-        }
         val result = remoteDataSource.updateSession(
             sessionId = sessionId,
-            status = statusString,
-            locked = locked,
-            startIso = startIso,
-            endIso = endIso,
+            status = params.status?.name,
+            locked = params.locked,
+            startIso = params.start?.toString(),
+            endIso = params.end?.toString(),
         )
         if (result is Result.Success) {
             val dto = result.data
@@ -220,7 +213,7 @@ class HomeRepositoryImpl @Inject constructor(
             if (existing != null) {
                 sessionDao.upsertSession(
                     existing.copy(
-                        status = dto.status ?: statusString,
+                        status = dto.status ?: params.status?.name ?: existing.status,
                         startTime = extractTimeFromIso(dto.start, existing.startTime),
                         endTime = extractTimeFromIso(dto.end, existing.endTime),
                         locked = dto.locked,
@@ -242,12 +235,21 @@ class HomeRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun mapStatus(statusStr: String): SessionStatus {
-        return when (statusStr.uppercase()) {
-            "COMPLETED" -> SessionStatus.COMPLETED
-            "IN_PROGRESS" -> SessionStatus.IN_PROGRESS
-            "CANCELLED" -> SessionStatus.CANCELLED
-            else -> SessionStatus.SCHEDULED
+    private fun mapStatus(statusStr: String?): SessionStatus {
+        if (statusStr == null) return SessionStatus.SCHEDULED
+        return try {
+            SessionStatus.valueOf(statusStr.uppercase())
+        } catch (e: Exception) {
+            SessionStatus.UNKNOWN
+        }
+    }
+
+    private fun mapTaskStatus(statusStr: String?): TaskStatus {
+        if (statusStr == null) return TaskStatus.SCHEDULED
+        return try {
+            TaskStatus.valueOf(statusStr.uppercase())
+        } catch (e: Exception) {
+            TaskStatus.UNKNOWN
         }
     }
 

@@ -23,6 +23,8 @@ import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 
+import java.time.LocalDate
+
 @Composable
 fun DaySelector(
     selectedDays: Set<DayOfWeek>,
@@ -30,7 +32,8 @@ fun DaySelector(
     modifier: Modifier = Modifier,
     assignedDays: Set<DayOfWeek> = emptySet(),
     dayColors: Map<DayOfWeek, Color> = emptyMap(),
-    showTodayIndicator: Boolean = true
+    showTodayIndicator: Boolean = true,
+    today: LocalDate = LocalDate.now()
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -39,7 +42,7 @@ fun DaySelector(
         DayOfWeek.entries.forEach { day ->
             val isSelected = selectedDays.contains(day)
             val isAssigned = assignedDays.contains(day)
-            val isToday = if (showTodayIndicator) DailyZonesHelper.isToday(day) else false
+            val isToday = if (showTodayIndicator) DailyZonesHelper.isToday(day, today) else false
             val templateColor = dayColors[day]
             val abbreviation = stringResource(DailyZonesHelper.getDayAbbreviationRes(day))
 

@@ -1,8 +1,5 @@
 package com.awan.feature.profile.impl.helpers
 
-import com.awan.app.core.common.error.AppError
-import com.awan.app.core.common.error.toUiText
-import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.feature.profile.impl.R
@@ -54,18 +51,6 @@ object DailyZonesHelper {
         }
     }
 
-    fun zonesErrorToUiText(error: AppError): UiText = when {
-        error is AppError.Api && error.errorCode == "ZONE_OVERLAP" ->
-            UiText.StringResource(R.string.profile_daily_zones_error_overlap)
-        error is AppError.Api && error.errorCode == "DAY_ALREADY_ASSIGNED" ->
-            UiText.StringResource(R.string.profile_daily_zones_error_day_assigned)
-        error is AppError.Network || error is AppError.Timeout ->
-            UiText.StringResource(R.string.profile_daily_zones_error_network)
-        error is AppError.Api ->
-            UiText.StringResource(R.string.profile_daily_zones_error_generic)
-        else -> error.toUiText()
-    }
-
     fun getDayNameRes(day: DayOfWeek): Int = when (day) {
         DayOfWeek.MONDAY -> R.string.profile_day_monday
         DayOfWeek.TUESDAY -> R.string.profile_day_tuesday
@@ -97,7 +82,7 @@ object DailyZonesHelper {
         }
     }
 
-    fun getCurrentDay(date: LocalDate = LocalDate.now()): DayOfWeek {
+    fun getCurrentDay(date: LocalDate): DayOfWeek {
         val javaDay = date.dayOfWeek
         return when (javaDay) {
             java.time.DayOfWeek.MONDAY -> DayOfWeek.MONDAY
@@ -107,12 +92,11 @@ object DailyZonesHelper {
             java.time.DayOfWeek.FRIDAY -> DayOfWeek.FRIDAY
             java.time.DayOfWeek.SATURDAY -> DayOfWeek.SATURDAY
             java.time.DayOfWeek.SUNDAY -> DayOfWeek.SUNDAY
-            else -> DayOfWeek.MONDAY // Should not happen with java.time
         }
     }
 
-    fun isToday(day: DayOfWeek): Boolean {
-        return day == getCurrentDay()
+    fun isToday(day: DayOfWeek, today: LocalDate): Boolean {
+        return day == getCurrentDay(today)
     }
 
     fun formatMinutesToTime(minutes: Int): String {

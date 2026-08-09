@@ -72,6 +72,9 @@
     <string name="profile_categories_title">Categories</string>
     <string name="profile_category_add">Add Category</string>
     <string name="profile_category_edit">Edit Category</string>
+    <string name="profile_category_delete">Delete Category</string>
+    <string name="profile_category_delete_confirm_title">Delete Category?</string>
+    <string name="profile_category_delete_confirm_message">Are you sure you want to delete this category? This action cannot be undone.</string>
     <string name="profile_category_name_placeholder">e.g. Work, Study, Health</string>
     <string name="profile_logout_confirm_title">Leaving so soon?</string>
     <string name="profile_logout_confirm_subtitle">Are you sure you want to log out of your account?</string>

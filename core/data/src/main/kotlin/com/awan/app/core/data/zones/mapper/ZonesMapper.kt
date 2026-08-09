@@ -1,11 +1,15 @@
 package com.awan.app.core.data.zones.mapper
 
 import com.awan.app.core.data.category.toModel
+import com.awan.app.core.data.common.extractDateFromIso
+import com.awan.app.core.data.common.extractTimeFromIso
+import com.awan.app.core.database.model.SessionEntity
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.model.Session
 import com.awan.app.core.domain.zones.model.TemplateOverride
 import com.awan.app.core.domain.zones.model.WeeklyTemplate
+import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.zone.TemplateOverrideDto
 import com.awan.app.core.network.dto.zone.WeeklyTemplateDto
@@ -67,9 +71,32 @@ fun SessionDto.toDomain(): Session = Session(
     id = id,
     start = LocalDateTime.parse(start, SessionDateTimeFormatter),
     end = LocalDateTime.parse(end, SessionDateTimeFormatter),
-    status = status ?: "SCHEDULED",
+    status = status.toSessionStatus(),
     locked = locked,
     zoneId = zoneId,
     taskId = taskId,
     category = category?.toModel()
+)
+
+fun String?.toSessionStatus(): SessionStatus {
+    if (this == null) return SessionStatus.SCHEDULED
+    return when (this.uppercase()) {
+        "SCHEDULED" -> SessionStatus.SCHEDULED
+        "IN_PROGRESS" -> SessionStatus.IN_PROGRESS
+        "COMPLETED" -> SessionStatus.COMPLETED
+        "MISSED" -> SessionStatus.MISSED
+        "CANCELLED" -> SessionStatus.CANCELLED
+        else -> SessionStatus.UNKNOWN
+    }
+}
+
+fun SessionDto.toEntity(): SessionEntity = SessionEntity(
+    id = id,
+    taskId = taskId ?: "",
+    zoneId = zoneId,
+    date = extractDateFromIso(start),
+    startTime = extractTimeFromIso(start),
+    endTime = extractTimeFromIso(end),
+    status = status ?: "SCHEDULED",
+    locked = locked
 )

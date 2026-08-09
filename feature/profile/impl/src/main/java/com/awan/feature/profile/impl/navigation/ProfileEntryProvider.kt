@@ -1,9 +1,9 @@
 package com.awan.feature.profile.impl.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
 import com.awan.core.navigation.Route
 import com.awan.feature.profile.api.CategoryManagementRoute
@@ -53,7 +53,7 @@ private fun CategoryManagementRouteScreen(
     onBack: () -> Unit,
     viewModel: CategoryManagementViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     CategoryManagementScreen(
         uiState = uiState,
         onAction = viewModel::onAction,

@@ -3,6 +3,8 @@ package com.awan.feature.profile.impl.ui.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -43,8 +45,7 @@ fun PreferencesCard(
                 icon = Icons.Default.Category,
                 title = stringResource(ProfileR.string.profile_categories_title),
                 onClick = onCategoryManagementClick,
-                showDivider = true,
-                iconColor = AwanTheme.colors.zoneLavender
+                showDivider = true
             )
             
             ExpandableSessionDurationItem(

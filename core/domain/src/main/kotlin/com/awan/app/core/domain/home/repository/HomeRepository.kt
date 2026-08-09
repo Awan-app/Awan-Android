@@ -2,9 +2,10 @@ package com.awan.app.core.domain.home.repository
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.home.model.DaySchedule
-import com.awan.app.core.domain.home.model.SessionStatus
 import com.awan.app.core.domain.home.model.UserProfileInfo
+import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.SessionTaskDetail
+import com.awan.app.core.model.UpdateSessionParams
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 
@@ -14,10 +15,7 @@ interface HomeRepository {
     suspend fun getSessionDetail(sessionId: String): Result<SessionTaskDetail>
     suspend fun updateSessionStatus(
         sessionId: String,
-        status: SessionStatus,
-        locked: Boolean? = null,
-        startIso: String? = null,
-        endIso: String? = null,
+        params: UpdateSessionParams,
     ): Result<Unit>
     suspend fun updateSessionLock(
         sessionId: String,

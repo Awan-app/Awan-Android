@@ -15,6 +15,7 @@ import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateWeeklyTemplateUseCase
 import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
+import com.awan.feature.profile.impl.helpers.ProfileErrorMapper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
@@ -109,7 +110,7 @@ class EditRoutineViewModel @Inject constructor(
                         _uiState.update { it.copy(
                             isLoading = false,
                             assignedDays = otherAssigned,
-                            error = DailyZonesHelper.zonesErrorToUiText(result.error),
+                            error = ProfileErrorMapper.mapToUiText(result.error),
                             availableCategories = categories
                         ) }
                     }
@@ -236,14 +237,14 @@ class EditRoutineViewModel @Inject constructor(
                         _events.send(EditRoutineEvent.SaveSuccess)
                     }
                     is Result.Error -> {
-                        _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
+                        _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
                     }
                     Result.Loading -> Unit
                 }
             } else {
                 val updateNameRes = updateWeeklyTemplateUseCase(templateId, state.name, state.selectedDays.toList())
                 if (updateNameRes is Result.Error) {
-                    _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(updateNameRes.error)) }
+                    _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(updateNameRes.error)) }
                     return@launch
                 }
                 
@@ -253,7 +254,7 @@ class EditRoutineViewModel @Inject constructor(
                         _events.send(EditRoutineEvent.SaveSuccess)
                     }
                     is Result.Error -> {
-                        _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(updateZonesRes.error)) }
+                        _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(updateZonesRes.error)) }
                     }
                     Result.Loading -> Unit
                 }
@@ -271,7 +272,7 @@ class EditRoutineViewModel @Inject constructor(
                     _events.send(EditRoutineEvent.DeleteSuccess)
                 }
                 is Result.Error -> {
-                    _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
+                    _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
                 }
                 Result.Loading -> Unit
             }

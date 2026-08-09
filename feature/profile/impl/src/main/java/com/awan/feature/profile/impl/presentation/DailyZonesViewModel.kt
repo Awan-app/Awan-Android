@@ -14,6 +14,7 @@ import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateOverrideZonesUseCase
 import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
+import com.awan.feature.profile.impl.helpers.ProfileErrorMapper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Clock
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -31,9 +33,10 @@ class DailyZonesViewModel @Inject constructor(
     private val getTemplateOverridesUseCase: GetTemplateOverridesUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase,
-    private val updateOverrideZonesUseCase: UpdateOverrideZonesUseCase
+    private val updateOverrideZonesUseCase: UpdateOverrideZonesUseCase,
+    private val clock: Clock
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(DailyZonesState(selectedDay = DailyZonesHelper.getCurrentDay()))
+    private val _uiState = MutableStateFlow(DailyZonesState(selectedDay = DailyZonesHelper.getCurrentDay(LocalDate.now(clock))))
     val uiState: StateFlow<DailyZonesState> = _uiState.asStateFlow()
 
     fun onAction(action: DailyZonesAction) {
@@ -86,7 +89,7 @@ class DailyZonesViewModel @Inject constructor(
 
                 _uiState.update { it.copy(
                     isLoading = false,
-                    error = error?.let { DailyZonesHelper.zonesErrorToUiText(it) }
+                    error = error?.let { ProfileErrorMapper.mapToUiText(it) }
                 ) }
             }
         }
@@ -128,7 +131,7 @@ class DailyZonesViewModel @Inject constructor(
     }
 
     private fun getNextDateForDay(day: DayOfWeek): LocalDate {
-        var date = LocalDate.now()
+        var date = LocalDate.now(clock)
         while (DailyZonesHelper.getCurrentDay(date) != day) {
             date = date.plusDays(1)
         }
@@ -218,7 +221,7 @@ class DailyZonesViewModel @Inject constructor(
                         }
                     }
                 }
-                is Result.Error -> _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
+                is Result.Error -> _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
                 Result.Loading -> Unit
             }
         }

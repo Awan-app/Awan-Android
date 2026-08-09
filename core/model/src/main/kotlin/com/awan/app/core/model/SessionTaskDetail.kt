@@ -1,10 +1,12 @@
 package com.awan.app.core.model
 
+import java.time.LocalDateTime
+
 data class SessionDetailInfo(
     val id: String,
-    val start: String,
-    val end: String,
-    val status: String,
+    val start: LocalDateTime,
+    val end: LocalDateTime,
+    val status: SessionStatus,
     val locked: Boolean,
     val zoneId: String?,
     val taskId: String,
@@ -15,7 +17,7 @@ data class TaskDetailInfo(
     val title: String,
     val description: String?,
     val estimatedDuration: Int?,
-    val status: String,
+    val status: TaskStatus,
     val mandatory: Boolean,
     val estimatedPoints: Int,
     val allowTaskSplitting: Boolean,
