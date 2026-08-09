@@ -103,8 +103,8 @@ class GoalDecompositionRepositoryTest {
     fun `first continue call passes null sessionId and exact message`() = runTest(testDispatcher) {
         var capturedRequest: JsonObject? = null
         val api = object : FakeGoalApiService() {
-            override suspend fun decomposeGoal(request: JsonObject): GoalDecomposeResponse {
-                capturedRequest = request
+            override suspend fun decomposeGoal(request: com.awan.app.core.network.dto.GoalDecomposeRequest): GoalDecomposeResponse {
+                capturedRequest = request.toJsonObject()
                 return emptyDecomposeResponse
             }
         }
@@ -119,8 +119,8 @@ class GoalDecompositionRepositoryTest {
     fun `continuation call passes the returned sessionId and exact message`() = runTest(testDispatcher) {
         var capturedRequest: JsonObject? = null
         val api = object : FakeGoalApiService() {
-            override suspend fun decomposeGoal(request: JsonObject): GoalDecomposeResponse {
-                capturedRequest = request
+            override suspend fun decomposeGoal(request: com.awan.app.core.network.dto.GoalDecomposeRequest): GoalDecomposeResponse {
+                capturedRequest = request.toJsonObject()
                 return emptyDecomposeResponse
             }
         }
@@ -197,7 +197,7 @@ class GoalDecompositionRepositoryTest {
     @Test(expected = CancellationException::class)
     fun `CancellationException from decomposeGoal is rethrown by remote data source`() = runTest(testDispatcher) {
         val api = object : FakeGoalApiService() {
-            override suspend fun decomposeGoal(request: JsonObject): GoalDecomposeResponse {
+            override suspend fun decomposeGoal(request: com.awan.app.core.network.dto.GoalDecomposeRequest): GoalDecomposeResponse {
                 throw CancellationException("Cancelled")
             }
         }

@@ -6,6 +6,7 @@ import com.awan.app.core.network.dto.GoalDecomposeRequest
 import com.awan.app.core.network.dto.GoalDecomposeResponse
 import com.awan.app.core.network.dto.GoalProposalDto
 import com.awan.app.core.network.dto.ProposedTaskDto
+import com.awan.app.core.network.dto.toJsonObject
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import org.junit.Assert.assertEquals
