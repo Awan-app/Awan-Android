@@ -20,6 +20,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -104,7 +105,7 @@ class GoalDecompositionRepositoryTest {
         var capturedRequest: JsonObject? = null
         val api = object : FakeGoalApiService() {
             override suspend fun decomposeGoal(request: com.awan.app.core.network.dto.GoalDecomposeRequest): GoalDecomposeResponse {
-                capturedRequest = request.toJsonObject()
+                capturedRequest = json.encodeToJsonElement(request).jsonObject
                 return emptyDecomposeResponse
             }
         }
@@ -120,7 +121,7 @@ class GoalDecompositionRepositoryTest {
         var capturedRequest: JsonObject? = null
         val api = object : FakeGoalApiService() {
             override suspend fun decomposeGoal(request: com.awan.app.core.network.dto.GoalDecomposeRequest): GoalDecomposeResponse {
-                capturedRequest = request.toJsonObject()
+                capturedRequest = json.encodeToJsonElement(request).jsonObject
                 return emptyDecomposeResponse
             }
         }
