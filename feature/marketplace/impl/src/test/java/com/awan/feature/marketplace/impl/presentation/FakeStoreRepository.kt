@@ -35,4 +35,8 @@ class FakeStoreRepository : StoreRepository {
     override suspend fun unequipItem(itemType: StoreItemType): Result<Unit> {
         return failUnequipWith ?: Result.Success(Unit)
     }
+
+    override suspend fun refreshStoreItems(type: StoreItemType?) {}
+    override suspend fun refreshInventory() {}
+    override suspend fun refreshEquippedItems() {}
 }

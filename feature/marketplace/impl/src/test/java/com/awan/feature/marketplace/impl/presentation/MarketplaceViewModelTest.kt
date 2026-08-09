@@ -4,6 +4,8 @@ import com.awan.app.core.model.StoreItem
 import com.awan.app.core.model.StoreItemType
 import com.awan.app.core.model.OwnedItem
 import com.awan.app.core.domain.profile.model.Profile
+import com.awan.app.core.domain.marketplace.usecase.*
+import com.awan.app.core.domain.profile.usecase.ObserveProfileUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -37,7 +39,16 @@ class MarketplaceViewModelTest {
         
         profileRepository.profileFlow.value = Profile("u1", "email", "First", "Last", "2000-01-01", 500, 5, 10, null, false, null)
         
-        viewModel = MarketplaceViewModel(storeRepository, profileRepository)
+        viewModel = MarketplaceViewModel(
+            getStoreItemsUseCase = GetStoreItemsUseCase(storeRepository),
+            getInventoryUseCase = GetInventoryUseCase(storeRepository),
+            getEquippedItemsUseCase = GetEquippedItemsUseCase(storeRepository),
+            buyItemUseCase = BuyItemUseCase(storeRepository),
+            equipItemUseCase = EquipItemUseCase(storeRepository),
+            unequipItemUseCase = UnequipItemUseCase(storeRepository),
+            refreshMarketplaceUseCase = RefreshMarketplaceUseCase(storeRepository),
+            observeProfileUseCase = ObserveProfileUseCase(profileRepository)
+        )
     }
 
     @After

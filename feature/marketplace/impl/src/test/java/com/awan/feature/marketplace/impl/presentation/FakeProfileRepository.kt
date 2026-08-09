@@ -24,8 +24,4 @@ class FakeProfileRepository : ProfileRepository {
     override suspend fun updateSessionSettings(preferredSessionDuration: Int, bufferBetweenSessions: Int): Result<Profile> = TODO()
     override suspend fun updateSleepSchedule(wakeupTime: String, sleepTime: String): Result<Profile> = TODO()
     override suspend fun updateSchedulingType(schedulingType: String): Result<Profile> = TODO()
-    override suspend fun incrementStreak(): Result<Profile> = TODO()
-    override suspend fun resetStreak(): Result<Profile> = TODO()
-    override suspend fun awardPoints(points: Int): Result<Profile> = TODO()
-    override suspend fun deductPoints(points: Int): Result<Profile> = TODO()
 }

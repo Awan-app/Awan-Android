@@ -21,6 +21,9 @@ object SyncTtl {
     /** Templates and zones: 1 hour. */
     const val TEMPLATES_TTL_MS = 60 * 60 * 1000L
 
+    /** Store items and inventory: 1 hour. */
+    const val STORE_TTL_MS = 60 * 60 * 1000L
+
     /** Computes the expiry timestamp given a TTL duration. */
     fun computeExpiry(ttlMs: Long, now: Long = System.currentTimeMillis()): Long = now + ttlMs
 }

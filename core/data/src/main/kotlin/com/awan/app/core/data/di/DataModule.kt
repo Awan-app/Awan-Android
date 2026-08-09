@@ -26,7 +26,7 @@ import com.awan.app.core.data.profile.repository.ProfileRepositoryImpl
 import com.awan.app.core.data.profile.repository.UserDataRepositoryImpl
 import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSource
 import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSourceImpl
-import com.awan.app.core.data.marketplace.StoreRepositoryImpl
+import com.awan.app.core.data.marketplace.repository.StoreRepositoryImpl
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSourceImpl
