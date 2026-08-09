@@ -7,8 +7,10 @@ import com.awan.app.core.data.home.remote.HomeRemoteDataSource
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.UpdateSessionParams
+import com.awan.app.core.network.dto.session.CompleteSessionResponse
 import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskUpdateRequest
 import com.awan.app.core.network.dto.zone.WeeklyTemplateDto
 import com.awan.app.core.network.dto.zone.TemplateOverrideDto
 import com.awan.app.core.network.dto.zone.ZoneDto
@@ -35,13 +37,14 @@ private class FakeHomeRemoteDataSource : HomeRemoteDataSource {
     override suspend fun getUserProfile(): Result<CompleteOnboardingResponse> = Result.Error(com.awan.app.core.common.error.AppError.Network)
     override suspend fun getSession(sessionId: String): Result<SessionDto> = Result.Error(com.awan.app.core.common.error.AppError.NotFound)
     override suspend fun getTask(taskId: String): Result<TaskInfoResponse> = Result.Error(com.awan.app.core.common.error.AppError.NotFound)
-    override suspend fun updateSession(sessionId: String, status: String?, locked: Boolean?, startIso: String?, endIso: String?): Result<SessionDto> {
-        lastUpdate = UpdateArgs(sessionId, status, locked, startIso, endIso)
-        return Result.Success(SessionDto(id = sessionId, start = startIso ?: "", end = endIso ?: "", status = status, locked = locked ?: false))
-    }
+
+    override suspend fun completeSession(sessionId: String): Result<CompleteSessionResponse> = error("")
+    override suspend fun uncompleteSession(sessionId: String): Result<SessionDto> = error("")
+    override suspend fun cancelSession(sessionId: String): Result<SessionDto> = error("")
+    override suspend fun moveSession(sessionId: String, startIso: String, endIso: String): Result<SessionDto> = error("")
     override suspend fun lockSession(sessionId: String): Result<SessionDto> = error("")
     override suspend fun unlockSession(sessionId: String): Result<SessionDto> = error("")
-    override suspend fun updateTask(taskId: String, request: com.awan.app.core.network.dto.task.TaskUpdateRequest): Result<TaskInfoResponse> = error("")
+    override suspend fun updateTask(taskId: String, request: TaskUpdateRequest): Result<TaskInfoResponse> = error("")
     override suspend fun deleteSession(sessionId: String): Result<Unit> = Result.Success(Unit)
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = Result.Success(Unit)
 }

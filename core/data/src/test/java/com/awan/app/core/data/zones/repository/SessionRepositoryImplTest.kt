@@ -58,7 +58,7 @@ private class FakeRemoteDataSource : SessionRemoteDataSource {
             id = sessionId,
             start = request.start ?: "2026-08-08T10:00:00",
             end = request.end ?: "2026-08-08T11:00:00",
-            status = request.status,
+            status = null,
             locked = request.locked ?: false
         ))
     }
@@ -166,18 +166,16 @@ class SessionRepositoryImplTest {
     @Test
     fun `updateSession calls remote and updates Room`() = runTest(testDispatcher) {
         val start = LocalDateTime.of(2026, 8, 8, 10, 0)
-        val params = UpdateSessionParams(start = start, status = SessionStatus.COMPLETED, locked = true)
+        val params = UpdateSessionParams(start = start, locked = true)
         
         repository.updateSession("s1", params)
         
         assertEquals("s1", fakeRemote.lastUpdate?.first)
         assertEquals("2026-08-08T10:00:00", fakeRemote.lastUpdate?.second?.start)
-        assertEquals("COMPLETED", fakeRemote.lastUpdate?.second?.status)
         assertEquals(true, fakeRemote.lastUpdate?.second?.locked)
         
         assertEquals(1, fakeDao.upserted.size)
         assertEquals("s1", fakeDao.upserted.first().id)
-        assertEquals("COMPLETED", fakeDao.upserted.first().status)
         assertTrue(fakeDao.upserted.first().locked)
     }
 
