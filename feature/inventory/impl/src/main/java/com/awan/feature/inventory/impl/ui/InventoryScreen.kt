@@ -5,32 +5,54 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
@@ -46,7 +68,6 @@ import com.awan.app.core.domain.inventory.model.CustomizationType
 import com.awan.app.core.domain.inventory.model.OwnedCustomization
 import com.awan.feature.inventory.impl.R
 import com.awan.feature.inventory.impl.presentation.InventoryAction
-import com.awan.feature.inventory.impl.presentation.InventorySection
 import com.awan.feature.inventory.impl.presentation.InventorySort
 import com.awan.feature.inventory.impl.presentation.InventoryState
 
@@ -57,54 +78,92 @@ fun InventoryScreen(
     onAction: (InventoryAction) -> Unit,
     onBack: () -> Unit,
 ) {
-    androidx.compose.material3.Scaffold(
-        containerColor = AwanTheme.colors.background,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { AwanText(stringResource(R.string.inventory_title), style = AwanTheme.styles.titleText) },
-                navigationIcon = {
-                    AwanIconButton(
-                        onClick = onBack,
-                        contentDescription = stringResource(R.string.inventory_back),
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
-                actions = {
-                    AwanIconButton(
-                        onClick = { onAction(InventoryAction.Refresh) },
-                        enabled = !state.isRefreshing,
-                        contentDescription = stringResource(R.string.inventory_refresh),
-                    ) {
-                        if (state.isRefreshing) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.Refresh, contentDescription = null)
+    var controlsVisible by rememberSaveable { mutableStateOf(false) }
+    var detailsItemId by rememberSaveable { mutableStateOf<String?>(null) }
+    val detailsItem = state.customizations.firstOrNull { it.itemId == detailsItemId }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        androidx.compose.material3.Scaffold(
+            containerColor = AwanTheme.colors.background,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        AwanText(
+                            stringResource(R.string.inventory_title),
+                            style = AwanTheme.styles.titleText,
+                        )
+                    },
+                    navigationIcon = {
+                        AwanIconButton(
+                            onClick = onBack,
+                            contentDescription = stringResource(R.string.inventory_back),
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                         }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = AwanTheme.colors.background),
-            )
-        },
-    ) { padding ->
-        when {
-            state.isLoading && state.customizations.isEmpty() -> InventoryLoading(modifier = Modifier.padding(padding))
-            state.customizations.isEmpty() && !state.isOnline -> InventoryEmpty(
-                title = stringResource(R.string.inventory_offline_title),
-                body = stringResource(R.string.inventory_offline_body),
-                modifier = Modifier.padding(padding),
-            )
-            state.customizations.isEmpty() && state.error != null -> InventoryError(
-                message = state.error.asString(),
-                onRetry = { onAction(InventoryAction.Refresh) },
-                modifier = Modifier.padding(padding),
-            )
-            state.customizations.isEmpty() -> InventoryEmpty(
-                title = stringResource(R.string.inventory_empty_title),
-                body = stringResource(R.string.inventory_empty_body),
-                modifier = Modifier.padding(padding),
-            )
-            else -> InventoryContent(state, onAction, Modifier.padding(padding))
+                    },
+                    actions = {
+                        AwanIconButton(
+                            onClick = { controlsVisible = true },
+                            contentDescription = stringResource(R.string.inventory_controls),
+                        ) {
+                            Icon(Icons.Default.Tune, contentDescription = null)
+                        }
+                        AwanIconButton(
+                            onClick = { onAction(InventoryAction.Refresh) },
+                            enabled = !state.isRefreshing,
+                            contentDescription = stringResource(R.string.inventory_refresh),
+                        ) {
+                            if (state.isRefreshing) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Default.Refresh, contentDescription = null)
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = AwanTheme.colors.background),
+                )
+            },
+        ) { padding ->
+            when {
+                state.isLoading && state.customizations.isEmpty() -> InventoryLoading(modifier = Modifier.padding(padding))
+                state.customizations.isEmpty() && !state.isOnline -> InventoryEmpty(
+                    title = stringResource(R.string.inventory_offline_title),
+                    body = stringResource(R.string.inventory_offline_body),
+                    modifier = Modifier.padding(padding),
+                )
+                state.customizations.isEmpty() && state.error != null -> InventoryError(
+                    message = state.error.asString(),
+                    onRetry = { onAction(InventoryAction.Refresh) },
+                    modifier = Modifier.padding(padding),
+                )
+                state.customizations.isEmpty() -> InventoryEmpty(
+                    title = stringResource(R.string.inventory_empty_title),
+                    body = stringResource(R.string.inventory_empty_body),
+                    modifier = Modifier.padding(padding),
+                )
+                else -> InventoryContent(
+                    state = state,
+                    onAction = onAction,
+                    onOpenDetails = { detailsItemId = it },
+                    modifier = Modifier.padding(padding),
+                )
+            }
+        }
+
+        if (controlsVisible) {
+            ModalBottomSheet(onDismissRequest = { controlsVisible = false }) {
+                InventoryControlsSheet(state = state, onAction = onAction)
+            }
+        }
+
+        detailsItem?.let { customization ->
+            ModalBottomSheet(onDismissRequest = { detailsItemId = null }) {
+                CustomizationDetailsSheet(
+                    customization = customization,
+                    state = state,
+                    onEquip = { onAction(InventoryAction.Equip(customization.itemId)) },
+                )
+            }
         }
     }
 }
@@ -113,24 +172,28 @@ fun InventoryScreen(
 private fun InventoryContent(
     state: InventoryState,
     onAction: (InventoryAction) -> Unit,
+    onOpenDetails: (String) -> Unit,
     modifier: Modifier,
 ) {
-    LazyColumn(
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = AwanTheme.spacing.md, vertical = AwanTheme.spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
     ) {
-        item {
-            InventoryFilters(state, onAction)
-        }
         state.error?.let { error ->
-            item { AwanText(error.asString(), style = AwanTheme.styles.bodySecondaryText) }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                AwanText(error.asString(), style = AwanTheme.styles.bodySecondaryText)
+            }
         }
         if (!state.isOnline) {
-            item { AwanText(stringResource(R.string.inventory_offline_equip), style = AwanTheme.styles.metaText) }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                AwanText(stringResource(R.string.inventory_offline_equip), style = AwanTheme.styles.metaText)
+            }
         }
         if (state.sections.isEmpty()) {
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 InventoryEmpty(
                     title = stringResource(R.string.inventory_filtered_empty_title),
                     body = stringResource(R.string.inventory_filtered_empty_body),
@@ -138,19 +201,39 @@ private fun InventoryContent(
             }
         } else {
             state.sections.forEach { section ->
-                item(key = "header-${section.type}") {
+                item(key = "header-${section.type}", span = { GridItemSpan(maxLineSpan) }) {
                     AwanText(typeLabel(section.type), style = AwanTheme.styles.headingText)
                 }
-                items(section.items.size, key = { index -> section.items[index].itemId }) { index ->
+                items(section.items, key = { it.itemId }) { customization ->
                     CustomizationCard(
-                        customization = section.items[index],
+                        customization = customization,
                         isOnline = state.isOnline,
-                        isEquipping = state.equippingItemId == section.items[index].itemId,
-                        onEquip = { onAction(InventoryAction.Equip(section.items[index].itemId)) },
+                        isEquipping = state.equippingItemId == customization.itemId,
+                        onEquip = { onAction(InventoryAction.Equip(customization.itemId)) },
+                        onDetails = { onOpenDetails(customization.itemId) },
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun InventoryControlsSheet(
+    state: InventoryState,
+    onAction: (InventoryAction) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding(),
+        contentPadding = PaddingValues(horizontal = AwanTheme.spacing.md, vertical = AwanTheme.spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
+    ) {
+        item {
+            AwanText(stringResource(R.string.inventory_controls), style = AwanTheme.styles.headingText)
+        }
+        item { InventoryFilters(state = state, onAction = onAction) }
     }
 }
 
@@ -186,15 +269,15 @@ private fun InventoryFilters(state: InventoryState, onAction: (InventoryAction) 
                 )
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            AwanText(stringResource(R.string.inventory_sort), style = AwanTheme.styles.metaText, modifier = Modifier.weight(1f))
-            InventorySort.entries.forEach { sort ->
-                TextButton(onClick = { onAction(InventoryAction.SetSort(sort)) }) {
-                    AwanText(
-                        text = sortLabel(sort),
-                        style = if (state.sort == sort) AwanTheme.styles.bodyText else AwanTheme.styles.metaText,
-                    )
-                }
+        AwanText(stringResource(R.string.inventory_sort), style = AwanTheme.styles.metaText)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+            items(InventorySort.entries.size) { index ->
+                val sort = InventorySort.entries[index]
+                FilterChip(
+                    selected = state.sort == sort,
+                    onClick = { onAction(InventoryAction.SetSort(sort)) },
+                    label = { AwanText(sortLabel(sort)) },
+                )
             }
         }
     }
@@ -206,45 +289,189 @@ private fun CustomizationCard(
     isOnline: Boolean,
     isEquipping: Boolean,
     onEquip: () -> Unit,
+    onDetails: () -> Unit,
 ) {
-    AwanCard(modifier = Modifier.fillMaxWidth(), selected = customization.isEquipped) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
+    val canEquip = isOnline && !customization.isEquipped && !isEquipping
+    val itemStateDescription = stringResource(
+        if (customization.isEquipped) {
+            R.string.inventory_item_equipped_state
+        } else {
+            R.string.inventory_item_not_equipped_state
+        },
+    )
+    AwanCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("inventory-card-${customization.itemId}")
+            .semantics {
+                stateDescription = itemStateDescription
+            },
+        selected = customization.isEquipped,
+        onClick = if (canEquip) onEquip else null,
+        contentPadding = PaddingValues(AwanTheme.spacing.sm),
+    ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            CustomizationArt(
+                customization = customization,
                 modifier = Modifier
-                    .size(56.dp)
-                    .background(AwanTheme.colors.sky.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center,
+                    .fillMaxWidth()
+                    .aspectRatio(1f),
+            )
+            AwanIconButton(
+                onClick = onDetails,
+                contentDescription = stringResource(R.string.inventory_view_details, customization.name),
+                modifier = Modifier.align(Alignment.TopEnd),
             ) {
-                if (customization.imageUrl == null) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = AwanTheme.colors.sky)
-                } else {
-                    AwanRemoteImage(
-                        url = customization.imageUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
+                Icon(Icons.Default.Info, contentDescription = null)
             }
-            Spacer(Modifier.width(AwanTheme.spacing.sm))
-            Column(modifier = Modifier.weight(1f)) {
-                AwanText(customization.name, style = AwanTheme.styles.bodyText)
-                AwanText(rarityLabel(customization.rarity), style = AwanTheme.styles.metaText)
-            }
-            AwanButton(
-                onClick = onEquip,
-                enabled = isOnline && !customization.isEquipped,
-                isLoading = isEquipping,
-                variant = if (customization.isEquipped) AwanButtonVariant.Secondary else AwanButtonVariant.Primary,
-            ) {
-                AwanText(
-                    stringResource(
-                        if (customization.isEquipped) R.string.inventory_equipped else R.string.inventory_equip,
-                    ),
+            if (isEquipping) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .align(Alignment.Center),
+                    strokeWidth = 2.dp,
                 )
             }
         }
+        Spacer(Modifier.height(AwanTheme.spacing.xs))
+        AwanText(customization.name, style = AwanTheme.styles.bodyText, maxLines = 1)
+        AwanText(
+            rarityLabel(customization.rarity),
+            style = AwanTheme.styles.metaText.copy(color = rarityAccent(customization.rarity)),
+        )
     }
+}
+
+@Composable
+internal fun CustomizationDetailsSheet(
+    customization: OwnedCustomization,
+    state: InventoryState,
+    onEquip: () -> Unit,
+) {
+    val isEquipped = customization.isEquipped
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = AwanTheme.spacing.md, vertical = AwanTheme.spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1.4f)
+                .clip(AwanTheme.shapes.card)
+                .testTag("inventory-details-artwork")
+                .detailsArtworkEdgeShadow(
+                    accent = rarityAccent(customization.rarity),
+                    edgeDepth = AwanTheme.spacing.lg,
+                ),
+        ) {
+            CustomizationArt(
+                customization = customization,
+                modifier = Modifier.fillMaxSize(),
+                showRarityBackdrop = false,
+            )
+        }
+        AwanText(customization.name, style = AwanTheme.styles.headingText)
+        AwanText(
+            stringResource(R.string.inventory_details_rarity, rarityLabel(customization.rarity)),
+            style = AwanTheme.styles.metaText.copy(color = rarityAccent(customization.rarity)),
+        )
+        AwanText(
+            stringResource(R.string.inventory_details_type, typeLabel(customization.type)),
+            style = AwanTheme.styles.metaText,
+        )
+        AwanText(customization.description, style = AwanTheme.styles.bodySecondaryText)
+        AwanButton(
+            onClick = onEquip,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = state.isOnline && !isEquipped,
+            isLoading = state.equippingItemId == customization.itemId,
+            variant = if (isEquipped) AwanButtonVariant.Secondary else AwanButtonVariant.Primary,
+        ) {
+            AwanText(
+                stringResource(if (isEquipped) R.string.inventory_equipped else R.string.inventory_equip),
+            )
+        }
+    }
+}
+
+@Composable
+private fun CustomizationArt(
+    customization: OwnedCustomization,
+    modifier: Modifier,
+    showRarityBackdrop: Boolean = true,
+) {
+    val accent = rarityAccent(customization.rarity)
+    val backdropModifier = if (showRarityBackdrop) {
+        Modifier.background(
+            Brush.radialGradient(
+                colors = listOf(accent.copy(alpha = 0.4f), AwanTheme.colors.surface),
+            ),
+        )
+    } else {
+        Modifier.background(AwanTheme.colors.surface)
+    }
+    Box(
+        modifier = modifier
+            .clip(AwanTheme.shapes.card)
+            .then(backdropModifier),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (customization.imageUrl == null) {
+            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = accent)
+        } else {
+            AwanRemoteImage(
+                url = customization.imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
+}
+
+private fun Modifier.detailsArtworkEdgeShadow(accent: Color, edgeDepth: Dp): Modifier = drawWithCache {
+    val edgeSize = edgeDepth.toPx().coerceAtMost(size.width / 2f)
+    val edgeColor = accent.copy(alpha = 0.24f)
+    val leftBrush = Brush.horizontalGradient(
+        colors = listOf(edgeColor, Color.Transparent),
+        startX = 0f,
+        endX = edgeSize,
+    )
+    val rightBrush = Brush.horizontalGradient(
+        colors = listOf(Color.Transparent, edgeColor),
+        startX = size.width - edgeSize,
+        endX = size.width,
+    )
+    val topBrush = Brush.verticalGradient(
+        colors = listOf(edgeColor, Color.Transparent),
+        startY = 0f,
+        endY = edgeSize,
+    )
+
+    onDrawWithContent {
+        drawContent()
+        drawRect(leftBrush, topLeft = Offset.Zero, size = Size(edgeSize, size.height))
+        drawRect(
+            rightBrush,
+            topLeft = Offset(size.width - edgeSize, 0f),
+            size = Size(edgeSize, size.height),
+        )
+        drawRect(topBrush, topLeft = Offset.Zero, size = Size(size.width, edgeSize))
+    }
+}
+
+@Composable
+private fun rarityAccent(rarity: CustomizationRarity): Color = when (rarity) {
+    CustomizationRarity.UNKNOWN -> AwanTheme.colors.textSecondary
+    CustomizationRarity.COMMON -> AwanTheme.colors.zoneBlue
+    CustomizationRarity.UNCOMMON -> AwanTheme.colors.zoneGreen
+    CustomizationRarity.RARE -> AwanTheme.colors.sky
+    CustomizationRarity.EPIC -> AwanTheme.colors.zoneViolet
+    CustomizationRarity.LEGENDARY -> AwanTheme.colors.zoneSun
 }
 
 @Composable
@@ -261,7 +488,9 @@ private fun InventoryLoading(modifier: Modifier = Modifier) {
 @Composable
 private fun InventoryEmpty(title: String, body: String, modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier.fillMaxWidth().padding(AwanTheme.spacing.lg),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(AwanTheme.spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -275,7 +504,9 @@ private fun InventoryEmpty(title: String, body: String, modifier: Modifier = Mod
 @Composable
 private fun InventoryError(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier.fillMaxSize().padding(AwanTheme.spacing.lg),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(AwanTheme.spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {

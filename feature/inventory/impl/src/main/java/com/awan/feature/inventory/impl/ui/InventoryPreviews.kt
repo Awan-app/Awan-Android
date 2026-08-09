@@ -59,3 +59,19 @@ fun InventoryScreenPreview() {
         )
     }
 }
+
+@Preview(name = "Inventory · Details edge shadow", showBackground = true, widthDp = 420, heightDp = 720)
+@Composable
+fun InventoryDetailsSheetPreview() {
+    AwanTheme {
+        CustomizationDetailsSheet(
+            customization = previewInventory.first(),
+            state = InventoryState(
+                customizations = previewInventory,
+                isLoading = false,
+                isOnline = true,
+            ),
+            onEquip = {},
+        )
+    }
+}
