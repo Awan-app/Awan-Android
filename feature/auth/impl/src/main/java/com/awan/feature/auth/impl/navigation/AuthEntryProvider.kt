@@ -16,6 +16,8 @@ fun EntryProviderScope<Route>.authEntry(
     entry<LoginRoute> {
         EmailRouteScreen(
             onNext = { email -> onNavigateToOtp(email) },
+            onNavigateToHome = onNavigateToHome,
+            onNavigateToOnboarding = onNavigateToOnboarding,
         )
     }
 

@@ -8,6 +8,9 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.auth.usecase.GetLastUsedEmailUseCase
 import com.awan.app.core.domain.auth.usecase.RequestOtpUseCase
+import com.awan.app.core.domain.auth.usecase.SignInWithFirebaseUseCase
+import com.awan.feature.auth.impl.R
+import com.awan.feature.auth.impl.ui.google.GoogleSignInHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +27,8 @@ import javax.inject.Inject
 class EmailViewModel @Inject constructor(
     private val requestOtpUseCase: RequestOtpUseCase,
     private val getLastUsedEmailUseCase: GetLastUsedEmailUseCase,
+    private val signInWithFirebaseUseCase: SignInWithFirebaseUseCase,
+    private val googleSignInHelper: GoogleSignInHelper,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EmailUiState())
@@ -36,10 +41,6 @@ class EmailViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            // Pre-fill is a convenience, never a reason to take the login screen down: reading it
-            // hits EncryptedSharedPreferences, which throws once the Keystore master key is
-            // invalidated. Caught narrowly rather than via runCatching — this call suspends, and
-            // both runCatching and catch(Exception) would swallow the cancellation.
             val lastEmail = try {
                 getLastUsedEmailUseCase()
             } catch (e: GeneralSecurityException) {
@@ -111,6 +112,65 @@ class EmailViewModel @Inject constructor(
         }
     }
 
+    fun onGoogleSignInStarted() {
+        if (_uiState.value.isLoading) return
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+    }
+
+    fun onGoogleSignInCancelled() {
+        _uiState.update { it.copy(isLoading = false) }
+    }
+
+    fun onGoogleSignInFailed() {
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                errorMessage = UiText.StringResource(R.string.auth_error_google_sign_in_failed),
+            )
+        }
+    }
+
+    fun onGoogleIdTokenReceived(googleIdToken: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            try {
+                val firebaseIdToken = googleSignInHelper.getFirebaseIdToken(googleIdToken)
+                authenticateWithFirebase(firebaseIdToken)
+            } catch (_: Exception) {
+                onGoogleSignInFailed()
+            }
+        }
+    }
+
+    fun authenticateWithFirebase(idToken: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+            when (val result = signInWithFirebaseUseCase(idToken)) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(isLoading = false) }
+                    val isNewUser = result.data.user?.isNew == true
+                    if (isNewUser) {
+                        _events.send(EmailEvent.NavigateToOnboarding)
+                    } else {
+                        _events.send(EmailEvent.NavigateToHome)
+                    }
+                }
+                is Result.Error -> {
+                    val message = mapFirebaseErrorToUserMessage(result.error)
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isOffline = result.error is AppError.Network,
+                            errorMessage = message,
+                        )
+                    }
+                }
+                Result.Loading -> Unit
+            }
+        }
+    }
+
     fun onRateLimitExpired() {
         rateLimitedEmail = null
         _uiState.update {
@@ -122,18 +182,36 @@ class EmailViewModel @Inject constructor(
         }
     }
 
+    private fun mapFirebaseErrorToUserMessage(error: AppError): UiText = when (error) {
+        AppError.Network -> UiText.StringResource(R.string.auth_offline_banner)
+        is AppError.Server -> if (error.code == 503) {
+            UiText.StringResource(R.string.auth_error_firebase_not_configured)
+        } else {
+            error.toUiText()
+        }
+        is AppError.Api -> when (error.errorCode) {
+            "FIREBASE_TOKEN_INVALID" -> UiText.StringResource(R.string.auth_error_firebase_token_invalid)
+            "FIREBASE_PROVIDER_NOT_ALLOWED" -> UiText.StringResource(R.string.auth_error_firebase_provider_not_allowed)
+            "FIREBASE_EMAIL_MISSING" -> UiText.StringResource(R.string.auth_error_firebase_email_missing)
+            "FIREBASE_EMAIL_NOT_VERIFIED" -> UiText.StringResource(R.string.auth_error_firebase_email_not_verified)
+            "FIREBASE_NOT_CONFIGURED" -> UiText.StringResource(R.string.auth_error_firebase_not_configured)
+            else -> error.toUiText()
+        }
+        else -> error.toUiText()
+    }
+
     private fun AppError.toUserMessage(): UiText? = when (this) {
-        AppError.Network -> null // shown via isOffline banner
+        AppError.Network -> null
         is AppError.Api -> when {
-            code == HTTP_TOO_MANY_REQUESTS || errorCode == "OTP_RATE_LIMIT_EXCEEDED" -> null // shown via isRateLimited banner
+            code == HTTP_TOO_MANY_REQUESTS || errorCode == "OTP_RATE_LIMIT_EXCEEDED" -> null
             else -> toUiText()
         }
         else -> toUiText()
     }
 
     private companion object {
-        const val HTTP_TOO_MANY_REQUESTS = 429
-        const val RATE_LIMIT_COOLDOWN_SECONDS = 60
+        private const val HTTP_TOO_MANY_REQUESTS = 429
+        private const val RATE_LIMIT_COOLDOWN_SECONDS = 60
 
         val EMAIL_REGEX = Regex(
             "[a-zA-Z0-9+._%\\-]{1,256}" +
@@ -146,4 +224,7 @@ class EmailViewModel @Inject constructor(
 
 sealed interface EmailEvent {
     data class NavigateToOtp(val email: String) : EmailEvent
+    data object NavigateToHome : EmailEvent
+    data object NavigateToOnboarding : EmailEvent
 }
+

@@ -34,6 +34,7 @@ class AuthInterceptor @Inject constructor(
         val AUTH_PATHS = setOf(
             "/v1/auth/otp/request",
             "/v1/auth/otp/verify",
+            "/v1/auth/firebase",
             "/v1/auth/refresh",
         )
     }

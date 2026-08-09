@@ -5,6 +5,7 @@ import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.AuthApiService
 import com.awan.app.core.network.dto.auth.AuthTokensDto
+import com.awan.app.core.network.dto.auth.FirebaseAuthRequest
 import com.awan.app.core.network.dto.auth.LogoutRequest
 import com.awan.app.core.network.dto.auth.RefreshTokenRequest
 import com.awan.app.core.network.dto.auth.RequestOtpRequest
@@ -29,6 +30,11 @@ class AuthRemoteDataSourceImpl @Inject constructor(
     override suspend fun verifyOtp(request: VerifyOtpRequest): Result<VerifyOtpResponse> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             authApiService.verifyOtp(request)
+        }
+
+    override suspend fun firebaseAuth(request: FirebaseAuthRequest): Result<VerifyOtpResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            authApiService.firebaseAuth(request)
         }
 
     override suspend fun refreshToken(request: RefreshTokenRequest): Result<AuthTokensDto> =

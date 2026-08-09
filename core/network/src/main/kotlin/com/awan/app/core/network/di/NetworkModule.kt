@@ -133,6 +133,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun providesStoreApiService(retrofit: Retrofit): StoreApiService =
+        retrofit.create(StoreApiService::class.java)
+
+    @Provides
+    @Singleton
     fun providesTaskApiService(retrofit: Retrofit): TaskApiService =
         retrofit.create(TaskApiService::class.java)
 
@@ -170,12 +175,6 @@ object NetworkModule {
     @Singleton
     fun providesGoalApiService(retrofit: Retrofit): GoalApiService =
         retrofit.create(GoalApiService::class.java)
-
-    @Provides
-    @Singleton
-    fun providesStoreApiService(retrofit: Retrofit): StoreApiService =
-        retrofit.create(StoreApiService::class.java)
-
 
     @Provides
     @Singleton
