@@ -113,7 +113,6 @@ class SessionRepositoryImpl @Inject constructor(
             UpdateSessionRequest(
                 start = params.start?.format(sessionDateTimeFormatter),
                 end = params.end?.format(sessionDateTimeFormatter),
-                status = params.status?.name,
                 locked = params.locked
             )
         )

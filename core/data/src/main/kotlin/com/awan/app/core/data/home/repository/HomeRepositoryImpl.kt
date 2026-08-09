@@ -15,6 +15,7 @@ import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.UserEntity
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
+import com.awan.app.core.data.common.extractTimeFromIso
 import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.domain.gamification.model.SessionReward
 import com.awan.app.core.domain.home.model.DaySchedule
@@ -229,6 +230,31 @@ class HomeRepositoryImpl @Inject constructor(
         endIso: String,
     ): Result<Unit> = applySessionChange {
         remoteDataSource.moveSession(sessionId, startIso, endIso)
+    }
+
+    override suspend fun updateSessionLock(
+        sessionId: String,
+        locked: Boolean,
+    ): Result<Unit> = applySessionChange {
+        if (locked) {
+            remoteDataSource.lockSession(sessionId)
+        } else {
+            remoteDataSource.unlockSession(sessionId)
+        }
+    }
+
+    override suspend fun deleteSession(sessionId: String): Result<Unit> = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return@withContext Result.Error(AppError.Network)
+        }
+        when (val result = remoteDataSource.deleteSession(sessionId)) {
+            is Result.Success -> {
+                sessionDao.deleteSession(sessionId)
+                Result.Success(Unit)
+            }
+            is Result.Error -> Result.Error(result.error)
+            Result.Loading -> unexpectedLoading()
+        }
     }
 
     private suspend fun applySessionChange(
