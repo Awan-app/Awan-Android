@@ -12,4 +12,5 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(project(":core:common"))
     implementation(project(":core:design-system"))
+    implementation(libs.androidx.compose.material.icons.extended)
 }

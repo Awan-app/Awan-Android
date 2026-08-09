@@ -6,6 +6,7 @@ import com.awan.app.core.datastore.UserPreferencesDataSource
 import com.awan.app.core.domain.auth.usecase.ObserveSessionExpiredUseCase
 import com.awan.app.core.domain.gamification.model.RewardEvent
 import com.awan.app.core.domain.gamification.usecase.ObserveRewardEventsUseCase
+import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,7 +20,15 @@ class MainActivityViewModel @Inject constructor(
     userDataRepository: UserPreferencesDataSource,
     observeSessionExpired: ObserveSessionExpiredUseCase,
     observeRewardEvents: ObserveRewardEventsUseCase,
+    connectivityMonitor: NetworkConnectivityMonitor,
 ) : ViewModel() {
+
+    val isOnline: StateFlow<Boolean> = connectivityMonitor.isOnline
+        .stateIn(
+            scope = viewModelScope,
+            initialValue = connectivityMonitor.isCurrentlyOnline(),
+            started = SharingStarted.WhileSubscribed(5_000),
+        )
 
     val sessionExpired: Flow<Unit> = observeSessionExpired()
 

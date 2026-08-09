@@ -4,11 +4,19 @@ import com.awan.app.core.network.dto.session.CompleteSessionResponse
 import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.session.UpdateSessionRequest
 import retrofit2.http.Body
+import retrofit2.http.DELETE
+import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface SessionApiService {
+
+    @GET("v1/sessions/{sessionId}")
+    suspend fun getSession(
+        @Path("sessionId") sessionId: String,
+    ): SessionDto
 
     /**
      * Moves a session in time. Status is deliberately absent — editing a session only ever changes
@@ -30,4 +38,19 @@ interface SessionApiService {
 
     @POST("v1/sessions/{sessionId}/cancel")
     suspend fun cancelSession(@Path("sessionId") sessionId: String): SessionDto
+
+    @PATCH("v1/sessions/{sessionId}/lock")
+    suspend fun lockSession(
+        @Path("sessionId") sessionId: String,
+    ): SessionDto
+
+    @PATCH("v1/sessions/{sessionId}/unlock")
+    suspend fun unlockSession(
+        @Path("sessionId") sessionId: String,
+    ): SessionDto
+
+    @DELETE("v1/sessions/{sessionId}")
+    suspend fun deleteSession(
+        @Path("sessionId") sessionId: String,
+    )
 }

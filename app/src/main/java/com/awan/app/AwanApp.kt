@@ -1,11 +1,27 @@
 package com.awan.app
 
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.WifiOff
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -15,17 +31,22 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import java.time.LocalDate
+import com.awan.app.core.designsystem.AwanTheme
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.awan.app.core.common.R as CommonR
 import com.awan.app.core.designsystem.AwanBottomNavBar
 import com.awan.app.core.designsystem.BottomNavItem
+import com.awan.app.core.common.R as CommonR
 import com.awan.app.core.designsystem.ObserveAsEvents
+import kotlinx.coroutines.flow.Flow
 import com.awan.app.core.domain.gamification.model.RewardEvent
 import com.awan.core.navigation.NavigationState
 import com.awan.core.navigation.Navigator
@@ -50,10 +71,9 @@ import com.awan.feature.onboarding.impl.navigation.onboardingEntry
 import com.awan.feature.profile.api.DailyZonesRoute
 import com.awan.feature.profile.api.EditRoutineRoute
 import com.awan.feature.profile.impl.navigation.profileEntry
+import com.awan.feature.splash.api.SplashRoute
 import com.awan.feature.splash.impl.navigation.splashEntry
 import com.awan.feature.splash.impl.ui.SplashDestination
-import kotlinx.coroutines.flow.Flow
-import java.time.LocalDate
 
 /**
  * Decorates every sub-stack, not just the visible one.
@@ -68,20 +88,13 @@ import java.time.LocalDate
  * Each stack gets its own decorators and all of them are decorated on every recomposition, so
  * switching tabs — which swaps which stack is displayed, not what's in the others — leaves the
  * background tabs' ViewModels alive.
- *
- * Keeping them alive across tabs is the point; keeping them alive across *sessions* is not. A tab
- * root never leaves its own sub-stack, so `onPop` never fires for it and its store would outlive a
- * logout — handing the next user the previous user's ViewModel. Keying on [NavigationState.generation],
- * which every `replaceAll` bumps, drops each stack's decorators at those boundaries; their
- * `rememberViewModelStoreProvider` clears all of its keys on dispose. Configuration changes are
- * unaffected: that path checks the parent lifecycle and deliberately skips the clear.
  */
 @Composable
 private fun NavigationState.rememberDecoratedEntries(
     entryProvider: (Route) -> NavEntry<Route>,
 ): List<NavEntry<Route>> {
     val decoratedStacks = subStacks.mapValues { (topLevelKey, stack) ->
-        key(topLevelKey, generation) {
+        key(topLevelKey) {
             rememberDecoratedNavEntries(
                 backStack = stack,
                 entryDecorators = listOf(
@@ -102,20 +115,41 @@ fun AwanApp(
     sessionExpiredEvents: Flow<Unit>,
     rewardEvents: Flow<RewardEvent>,
     modifier: Modifier = Modifier,
+    isOnline: Boolean = true,
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
-    // Holds the live HomeViewModel's selectDate so Calendar can invoke it after popping.
-    val homeSelectDateRef = remember { arrayOf<((LocalDate) -> Unit)?>(null) }
+    var onSelectHomeDate by remember { mutableStateOf<((LocalDate) -> Unit)?>(null) }
+    val currentRoute = appState.navigationState.currentKey
+    val showOfflineBanner = !isOnline && currentRoute != SplashRoute
 
-    val context = LocalContext.current
+    val offlineExplanation = stringResource(R.string.app_offline_lock_explanation)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(showAddTask, isOnline) {
+        if (showAddTask && !isOnline) {
+            android.widget.Toast.makeText(
+                context,
+                offlineExplanation,
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            showAddTask = false
+        }
+    }
+
+    // An expired token has to bounce the user out from wherever they are, so this stays at the
+    // shell rather than on any one screen.
+    val sessionExpiredMessage = stringResource(CommonR.string.error_unauthorized)
     ObserveAsEvents(sessionExpiredEvents) {
-        Toast.makeText(context, CommonR.string.error_unauthorized, Toast.LENGTH_LONG).show()
+        android.widget.Toast.makeText(
+            context,
+            sessionExpiredMessage,
+            android.widget.Toast.LENGTH_LONG,
+        ).show()
         showAddTask = false
         navigator.replaceAll(LoginRoute)
     }
 
-    if (showAddTask) {
+    if (showAddTask && isOnline) {
         AddTaskSheet(
             onDismiss = { showAddTask = false },
             onNavigateToGoalPreview = {
@@ -130,6 +164,41 @@ fun AwanApp(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            AnimatedVisibility(
+                visible = showOfflineBanner,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                Surface(
+                    color = AwanTheme.colors.streakSurface,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.WifiOff,
+                            contentDescription = null,
+                            tint = AwanTheme.colors.streakIcon,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(R.string.app_offline_banner_text),
+                            color = AwanTheme.colors.streakIcon,
+                            style = AwanTheme.typography.caption,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            }
+
         val entryProvider = entryProvider {
             splashEntry(
                 onNavigateToNext = { destination ->
@@ -155,12 +224,16 @@ fun AwanApp(
             homeEntry(
                 onLogout = { navigator.replaceAll(LoginRoute) },
                 onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
-                onRegisterSelectDate = { fn -> homeSelectDateRef[0] = fn },
+                onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
+                onNavigateToAddTask = { _, _ ->
+                    showAddTask = true
+                },
             )
+
             calendarEntry(
                 onDateSelected = { date ->
+                    onSelectHomeDate?.invoke(date)
                     navigator.goBack()
-                    homeSelectDateRef[0]?.invoke(date)
                 },
                 onBack = { navigator.goBack() },
             )
@@ -188,16 +261,13 @@ fun AwanApp(
         NavDisplay(
             entries = appState.navigationState.rememberDecoratedEntries(entryProvider),
             onBack = { navigator.goBack() },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.weight(1f)
         )
+    }
+
 
         val currentRoute = appState.navigationState.currentKey
-        val isTopLevel = appState.topLevelDestinations.any { dest ->
-            when (val route = dest.route) {
-                is HomeRoute -> currentRoute is HomeRoute
-                else -> route != null && route == currentRoute
-            }
-        }
+        val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route == currentRoute }
 
         if (isTopLevel) {
             val navItems = remember(appState.topLevelDestinations) {
@@ -211,12 +281,7 @@ fun AwanApp(
                     )
                 }
             }
-            val selectedDest = appState.topLevelDestinations.find { dest ->
-                when (val route = dest.route) {
-                    is HomeRoute -> appState.navigationState.currentTopLevelKey is HomeRoute
-                    else -> route != null && route == appState.navigationState.currentTopLevelKey
-                }
-            }
+            val selectedDest = appState.topLevelDestinations.find { it.route == appState.navigationState.currentTopLevelKey }
 
             AwanBottomNavBar(
                 items = navItems,

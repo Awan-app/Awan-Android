@@ -48,6 +48,8 @@ import com.awan.app.core.domain.template.repository.TemplateRepository
 import com.awan.app.core.domain.gamification.repository.GamificationRepository
 import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.domain.zones.repository.ZonesRepository
+import com.awan.app.core.data.network.NetworkConnectivityMonitorImpl
+import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -213,5 +215,11 @@ internal abstract class DataModule {
     abstract fun bindGoalRepository(
         impl: com.awan.app.core.data.goal.GoalRepositoryImpl,
     ): com.awan.app.core.domain.goal.repository.GoalRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNetworkConnectivityMonitor(
+        impl: NetworkConnectivityMonitorImpl,
+    ): NetworkConnectivityMonitor
 }
 

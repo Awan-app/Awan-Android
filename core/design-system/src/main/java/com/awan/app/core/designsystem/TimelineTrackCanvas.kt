@@ -43,13 +43,14 @@ fun TimelineTrackCanvas(
         val pastGray    = hourLineColor.copy(alpha = 0.55f)
 
         fun getTrackColorAtHour(hour: Int): Color {
-            val insideZone = zones.find { hour > it.startHour && hour < it.endHour }
+            val hMins = hour * 60
+            val insideZone = zones.find { hMins > it.startMinutes && hMins < it.endMinutes }
             if (insideZone != null) return insideZone.category.color
 
-            val startZone = zones.find { hour == it.startHour }
+            val startZone = zones.find { hMins == it.startMinutes }
             if (startZone != null) return startZone.category.color
 
-            val endZone = zones.find { hour == it.endHour }
+            val endZone = zones.find { hMins == it.endMinutes }
             if (endZone != null) return endZone.category.color
 
             val hourTopPx = (hourYOffsets[hour] ?: (hour * hourHeightDp).dp).toPx()

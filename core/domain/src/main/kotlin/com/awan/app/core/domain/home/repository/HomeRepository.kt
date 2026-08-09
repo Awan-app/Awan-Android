@@ -4,11 +4,14 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.gamification.model.SessionReward
 import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.domain.home.model.UserProfileInfo
+import com.awan.app.core.model.SessionTaskDetail
 import java.time.LocalDate
+import kotlinx.coroutines.flow.Flow
 
 interface HomeRepository {
-    suspend fun getDaySchedule(date: LocalDate): Result<DaySchedule>
+    fun getDaySchedule(date: LocalDate): Flow<Result<DaySchedule>>
     suspend fun getUserProfile(): Result<UserProfileInfo>
+    suspend fun getSessionDetail(sessionId: String): Result<SessionTaskDetail>
 
     /**
      * Marks a session done. The returned reward is empty on a repeat completion — a session only
@@ -21,6 +24,27 @@ interface HomeRepository {
 
     suspend fun cancelSession(sessionId: String): Result<Unit>
 
-    /** Moves a session in time. The one path that still uses the generic update endpoint. */
+    /**
+     * Moves a session in time. The one path that still uses the generic update endpoint, and the
+     * only one callers need for reordering or re-timing — status is never touched here.
+     */
     suspend fun moveSession(sessionId: String, startIso: String, endIso: String): Result<Unit>
+
+    suspend fun updateSessionLock(
+        sessionId: String,
+        locked: Boolean,
+    ): Result<Unit>
+
+    suspend fun updateTaskDetails(
+        taskId: String,
+        title: String? = null,
+        description: String? = null,
+        estimatedDuration: Int? = null,
+        estimatedPoints: Int? = null,
+        mandatory: Boolean? = null,
+        allowTaskSplitting: Boolean? = null,
+    ): Result<Unit>
+
+    suspend fun deleteSession(sessionId: String): Result<Unit>
+    suspend fun deleteTask(taskId: String): Result<Unit>
 }
