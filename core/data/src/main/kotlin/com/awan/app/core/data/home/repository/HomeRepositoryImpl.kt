@@ -273,8 +273,8 @@ class HomeRepositoryImpl @Inject constructor(
             DayZone(
                 id = entity.id,
                 name = entity.name,
-                categoryId = "",
-                categoryName = "",
+                categoryId = entity.id,
+                categoryName = entity.name,
                 startMinutes = startMinutes,
                 endMinutes = endMinutes,
                 color = entity.color
