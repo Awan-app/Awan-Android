@@ -23,7 +23,9 @@ permissions:
 
 env:
   JAVA_VERSION: 21
-  GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxMetaspaceSize=512m' -Dorg.gradle.parallel=false"
+  GRADLE_OPTS: >-
+    -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m"
+    -Dorg.gradle.parallel=false
 
 jobs:
   android-build:
