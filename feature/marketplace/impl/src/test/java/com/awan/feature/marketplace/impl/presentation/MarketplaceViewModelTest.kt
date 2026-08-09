@@ -8,6 +8,7 @@ import com.awan.app.core.domain.marketplace.usecase.*
 import com.awan.app.core.domain.profile.usecase.ObserveProfileUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -55,7 +56,8 @@ class MarketplaceViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     @Test
-    fun `loads items and points on init`() = runTest {
+    fun `loads items and points on init`() = runTest(testDispatcher) {
+        backgroundScope.launch { viewModel.state.collect {} }
         val state = viewModel.state.value
         assertEquals(2, state.items.size)
         assertEquals(500, state.points)
@@ -63,21 +65,24 @@ class MarketplaceViewModelTest {
     }
 
     @Test
-    fun `filters items by category`() = runTest {
+    fun `filters items by category`() = runTest(testDispatcher) {
+        backgroundScope.launch { viewModel.state.collect {} }
         viewModel.onAction(MarketplaceAction.SelectCategory(StoreItemType.FRAME))
         assertEquals(1, viewModel.state.value.filteredItems.size)
         assertEquals(StoreItemType.FRAME, viewModel.state.value.filteredItems.first().type)
     }
 
     @Test
-    fun `searches items by name`() = runTest {
+    fun `searches items by name`() = runTest(testDispatcher) {
+        backgroundScope.launch { viewModel.state.collect {} }
         viewModel.onAction(MarketplaceAction.UpdateSearchQuery("Skin"))
         assertEquals(1, viewModel.state.value.filteredItems.size)
         assertEquals("Skin 1", viewModel.state.value.filteredItems.first().name)
     }
 
     @Test
-    fun `ownership derivation works`() = runTest {
+    fun `ownership derivation works`() = runTest(testDispatcher) {
+        backgroundScope.launch { viewModel.state.collect {} }
         val item = storeRepository.storeItemsFlow.value.first()
         storeRepository.inventoryFlow.value = listOf(OwnedItem("oi1", item, "now"))
         
@@ -90,7 +95,8 @@ class MarketplaceViewModelTest {
     }
     
     @Test
-    fun `buys item successfully updates inventory`() = runTest {
+    fun `buys item successfully updates inventory`() = runTest(testDispatcher) {
+        backgroundScope.launch { viewModel.state.collect {} }
         val item = storeRepository.storeItemsFlow.value.first()
         
         // Prepare inventory that will be returned after buy

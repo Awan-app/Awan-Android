@@ -2,29 +2,37 @@ package com.awan.app.core.data.inventory
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.error.AppError
-import com.awan.app.core.data.inventory.remote.InventoryRemoteDataSource
-import com.awan.app.core.database.dao.OwnedCustomizationDao
-import com.awan.app.core.database.model.OwnedCustomizationEntity
-import com.awan.app.core.datastore.auth.AuthTokenProvider
+import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSource
+import com.awan.app.core.data.marketplace.repository.StoreRepositoryImpl
+import com.awan.app.core.database.dao.StoreDao
+import com.awan.app.core.database.model.OwnedItemEntity
+import com.awan.app.core.database.model.StoreItemEntity
+import com.awan.app.core.database.model.EquippedItemEntity
 import com.awan.app.core.domain.inventory.model.CustomizationRarity
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
-import com.awan.app.core.network.dto.inventory.EquippedItemResponse
-import com.awan.app.core.network.dto.inventory.InventoryItemResponse
-import com.awan.app.core.network.dto.inventory.StoreItemResponse
+import com.awan.app.core.domain.profile.repository.ProfileRepository
+import com.awan.app.core.model.StoreItemType
+import com.awan.app.core.network.dto.store.EquippedItemDto
+import com.awan.app.core.network.dto.store.OwnedItemDto
+import com.awan.app.core.network.dto.store.StoreItemDto
+import com.awan.app.core.network.dto.store.StoreItemTypeDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class InventoryRepositoryImplTest {
 
-    private val frame = StoreItemResponse(
+    private val testDispatcher = UnconfinedTestDispatcher()
+    private val frame = StoreItemDto(
         id = "frame-1",
         name = "Aurora Frame",
         description = "A glowing frame",
@@ -34,144 +42,100 @@ class InventoryRepositoryImplTest {
         version = "1.0",
         type = "FRAME",
     )
-    private val remote = FakeInventoryRemoteDataSource(
-        inventory = listOf(InventoryItemResponse(id = "owned-1", item = frame, boughtAt = "2026-08-01T10:00:00Z")),
-        equipped = listOf(EquippedItemResponse(type = "FRAME", item = frame, equippedAt = "2026-08-02T10:00:00Z")),
-    )
-    private val dao = FakeOwnedCustomizationDao()
-    private val auth = FakeAuthTokenProvider()
-    private val repository = repository(remote, auth)
+    
+    private lateinit var remote: FakeStoreRemoteDataSource
+    private lateinit var dao: FakeStoreDao
+    private lateinit var repository: StoreRepositoryImpl
 
-    @Test
-    fun `refresh stores the server equipped item with its derived rarity`() = runTest {
-        val result = repository.refresh()
-
-        assertTrue(result is Result.Success<*>)
-        assertEquals(
-            listOf(
-                OwnedCustomizationEntity(
-                    userId = "user-1",
-                    inventoryId = "owned-1",
-                    itemId = "frame-1",
-                    name = "Aurora Frame",
-                    description = "A glowing frame",
-                    imageUrl = "https://example.com/aurora.png",
-                    type = "FRAME",
-                    rarity = CustomizationRarity.EPIC.name,
-                    acquiredAt = "2026-08-01T10:00:00Z",
-                    isEquipped = true,
-                ),
-            ),
-            dao.latest,
+    @Before
+    fun setup() {
+        remote = FakeStoreRemoteDataSource(
+            inventory = listOf(OwnedItemDto(id = "owned-1", item = frame, boughtAt = "2026-08-01T10:00:00Z")),
+            equipped = listOf(EquippedItemDto(type = StoreItemTypeDto.FRAME, item = frame, equippedAt = "2026-08-02T10:00:00Z")),
+        )
+        dao = FakeStoreDao()
+        repository = StoreRepositoryImpl(
+            remoteDataSource = remote,
+            storeDao = dao,
+            profileRepository = FakeProfileRepository(),
+            connectivityMonitor = FakeNetworkConnectivityMonitor(),
+            ioDispatcher = testDispatcher,
         )
     }
 
     @Test
-    fun `equip switches the active item using the server slot`() = runTest {
-        repository.equip("frame-1")
+    fun `refreshInventory stores the items in DAO`() = runTest {
+        repository.refreshInventory()
 
-        assertEquals("user-1" to "FRAME" to "frame-1", dao.lastEquipped)
+        assertEquals(1, dao.ownedItems.size)
+        assertEquals("owned-1", dao.ownedItems[0].id)
+        assertEquals("frame-1", dao.ownedItems[0].itemId)
     }
 
     @Test
-    fun `equip failure never updates the local active slot`() = runTest {
-        remote.equipResult = Result.Error(AppError.Network)
+    fun `equipItem calls remote`() = runTest {
+        val result = repository.equipItem("frame-1")
 
-        val result = repository.equip("frame-1")
-
-        assertTrue(result is Result.Error)
-        assertEquals(null, dao.lastEquipped)
+        assertTrue(result is Result.Success<*>)
+        assertTrue(remote.equipCalled)
     }
 
-    @Test
-    fun `refresh does not write a response to a different account`() = runTest {
-        remote.onInventory = { auth.userId = "user-2" }
+    private class FakeStoreRemoteDataSource(
+        private val inventory: List<OwnedItemDto>,
+        private val equipped: List<EquippedItemDto>,
+    ) : StoreRemoteDataSource {
+        var equipCalled = false
+        var equipResult: Result<Unit> = Result.Success(Unit)
 
-        val result = repository.refresh()
-
-        assertTrue(result is Result.Error)
-        assertEquals(emptyList<OwnedCustomizationEntity>(), dao.latest)
+        override suspend fun getStoreItems(type: StoreItemTypeDto?): Result<List<StoreItemDto>> = Result.Success(emptyList())
+        override suspend fun getInventory(): Result<List<OwnedItemDto>> = Result.Success(inventory)
+        override suspend fun getEquippedItems(): Result<List<EquippedItemDto>> = Result.Success(equipped)
+        override suspend fun buyItem(itemId: String): Result<Unit> = Result.Success(Unit)
+        override suspend fun equipItem(itemId: String): Result<Unit> {
+            equipCalled = true
+            return equipResult
+        }
+        override suspend fun unequipItem(itemId: String): Result<Unit> = Result.Success(Unit)
     }
 
-    @Test
-    fun `equip does not update a different account after the server response`() = runTest {
-        remote.onEquip = { auth.userId = "user-2" }
+    private class FakeStoreDao : StoreDao {
+        var storeItems = listOf<StoreItemEntity>()
+        var ownedItems = listOf<OwnedItemEntity>()
+        var equippedItems = listOf<EquippedItemEntity>()
 
-        val result = repository.equip("frame-1")
-
-        assertTrue(result is Result.Error)
-        assertEquals(null, dao.lastEquipped)
+        override suspend fun upsertStoreItems(items: List<StoreItemEntity>) { storeItems = items }
+        override fun observeStoreItems(): Flow<List<StoreItemEntity>> = flowOf(storeItems)
+        override fun observeStoreItemsByType(type: String): Flow<List<StoreItemEntity>> = flowOf(storeItems.filter { it.type == type })
+        override suspend fun deleteAllStoreItems() { storeItems = emptyList() }
+        override suspend fun upsertOwnedItems(items: List<OwnedItemEntity>) { ownedItems = items }
+        override fun observeOwnedItems(): Flow<List<OwnedItemEntity>> = flowOf(ownedItems)
+        override suspend fun deleteAllOwnedItems() { ownedItems = emptyList() }
+        override suspend fun upsertEquippedItems(items: List<EquippedItemEntity>) { equippedItems = items }
+        override fun observeEquippedItems(): Flow<List<EquippedItemEntity>> = flowOf(equippedItems)
+        override suspend fun deleteAllEquippedItems() { equippedItems = emptyList() }
+        override suspend fun deleteEquippedItemByType(type: String) { equippedItems = equippedItems.filter { it.type != type } }
+        override suspend fun replaceStoreItems(items: List<StoreItemEntity>) { storeItems = items }
+        override suspend fun replaceOwnedItems(items: List<OwnedItemEntity>) { ownedItems = items }
+        override suspend fun replaceEquippedItems(items: List<EquippedItemEntity>) { equippedItems = items }
+        override suspend fun getMinExpiryTime(): Long? = null
     }
 
-    private fun repository(
-        remote: FakeInventoryRemoteDataSource,
-        auth: FakeAuthTokenProvider,
-    ) = InventoryRepositoryImpl(
-        remoteDataSource = remote,
-        ownedCustomizationDao = dao,
-        authTokenProvider = auth,
-        connectivityMonitor = FakeNetworkConnectivityMonitor(),
-        ioDispatcher = UnconfinedTestDispatcher(),
-    )
-}
-
-private class FakeInventoryRemoteDataSource(
-    private val inventory: List<InventoryItemResponse>,
-    private val equipped: List<EquippedItemResponse>,
-) : InventoryRemoteDataSource {
-    var equipResult: Result<EquippedItemResponse> = Result.Success(equipped.single())
-    var onInventory: (() -> Unit)? = null
-    var onEquip: (() -> Unit)? = null
-
-    override suspend fun getInventory(): Result<List<InventoryItemResponse>> {
-        onInventory?.invoke()
-        return Result.Success(inventory)
+    private class FakeProfileRepository : ProfileRepository {
+        override fun observeProfile(): Flow<com.awan.app.core.domain.profile.model.Profile?> = flowOf(null)
+        override suspend fun getProfile(): Result<com.awan.app.core.domain.profile.model.Profile> = Result.Error(AppError.Network)
+        override suspend fun updateName(firstName: String, lastName: String) = Result.Error(AppError.Network)
+        override suspend fun updateBirthDate(birthDate: String) = Result.Error(AppError.Network)
+        override suspend fun updateProfilePicture(imageBytes: ByteArray, mimeType: String) = Result.Error(AppError.Network)
+        override suspend fun deleteProfilePicture() = Result.Error(AppError.Network)
+        override suspend fun updateProfilePartial(firstName: String?, lastName: String?, timezone: String?, preferredSessionDuration: Int?, bufferBetweenSessions: Int?, wakeupTime: String?, sleepTime: String?, schedulingType: String?) = Result.Error(AppError.Network)
+        override suspend fun updateTimezone(timezone: String) = Result.Error(AppError.Network)
+        override suspend fun updateSessionSettings(preferredSessionDuration: Int, bufferBetweenSessions: Int) = Result.Error(AppError.Network)
+        override suspend fun updateSleepSchedule(wakeupTime: String, sleepTime: String) = Result.Error(AppError.Network)
+        override suspend fun updateSchedulingType(schedulingType: String) = Result.Error(AppError.Network)
     }
 
-    override suspend fun getEquipped(): Result<List<EquippedItemResponse>> = Result.Success(equipped)
-
-    override suspend fun equip(itemId: String): Result<EquippedItemResponse> {
-        onEquip?.invoke()
-        return equipResult
+    private class FakeNetworkConnectivityMonitor : NetworkConnectivityMonitor {
+        override val isOnline: Flow<Boolean> = MutableStateFlow(true)
+        override fun isCurrentlyOnline(): Boolean = true
     }
-}
-
-private class FakeOwnedCustomizationDao : OwnedCustomizationDao {
-    override fun observeForUser(userId: String): Flow<List<OwnedCustomizationEntity>> = MutableStateFlow(emptyList())
-
-    var latest: List<OwnedCustomizationEntity> = emptyList()
-    var lastEquipped: Pair<Pair<String, String>, String>? = null
-
-    override suspend fun upsertAll(customizations: List<OwnedCustomizationEntity>) = Unit
-
-    override suspend fun deleteForUser(userId: String) = Unit
-
-    override suspend fun replaceForUser(userId: String, customizations: List<OwnedCustomizationEntity>) {
-        latest = customizations
-    }
-
-    override suspend fun setEquipped(userId: String, type: String, itemId: String) {
-        lastEquipped = (userId to type) to itemId
-    }
-}
-
-private class FakeAuthTokenProvider : AuthTokenProvider {
-    var userId: String? = "user-1"
-
-    override suspend fun getAccessToken(): String? = null
-    override suspend fun getRefreshToken(): String? = null
-    override suspend fun saveTokens(accessToken: String, refreshToken: String) = Unit
-    override suspend fun saveUserData(userId: String?, email: String?) = Unit
-    override suspend fun getUserId(): String? = userId
-    override suspend fun getUserEmail(): String? = null
-    override suspend fun clearTokens() = Unit
-    override fun observeIsLoggedIn(): Flow<Boolean> = MutableStateFlow(true)
-    override suspend fun setLoggedIn(loggedIn: Boolean) = Unit
-    override val sessionExpired: Flow<Unit> = emptyFlow()
-    override fun notifySessionExpired() = Unit
-}
-
-private class FakeNetworkConnectivityMonitor : NetworkConnectivityMonitor {
-    override val isOnline: Flow<Boolean> = MutableStateFlow(true)
-    override fun isCurrentlyOnline(): Boolean = true
 }

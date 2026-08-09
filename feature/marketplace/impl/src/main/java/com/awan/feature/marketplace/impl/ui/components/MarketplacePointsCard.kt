@@ -2,6 +2,7 @@ package com.awan.feature.marketplace.impl.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +27,7 @@ import com.awan.feature.marketplace.impl.R
 @Composable
 fun MarketplacePointsCard(
     points: Int,
+    onAddClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -51,7 +53,7 @@ fun MarketplacePointsCard(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF3B82F6)),
+                        .background(AwanTheme.colors.pointsIcon),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -69,14 +71,14 @@ fun MarketplacePointsCard(
                             style = AwanTheme.typography.heading.copy(
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF3B82F6)
+                                color = AwanTheme.colors.pointsIcon
                             )
                         )
                         AwanText(
                             text = stringResource(R.string.marketplace_points_suffix),
                             style = AwanTheme.typography.body.copy(
                                 fontSize = 18.sp,
-                                color = Color(0xFF3B82F6)
+                                color = AwanTheme.colors.pointsIcon
                             )
                         )
                     }
@@ -90,14 +92,16 @@ fun MarketplacePointsCard(
             }
 
             Surface(
-                modifier = Modifier.size(32.dp),
-                color = Color(0xFF3B82F6).copy(alpha = 0.1f),
+                modifier = Modifier
+                    .size(32.dp)
+                    .clickable(onClick = onAddClick),
+                color = AwanTheme.colors.pointsIcon.copy(alpha = 0.1f),
                 shape = CircleShape
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = null,
-                    tint = Color(0xFF3B82F6),
+                    tint = AwanTheme.colors.pointsIcon,
                     modifier = Modifier.padding(6.dp)
                 )
             }

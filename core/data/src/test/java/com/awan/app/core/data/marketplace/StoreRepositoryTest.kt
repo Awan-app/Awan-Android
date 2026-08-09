@@ -2,6 +2,7 @@ package com.awan.app.core.data.marketplace
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSource
+import com.awan.app.core.data.marketplace.repository.StoreRepositoryImpl
 import com.awan.app.core.database.dao.StoreDao
 import com.awan.app.core.database.model.EquippedItemEntity
 import com.awan.app.core.database.model.OwnedItemEntity
@@ -56,7 +57,7 @@ class StoreRepositoryTest {
         )
         fakeStoreDao.storeItems = entities
 
-        val result = repository.getStoreItems().first()
+        val result = repository.getStoreItems(null).first()
 
         assertEquals(1, result.size)
         assertEquals("1", result[0].id)
@@ -72,7 +73,7 @@ class StoreRepositoryTest {
 
         val result = repository.buyItem("1")
 
-        assertTrue(result is Result.Success)
+        assertTrue(result is Result.Success<*>)
         assertTrue(fakeRemoteDataSource.buyCalled)
         assertTrue(fakeProfileRepository.getProfileCalled)
         

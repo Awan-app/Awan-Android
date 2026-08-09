@@ -26,6 +26,7 @@ import kotlin.time.Duration.Companion.seconds
 @Composable
 fun MarketplaceScreen(
     viewModel: MarketplaceViewModel = hiltViewModel(),
+    onNavigateToHome: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -64,17 +65,20 @@ fun MarketplaceScreen(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                MarketplacePointsCard(points = state.points)
-
-                CategoryTabs(
-                    selectedCategory = state.selectedCategory,
-                    onCategorySelected = { viewModel.onAction(MarketplaceAction.SelectCategory(it)) }
+                MarketplacePointsCard(
+                    points = state.points,
+                    onAddClick = onNavigateToHome
                 )
 
                 MarketplaceSearchBar(
                     query = state.searchQuery,
                     onQueryChange = { viewModel.onAction(MarketplaceAction.UpdateSearchQuery(it)) },
                     modifier = Modifier.padding(horizontal = 20.dp)
+                )
+
+                CategoryTabs(
+                    selectedCategory = state.selectedCategory,
+                    onCategorySelected = { viewModel.onAction(MarketplaceAction.SelectCategory(it)) }
                 )
 
                 if (state.isLoading && state.items.isEmpty()) {

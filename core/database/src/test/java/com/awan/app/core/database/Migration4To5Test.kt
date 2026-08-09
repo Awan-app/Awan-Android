@@ -20,7 +20,8 @@ class Migration4To5Test {
 
         AwanDatabase.MIGRATION_4_5.migrate(database)
 
-        assertTrue(sqlExecuted.single().contains("CREATE TABLE IF NOT EXISTS `owned_customizations`"))
-        assertTrue(sqlExecuted.single().contains("PRIMARY KEY(`userId`, `itemId`)"))
+        assertTrue(sqlExecuted.any { it.contains("CREATE TABLE IF NOT EXISTS `store_items`") })
+        assertTrue(sqlExecuted.any { it.contains("CREATE TABLE IF NOT EXISTS `owned_items`") })
+        assertTrue(sqlExecuted.any { it.contains("CREATE TABLE IF NOT EXISTS `equipped_items`") })
     }
 }

@@ -8,12 +8,16 @@ import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.dao.TemplateDao
 import com.awan.app.core.database.dao.TemplateOverrideDao
+import com.awan.app.core.database.dao.StoreDao
 import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.CachedScheduleDateEntity
 import com.awan.app.core.database.model.CategoryEntity
+import com.awan.app.core.database.model.EquippedItemEntity
 import com.awan.app.core.database.model.GoalEntity
+import com.awan.app.core.database.model.OwnedItemEntity
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.StoreItemEntity
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
 import com.awan.app.core.database.model.TemplateDayOfWeekEntity
@@ -25,6 +29,7 @@ import com.awan.app.core.database.model.UserWithPreferences
 import com.awan.app.core.database.model.ZoneEntity
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
+import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSource
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
@@ -42,6 +47,10 @@ import com.awan.app.core.network.dto.profile.UpdateSessionSettingsRequest
 import com.awan.app.core.network.dto.profile.UpdateSleepScheduleRequest
 import com.awan.app.core.network.dto.profile.UpdateTimezoneRequest
 import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.network.dto.store.EquippedItemDto
+import com.awan.app.core.network.dto.store.OwnedItemDto
+import com.awan.app.core.network.dto.store.StoreItemDto
+import com.awan.app.core.network.dto.store.StoreItemTypeDto
 import com.awan.app.core.network.dto.task.AiTextToTasksRequest
 import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
@@ -116,6 +125,15 @@ private class FakeCategoryRemoteDataSource(
     override suspend fun createCategory(name: String): Result<CategoryDto> = error("not used")
     override suspend fun getCategory(categoryId: String): Result<CategoryDto> = error("not used")
     override suspend fun updateCategory(categoryId: String, name: String): Result<CategoryDto> = error("not used")
+}
+
+private class FakeStoreRemoteDataSource : StoreRemoteDataSource {
+    override suspend fun getStoreItems(type: StoreItemTypeDto?): Result<List<StoreItemDto>> = Result.Success(emptyList())
+    override suspend fun getInventory(): Result<List<OwnedItemDto>> = Result.Success(emptyList())
+    override suspend fun buyItem(itemId: String): Result<Unit> = Result.Success(Unit)
+    override suspend fun getEquippedItems(): Result<List<EquippedItemDto>> = Result.Success(emptyList())
+    override suspend fun equipItem(itemId: String): Result<Unit> = Result.Success(Unit)
+    override suspend fun unequipItem(itemId: String): Result<Unit> = Result.Success(Unit)
 }
 
 private class FakeProfileRemoteDataSource : ProfileRemoteDataSource {
@@ -219,6 +237,27 @@ private class FakeGoalDao : GoalDao {
     override suspend fun getMinExpiryTime(): Long? = null
 }
 
+private class FakeStoreDao : StoreDao {
+    var storeItems = listOf<StoreItemEntity>()
+    var ownedItems = listOf<OwnedItemEntity>()
+    var equippedItems = listOf<EquippedItemEntity>()
+    override suspend fun upsertStoreItems(items: List<StoreItemEntity>) { storeItems = items }
+    override fun observeStoreItems(): Flow<List<StoreItemEntity>> = flowOf(storeItems)
+    override fun observeStoreItemsByType(type: String): Flow<List<StoreItemEntity>> = flowOf(storeItems.filter { it.type == type })
+    override suspend fun deleteAllStoreItems() { storeItems = emptyList() }
+    override suspend fun upsertOwnedItems(items: List<OwnedItemEntity>) { ownedItems = items }
+    override fun observeOwnedItems(): Flow<List<OwnedItemEntity>> = flowOf(ownedItems)
+    override suspend fun deleteAllOwnedItems() { ownedItems = emptyList() }
+    override suspend fun upsertEquippedItems(items: List<EquippedItemEntity>) { equippedItems = items }
+    override fun observeEquippedItems(): Flow<List<EquippedItemEntity>> = flowOf(equippedItems)
+    override suspend fun deleteAllEquippedItems() { equippedItems = emptyList() }
+    override suspend fun deleteEquippedItemByType(type: String) { equippedItems = equippedItems.filter { it.type != type } }
+    override suspend fun replaceStoreItems(items: List<StoreItemEntity>) { storeItems = items }
+    override suspend fun replaceOwnedItems(items: List<OwnedItemEntity>) { ownedItems = items }
+    override suspend fun replaceEquippedItems(items: List<EquippedItemEntity>) { equippedItems = items }
+    override suspend fun getMinExpiryTime(): Long? = null
+}
+
 private class FakeUserDao : UserDao {
     val upsertedUsers = mutableListOf<UserEntity>()
     val upsertedPrefs = mutableListOf<UserPreferencesEntity>()
@@ -313,12 +352,14 @@ class OfflineSyncCoordinatorTest {
         taskRemoteDataSource: TaskRemoteDataSource = FakeTaskRemoteDataSource(),
         goalRemoteDataSource: GoalRemoteDataSource = FakeGoalRemoteDataSource(),
         categoryRemoteDataSource: CategoryRemoteDataSource = FakeCategoryRemoteDataSource(),
+        storeRemoteDataSource: StoreRemoteDataSource = FakeStoreRemoteDataSource(),
         profileRemoteDataSource: ProfileRemoteDataSource = FakeProfileRemoteDataSource(),
         zonesRemoteDataSource: ZonesRemoteDataSource = FakeZonesRemoteDataSource(),
         taskDao: TaskDao = FakeTaskDao(),
         categoryDao: CategoryDao = FakeCategoryDao(),
         sessionDao: SessionDao = FakeSessionDao(),
         goalDao: GoalDao = FakeGoalDao(),
+        storeDao: StoreDao = FakeStoreDao(),
         userDao: UserDao = FakeUserDao(),
         zoneDao: ZoneDao = FakeZoneDao(),
         templateDao: TemplateDao = FakeTemplateDao(),
@@ -329,12 +370,14 @@ class OfflineSyncCoordinatorTest {
         taskRemoteDataSource = taskRemoteDataSource,
         goalRemoteDataSource = goalRemoteDataSource,
         categoryRemoteDataSource = categoryRemoteDataSource,
+        storeRemoteDataSource = storeRemoteDataSource,
         profileRemoteDataSource = profileRemoteDataSource,
         zonesRemoteDataSource = zonesRemoteDataSource,
         taskDao = taskDao,
         categoryDao = categoryDao,
         sessionDao = sessionDao,
         goalDao = goalDao,
+        storeDao = storeDao,
         userDao = userDao,
         zoneDao = zoneDao,
         templateDao = templateDao,

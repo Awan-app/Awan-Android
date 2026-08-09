@@ -54,9 +54,18 @@ fun ItemDetailsBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
+                .padding(horizontal = 24.dp)
+                .padding(top = AwanTheme.spacing.sm, bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Box(
+                modifier = Modifier
+                    .padding(bottom = AwanTheme.spacing.sm)
+                    .size(width = 36.dp, height = 4.dp)
+                    .clip(AwanTheme.shapes.pill)
+                    .background(AwanTheme.colors.line)
+            )
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
@@ -154,7 +163,7 @@ fun ItemDetailsBottomSheet(
             Spacer(modifier = Modifier.height(24.dp))
 
             val canAfford = currentPoints >= item.price
-            
+
             AwanButton(
                 onClick = { if (isOwned) onEquipClick() else onBuyClick() },
                 modifier = Modifier.fillMaxWidth(),
