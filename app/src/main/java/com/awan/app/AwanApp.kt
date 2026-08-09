@@ -60,6 +60,8 @@ import com.awan.feature.goals.api.GoalsRoute
 import com.awan.feature.goals.impl.navigation.goalsEntry
 import com.awan.feature.home.api.HomeRoute
 import com.awan.feature.home.impl.navigation.homeEntry
+import com.awan.feature.inventory.api.InventoryRoute
+import com.awan.feature.inventory.impl.navigation.inventoryEntry
 import com.awan.feature.marketplace.impl.navigation.marketplaceEntry
 import com.awan.feature.auth.api.OtpRoute
 import com.awan.feature.onboarding.api.OnboardingRoute
@@ -221,9 +223,11 @@ fun AwanApp(
             chatEntry()
             goalsEntry()
             aiTasksEntry(onBack = { navigator.goBack() })
+            inventoryEntry(onBack = { navigator.goBack() })
             profileEntry(
                 onNavigateToDailyZones = { navigator.navigate(DailyZonesRoute) },
                 onNavigateToEditRoutine = { templateId -> navigator.navigate(EditRoutineRoute(templateId)) },
+                onNavigateToInventory = { navigator.navigate(InventoryRoute) },
                 onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) },
                 onBack = { navigator.goBack() },
             )
