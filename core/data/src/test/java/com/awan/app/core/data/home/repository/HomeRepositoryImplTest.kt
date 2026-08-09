@@ -56,33 +56,6 @@ class HomeRepositoryImplTest {
     }
     private val testDispatcher = UnconfinedTestDispatcher()
 
-    @Test
-    fun `updateSessionStatus maps LocalDateTime to ISO string correctly`() = runTest(testDispatcher) {
-        val repository = HomeRepositoryImpl(
-            remoteDataSource,
-            dummyUserDao(), dummyTaskDao(), dummySessionDao(), dummyZoneDao(), dummyTemplateDao(), dummyTemplateOverrideDao(), dummyCategoryDao(),
-            connectivityMonitor,
-            testDispatcher
-        )
-        val sessionId = "session-1"
-        val start = LocalDateTime.of(2026, 8, 8, 10, 0)
-        val end = LocalDateTime.of(2026, 8, 8, 11, 0)
-        val params = UpdateSessionParams(
-            start = start,
-            end = end,
-            status = SessionStatus.COMPLETED,
-            locked = true
-        )
-
-        val result = repository.updateSessionStatus(sessionId, params)
-
-        assertTrue(result is Result.Success)
-        assertEquals("COMPLETED", remoteDataSource.lastUpdate?.status)
-        assertEquals(start.toString(), remoteDataSource.lastUpdate?.start)
-        assertEquals(end.toString(), remoteDataSource.lastUpdate?.end)
-        assertEquals(true, remoteDataSource.lastUpdate?.locked)
-    }
-
     // Dummy implementations to satisfy compiler
     private fun dummyUserDao() = object : UserDao {
         override suspend fun upsertUser(user: UserEntity) {}

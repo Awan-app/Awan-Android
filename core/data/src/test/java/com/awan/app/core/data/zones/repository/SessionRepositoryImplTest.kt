@@ -1,5 +1,6 @@
 package com.awan.app.core.data.zones.repository
 
+import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.model.SessionEntity
@@ -23,13 +24,14 @@ private class FakeSessionDao : SessionDao {
     val upserted = mutableListOf<SessionEntity>()
     val deletedIds = mutableListOf<String>()
     val replacedDates = mutableListOf<List<String>>()
+    var sessionsToReturn = emptyList<SessionEntity>()
 
     override suspend fun upsertSession(session: SessionEntity) { upserted += session }
     override suspend fun upsertSessions(sessions: List<SessionEntity>) { upserted += sessions }
     override fun observeSessionsForDate(date: String): Flow<List<SessionEntity>> = flowOf(emptyList())
     override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<SessionEntity>> = flowOf(emptyList())
-    override suspend fun getSessionsForDate(date: String): List<SessionEntity> = emptyList()
-    override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = emptyList()
+    override suspend fun getSessionsForDate(date: String): List<SessionEntity> = sessionsToReturn
+    override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = sessionsToReturn
     override suspend fun getSession(id: String): SessionEntity? = null
     override suspend fun deleteSessionsForDates(dates: List<String>) {}
     override suspend fun deleteSession(id: String) { deletedIds += id }
@@ -41,17 +43,23 @@ private class FakeSessionDao : SessionDao {
 
 private class FakeRemoteDataSource : SessionRemoteDataSource {
     var lastUpdate: Pair<String, UpdateSessionRequest>? = null
+    var resultToReturn: Result<*> = Result.Success(emptyList<SessionDto>())
     
-    override suspend fun getSessionsByDate(date: String): Result<List<SessionDto>> = Result.Success(emptyList())
-    override suspend fun getSessionsByRange(startDate: String, endDate: String): Result<Map<String, List<SessionDto>>> = Result.Success(emptyMap())
-    override suspend fun getSession(sessionId: String): Result<SessionDto> = Result.Error(com.awan.app.core.common.error.AppError.NotFound)
+    @Suppress("UNCHECKED_CAST")
+    override suspend fun getSessionsByDate(date: String): Result<List<SessionDto>> = resultToReturn as Result<List<SessionDto>>
+    
+    @Suppress("UNCHECKED_CAST")
+    override suspend fun getSessionsByRange(startDate: String, endDate: String): Result<Map<String, List<SessionDto>>> = resultToReturn as Result<Map<String, List<SessionDto>>>
+    
+    override suspend fun getSession(sessionId: String): Result<SessionDto> = Result.Error(AppError.NotFound)
     override suspend fun updateSession(sessionId: String, request: UpdateSessionRequest): Result<SessionDto> {
         lastUpdate = sessionId to request
         return Result.Success(SessionDto(
             id = sessionId,
             start = request.start ?: "2026-08-08T10:00:00",
             end = request.end ?: "2026-08-08T11:00:00",
-            status = request.status
+            status = request.status,
+            locked = request.locked ?: false
         ))
     }
     override suspend fun updateSessionStatus(sessionId: String, status: String): Result<SessionDto> = TODO()
@@ -68,19 +76,109 @@ class SessionRepositoryImplTest {
     private val repository = SessionRepositoryImpl(fakeRemote, fakeDao)
 
     @Test
+    fun `getSessionsByDate returns remote sessions and persists them on success`() = runTest(testDispatcher) {
+        val date = LocalDate.of(2026, 8, 8)
+        val remoteSessions = listOf(
+            SessionDto("s1", "2026-08-08T10:00:00", "2026-08-08T11:00:00", "SCHEDULED")
+        )
+        fakeRemote.resultToReturn = Result.Success(remoteSessions)
+
+        val result = repository.getSessionsByDate(date)
+
+        assertTrue(result is Result.Success)
+        assertEquals(1, (result as Result.Success).data.size)
+        assertEquals("s1", result.data.first().id)
+        
+        assertEquals(1, fakeDao.upserted.size)
+        assertEquals("s1", fakeDao.upserted.first().id)
+        assertTrue(fakeDao.replacedDates.contains(listOf("2026-08-08")))
+    }
+
+    @Test
+    fun `getSessionsByDate returns cached sessions on remote failure`() = runTest(testDispatcher) {
+        val date = LocalDate.of(2026, 8, 8)
+        fakeRemote.resultToReturn = Result.Error(AppError.Network)
+        fakeDao.sessionsToReturn = listOf(
+            SessionEntity("s1", "t1", null, "2026-08-08", "10:00:00", "11:00:00", "SCHEDULED", false)
+        )
+
+        val result = repository.getSessionsByDate(date)
+
+        assertTrue(result is Result.Success)
+        assertEquals(1, (result as Result.Success).data.size)
+        assertEquals("s1", result.data.first().id)
+    }
+
+    @Test
+    fun `getSessionsByDate returns error on remote failure and empty cache`() = runTest(testDispatcher) {
+        val date = LocalDate.of(2026, 8, 8)
+        fakeRemote.resultToReturn = Result.Error(AppError.Network)
+        fakeDao.sessionsToReturn = emptyList()
+
+        val result = repository.getSessionsByDate(date)
+
+        assertTrue(result is Result.Error)
+        assertEquals(AppError.Network, (result as Result.Error).error)
+    }
+
+    @Test
+    fun `getSessionsByRange returns remote sessions and persists them on success`() = runTest(testDispatcher) {
+        val start = LocalDate.of(2026, 8, 8)
+        val end = LocalDate.of(2026, 8, 9)
+        val remoteSessions = mapOf(
+            "2026-08-08" to listOf(SessionDto("s1", "2026-08-08T10:00:00", "2026-08-08T11:00:00", "SCHEDULED")),
+            "2026-08-09" to listOf(SessionDto("s2", "2026-08-09T10:00:00", "2026-08-09T11:00:00", "SCHEDULED"))
+        )
+        fakeRemote.resultToReturn = Result.Success(remoteSessions)
+
+        val result = repository.getSessionsByRange(start, end)
+
+        assertTrue(result is Result.Success)
+        val data = (result as Result.Success).data
+        assertEquals(2, data.size)
+        assertEquals(1, data[start]?.size)
+        assertEquals(1, data[end]?.size)
+        
+        assertEquals(2, fakeDao.upserted.size)
+        assertTrue(fakeDao.replacedDates.first().contains("2026-08-08"))
+        assertTrue(fakeDao.replacedDates.first().contains("2026-08-09"))
+    }
+
+    @Test
+    fun `getSessionsByRange returns cached sessions on remote failure`() = runTest(testDispatcher) {
+        val start = LocalDate.of(2026, 8, 8)
+        val end = LocalDate.of(2026, 8, 9)
+        fakeRemote.resultToReturn = Result.Error(AppError.Network)
+        fakeDao.sessionsToReturn = listOf(
+            SessionEntity("s1", "t1", null, "2026-08-08", "10:00:00", "11:00:00", "SCHEDULED", false),
+            SessionEntity("s2", "t2", null, "2026-08-09", "10:00:00", "11:00:00", "SCHEDULED", false)
+        )
+
+        val result = repository.getSessionsByRange(start, end)
+
+        assertTrue(result is Result.Success)
+        val data = (result as Result.Success).data
+        assertEquals(2, data.size)
+        assertEquals("s1", data[start]?.first()?.id)
+        assertEquals("s2", data[end]?.first()?.id)
+    }
+
+    @Test
     fun `updateSession calls remote and updates Room`() = runTest(testDispatcher) {
         val start = LocalDateTime.of(2026, 8, 8, 10, 0)
-        val params = UpdateSessionParams(start = start, status = SessionStatus.COMPLETED)
+        val params = UpdateSessionParams(start = start, status = SessionStatus.COMPLETED, locked = true)
         
         repository.updateSession("s1", params)
         
         assertEquals("s1", fakeRemote.lastUpdate?.first)
         assertEquals("2026-08-08T10:00:00", fakeRemote.lastUpdate?.second?.start)
         assertEquals("COMPLETED", fakeRemote.lastUpdate?.second?.status)
+        assertEquals(true, fakeRemote.lastUpdate?.second?.locked)
         
         assertEquals(1, fakeDao.upserted.size)
         assertEquals("s1", fakeDao.upserted.first().id)
         assertEquals("COMPLETED", fakeDao.upserted.first().status)
+        assertTrue(fakeDao.upserted.first().locked)
     }
 
     @Test

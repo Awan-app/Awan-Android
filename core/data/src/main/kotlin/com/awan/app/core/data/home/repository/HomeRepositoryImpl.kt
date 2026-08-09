@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import android.util.Log
-import com.awan.app.core.data.common.extractTimeFromIso
 import java.time.LocalDate
 import java.time.LocalTime
 import javax.inject.Inject
@@ -36,7 +35,6 @@ import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.SessionTaskDetail
 import com.awan.app.core.model.TaskDetailInfo
 import com.awan.app.core.model.TaskStatus
-import com.awan.app.core.model.UpdateSessionParams
 
 @Singleton
 class HomeRepositoryImpl @Inject constructor(
@@ -193,39 +191,6 @@ class HomeRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun updateSessionStatus(
-        sessionId: String,
-        params: UpdateSessionParams,
-    ): Result<Unit> = withContext(ioDispatcher) {
-        if (!connectivityMonitor.isCurrentlyOnline()) {
-            return@withContext Result.Error(AppError.Network)
-        }
-        val result = remoteDataSource.updateSession(
-            sessionId = sessionId,
-            status = params.status?.name,
-            locked = params.locked,
-            startIso = params.start?.toString(),
-            endIso = params.end?.toString(),
-        )
-        if (result is Result.Success) {
-            val dto = result.data
-            val existing = sessionDao.getSession(sessionId)
-            if (existing != null) {
-                sessionDao.upsertSession(
-                    existing.copy(
-                        status = dto.status ?: params.status?.name ?: existing.status,
-                        startTime = extractTimeFromIso(dto.start, existing.startTime),
-                        endTime = extractTimeFromIso(dto.end, existing.endTime),
-                        locked = dto.locked,
-                    )
-                )
-            }
-            Result.Success(Unit)
-        } else {
-            Result.Error((result as Result.Error).error)
-        }
-    }
-
     private fun parseLocalTime(timeStr: String): LocalTime {
         return try {
             LocalTime.parse(timeStr)
@@ -284,22 +249,6 @@ class HomeRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateSessionLock(
-        sessionId: String,
-        locked: Boolean,
-    ): Result<Unit> {
-        val result = if (locked) {
-            remoteDataSource.lockSession(sessionId)
-        } else {
-            remoteDataSource.unlockSession(sessionId)
-        }
-        return when (result) {
-            is Result.Success -> Result.Success(Unit)
-            is Result.Error -> Result.Error(result.error)
-            else -> Result.Error(AppError.Unknown(Throwable("Failed to update session lock state")))
-        }
-    }
-
     override suspend fun updateTaskDetails(
         taskId: String,
         title: String?,
@@ -322,15 +271,6 @@ class HomeRepositoryImpl @Inject constructor(
             is Result.Success -> Result.Success(Unit)
             is Result.Error -> Result.Error(result.error)
             else -> Result.Error(AppError.Unknown(Throwable("Failed to update task details")))
-        }
-    }
-
-    override suspend fun deleteSession(sessionId: String): Result<Unit> {
-        val result = remoteDataSource.deleteSession(sessionId)
-        return when (result) {
-            is Result.Success -> Result.Success(Unit)
-            is Result.Error -> Result.Error(result.error)
-            else -> Result.Error(AppError.Unknown(Throwable("Failed to delete session")))
         }
     }
 

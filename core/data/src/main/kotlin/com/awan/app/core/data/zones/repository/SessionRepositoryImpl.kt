@@ -24,29 +24,80 @@ class SessionRepositoryImpl @Inject constructor(
 
     override suspend fun getSessionsByDate(date: LocalDate): Result<List<Session>> {
         val dateStr = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
-        val result = sessionRemoteDataSource.getSessionsByDate(dateStr)
-        if (result is Result.Success) {
-            sessionDao.replaceSessionsForDates(listOf(dateStr), result.data.map { it.toEntity() })
+
+        return when (val result = sessionRemoteDataSource.getSessionsByDate(dateStr)) {
+            is Result.Success -> {
+                sessionDao.replaceSessionsForDates(
+                    listOf(dateStr),
+                    result.data.map { it.toEntity() }
+                )
+
+                Result.Success(result.data.map { it.toDomain() })
+            }
+
+            is Result.Error -> {
+                val cached = sessionDao.getSessionsForDate(dateStr)
+
+                if (cached.isNotEmpty()) {
+                    Result.Success(cached.map { it.toDomain() })
+                } else {
+                    result
+                }
+            }
+
+            Result.Loading -> Result.Loading
         }
-        return result.map { list -> list.map { it.toDomain() } }
     }
 
     override suspend fun getSessionsByRange(
         startDate: LocalDate,
         endDate: LocalDate
     ): Result<Map<LocalDate, List<Session>>> {
-        val result = sessionRemoteDataSource.getSessionsByRange(
-            startDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
-            endDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
-        )
-        if (result is Result.Success) {
-            val allEntities = result.data.values.flatten().map { it.toEntity() }
-            val dates = result.data.keys.toList()
-            sessionDao.replaceSessionsForDates(dates, allEntities)
-        }
-        return result.map { map ->
-            map.mapKeys { LocalDate.parse(it.key) }
-                .mapValues { entry -> entry.value.map { it.toDomain() } }
+        val startStr = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+        val endStr = endDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+
+        return when (val result = sessionRemoteDataSource.getSessionsByRange(startStr, endStr)) {
+            is Result.Success -> {
+                val allEntities = result.data.values
+                    .flatten()
+                    .map { it.toEntity() }
+
+                val dates = result.data.keys.toList()
+
+                sessionDao.replaceSessionsForDates(
+                    dates,
+                    allEntities
+                )
+
+                Result.Success(
+                    result.data
+                        .mapKeys { LocalDate.parse(it.key) }
+                        .mapValues { entry ->
+                            entry.value.map { it.toDomain() }
+                        }
+                )
+            }
+
+            is Result.Error -> {
+                val cached = sessionDao.getSessionsForDateRange(
+                    startStr,
+                    endStr
+                )
+
+                if (cached.isNotEmpty()) {
+                    val grouped = cached
+                        .groupBy { LocalDate.parse(it.date) }
+                        .mapValues { entry ->
+                            entry.value.map { it.toDomain() }
+                        }
+
+                    Result.Success(grouped)
+                } else {
+                    result
+                }
+            }
+
+            Result.Loading -> Result.Loading
         }
     }
 
@@ -62,7 +113,8 @@ class SessionRepositoryImpl @Inject constructor(
             UpdateSessionRequest(
                 start = params.start?.format(sessionDateTimeFormatter),
                 end = params.end?.format(sessionDateTimeFormatter),
-                status = params.status?.name
+                status = params.status?.name,
+                locked = params.locked
             )
         )
         if (result is Result.Success) {

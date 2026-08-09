@@ -21,7 +21,6 @@ import com.awan.app.core.domain.home.model.DaySession
 import com.awan.app.core.domain.home.model.DayZone
 import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.UpdateSessionParams
-import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.domain.home.usecase.GetDayScheduleUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -45,6 +44,8 @@ import com.awan.app.core.domain.home.usecase.GetSessionDetailUseCase
 import com.awan.app.core.domain.home.usecase.UpdateTaskDetailUseCase
 import com.awan.app.core.domain.home.usecase.DeleteSessionUseCase
 import com.awan.app.core.domain.home.usecase.DeleteTaskUseCase
+import com.awan.app.core.domain.zones.usecase.UpdateSessionUseCase
+import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
 import com.awan.feature.home.impl.ui.components.calculateDurationMinutes
 import com.awan.feature.home.impl.ui.components.calculateEnd
 
@@ -55,7 +56,8 @@ class HomeViewModel @Inject constructor(
     private val updateTaskDetailUseCase: UpdateTaskDetailUseCase,
     private val deleteSessionUseCase: DeleteSessionUseCase,
     private val deleteTaskUseCase: DeleteTaskUseCase,
-    private val homeRepository: HomeRepository,
+    private val updateSessionUseCase: UpdateSessionUseCase,
+    private val getProfileUseCase: GetProfileUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -70,15 +72,15 @@ class HomeViewModel @Inject constructor(
 
     private fun loadUserProfile() {
         viewModelScope.launch {
-            when (val result = homeRepository.getUserProfile()) {
+            when (val result = getProfileUseCase()) {
                 is Result.Success -> {
                     val user = result.data
-                    val name = user.firstName.takeIf { it.isNotBlank() } ?: "User"
+                    val name = user.firstName?.takeIf { it.isNotBlank() } ?: "User"
                     _uiState.update { state ->
                         state.copy(
                             userName = name,
-                            streakCount = user.streak,
-                            pointsCount = user.points,
+                            streakCount = user.streak ?: 0,
+                            pointsCount = user.points ?: 0,
                         )
                     }
                 }
@@ -289,7 +291,7 @@ class HomeViewModel @Inject constructor(
         val endTime = startTime.plusMinutes(sessionToSync.durationMinutes.toLong())
 
         viewModelScope.launch {
-            homeRepository.updateSessionStatus(
+            updateSessionUseCase(
                 sessionId = sessionToSync.id,
                 params = UpdateSessionParams(
                     start = startTime,
@@ -337,7 +339,7 @@ class HomeViewModel @Inject constructor(
         val endTime = startTime.plusMinutes(sessionToSync.durationMinutes.toLong())
 
         viewModelScope.launch {
-            homeRepository.updateSessionStatus(
+            updateSessionUseCase(
                 sessionId = sessionToSync.id,
                 params = UpdateSessionParams(
                     start = startTime,
@@ -382,7 +384,7 @@ class HomeViewModel @Inject constructor(
                     SessionStatus.SCHEDULED
                 }
 
-                val result = homeRepository.updateSessionStatus(
+                val result = updateSessionUseCase(
                     sessionId = session.id,
                     params = UpdateSessionParams(
                         start = startTime,
@@ -526,7 +528,10 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val result = homeRepository.updateSessionLock(sessionId, newLocked)
+            val result = updateSessionUseCase(
+                sessionId = sessionId,
+                params = UpdateSessionParams(locked = newLocked)
+            )
             if (result is Result.Error) {
                 _uiState.update { state ->
                     val revertedSessions = state.sessions.map { session ->
@@ -628,7 +633,7 @@ class HomeViewModel @Inject constructor(
             var newEnd = detail.session.end
             if (newDuration != currentDuration) {
                 newEnd = calculateEnd(detail.session.start, newDuration)
-                homeRepository.updateSessionStatus(
+                updateSessionUseCase(
                     sessionId = sessionId,
                     params = UpdateSessionParams(
                         start = detail.session.start,

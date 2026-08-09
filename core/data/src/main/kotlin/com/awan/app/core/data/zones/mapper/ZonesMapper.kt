@@ -100,3 +100,17 @@ fun SessionDto.toEntity(): SessionEntity = SessionEntity(
     status = status ?: "SCHEDULED",
     locked = locked
 )
+
+fun SessionEntity.toDomain(): Session {
+    val startDateTime = LocalDateTime.parse("${date}T${startTime}")
+    val endDateTime = LocalDateTime.parse("${date}T${endTime}")
+    return Session(
+        id = id,
+        start = startDateTime,
+        end = endDateTime,
+        status = status.toSessionStatus(),
+        locked = locked,
+        zoneId = zoneId,
+        taskId = taskId
+    )
+}
