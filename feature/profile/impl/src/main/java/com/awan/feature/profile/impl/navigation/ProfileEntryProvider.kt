@@ -9,12 +9,14 @@ import com.awan.feature.profile.api.ProfileRoute
 fun EntryProviderScope<Route>.profileEntry(
     onNavigateToDailyZones: () -> Unit,
     onNavigateToEditRoutine: (String?) -> Unit,
+    onNavigateToInventory: () -> Unit,
     onLogout: () -> Unit,
     onBack: () -> Unit,
 ) {
     entry<ProfileRoute> {
         ProfileRouteScreen(
             onDailyZonesClick = onNavigateToDailyZones,
+            onInventoryClick = onNavigateToInventory,
             onLogout = onLogout
         )
     }

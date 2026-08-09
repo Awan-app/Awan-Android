@@ -57,6 +57,8 @@ dependencies {
     implementation(project(":feature:goals:impl"))
     implementation(project(":feature:profile:api"))
     implementation(project(":feature:profile:impl"))
+    implementation(project(":feature:inventory:api"))
+    implementation(project(":feature:inventory:impl"))
     implementation(project(":feature:marketplace:api"))
     implementation(project(":feature:marketplace:impl"))
     implementation(project(":feature:ai-tasks:api"))

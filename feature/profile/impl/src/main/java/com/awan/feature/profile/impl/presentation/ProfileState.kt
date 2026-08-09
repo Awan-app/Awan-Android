@@ -18,4 +18,5 @@ data class ProfileState(
     val isUploadingPicture: Boolean = false,
     val fieldError: UiText? = null,
     val pendingPicture: PendingPicture? = null,
+    val equippedFrameImageUrl: String? = null,
 )

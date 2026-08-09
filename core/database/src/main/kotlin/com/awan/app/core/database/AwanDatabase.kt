@@ -7,6 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.awan.app.core.database.dao.CachedScheduleDateDao
 import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
+import com.awan.app.core.database.dao.OwnedCustomizationDao
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.dao.TemplateDao
@@ -16,6 +17,7 @@ import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.CachedScheduleDateEntity
 import com.awan.app.core.database.model.CategoryEntity
 import com.awan.app.core.database.model.GoalEntity
+import com.awan.app.core.database.model.OwnedCustomizationEntity
 import com.awan.app.core.database.model.SessionEntity
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
@@ -47,8 +49,9 @@ import com.awan.app.core.database.model.ZoneEntity
         CategoryEntity::class,
         SessionEntity::class,
         CachedScheduleDateEntity::class,
+        OwnedCustomizationEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class AwanDatabase : RoomDatabase() {
@@ -70,6 +73,8 @@ abstract class AwanDatabase : RoomDatabase() {
     abstract fun sessionDao(): SessionDao
 
     abstract fun cachedScheduleDateDao(): CachedScheduleDateDao
+
+    abstract fun ownedCustomizationDao(): OwnedCustomizationDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -275,6 +280,28 @@ abstract class AwanDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE `tasks_v4` RENAME TO `tasks`")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_tasks_goalId` ON `tasks` (`goalId`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_tasks_categoryId` ON `tasks` (`categoryId`)")
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `owned_customizations` (
+                        `userId` TEXT NOT NULL,
+                        `inventoryId` TEXT NOT NULL,
+                        `itemId` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `imageUrl` TEXT,
+                        `type` TEXT NOT NULL,
+                        `rarity` TEXT NOT NULL,
+                        `acquiredAt` TEXT NOT NULL,
+                        `isEquipped` INTEGER NOT NULL,
+                        PRIMARY KEY(`userId`, `itemId`)
+                    )
+                    """.trimIndent(),
+                )
             }
         }
     }
