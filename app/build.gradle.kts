@@ -41,55 +41,6 @@ android {
     }
 }
 
-abstract class EnsureGoogleServicesJsonTask : DefaultTask() {
-    @get:Internal
-    abstract val projectDirProperty: DirectoryProperty
-
-    @TaskAction
-    fun ensureFile() {
-        val googleServicesFile = projectDirProperty.file("google-services.json").get().asFile
-        if (!googleServicesFile.exists()) {
-            googleServicesFile.writeText(
-                """
-                {
-                  "project_info": {
-                    "project_number": "000000000000",
-                    "project_id": "awan-dummy",
-                    "storage_bucket": "awan-dummy.appspot.com"
-                  },
-                  "client": [
-                    {
-                      "client_info": {
-                        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
-                        "android_client_info": {
-                          "package_name": "com.awan.app"
-                        }
-                      },
-                      "oauth_client": [],
-                      "api_key": [
-                        {
-                          "current_key": "dummy_api_key"
-                        }
-                      ],
-                      "services": {}
-                    }
-                  ],
-                  "configuration_version": "1"
-                }
-                """.trimIndent()
-            )
-        }
-    }
-}
-
-val ensureGoogleServicesJson = tasks.register<EnsureGoogleServicesJsonTask>("ensureGoogleServicesJson") {
-    projectDirProperty.set(layout.projectDirectory)
-}
-
-tasks.matching { it.name.startsWith("process") && it.name.contains("GoogleServices") }.configureEach {
-    dependsOn(ensureGoogleServicesJson)
-}
-
 dependencies {
     // Feature modules
     implementation(project(":feature:splash:impl"))
