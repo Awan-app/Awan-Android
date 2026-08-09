@@ -62,7 +62,10 @@ class SessionRepositoryImpl @Inject constructor(
                     .flatten()
                     .map { it.toEntity() }
 
-                val dates = result.data.keys.toList()
+                val dates = generateSequence(startDate) { it.plusDays(1) }
+                    .takeWhile { !it.isAfter(endDate) }
+                    .map { it.format(DateTimeFormatter.ISO_LOCAL_DATE) }
+                    .toList()
 
                 sessionDao.replaceSessionsForDates(
                     dates,
