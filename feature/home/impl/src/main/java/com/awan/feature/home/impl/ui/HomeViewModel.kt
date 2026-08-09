@@ -332,7 +332,7 @@ class HomeViewModel @Inject constructor(
                 durationMinutes = 30,
                 category = matchedZone.category,
                 status = TaskStatus.Pending,
-                points = 20,
+                points = 0,
             )
             val updated = state.sessions + newSession
             val (completedHours, totalHours) = calculateSessionHours(updated)
