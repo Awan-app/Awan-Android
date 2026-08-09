@@ -24,7 +24,9 @@ import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 /** The backend speaks `LocalDateTime` with no offset, so no zone conversion happens here. */
@@ -177,6 +179,18 @@ private fun String?.toTaskStatus(): TaskStatus =
 private fun String?.toSessionStatus(): SessionStatus =
     runCatching { SessionStatus.valueOf(orEmpty()) }.getOrDefault(SessionStatus.UNKNOWN)
 
+internal fun com.awan.app.core.database.model.TaskEntity.toModel(): Task = Task(
+    id = id,
+    title = title,
+    description = description,
+    estimatedDurationMinutes = estimatedDuration,
+    status = status.toTaskStatus(),
+    mandatory = mandatory,
+    estimatedPoints = estimatedPoints,
+    allowTaskSplitting = allowTaskSplitting,
+    goalId = goalId,
+)
+
 internal fun TaskInfoResponse.toEntity(
     goalId: String? = this.goalId,
     categoryId: String? = this.category?.id,
@@ -194,6 +208,22 @@ internal fun TaskInfoResponse.toEntity(
     categoryId = categoryId,
     expiryTime = expiryTime,
 )
+
+internal fun com.awan.app.core.database.model.SessionEntity.toSessionModel(): TaskSession? {
+    return runCatching {
+        val date = LocalDate.parse(date)
+        val startLocal = LocalDateTime.of(date, LocalTime.parse(startTime))
+        val endLocal = LocalDateTime.of(date, LocalTime.parse(endTime))
+        TaskSession(
+            id = id,
+            start = startLocal,
+            end = endLocal,
+            status = status.toSessionStatus(),
+            locked = locked,
+            zoneId = zoneId,
+        )
+    }.getOrNull()
+}
 
 internal fun com.awan.app.core.network.dto.session.SessionDto.toEntity(
     taskId: String,

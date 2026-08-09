@@ -4,6 +4,7 @@ import com.awan.app.core.data.task.toTaskModel
 import com.awan.app.core.database.model.GoalEntity
 import com.awan.app.core.model.Goal
 import com.awan.app.core.model.GoalStatus
+import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.GoalStatusDto
 import java.text.BreakIterator
@@ -51,7 +52,7 @@ internal fun GoalInfoResponse.toModel(): Goal {
         status = status.toModel(),
         isInbox = inbox,
         emoji = extractedEmoji,
-        tasks = tasks.map { it.toTaskModel() },
+        tasks = tasks.map { TaskWithSessions(it.toTaskModel()) },
     )
 }
 
