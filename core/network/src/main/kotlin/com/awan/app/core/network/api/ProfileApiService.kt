@@ -2,8 +2,6 @@ package com.awan.app.core.network.api
 
 import com.awan.app.core.network.dto.profile.ProfilePictureResponse
 import com.awan.app.core.network.dto.profile.ProfileResponse
-import com.awan.app.core.network.dto.profile.AwardPointsRequest
-import com.awan.app.core.network.dto.profile.DeductPointsRequest
 import com.awan.app.core.network.dto.profile.UpdateBirthDateRequest
 import com.awan.app.core.network.dto.profile.UpdateNameRequest
 import com.awan.app.core.network.dto.profile.UpdateProfilePartialRequest
@@ -51,16 +49,4 @@ interface ProfileApiService {
 
     @PATCH("v1/users/me/preferences/scheduling-type")
     suspend fun updateSchedulingType(@Body request: UpdateSchedulingTypeRequest): ProfileResponse
-
-    @PATCH("v1/users/me/streak/increment")
-    suspend fun incrementStreak(): ProfileResponse
-
-    @PATCH("v1/users/me/streak/reset")
-    suspend fun resetStreak(): ProfileResponse
-
-    @PATCH("v1/users/me/points/award")
-    suspend fun awardPoints(@Body request: AwardPointsRequest): ProfileResponse
-
-    @PATCH("v1/users/me/points/deduct")
-    suspend fun deductPoints(@Body request: DeductPointsRequest): ProfileResponse
 }

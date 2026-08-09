@@ -18,6 +18,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -30,8 +31,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.awan.app.core.common.text.UiText
@@ -42,6 +45,10 @@ import com.awan.app.core.designsystem.AwanScheduleAlertCard
 import com.awan.app.core.designsystem.AwanScheduleTimeline
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.AwanWheelBadge
+import com.awan.app.core.designsystem.AwanWheelOverlay
+import com.awan.app.core.designsystem.WheelSegmentUi
+import com.awan.app.core.designsystem.R as DesignSystemR
 import com.awan.feature.home.impl.R
 import com.awan.feature.home.impl.ui.components.SessionTaskDetailDialog
 import java.time.LocalDate
@@ -222,6 +229,54 @@ fun HomeScreen(
                 onConfirmDelete = viewModel::confirmDeleteAction,
                 onCancelDelete = viewModel::dismissDeleteConfirmDialog,
             )
+        }
+
+        if (uiState.hasFreeSpin && !uiState.isWheelOpen) {
+            AwanWheelBadge(
+                onClick = viewModel::openWheel,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 4.dp, end = 16.dp),
+            )
+        }
+
+        if (uiState.isWheelOpen) {
+            val itemWedgeLabel = stringResource(DesignSystemR.string.ds_wheel_item_wedge)
+            // In its own window so it covers the app's bottom bar, which is drawn above this screen
+            // by the shell — otherwise the user can tab away mid-spin and strand the gift.
+            Dialog(
+                onDismissRequest = {
+                    // Back is ignored while the request is out; there is nothing to go back to yet
+                    // and the spin has already been charged against today.
+                    if (!uiState.isSpinning) viewModel.closeWheel()
+                },
+                properties = DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    decorFitsSystemWindows = false,
+                ),
+            ) {
+                // The overlay draws its own scrim, so the window's dim is switched off rather than
+                // stacked on top of it — two dims read as a much darker screen than either intends.
+                val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
+                SideEffect { dialogWindow?.setDimAmount(0f) }
+
+                AwanWheelOverlay(
+                    segments = uiState.wheelSegments.map { segment ->
+                        WheelSegmentUi(
+                            id = segment.id,
+                            label = if (segment.isItem) itemWedgeLabel else segment.coins.toString(),
+                            isItem = segment.isItem,
+                        )
+                    },
+                    landingSegmentId = uiState.landingSegmentId,
+                    resultText = uiState.wheelResult?.asString(),
+                    isSpinning = uiState.isSpinning,
+                    canSpin = uiState.hasFreeSpin,
+                    onSpin = viewModel::spinWheel,
+                    onClose = viewModel::closeWheel,
+                )
+            }
         }
 
         if (uiState.hasConflict) {

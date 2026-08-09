@@ -44,6 +44,10 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.awan.app.core.designsystem.AwanBottomNavBar
 import com.awan.app.core.designsystem.BottomNavItem
+import com.awan.app.core.common.R as CommonR
+import com.awan.app.core.designsystem.ObserveAsEvents
+import kotlinx.coroutines.flow.Flow
+import com.awan.app.core.domain.gamification.model.RewardEvent
 import com.awan.core.navigation.NavigationState
 import com.awan.core.navigation.Navigator
 import com.awan.core.navigation.Route
@@ -108,6 +112,8 @@ private fun NavigationState.rememberDecoratedEntries(
 @Composable
 fun AwanApp(
     appState: AwanAppState,
+    sessionExpiredEvents: Flow<Unit>,
+    rewardEvents: Flow<RewardEvent>,
     modifier: Modifier = Modifier,
     isOnline: Boolean = true,
 ) {
@@ -128,6 +134,19 @@ fun AwanApp(
             ).show()
             showAddTask = false
         }
+    }
+
+    // An expired token has to bounce the user out from wherever they are, so this stays at the
+    // shell rather than on any one screen.
+    val sessionExpiredMessage = stringResource(CommonR.string.error_unauthorized)
+    ObserveAsEvents(sessionExpiredEvents) {
+        android.widget.Toast.makeText(
+            context,
+            sessionExpiredMessage,
+            android.widget.Toast.LENGTH_LONG,
+        ).show()
+        showAddTask = false
+        navigator.replaceAll(LoginRoute)
     }
 
     if (showAddTask && isOnline) {
@@ -280,8 +299,13 @@ fun AwanApp(
                 onFabClick = {
                     showAddTask = true
                 },
+                anchoredItemId = TopLevelDestination.PROFILE.name,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
+
+        // Last child of the root Box: above every screen and the bottom bar, and in the same
+        // coordinate space as the anchors it animates between — which a Dialog would not be.
+        RewardOverlayHost(rewardEvents = rewardEvents)
     }
 }

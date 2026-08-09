@@ -89,12 +89,12 @@ fun AwanHeaderBar(
                     Column {
                         AwanText(
                             text = "$greetingPrefix,",
-                            style = AwanTheme.typography.title,
+                            style = AwanTheme.styles.titleText,
                         )
                         Spacer(modifier = Modifier.height(1.dp))
                         AwanText(
                             text = displayName,
-                            style = AwanTheme.typography.title,
+                            style = AwanTheme.styles.titleText,
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                     }
@@ -104,57 +104,15 @@ fun AwanHeaderBar(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    val badgeShape = RoundedCornerShape(12.dp)
+                    AwanStreakBadge(streakCount = streakCount)
 
-                    Box(
-                        modifier = Modifier
-                            .clip(badgeShape)
-                            .background(Color(0xFFEA580C).copy(alpha = 0.10f))
-                            .border(1.dp, Color(0xFFEA580C).copy(alpha = 0.30f), badgeShape)
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            AwanText(
-                                text = "🔥",
-                                style = AwanTheme.typography.body.copy(fontSize = 13.sp),
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            AwanText(
-                                text = streakCount.toString(),
-                                style = AwanTheme.typography.heading.copy(
-                                    fontSize = 13.5.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFFEA580C),
-                                ),
-                            )
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(badgeShape)
-                            .background(Color(0xFFEAB308).copy(alpha = 0.08f))
-                            .border(1.dp, Color(0xFFEAB308).copy(alpha = 0.25f), badgeShape)
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            AwanText(
-                                text = "🪙",
-                                style = AwanTheme.typography.body.copy(fontSize = 13.sp),
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            AwanText(
-                                text = pointsCount.toString(),
-                                style = AwanTheme.typography.heading.copy(
-                                    fontSize = 13.5.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFFCA8A04),
-                                ),
-                            )
-                        }
-                    }
+                    AwanPointsBadge(
+                        pointsCount = pointsCount,
+                        modifier = Modifier.rewardAnchor(
+                            anchor = RewardAnchor.PointsBadge,
+                            anchors = LocalRewardAnchors.current,
+                        ),
+                    )
                 }
             }
 

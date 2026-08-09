@@ -13,4 +13,31 @@
     <string name="ds_pts">+%1$d pts</string>
     <string name="ds_friend">Friend</string>
     <string name="ds_back">Back</string>
+
+    <!-- Streak celebration -->
+    <string name="ds_streak_days">day streak</string>
+    <string name="ds_streak_headline">You\'re on fire!</string>
+    <string name="ds_streak_best_headline">New personal best!</string>
+    <string name="ds_streak_best_subtitle">%1$d days — your longest streak yet.</string>
+    <string name="ds_streak_flame">Streak flame</string>
+    <string-array name="ds_streak_motivations">
+        <item>Day one is the hardest. You just did it.</item>
+        <item>Two in a row. That\'s a habit forming.</item>
+        <item>You keep showing up — and it shows.</item>
+        <item>Steady wins. Keep the flame going.</item>
+        <item>This is what consistency looks like.</item>
+        <item>Unstoppable. Same time tomorrow?</item>
+    </string-array>
+
+    <!-- Daily wheel -->
+    <string name="ds_wheel_badge">Daily gift — free spin available</string>
+    <string name="ds_wheel_title">Daily gift</string>
+    <string name="ds_wheel_tap_to_spin">Tap the wheel to spin</string>
+    <string name="ds_wheel_spinning">Spinning…</string>
+    <string name="ds_wheel_won_coins">You won %1$d points!</string>
+    <string name="ds_wheel_won_item">You won %1$s!</string>
+    <string name="ds_wheel_claimed">You\'ve already spun today. Come back tomorrow!</string>
+    <string name="ds_wheel_collect">Collect</string>
+    <string name="ds_wheel_close">Close</string>
+    <string name="ds_wheel_item_wedge">Gift</string>
 </resources>

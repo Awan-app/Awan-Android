@@ -1,7 +1,5 @@
 package com.awan.app.core.data.profile.remote
 
-import com.awan.app.core.network.dto.profile.AwardPointsRequest
-import com.awan.app.core.network.dto.profile.DeductPointsRequest
 import com.awan.app.core.network.dto.profile.ProfilePictureResponse
 import com.awan.app.core.network.dto.profile.ProfileResponse
 import com.awan.app.core.network.dto.profile.UpdateBirthDateRequest
@@ -51,17 +49,5 @@ interface ProfileRemoteDataSource {
 
     suspend fun updateSchedulingType(
         request: UpdateSchedulingTypeRequest,
-    ): Result<ProfileResponse>
-
-    suspend fun incrementStreak(): Result<ProfileResponse>
-
-    suspend fun resetStreak(): Result<ProfileResponse>
-
-    suspend fun awardPoints(
-        request: AwardPointsRequest,
-    ): Result<ProfileResponse>
-
-    suspend fun deductPoints(
-        request: DeductPointsRequest,
     ): Result<ProfileResponse>
 }

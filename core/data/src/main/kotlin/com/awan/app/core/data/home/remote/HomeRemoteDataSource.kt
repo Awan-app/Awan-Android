@@ -6,6 +6,7 @@ import com.awan.app.core.network.dto.zone.WeeklyTemplateDto as TemplateDto
 import com.awan.app.core.network.dto.zone.TemplateOverrideDto as TemplateOverrideResponseDto
 import com.awan.app.core.network.dto.zone.ZoneDto
 import com.awan.app.core.network.dto.onboarding.CompleteOnboardingResponse
+import com.awan.app.core.network.dto.session.CompleteSessionResponse
 import com.awan.app.core.network.dto.session.SessionDto
 
 import com.awan.app.core.network.dto.task.TaskInfoResponse
@@ -20,17 +21,17 @@ interface HomeRemoteDataSource {
 
     suspend fun getUserProfile(): Result<CompleteOnboardingResponse>
 
+    suspend fun completeSession(sessionId: String): Result<CompleteSessionResponse>
+
+    suspend fun uncompleteSession(sessionId: String): Result<SessionDto>
+
+    suspend fun cancelSession(sessionId: String): Result<SessionDto>
+
+    suspend fun moveSession(sessionId: String, startIso: String, endIso: String): Result<SessionDto>
+
     suspend fun getSession(sessionId: String): Result<SessionDto>
 
     suspend fun getTask(taskId: String): Result<TaskInfoResponse>
-
-    suspend fun updateSession(
-        sessionId: String,
-        status: String? = null,
-        locked: Boolean? = null,
-        startIso: String? = null,
-        endIso: String? = null,
-    ): Result<SessionDto>
 
     suspend fun lockSession(sessionId: String): Result<SessionDto>
 

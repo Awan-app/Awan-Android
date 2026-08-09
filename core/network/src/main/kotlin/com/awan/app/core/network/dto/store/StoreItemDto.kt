@@ -14,13 +14,13 @@ enum class StoreItemTypeDto {
 @Serializable
 data class StoreItemDto(
     @SerialName("id") val id: String,
-    @SerialName("name") val name: String,
-    @SerialName("description") val description: String,
-    @SerialName("image") val image: String,
+    @SerialName("name") val name: String? = null,
+    @SerialName("description") val description: String? = null,
+    @SerialName("image") val image: String? = null,
     @SerialName("info") val info: String? = null,
-    @SerialName("price") val price: Int,
-    @SerialName("version") val version: String,
-    @SerialName("type") val type: StoreItemTypeDto
+    @SerialName("price") val price: Int = 0,
+    @SerialName("version") val version: String? = null,
+    @SerialName("type") val type: String? = null,
 )
 
 @Serializable

@@ -6,6 +6,7 @@ import com.awan.app.core.network.api.AuthApiService
 import com.awan.app.core.network.api.CategoryApiService
 import com.awan.app.core.network.api.GoalApiService
 import com.awan.app.core.network.api.OnboardingApiService
+import com.awan.app.core.network.api.GamificationApiService
 import com.awan.app.core.network.api.ProfileApiService
 import com.awan.app.core.network.api.StoreApiService
 import com.awan.app.core.network.api.TaskApiService
@@ -49,7 +50,7 @@ object NetworkModule {
     fun providesNetworkJson(): Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
-        explicitNulls = false
+        explicitNulls = true
         encodeDefaults = true
         coerceInputValues = true
     }
@@ -154,6 +155,11 @@ object NetworkModule {
     @Singleton
     fun providesSessionApiService(retrofit: Retrofit): com.awan.app.core.network.api.SessionApiService =
         retrofit.create(com.awan.app.core.network.api.SessionApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesGamificationApiService(retrofit: Retrofit): GamificationApiService =
+        retrofit.create(GamificationApiService::class.java)
 
     @Provides
     @Singleton

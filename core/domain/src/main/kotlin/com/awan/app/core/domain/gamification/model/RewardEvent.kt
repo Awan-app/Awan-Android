@@ -1,0 +1,27 @@
+package com.awan.app.core.domain.gamification.model
+
+/**
+ * A reward worth celebrating on screen, whatever produced it — a completed session or a wheel spin.
+ *
+ * These are emitted by the data layer rather than by whichever ViewModel happened to trigger the
+ * earning, so the celebration plays over any screen the user is on when it lands.
+ */
+sealed interface RewardEvent {
+
+    data class Points(
+        val amount: Int,
+        val newTotal: Int,
+    ) : RewardEvent
+
+    data class Streak(
+        val oldValue: Int,
+        val newValue: Int,
+        val maxStreakBroken: Boolean,
+        val maxStreakNew: Int,
+    ) : RewardEvent
+
+    data class Item(
+        val name: String,
+        val imageUrl: String?,
+    ) : RewardEvent
+}

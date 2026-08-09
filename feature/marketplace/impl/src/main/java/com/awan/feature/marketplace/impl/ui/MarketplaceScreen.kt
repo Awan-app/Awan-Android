@@ -76,16 +76,16 @@ fun MarketplaceScreen(
                     leading = {}
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             CategoryTabs(
                 selectedCategory = state.selectedCategory,
                 onCategorySelected = { viewModel.onAction(MarketplaceAction.SelectCategory(it)) }
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             if (!isCollectionMode) {
                 MarketplaceSearchBar(
                     query = state.searchQuery,
@@ -106,7 +106,7 @@ fun MarketplaceScreen(
                 } else {
                     state.filteredItems
                 }
-                
+
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
