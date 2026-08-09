@@ -37,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
@@ -160,7 +162,7 @@ fun InboxScreen(
                                     onExpandToggle = { onAction(InboxAction.TaskExpandToggled(task.id)) }
                                 )
                             }
-                            item { Spacer(modifier = Modifier.height(24.dp)) }
+                            item { Spacer(modifier = Modifier.height(96.dp)) }
                         }
                     }
                 }
@@ -218,20 +220,30 @@ private fun InboxTaskCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                val rotation by animateFloatAsState(if (isExpanded) 180f else 0f, label = "expand_icon_rotation")
                 Box(
                     modifier = Modifier.size(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Assuming we have some dropdown icon, using a generic placeholder or unicode if no icon
-                    // For now, let's use a simple text chevron or a loaded resource if exists
-                    AwanText(
-                        text = "▼",
-                        style = AwanTheme.typography.button.copy(color = colors.textSecondary),
-                        modifier = Modifier.rotate(rotation)
-                    )
+                    val rotation by animateFloatAsState(if (isExpanded) 180f else 0f, label = "expand_icon_rotation")
+                    // Use a proper chevron arrow
+                    Canvas(modifier = Modifier.size(16.dp).rotate(rotation)) {
+                        val w = size.width
+                        val h = size.height
+                        val path = androidx.compose.ui.graphics.Path().apply {
+                            moveTo(w * 0.2f, h * 0.35f)
+                            lineTo(w * 0.5f, h * 0.65f)
+                            lineTo(w * 0.8f, h * 0.35f)
+                        }
+                        drawPath(
+                            path = path,
+                            color = colors.textSecondary,
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                width = 2.dp.toPx(),
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                                join = androidx.compose.ui.graphics.StrokeJoin.Round,
+                            ),
+                        )
+                    }
                 }
             }
 

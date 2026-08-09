@@ -95,11 +95,14 @@ internal fun GoalCard(
                     .padding(horizontal = 16.dp, vertical = 14.dp),
             ) {
                 // Emoji
-                AwanText(
-                    text = goal.emoji,
-                    style = AwanTheme.typography.heading.copy(fontSize = 30.sp),
-                )
-                Spacer(modifier = Modifier.width(12.dp))
+                val emoji = goal.emoji
+                if (emoji != null) {
+                    AwanText(
+                        text = emoji,
+                        style = AwanTheme.typography.heading.copy(fontSize = 30.sp),
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                }
 
                 // Title (strikethrough on Completed tab)
                 AwanText(
@@ -115,32 +118,29 @@ internal fun GoalCard(
                     modifier = Modifier.weight(1f),
                 )
 
-                // Chevron arrow — only shown when there are tasks to expand
-                if (hasTasks) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Canvas(
-                        modifier = Modifier
-                            .size(22.dp)
-                            .rotate(chevronDeg),
-                    ) {
-                        val w = size.width
-                        val h = size.height
-                        val strokePx = 2.5f * density
-                        val path = Path().apply {
-                            moveTo(w * 0.2f, h * 0.35f)
-                            lineTo(w * 0.5f, h * 0.65f)
-                            lineTo(w * 0.8f, h * 0.35f)
-                        }
-                        drawPath(
-                            path = path,
-                            color = colors.textSecondary,
-                            style = Stroke(
-                                width = strokePx,
-                                cap = StrokeCap.Round,
-                                join = StrokeJoin.Round,
-                            ),
-                        )
+                // Chevron arrow
+                val rotation by animateFloatAsState(if (expanded) 180f else 0f, label = "chevron")
+                Canvas(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .rotate(rotation),
+                ) {
+                    val w = size.width
+                    val h = size.height
+                    val path = Path().apply {
+                        moveTo(w * 0.2f, h * 0.35f)
+                        lineTo(w * 0.5f, h * 0.65f)
+                        lineTo(w * 0.8f, h * 0.35f)
                     }
+                    drawPath(
+                        path = path,
+                        color = colors.textSecondary,
+                        style = Stroke(
+                            width = 2.dp.toPx(),
+                            cap = StrokeCap.Round,
+                            join = StrokeJoin.Round,
+                        ),
+                    )
                 }
             }
 
@@ -209,9 +209,8 @@ internal fun GoalCard(
                 }
             }
 
-            // ── Expandable task list ──────────────────────────────────────────
             AnimatedVisibility(
-                visible = hasTasks && expanded,
+                visible = expanded,
                 enter = fadeIn(tween(200)) + expandVertically(tween(250)),
                 exit = fadeOut(tween(150)) + shrinkVertically(tween(200)),
             ) {
@@ -227,14 +226,20 @@ internal fun GoalCard(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Pending tasks first, completed (strikethrough) last
-                    val sortedTasks = goal.tasks.sortedBy { it.status == TaskStatus.COMPLETED }
-                    sortedTasks.forEach { task ->
-                        GoalTaskRow(
-                            title = task.title,
-                            isCompleted = task.status == TaskStatus.COMPLETED,
-                            accentColor = accentColor,
+                    if (goal.tasks.isEmpty()) {
+                        AwanText(
+                            text = stringResource(R.string.goal_no_tasks),
+                            style = AwanTheme.typography.body.copy(color = colors.textSecondary, fontSize = 14.sp)
                         )
+                    } else {
+                        // Pending tasks first, completed (strikethrough) last
+                        val sortedTasks = goal.tasks.sortedBy { it.task.status == TaskStatus.COMPLETED }
+                        sortedTasks.forEach { task ->
+                            GoalTaskRow(
+                                tws = task,
+                                accentColor = accentColor,
+                            )
+                        }
                     }
                 }
             }

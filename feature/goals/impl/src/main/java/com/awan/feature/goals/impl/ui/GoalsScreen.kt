@@ -111,7 +111,7 @@ fun GoalsScreen(
                                     isCompleted = isCompletedTab,
                                 )
                             }
-                            item { Spacer(modifier = Modifier.height(8.dp)) }
+                            item { Spacer(modifier = Modifier.height(96.dp)) }
                         }
                     }
                 }
