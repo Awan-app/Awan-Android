@@ -347,7 +347,7 @@ class HomeViewModel @Inject constructor(
 
         _uiState.update { state ->
             val target = state.sessions.find { it.id == sessionId } ?: return@update state
-            val sessionPoints = target.points ?: ((target.durationMinutes / 10).coerceAtLeast(1) * 10)
+            val sessionPoints = target.points
 
             isCompleting = target.status != TaskStatus.Completed
             targetSession = target
@@ -467,11 +467,6 @@ class HomeViewModel @Inject constructor(
                 params = UpdateSessionParams(
                     start = startTime,
                     end = endTime,
-                    status = if (sessionToSync.status == TaskStatus.Completed) {
-                        SessionStatus.COMPLETED
-                    } else {
-                        SessionStatus.SCHEDULED
-                    }
                 )
             )
         }
