@@ -44,4 +44,6 @@ interface StoreDao {
     }
 
     @Query("SELECT MIN(expiryTime) FROM store_items") suspend fun getMinExpiryTime(): Long?
+    @Query("SELECT MIN(expiryTime) FROM owned_items") suspend fun getMinOwnedExpiryTime(): Long?
+    @Query("SELECT MIN(expiryTime) FROM equipped_items") suspend fun getMinEquippedExpiryTime(): Long?
 }

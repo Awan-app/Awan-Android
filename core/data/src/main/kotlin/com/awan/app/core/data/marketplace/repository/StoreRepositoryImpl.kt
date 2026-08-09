@@ -39,9 +39,9 @@ class StoreRepositoryImpl @Inject constructor(
 
     override fun getStoreItems(type: StoreItemType?): Flow<List<StoreItem>> =
         if (type == null) {
-            storeDao.observeStoreItems().map { entities -> entities.map { it.asExternalModel() } }
+            storeDao.observeStoreItems().map { entities -> entities.mapNotNull { it.asExternalModel() } }
         } else {
-            storeDao.observeStoreItemsByType(type.name).map { entities -> entities.map { it.asExternalModel() } }
+            storeDao.observeStoreItemsByType(type.name).map { entities -> entities.mapNotNull { it.asExternalModel() } }
         }
 
     override fun getInventory(): Flow<List<OwnedItem>> =
@@ -49,7 +49,7 @@ class StoreRepositoryImpl @Inject constructor(
             storeDao.observeOwnedItems(),
             storeDao.observeStoreItems()
         ) { ownedEntities, itemEntities ->
-            val items = itemEntities.map { it.asExternalModel() }
+            val items = itemEntities.mapNotNull { it.asExternalModel() }
             ownedEntities.mapNotNull { it.asExternalModel(items) }
         }
 
@@ -58,7 +58,7 @@ class StoreRepositoryImpl @Inject constructor(
             storeDao.observeEquippedItems(),
             storeDao.observeStoreItems()
         ) { equippedEntities, itemEntities ->
-            val items = itemEntities.map { it.asExternalModel() }
+            val items = itemEntities.mapNotNull { it.asExternalModel() }
             equippedEntities.mapNotNull { it.asExternalModel(items) }
         }
 
@@ -69,8 +69,11 @@ class StoreRepositoryImpl @Inject constructor(
         val result = remoteDataSource.buyItem(itemId)
         if (result is Result.Success) {
             // Refresh inventory and profile
-            refreshInventory()
-            profileRepository.getProfile()
+            val invResult = refreshInventory()
+            if (invResult is Result.Error) return@withContext invResult
+            
+            val profileResult = profileRepository.getProfile()
+            if (profileResult is Result.Error) return@withContext Result.Error(profileResult.error)
         }
         result
     }
@@ -113,7 +116,7 @@ class StoreRepositoryImpl @Inject constructor(
         val result = remoteDataSource.getStoreItems(type?.asDto())
         if (result is Result.Success) {
             val expiry = SyncTtl.computeExpiry(SyncTtl.STORE_TTL_MS)
-            val entities = result.data.map { it.asExternalModel().asEntity(expiry) }
+            val entities = result.data.mapNotNull { it.asExternalModel()?.asEntity(expiry) }
             if (type == null) {
                 storeDao.replaceStoreItems(entities)
             } else {
@@ -122,8 +125,8 @@ class StoreRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun refreshInventory() = withContext(ioDispatcher) {
-        if (!connectivityMonitor.isCurrentlyOnline()) return@withContext
+    override suspend fun refreshInventory(): Result<Unit> = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) return@withContext Result.Error(AppError.Network)
 
         val result = remoteDataSource.getInventory()
         if (result is Result.Success) {
@@ -139,13 +142,16 @@ class StoreRepositoryImpl @Inject constructor(
             storeDao.replaceOwnedItems(entities)
 
             // Also ensure store items from inventory are in store_items table
-            val storeItems = result.data.map { it.item.asExternalModel().asEntity(expiry) }
+            val storeItems = result.data.mapNotNull { it.item.asExternalModel()?.asEntity(expiry) }
             storeDao.upsertStoreItems(storeItems)
+            Result.Success(Unit)
+        } else {
+            Result.Error((result as Result.Error).error)
         }
     }
 
-    override suspend fun refreshEquippedItems() = withContext(ioDispatcher) {
-        if (!connectivityMonitor.isCurrentlyOnline()) return@withContext
+    override suspend fun refreshEquippedItems(): Result<Unit> = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) return@withContext Result.Error(AppError.Network)
 
         val result = remoteDataSource.getEquippedItems()
         if (result is Result.Success) {
@@ -161,8 +167,11 @@ class StoreRepositoryImpl @Inject constructor(
             storeDao.replaceEquippedItems(entities)
 
             // Also ensure store items from equipped are in store_items table
-            val storeItems = result.data.map { it.item.asExternalModel().asEntity(expiry) }
+            val storeItems = result.data.mapNotNull { it.item.asExternalModel()?.asEntity(expiry) }
             storeDao.upsertStoreItems(storeItems)
+            Result.Success(Unit)
+        } else {
+            Result.Error((result as Result.Error).error)
         }
     }
 }

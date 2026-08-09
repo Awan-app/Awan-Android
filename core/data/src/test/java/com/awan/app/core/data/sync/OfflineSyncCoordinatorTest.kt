@@ -256,6 +256,8 @@ private class FakeStoreDao : StoreDao {
     override suspend fun replaceOwnedItems(items: List<OwnedItemEntity>) { ownedItems = items }
     override suspend fun replaceEquippedItems(items: List<EquippedItemEntity>) { equippedItems = items }
     override suspend fun getMinExpiryTime(): Long? = null
+    override suspend fun getMinOwnedExpiryTime(): Long? = null
+    override suspend fun getMinEquippedExpiryTime(): Long? = null
 }
 
 private class FakeUserDao : UserDao {

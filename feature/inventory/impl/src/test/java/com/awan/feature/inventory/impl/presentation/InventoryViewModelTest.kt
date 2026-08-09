@@ -47,8 +47,8 @@ class InventoryViewModelTest {
         }
         override suspend fun unequipItem(itemType: StoreItemType): Result<Unit> = Result.Success(Unit)
         override suspend fun refreshStoreItems(type: StoreItemType?) {}
-        override suspend fun refreshInventory() {}
-        override suspend fun refreshEquippedItems() {}
+        override suspend fun refreshInventory(): Result<Unit> = Result.Success(Unit)
+        override suspend fun refreshEquippedItems(): Result<Unit> = Result.Success(Unit)
     }
 
     private class FakeConnectivityMonitor(isOnline: Boolean) : NetworkConnectivityMonitor {

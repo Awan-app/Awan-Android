@@ -15,6 +15,6 @@ interface StoreRepository {
     suspend fun equipItem(itemId: String): Result<Unit>
     suspend fun unequipItem(itemType: StoreItemType): Result<Unit>
     suspend fun refreshStoreItems(type: StoreItemType? = null)
-    suspend fun refreshInventory()
-    suspend fun refreshEquippedItems()
+    suspend fun refreshInventory(): Result<Unit>
+    suspend fun refreshEquippedItems(): Result<Unit>
 }

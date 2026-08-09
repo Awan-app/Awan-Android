@@ -39,6 +39,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import com.awan.app.core.data.common.extractDateFromIso
 import com.awan.app.core.data.common.extractTimeFromIso
+import com.awan.app.core.data.marketplace.asStoreItemType
 import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
@@ -361,18 +362,25 @@ class OfflineSyncCoordinator @Inject constructor(
         if (!connectivityMonitor.isCurrentlyOnline()) return@withContext false
 
         if (!forceRefresh) {
-            val minExpiry = storeDao.getMinExpiryTime()
-            if (minExpiry != null && minExpiry > System.currentTimeMillis()) {
+            val storeExpiry = storeDao.getMinExpiryTime()
+            val ownedExpiry = storeDao.getMinOwnedExpiryTime()
+            val equippedExpiry = storeDao.getMinEquippedExpiryTime()
+            
+            if (storeExpiry != null && storeExpiry > System.currentTimeMillis() &&
+                ownedExpiry != null && ownedExpiry > System.currentTimeMillis() &&
+                equippedExpiry != null && equippedExpiry > System.currentTimeMillis()) {
                 return@withContext true
             }
         }
 
         val expiry = SyncTtl.computeExpiry(SyncTtl.STORE_TTL_MS)
+        var success = true
 
         // 1. Sync Store Items
         val itemsRes = storeRemoteDataSource.getStoreItems()
         if (itemsRes is Result.Success) {
-            val entities = itemsRes.data.map { dto ->
+            val entities = itemsRes.data.mapNotNull { dto ->
+                val mappedType = dto.type.asStoreItemType() ?: return@mapNotNull null
                 StoreItemEntity(
                     id = dto.id,
                     name = dto.name ?: "",
@@ -381,11 +389,13 @@ class OfflineSyncCoordinator @Inject constructor(
                     info = dto.info,
                     price = dto.price,
                     version = dto.version ?: "",
-                    type = dto.type ?: "FRAME",
+                    type = mappedType.name,
                     expiryTime = expiry
                 )
             }
             storeDao.replaceStoreItems(entities)
+        } else {
+            success = false
         }
 
         // 2. Sync Inventory
@@ -400,6 +410,8 @@ class OfflineSyncCoordinator @Inject constructor(
                 )
             }
             storeDao.replaceOwnedItems(entities)
+        } else {
+            success = false
         }
 
         // 3. Sync Equipped Items
@@ -414,8 +426,10 @@ class OfflineSyncCoordinator @Inject constructor(
                 )
             }
             storeDao.replaceEquippedItems(entities)
+        } else {
+            success = false
         }
 
-        true
+        success
     }
 }
