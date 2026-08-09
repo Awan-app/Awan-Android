@@ -7,6 +7,7 @@ import com.awan.app.core.network.api.CategoryApiService
 import com.awan.app.core.network.api.GoalApiService
 import com.awan.app.core.network.api.OnboardingApiService
 import com.awan.app.core.network.api.ProfileApiService
+import com.awan.app.core.network.api.StoreApiService
 import com.awan.app.core.network.api.TaskApiService
 import com.awan.app.core.network.api.ZoneApiService
 import com.awan.app.core.network.api.TemplateApiService
@@ -128,6 +129,11 @@ object NetworkModule {
     @Singleton
     fun providesProfileApiService(retrofit: Retrofit): ProfileApiService =
         retrofit.create(ProfileApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providesStoreApiService(retrofit: Retrofit): StoreApiService =
+        retrofit.create(StoreApiService::class.java)
 
     @Provides
     @Singleton

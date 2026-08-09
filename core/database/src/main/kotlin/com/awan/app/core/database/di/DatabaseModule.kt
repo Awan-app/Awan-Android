@@ -6,6 +6,7 @@ import com.awan.app.core.database.AwanDatabase
 import com.awan.app.core.database.dao.CachedScheduleDateDao
 import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
+import com.awan.app.core.database.dao.OwnedCustomizationDao
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.dao.TemplateDao
@@ -41,6 +42,7 @@ object DatabaseModule {
         .addMigrations(AwanDatabase.MIGRATION_1_2)
         .addMigrations(AwanDatabase.MIGRATION_2_3)
         .addMigrations(AwanDatabase.MIGRATION_3_4)
+        .addMigrations(AwanDatabase.MIGRATION_4_5)
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 
@@ -79,4 +81,8 @@ object DatabaseModule {
     @Provides
     fun providesCachedScheduleDateDao(database: AwanDatabase): CachedScheduleDateDao =
         database.cachedScheduleDateDao()
+
+    @Provides
+    fun providesOwnedCustomizationDao(database: AwanDatabase): OwnedCustomizationDao =
+        database.ownedCustomizationDao()
 }
