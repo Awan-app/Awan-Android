@@ -32,8 +32,8 @@ interface StoreApiService {
         @Path("itemId") itemId: String
     )
 
-    @DELETE("v1/store/equipped/{itemType}")
+    @DELETE("v1/store/items/{itemId}/equip")
     suspend fun unequipItem(
-        @Path("itemType") itemType: String
+        @Path("itemId") itemId: String
     )
 }

@@ -8,6 +8,7 @@ import com.awan.app.core.database.dao.CachedScheduleDateDao
 import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
 import com.awan.app.core.database.dao.SessionDao
+import com.awan.app.core.database.dao.StoreDao
 import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.dao.TemplateDao
 import com.awan.app.core.database.dao.TemplateOverrideDao
@@ -15,8 +16,11 @@ import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.CachedScheduleDateEntity
 import com.awan.app.core.database.model.CategoryEntity
+import com.awan.app.core.database.model.EquippedItemEntity
 import com.awan.app.core.database.model.GoalEntity
+import com.awan.app.core.database.model.OwnedItemEntity
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.StoreItemEntity
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
 import com.awan.app.core.database.model.TemplateDayOfWeekEntity
@@ -47,8 +51,11 @@ import com.awan.app.core.database.model.ZoneEntity
         CategoryEntity::class,
         SessionEntity::class,
         CachedScheduleDateEntity::class,
+        StoreItemEntity::class,
+        OwnedItemEntity::class,
+        EquippedItemEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class AwanDatabase : RoomDatabase() {
@@ -70,6 +77,8 @@ abstract class AwanDatabase : RoomDatabase() {
     abstract fun sessionDao(): SessionDao
 
     abstract fun cachedScheduleDateDao(): CachedScheduleDateDao
+
+    abstract fun storeDao(): StoreDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -275,6 +284,49 @@ abstract class AwanDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE `tasks_v4` RENAME TO `tasks`")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_tasks_goalId` ON `tasks` (`goalId`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_tasks_categoryId` ON `tasks` (`categoryId`)")
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `store_items` (
+                        `id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `image` TEXT NOT NULL,
+                        `info` TEXT,
+                        `price` INTEGER NOT NULL,
+                        `version` TEXT NOT NULL,
+                        `type` TEXT NOT NULL,
+                        `expiryTime` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `owned_items` (
+                        `id` TEXT NOT NULL,
+                        `itemId` TEXT NOT NULL,
+                        `boughtAt` TEXT NOT NULL,
+                        `expiryTime` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `equipped_items` (
+                        `type` TEXT NOT NULL,
+                        `itemId` TEXT NOT NULL,
+                        `equippedAt` TEXT NOT NULL,
+                        `expiryTime` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`type`)
+                    )
+                    """.trimIndent()
+                )
             }
         }
     }
