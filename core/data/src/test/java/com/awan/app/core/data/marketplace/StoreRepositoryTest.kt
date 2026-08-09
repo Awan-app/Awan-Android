@@ -127,7 +127,15 @@ class StoreRepositoryTest {
         override fun observeProfile(): Flow<com.awan.app.core.domain.profile.model.Profile?> = flowOf(null)
         override suspend fun getProfile(): Result<com.awan.app.core.domain.profile.model.Profile> {
             getProfileCalled = true
-            return Result.Error(com.awan.app.core.common.error.AppError.Network)
+            return Result.Success(
+                com.awan.app.core.domain.profile.model.Profile(
+                    id = "p1", email = "test@test.com", firstName = "Test", lastName = "User",
+                    birthDate = null, points = 0, streak = 0, maxStreak = 0, profilePictureUrl = null, isNew = false,
+                    preferences = com.awan.app.core.domain.profile.model.UserPreferences(
+                        timezone = "UTC", preferredSessionDuration = 60, bufferBetweenSessions = 10, wakeupTime = "08:00", sleepTime = "22:00", schedulingType = "AUTO"
+                    )
+                )
+            )
         }
         override suspend fun updateName(firstName: String, lastName: String) = error("")
         override suspend fun updateBirthDate(birthDate: String) = error("")
