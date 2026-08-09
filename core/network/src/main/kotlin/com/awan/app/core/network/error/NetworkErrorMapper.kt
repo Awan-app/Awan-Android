@@ -36,26 +36,16 @@ fun Throwable.toAppError(json: Json? = null): AppError = when (this) {
             }
         }
 
-        if (errorCode != null) {
-            AppError.Api(
+        when (code) {
+            401 -> AppError.Unauthorized
+            in 500..599 -> AppError.Server(code)
+            else -> AppError.Api(
                 code = code,
                 body = bodyMessage,
                 remainingAttempts = remainingAttempts,
                 retryAfterSeconds = retryAfterSeconds,
                 errorCode = errorCode,
             )
-        } else {
-            when (code) {
-                401 -> AppError.Unauthorized
-                in 500..599 -> AppError.Server(code)
-                else -> AppError.Api(
-                    code = code,
-                    body = bodyMessage,
-                    remainingAttempts = remainingAttempts,
-                    retryAfterSeconds = retryAfterSeconds,
-                    errorCode = errorCode,
-                )
-            }
         }
     }
     is SerializationException -> AppError.Serialization

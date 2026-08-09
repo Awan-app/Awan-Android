@@ -86,7 +86,7 @@ class AuthRepositoryImpl @Inject constructor(
             val userDto = result.data.user
             authTokenProvider.saveUserData(
                 userId = userDto?.id,
-                email = userDto?.email ?: "",
+                email = userDto?.email,
             )
             authTokenProvider.setLoggedIn(true)
         }

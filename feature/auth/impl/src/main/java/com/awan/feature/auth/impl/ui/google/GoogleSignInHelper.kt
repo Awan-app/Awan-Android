@@ -38,7 +38,9 @@ class GoogleSignInHelper @Inject constructor() {
             val user = authResult.user
                 ?: throw IllegalStateException("Firebase user is null after Google sign-in.")
 
-            Log.d(TAG, "Successfully signed into Firebase Auth with user: ${user.email} (${user.uid})")
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "Successfully signed into Firebase Auth (uid=${user.uid})")
+            }
 
             val tokenResult = user.getIdToken(false).await()
             tokenResult.token ?: throw IllegalStateException("Firebase ID token is null.")

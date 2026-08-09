@@ -1,8 +1,5 @@
 package com.awan.feature.auth.impl.ui.email
 
-import android.content.Context
-import android.content.Intent
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.error.AppError
@@ -14,10 +11,6 @@ import com.awan.app.core.domain.auth.usecase.RequestOtpUseCase
 import com.awan.app.core.domain.auth.usecase.SignInWithFirebaseUseCase
 import com.awan.feature.auth.impl.R
 import com.awan.feature.auth.impl.ui.google.GoogleSignInHelper
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.android.gms.common.api.ApiException
-import com.google.android.gms.common.api.CommonStatusCodes
-import com.google.android.gms.tasks.Task
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -119,65 +112,34 @@ class EmailViewModel @Inject constructor(
         }
     }
 
-    fun onSignInWithGoogle(context: Context, onLaunchIntent: (Intent) -> Unit) {
+    fun onGoogleSignInStarted() {
         if (_uiState.value.isLoading) return
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+    }
 
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+    fun onGoogleSignInCancelled() {
+        _uiState.update { it.copy(isLoading = false) }
+    }
 
-            val intentResult = googleSignInHelper.getGoogleSignInIntent(context)
-            intentResult.fold(
-                onSuccess = { intent ->
-                    onLaunchIntent(intent)
-                },
-                onFailure = {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = UiText.StringResource(R.string.auth_error_google_sign_in_failed),
-                        )
-                    }
-                }
+    fun onGoogleSignInFailed() {
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                errorMessage = UiText.StringResource(R.string.auth_error_google_sign_in_failed),
             )
         }
     }
 
-    fun handleGoogleSignInResult(task: Task<GoogleSignInAccount>) {
+    fun onGoogleIdTokenReceived(googleIdToken: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val account = task.getResult(ApiException::class.java)
-                val googleIdToken = account?.idToken
-                    ?: throw IllegalStateException("Google ID token is null.")
-
                 val firebaseIdToken = googleSignInHelper.getFirebaseIdToken(googleIdToken)
                 authenticateWithFirebase(firebaseIdToken)
-            } catch (e: ApiException) {
-                Log.e(TAG, "Google Sign-In ApiException: statusCode=${e.statusCode}, message=${e.message}", e)
-                val isCancelled = e.statusCode == CommonStatusCodes.CANCELED || e.statusCode == SIGN_IN_CANCELLED_STATUS_CODE
-                if (isCancelled) {
-                    _uiState.update { it.copy(isLoading = false) }
-                } else {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = UiText.StringResource(R.string.auth_error_google_sign_in_failed),
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Google/Firebase sign-in failed", e)
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = UiText.StringResource(R.string.auth_error_google_sign_in_failed),
-                    )
-                }
+            } catch (_: Exception) {
+                onGoogleSignInFailed()
             }
         }
-    }
-
-    fun onGoogleSignInCancelledOrFailed() {
-        _uiState.update { it.copy(isLoading = false) }
     }
 
     fun authenticateWithFirebase(idToken: String) {
@@ -222,16 +184,18 @@ class EmailViewModel @Inject constructor(
 
     private fun mapFirebaseErrorToUserMessage(error: AppError): UiText = when (error) {
         AppError.Network -> UiText.StringResource(R.string.auth_offline_banner)
+        is AppError.Server -> if (error.code == 503) {
+            UiText.StringResource(R.string.auth_error_firebase_not_configured)
+        } else {
+            error.toUiText()
+        }
         is AppError.Api -> when (error.errorCode) {
             "FIREBASE_TOKEN_INVALID" -> UiText.StringResource(R.string.auth_error_firebase_token_invalid)
             "FIREBASE_PROVIDER_NOT_ALLOWED" -> UiText.StringResource(R.string.auth_error_firebase_provider_not_allowed)
             "FIREBASE_EMAIL_MISSING" -> UiText.StringResource(R.string.auth_error_firebase_email_missing)
             "FIREBASE_EMAIL_NOT_VERIFIED" -> UiText.StringResource(R.string.auth_error_firebase_email_not_verified)
             "FIREBASE_NOT_CONFIGURED" -> UiText.StringResource(R.string.auth_error_firebase_not_configured)
-            else -> when (error.code) {
-                503 -> UiText.StringResource(R.string.auth_error_firebase_not_configured)
-                else -> error.toUiText()
-            }
+            else -> error.toUiText()
         }
         else -> error.toUiText()
     }
@@ -246,10 +210,8 @@ class EmailViewModel @Inject constructor(
     }
 
     private companion object {
-        private const val TAG = "EmailViewModel"
         private const val HTTP_TOO_MANY_REQUESTS = 429
         private const val RATE_LIMIT_COOLDOWN_SECONDS = 60
-        private const val SIGN_IN_CANCELLED_STATUS_CODE = 12501
 
         val EMAIL_REGEX = Regex(
             "[a-zA-Z0-9+._%\\-]{1,256}" +
@@ -265,3 +227,4 @@ sealed interface EmailEvent {
     data object NavigateToHome : EmailEvent
     data object NavigateToOnboarding : EmailEvent
 }
+

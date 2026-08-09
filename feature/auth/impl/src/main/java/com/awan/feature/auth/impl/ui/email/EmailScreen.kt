@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.remember
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
@@ -34,7 +35,12 @@ import com.awan.feature.auth.impl.ui.components.AuthEmailField
 import com.awan.feature.auth.impl.ui.components.AuthScreenLayout
 import com.awan.feature.auth.impl.ui.components.SocialButton
 import com.awan.feature.auth.impl.ui.components.rememberCountdownTimerState
+import com.awan.feature.auth.impl.ui.google.GoogleSignInHelper
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
+
+private const val SIGN_IN_CANCELLED_STATUS_CODE = 12501
 
 @Composable
 fun EmailRouteScreen(
@@ -45,15 +51,30 @@ fun EmailRouteScreen(
 ) {
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val googleSignInHelper = remember { GoogleSignInHelper() }
 
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.data != null) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            viewModel.handleGoogleSignInResult(task)
+            try {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                val account = task.getResult(ApiException::class.java)
+                val googleIdToken = account?.idToken
+                    ?: throw IllegalStateException("Google ID token is null.")
+                viewModel.onGoogleIdTokenReceived(googleIdToken)
+            } catch (e: ApiException) {
+                val isCancelled = e.statusCode == CommonStatusCodes.CANCELED || e.statusCode == SIGN_IN_CANCELLED_STATUS_CODE
+                if (isCancelled) {
+                    viewModel.onGoogleSignInCancelled()
+                } else {
+                    viewModel.onGoogleSignInFailed()
+                }
+            } catch (_: Exception) {
+                viewModel.onGoogleSignInFailed()
+            }
         } else {
-            viewModel.onGoogleSignInCancelledOrFailed()
+            viewModel.onGoogleSignInCancelled()
         }
     }
 
@@ -73,9 +94,17 @@ fun EmailRouteScreen(
         onContinue = viewModel::onSendCode,
         onRateLimitExpired = viewModel::onRateLimitExpired,
         onSignInWithGoogle = {
-            viewModel.onSignInWithGoogle(context) { intent ->
-                googleSignInLauncher.launch(intent)
-            }
+            if (state.isLoading) return@EmailScreen
+            viewModel.onGoogleSignInStarted()
+            val intentResult = googleSignInHelper.getGoogleSignInIntent(context)
+            intentResult.fold(
+                onSuccess = { intent ->
+                    googleSignInLauncher.launch(intent)
+                },
+                onFailure = {
+                    viewModel.onGoogleSignInFailed()
+                }
+            )
         },
     )
 }
