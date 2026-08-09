@@ -46,9 +46,11 @@ internal fun GoalInfoResponse.toModel(): Goal {
     return Goal(
         id = id,
         title = cleanTitle,
+        targetDate = targetDate,
         description = description,
-        emoji = extractedEmoji,
         status = status.toModel(),
+        isInbox = inbox,
+        emoji = extractedEmoji,
         tasks = tasks.map { it.toTaskModel() },
     )
 }
@@ -64,9 +66,11 @@ internal fun GoalEntity.toModel(): Goal {
     return Goal(
         id = id,
         title = cleanTitle,
+        targetDate = targetDate,
         description = description,
-        emoji = extractedEmoji,
         status = goalStatus,
+        isInbox = isInbox,
+        emoji = extractedEmoji,
         tasks = emptyList(), // tasks are stored separately in TaskEntity
     )
 }

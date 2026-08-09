@@ -7,7 +7,10 @@ import com.awan.app.core.model.GoalDecompositionTranscript
 import com.awan.app.core.model.GoalScheduleProposal
 import com.awan.app.core.model.ProposedGoalSession
 
+import kotlinx.coroutines.flow.Flow
+
 interface GoalRepository {
+    fun observeGoals(): Flow<List<Goal>>
     suspend fun getGoals(): Result<List<Goal>>
     suspend fun createGoal(title: String, description: String?, targetDate: String?): Result<Goal>
     suspend fun getInboxGoal(): Result<Goal>

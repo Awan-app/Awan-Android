@@ -12,48 +12,37 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+import com.awan.app.core.domain.goal.usecase.ObserveGoalsUseCase
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+
 @HiltViewModel
 class GoalsViewModel @Inject constructor(
-    private val getGoalsUseCase: GetGoalsUseCase,
+    private val observeGoalsUseCase: ObserveGoalsUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(GoalsState())
     val state: StateFlow<GoalsState> = _state.asStateFlow()
 
     init {
-        loadGoals()
+        observeGoalsUseCase()
+            .onEach { goals ->
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        isError = false,
+                        activeGoals = goals.filter { goal -> !goal.isCompleted },
+                        completedGoals = goals.filter { goal -> goal.isCompleted },
+                    )
+                }
+            }
+            .launchIn(viewModelScope)
     }
 
     fun onAction(action: GoalsAction) {
         when (action) {
             is GoalsAction.TabSelected -> _state.update { it.copy(tab = action.tab) }
-            GoalsAction.RetryClicked -> loadGoals()
-        }
-    }
-
-    private fun loadGoals() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, isError = false) }
-
-            when (val result = getGoalsUseCase()) {
-                is Result.Success -> {
-                    val goals = result.data
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            isError = false,
-                            activeGoals = goals.filter { goal -> !goal.isCompleted },
-                            completedGoals = goals.filter { goal -> goal.isCompleted },
-                        )
-                    }
-                }
-                is Result.Error -> {
-                    _state.update { it.copy(isLoading = false, isError = true) }
-                }
-                Result.Loading -> {
-                    // Handled before invoke
-                }
-            }
+            GoalsAction.RetryClicked -> { /* No-op in reactive mode, sync would handle this */ }
         }
     }
 }

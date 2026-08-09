@@ -18,6 +18,9 @@ import com.awan.app.core.network.dto.goal.CreateGoalRequest
 import com.awan.app.core.network.dto.goal.ProposedGoalSessionDto
 import javax.inject.Inject
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
 /**
  * Reads goals exclusively from the local Room database (SSOT).
  * Remote data is injected into Room by [OfflineSyncCoordinator]; this
@@ -31,6 +34,12 @@ class GoalRepositoryImpl @Inject constructor(
     private val goalDao: GoalDao,
     private val connectivityMonitor: NetworkConnectivityMonitor,
 ) : GoalRepository {
+
+    override fun observeGoals(): Flow<List<Goal>> {
+        return goalDao.observeAllGoals().map { entities ->
+            entities.map { it.toModel() }
+        }
+    }
 
     override suspend fun getGoals(): Result<List<Goal>> {
         val entities = goalDao.getAllGoals()
