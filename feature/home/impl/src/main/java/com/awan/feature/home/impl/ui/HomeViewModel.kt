@@ -4,24 +4,34 @@ package com.awan.feature.home.impl.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.compose.ui.graphics.Color
+import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
+import com.awan.app.core.designsystem.R as DesignSystemR
+import com.awan.app.core.domain.gamification.model.WheelSpinResult
+import com.awan.app.core.domain.gamification.usecase.GetWheelConfigUseCase
+import com.awan.app.core.domain.gamification.usecase.ObserveGamificationProgressUseCase
+import com.awan.app.core.domain.gamification.usecase.PublishWheelRewardUseCase
+import com.awan.app.core.domain.gamification.usecase.RefreshGamificationProgressUseCase
+import com.awan.app.core.domain.gamification.usecase.SpinWheelUseCase
 import com.awan.feature.home.impl.R
-import com.awan.app.core.designsystem.CategoryProgressSegment
 import com.awan.app.core.designsystem.MascotExpression
-import com.awan.app.core.designsystem.ScheduleCategory
 import com.awan.app.core.designsystem.ScheduleSession
-import com.awan.app.core.designsystem.ScheduleTask
 import com.awan.app.core.designsystem.ScheduleZone
 import com.awan.app.core.designsystem.TaskCategory
 import com.awan.app.core.designsystem.TaskStatus
 import com.awan.app.core.domain.home.model.DaySchedule
-import com.awan.app.core.domain.home.model.DaySession
-import com.awan.app.core.domain.home.model.DayZone
 import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.UpdateSessionParams
 import com.awan.app.core.domain.home.usecase.GetDayScheduleUseCase
+import com.awan.app.core.domain.home.usecase.GetSessionDetailUseCase
+import com.awan.app.core.domain.home.usecase.UpdateTaskDetailUseCase
+import com.awan.app.core.domain.home.usecase.DeleteSessionUseCase
+import com.awan.app.core.domain.home.usecase.DeleteTaskUseCase
+import com.awan.app.core.domain.zones.usecase.UpdateSessionUseCase
+import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
+import com.awan.feature.home.impl.ui.components.calculateDurationMinutes
+import com.awan.feature.home.impl.ui.components.calculateEnd
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,26 +42,21 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import java.util.Locale
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
-
-
-import com.awan.app.core.domain.home.usecase.GetSessionDetailUseCase
-import com.awan.app.core.domain.home.usecase.UpdateTaskDetailUseCase
-import com.awan.app.core.domain.home.usecase.DeleteSessionUseCase
-import com.awan.app.core.domain.home.usecase.DeleteTaskUseCase
-import com.awan.app.core.domain.zones.usecase.UpdateSessionUseCase
-import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
-import com.awan.feature.home.impl.ui.components.calculateDurationMinutes
-import com.awan.feature.home.impl.ui.components.calculateEnd
+/** Returned by a spin the user has already used up today. */
+private const val DAILY_GIFT_ALREADY_CLAIMED = "DAILY_GIFT_ALREADY_CLAIMED"
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getDayScheduleUseCase: GetDayScheduleUseCase,
+    private val observeGamificationProgressUseCase: ObserveGamificationProgressUseCase,
+    private val refreshGamificationProgressUseCase: RefreshGamificationProgressUseCase,
+    private val getWheelConfigUseCase: GetWheelConfigUseCase,
+    private val spinWheelUseCase: SpinWheelUseCase,
+    private val publishWheelRewardUseCase: PublishWheelRewardUseCase,
     private val getSessionDetailUseCase: GetSessionDetailUseCase,
     private val updateTaskDetailUseCase: UpdateTaskDetailUseCase,
     private val deleteSessionUseCase: DeleteSessionUseCase,
@@ -63,10 +68,15 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    /** Held back from the reward bus until the wheel overlay closes. */
+    private var pendingSpin: WheelSpinResult? = null
+
     init {
         updateCurrentTime()
         startClockTimer()
         loadUserProfile()
+        observeGamificationProgress()
+        loadWheelAvailability()
         loadScheduleForDate(LocalDate.now())
     }
 
@@ -86,6 +96,101 @@ class HomeViewModel @Inject constructor(
                 }
                 else -> Unit
             }
+        }
+    }
+
+    /** Points and streak are server-owned; the badges mirror that state rather than tracking it. */
+    private fun observeGamificationProgress() {
+        viewModelScope.launch {
+            observeGamificationProgressUseCase().collect { progress ->
+                _uiState.update { state ->
+                    state.copy(
+                        streakCount = progress.streak,
+                        pointsCount = progress.points,
+                    )
+                }
+            }
+        }
+        viewModelScope.launch { refreshGamificationProgressUseCase() }
+    }
+
+    private fun loadWheelAvailability() {
+        viewModelScope.launch {
+            val result = getWheelConfigUseCase()
+            if (result is Result.Success) {
+                _uiState.update { state ->
+                    state.copy(
+                        hasFreeSpin = !result.data.claimedToday,
+                        wheelSegments = result.data.segments,
+                    )
+                }
+            }
+        }
+    }
+
+    fun openWheel() = _uiState.update { it.copy(isWheelOpen = true) }
+
+    fun spinWheel() {
+        if (_uiState.value.isSpinning || pendingSpin != null) return
+        // Clears any message left by a previous failed attempt, so a retry does not spin under the
+        // error it is retrying.
+        _uiState.update { it.copy(isSpinning = true, wheelResult = null) }
+
+        viewModelScope.launch {
+            when (val result = spinWheelUseCase()) {
+                is Result.Success -> {
+                    pendingSpin = result.data
+                    _uiState.update { state ->
+                        state.copy(
+                            isSpinning = false,
+                            hasFreeSpin = false,
+                            landingSegmentId = result.data.segmentId,
+                            wheelResult = result.data.toResultText(),
+                        )
+                    }
+                }
+
+                is Result.Error -> {
+                    // A 409 is the normal answer to a double tap: correct the state, don't alarm.
+                    val alreadyClaimed = (result.error as? AppError.Api)
+                        ?.errorCode == DAILY_GIFT_ALREADY_CLAIMED
+                    _uiState.update { state ->
+                        state.copy(
+                            isSpinning = false,
+                            hasFreeSpin = if (alreadyClaimed) false else state.hasFreeSpin,
+                            wheelResult = if (alreadyClaimed) {
+                                UiText.StringResource(DesignSystemR.string.ds_wheel_claimed)
+                            } else {
+                                result.error.toReadableMessage()
+                            },
+                        )
+                    }
+                }
+
+                is Result.Loading -> Unit
+            }
+        }
+    }
+
+    /**
+     * The payout is only released once the wheel is off screen — stars flying behind a full-screen
+     * wheel would be celebrating something the user cannot see.
+     */
+    fun closeWheel() {
+        _uiState.update {
+            it.copy(isWheelOpen = false, landingSegmentId = null, wheelResult = null)
+        }
+        val spin = pendingSpin ?: return
+        pendingSpin = null
+        viewModelScope.launch { publishWheelRewardUseCase(spin) }
+    }
+
+    private fun WheelSpinResult.toResultText(): UiText {
+        val wonItem = item
+        return if (wonItem != null) {
+            UiText.StringResource(DesignSystemR.string.ds_wheel_won_item, wonItem.name)
+        } else {
+            UiText.StringResource(DesignSystemR.string.ds_wheel_won_coins, coins)
         }
     }
 
@@ -263,41 +368,59 @@ class HomeViewModel @Inject constructor(
 
             val completedCount = updated.count { it.status == TaskStatus.Completed }
             val (completedHours, totalHours) = calculateSessionHours(updated)
-            val newPointsCount = if (isCompleting) {
-                state.pointsCount + sessionPoints
-            } else {
-                (state.pointsCount - sessionPoints).coerceAtLeast(0)
-            }
 
             state.copy(
                 sessions = updated,
                 completedSessionsCount = completedCount,
                 completedHours = completedHours,
                 totalHours = totalHours,
-                pointsCount = newPointsCount,
                 progressSegments = buildProgressSegments(updated),
             )
         }
 
         val sessionToSync = targetSession ?: return
-        val sessionStatusEnum = if (isCompleting) {
-            SessionStatus.COMPLETED
-        } else {
-            SessionStatus.SCHEDULED
-        }
-
-        val date = _uiState.value.selectedDate
-        val startTime = date.atStartOfDay().plusMinutes(sessionToSync.startMinutes.toLong())
-        val endTime = startTime.plusMinutes(sessionToSync.durationMinutes.toLong())
+        val previousStatus = sessionToSync.status
 
         viewModelScope.launch {
-            updateSessionUseCase(
+            val date = _uiState.value.selectedDate
+            val startTime = date.atStartOfDay().plusMinutes(sessionToSync.startMinutes.toLong())
+            val endTime = startTime.plusMinutes(sessionToSync.durationMinutes.toLong())
+            val sessionStatusEnum = if (isCompleting) {
+                SessionStatus.COMPLETED
+            } else {
+                SessionStatus.SCHEDULED
+            }
+
+            val result = updateSessionUseCase(
                 sessionId = sessionToSync.id,
                 params = UpdateSessionParams(
                     start = startTime,
                     end = endTime,
                     status = sessionStatusEnum
                 )
+            )
+            
+            if (result is Result.Error) {
+                restoreSessionStatus(sessionId, previousStatus)
+            } else if (!isCompleting) {
+                refreshGamificationProgressUseCase()
+            }
+        }
+    }
+
+    /** Puts the optimistic flip back when the server refused it, so the tick cannot lie. */
+    private fun restoreSessionStatus(sessionId: String, previousStatus: TaskStatus) {
+        _uiState.update { state ->
+            val updated = state.sessions.map { session ->
+                if (session.id == sessionId) session.copy(status = previousStatus) else session
+            }
+            val (completedHours, totalHours) = calculateSessionHours(updated)
+            state.copy(
+                sessions = updated,
+                completedSessionsCount = updated.count { it.status == TaskStatus.Completed },
+                completedHours = completedHours,
+                totalHours = totalHours,
+                progressSegments = buildProgressSegments(updated),
             )
         }
     }

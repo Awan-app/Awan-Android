@@ -11,6 +11,8 @@ data class SessionDto(
     @SerialName("end") val end: String,
     @SerialName("status") val status: String? = null,
     @SerialName("locked") val locked: Boolean = false,
+    /** Set the first time the session was completed — the payout only ever happens then. */
+    @SerialName("firstCompletedAt") val firstCompletedAt: String? = null,
     @SerialName("zoneId") val zoneId: String? = null,
     @SerialName("taskId") val taskId: String? = null,
     @SerialName("category") val category: CategoryDto? = null
