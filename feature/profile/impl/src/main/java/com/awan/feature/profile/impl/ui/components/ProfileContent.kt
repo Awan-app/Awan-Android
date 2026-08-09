@@ -27,6 +27,7 @@ fun ProfileContent(
     onEditClick: () -> Unit,
     onPictureClick: () -> Unit,
     onDailyZonesClick: () -> Unit,
+    onInventoryClick: () -> Unit,
     onSettingsClick: (String) -> Unit,
     onLogoutClick: () -> Unit,
 ) {
@@ -68,6 +69,7 @@ fun ProfileContent(
 
         SettingsCard(
             onSettingsClick = onSettingsClick,
+            onInventoryClick = onInventoryClick,
             onLogoutClick = onLogoutClick
         )
 
