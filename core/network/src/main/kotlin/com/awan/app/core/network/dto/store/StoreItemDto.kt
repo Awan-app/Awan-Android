@@ -3,11 +3,14 @@ package com.awan.app.core.network.dto.store
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/**
- * The catalog item shape shared by the store, the inventory and a wheel item win. Only the wheel
- * consumes it today — the store and inventory are not built yet — so the client keeps every field
- * the backend sends but maps just what the win animation needs.
- */
+@Serializable
+enum class StoreItemTypeDto {
+    @SerialName("FRAME") FRAME,
+    @SerialName("SKIN") SKIN,
+    @SerialName("THEME") THEME,
+    @SerialName("ICON") ICON
+}
+
 @Serializable
 data class StoreItemDto(
     @SerialName("id") val id: String,
@@ -18,4 +21,18 @@ data class StoreItemDto(
     @SerialName("price") val price: Int = 0,
     @SerialName("version") val version: String? = null,
     @SerialName("type") val type: String? = null,
+)
+
+@Serializable
+data class OwnedItemDto(
+    @SerialName("id") val id: String,
+    @SerialName("item") val item: StoreItemDto,
+    @SerialName("boughtAt") val boughtAt: String
+)
+
+@Serializable
+data class EquippedItemDto(
+    @SerialName("type") val type: StoreItemTypeDto,
+    @SerialName("item") val item: StoreItemDto,
+    @SerialName("equippedAt") val equippedAt: String
 )

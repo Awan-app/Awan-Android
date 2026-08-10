@@ -176,7 +176,6 @@ object NetworkModule {
     fun providesGoalApiService(retrofit: Retrofit): GoalApiService =
         retrofit.create(GoalApiService::class.java)
 
-
     @Provides
     @Singleton
     fun providesDeviceIdProvider(

@@ -5,8 +5,12 @@ import com.awan.core.navigation.Route
 import com.awan.feature.marketplace.api.MarketplaceRoute
 import com.awan.feature.marketplace.impl.ui.MarketplaceScreen
 
-fun EntryProviderScope<Route>.marketplaceEntry() {
+fun EntryProviderScope<Route>.marketplaceEntry(
+    onNavigateToHome: () -> Unit = {}
+) {
     entry<MarketplaceRoute> {
-        MarketplaceScreen()
+        MarketplaceScreen(
+            onNavigateToHome = onNavigateToHome
+        )
     }
 }

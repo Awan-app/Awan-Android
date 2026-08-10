@@ -1,4 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="marketplace_title">المتجر</string>
+    <string name="marketplace_my_collection_title">مجموعتي</string>
+    <string name="marketplace_category_all">الكل</string>
+    <string name="marketplace_category_frames">الإطارات</string>
+    <string name="marketplace_category_skins">المظاهر</string>
+    <string name="marketplace_category_themes">السمات</string>
+    <string name="marketplace_category_icons">الأيقونات</string>
+    <string name="marketplace_search_placeholder">البحث عن العناصر...</string>
+    <string name="marketplace_item_owned">تم الشراء</string>
+    <string name="marketplace_action_equipped">مجهز</string>
+    <string name="marketplace_action_equip">تجهيز</string>
+    <string name="marketplace_action_unequip">إلغاء التجهيز</string>
+    <string name="marketplace_action_buy">شراء بـ %1$d نقطة</string>
+    <string name="marketplace_error_buying">فشل شراء العنصر. يرجى المحاولة مرة أخرى.</string>
+    <string name="marketplace_error_equipping">فشل تجهيز العنصر. يرجى المحاولة مرة أخرى.</string>
+    <string name="marketplace_error_unequipping">فشل إلغاء تجهيز العنصر. يرجى المحاولة مرة أخرى.</string>
+    <string name="marketplace_insufficient_points">ليس لديك نقاط كافية.</string>
+    <string name="marketplace_already_owned">أنت تملك هذا العنصر بالفعل.</string>
+    <string name="marketplace_item_not_found">هذا العنصر لم يعد متاحاً.</string>
+    <string name="marketplace_empty_items">لا توجد عناصر في هذه الفئة.</string>
+    <string name="marketplace_confirm_buy_title">شراء العنصر</string>
+    <string name="marketplace_confirm_buy_body">هل أنت متأكد من شراء %1$s بـ %2$d نقطة؟</string>
+    <string name="marketplace_confirm_equip_title">تجهيز العنصر</string>
+    <string name="marketplace_confirm_equip_body">هل تريد تجهيز %1$s؟</string>
+    <string name="marketplace_action_confirm">تأكيد</string>
+    <string name="marketplace_action_cancel">إلغاء</string>
+    <string name="marketplace_points_suffix">نقطة</string>
+    <string name="marketplace_points_description">استخدم مكافآتك في الحصول على جوائز مخصصة</string>
+    <string name="marketplace_details_price">السعر</string>
+    <string name="marketplace_details_you_have">تملك</string>
+    <string name="marketplace_details_not_owned">غير مملوك بعد</string>
+    <string name="marketplace_details_not_owned_desc">قم بشراء هذا %1$s لإضافته إلى مجموعتك واستخدامه في أي وقت.</string>
+    <string name="marketplace_details_equipped">مجهز</string>
+    <string name="marketplace_details_equipped_desc">هذا %1$s مفعل حالياً.</string>
+    <string name="marketplace_details_owned">مملوك</string>
+    <string name="marketplace_details_owned_desc">أنت تملك هذا %1$s. قم بتجهيزه لاستخدامه!</string>
+    <string name="marketplace_details_action_buy">شراء بـ %1$d نقطة</string>
+    <string name="marketplace_details_action_equip">تجهيز الآن</string>
+    <string name="marketplace_details_action_equipped">مجهز حالياً</string>
+    <string name="marketplace_details_buy_tip">بمجرد الشراء، يمكنك تجهيزه في أي وقت.</string>
+    <string name="marketplace_status_equipped">مجهز</string>
+    <string name="marketplace_status_owned">مملوك</string>
+    <string name="marketplace_price_format">%1$d نقطة</string>
 </resources>
