@@ -293,21 +293,17 @@ fun EditRoutineScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                         AwanText(
                             text = stringResource(R.string.profile_routine_no_zones),
-                            style = AwanTheme.styles.titleText.copy(
-                                textStyle = AwanTheme.styles.titleText.textStyle.copy(
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center
-                                )
-                            ),
+                            style = AwanTheme.styles.titleText,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
                         )
                         AwanText(
                             text = stringResource(R.string.profile_routine_no_zones_hint),
-                            style = AwanTheme.styles.bodyText.copy(
-                                color = AwanTheme.colors.textSecondary,
-                                textStyle = AwanTheme.styles.bodyText.textStyle.copy(textAlign = TextAlign.Center)
-                            ),
+                            style = AwanTheme.styles.bodyText,
+                            color = AwanTheme.colors.textSecondary,
+                            textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }

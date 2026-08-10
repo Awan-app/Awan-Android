@@ -19,7 +19,7 @@ fun DailyZonesTimeline(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp),
+        contentPadding = PaddingValues(bottom = 112.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         itemsIndexed(

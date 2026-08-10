@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
 /**
@@ -48,15 +47,13 @@ fun AwanDialog(
                 ) {
                     AwanText(
                         text = title,
-                        style = AwanTheme.styles.titleText.let {
-                            it.copy(textStyle = it.textStyle.copy(textAlign = TextAlign.Center))
-                        }
+                        style = AwanTheme.styles.titleText,
+                        textAlign = TextAlign.Center
                     )
                     AwanText(
                         text = body,
-                        style = AwanTheme.styles.bodySecondaryText.let {
-                            it.copy(textStyle = it.textStyle.copy(textAlign = TextAlign.Center))
-                        }
+                        style = AwanTheme.styles.bodySecondaryText,
+                        textAlign = TextAlign.Center
                     )
                 }
 

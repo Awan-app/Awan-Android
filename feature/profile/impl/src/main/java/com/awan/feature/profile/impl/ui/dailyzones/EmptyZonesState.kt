@@ -53,49 +53,39 @@ fun EmptyZonesState(
         if (hasTemplate) {
             AwanText(
                 text = stringResource(R.string.profile_routine_no_zones),
-                style = AwanTheme.styles.titleText.copy(
-                    textStyle = AwanTheme.styles.titleText.textStyle.copy(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                ),
+                style = AwanTheme.styles.titleText,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(4.dp))
             AwanText(
                 text = stringResource(R.string.profile_routine_no_zones_hint),
-                style = AwanTheme.styles.bodyText.copy(
-                    color = AwanTheme.colors.textSecondary,
-                    textStyle = AwanTheme.styles.bodyText.textStyle.copy(textAlign = TextAlign.Center,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Normal,)
-                ),
+                style = AwanTheme.styles.bodyText,
+                color = AwanTheme.colors.textSecondary,
+                textAlign = TextAlign.Center,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Normal,
                 modifier = Modifier.padding(horizontal = 48.dp).fillMaxWidth()
             )
         } else {
             AwanText(
                 text = stringResource(R.string.profile_routine_no_routine_set),
-                style = AwanTheme.styles.titleText.copy(
-                    textStyle = AwanTheme.styles.titleText.textStyle.copy(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                ),
+                style = AwanTheme.styles.titleText,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(4.dp))
             AwanText(
                 text = stringResource(R.string.profile_routine_connect_hint),
-                style = AwanTheme.styles.bodyText.copy(
-                    color = AwanTheme.colors.textSecondary,
-                    textStyle = AwanTheme.styles.bodyText.textStyle.copy(
-                        textAlign = TextAlign.Center,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Normal,
-                    )
-                ),
+                style = AwanTheme.styles.bodyText,
+                color = AwanTheme.colors.textSecondary,
+                textAlign = TextAlign.Center,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Normal,
                 maxLines = 2,
                 modifier = Modifier.padding(horizontal = 48.dp).fillMaxWidth()
             )
