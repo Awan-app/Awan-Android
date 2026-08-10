@@ -49,7 +49,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.SessionTaskDetail
+import com.awan.app.core.model.TaskStatus
 import com.awan.feature.home.impl.R
 
 @Composable
@@ -61,8 +63,8 @@ internal fun UnifiedSessionTaskContent(
     onDeleteClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val isCompleted = detail.session.status.uppercase() == "COMPLETED" ||
-        detail.task.status.uppercase() == "COMPLETED"
+    val isCompleted = detail.session.status == SessionStatus.COMPLETED ||
+        detail.task.status == TaskStatus.COMPLETED
     val isLocked = detail.session.locked
 
     val scrollState = rememberScrollState()
@@ -171,9 +173,9 @@ internal fun UnifiedSessionTaskContent(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             // Highlighted Session Duration & Time Card
-            val dateStr = formatIsoDate(detail.session.start)
-            val startTime = formatIsoTime(detail.session.start)
-            val endTime = formatIsoTime(detail.session.end)
+            val dateStr = formatDate(detail.session.start)
+            val startTime = formatTime(detail.session.start)
+            val endTime = formatTime(detail.session.end)
             val durationMins = calculateDurationMinutes(detail.session.start, detail.session.end)
                 ?: detail.task.estimatedDuration ?: 30
 
@@ -261,7 +263,7 @@ internal fun UnifiedSessionTaskContent(
                                 letterSpacing = 0.5.sp,
                             ),
                         )
-                        val doneCount = detail.relatedSessions.count { it.status.uppercase() == "COMPLETED" }
+                        val doneCount = detail.relatedSessions.count { it.status == SessionStatus.COMPLETED }
                         AwanText(
                             text = "$doneCount/${detail.relatedSessions.size} ${stringResource(R.string.home_status_completed)}",
                             style = AwanTheme.typography.caption.copy(
@@ -277,9 +279,9 @@ internal fun UnifiedSessionTaskContent(
                     ) {
                         detail.relatedSessions.forEachIndexed { index, s ->
                             val isCurrent = s.id == detail.session.id
-                            val isSessionDone = s.status.uppercase() == "COMPLETED"
-                            val sStart = formatIsoTime(s.start)
-                            val sEnd = formatIsoTime(s.end)
+                            val isSessionDone = s.status == SessionStatus.COMPLETED
+                            val sStart = formatTime(s.start)
+                            val sEnd = formatTime(s.end)
 
                             Box(
                                 modifier = Modifier
@@ -381,10 +383,9 @@ internal fun UnifiedSessionTaskContent(
             Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                val statusString = when (detail.session.status.uppercase()) {
-                    "COMPLETED" -> stringResource(R.string.home_status_completed)
-                    "IN_PROGRESS" -> stringResource(R.string.home_status_in_progress)
-                    "SKIPPED" -> stringResource(R.string.home_status_skipped)
+                val statusString = when (detail.session.status) {
+                    SessionStatus.COMPLETED -> stringResource(R.string.home_status_completed)
+                    SessionStatus.IN_PROGRESS -> stringResource(R.string.home_status_in_progress)
                     else -> stringResource(R.string.home_status_scheduled)
                 }
 

@@ -13,4 +13,5 @@ sealed interface EditRoutineAction {
     data class ReorderZones(val from: Int, val to: Int) : EditRoutineAction
     data object SaveRoutine : EditRoutineAction
     data object DeleteRoutine : EditRoutineAction
+    data class CreateCategory(val name: String) : EditRoutineAction
 }

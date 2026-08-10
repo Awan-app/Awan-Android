@@ -60,6 +60,7 @@ fun DailyZonesScreen(
     if (showAddZoneSheet) {
         AddEditZoneSheet(
             zone = editingZone,
+            availableCategories = uiState.availableCategories,
             defaultStartTime = uiState.selectedDayZones.lastOrNull()?.endTime,
             onDismiss = {
                 showAddZoneSheet = false
@@ -74,11 +75,15 @@ fun DailyZonesScreen(
                 showAddZoneSheet = false
                 editingZone = null
             },
+            onAddCategory = { name ->
+                onAction(DailyZonesAction.CreateCategory(name))
+            },
             onDelete = { zone ->
                 showAddZoneSheet = false
                 editingZone = null
                 showDeleteConfirm = zone
             },
+            canDelete = uiState.selectedDayZones.size > 1,
             isSaving = uiState.isSaving
         )
     }

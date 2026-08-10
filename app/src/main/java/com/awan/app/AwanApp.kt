@@ -248,9 +248,9 @@ fun AwanApp(
             profileEntry(
                 onNavigateToDailyZones = { navigator.navigate(DailyZonesRoute) },
                 onNavigateToEditRoutine = { templateId -> navigator.navigate(EditRoutineRoute(templateId)) },
-                onNavigateToInventory = { navigator.navigate(InventoryRoute) },
-                onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) },
-                onBack = { navigator.goBack() },
+                onLogout = { navigator.replaceAll(LoginRoute) },
+                onBack = { navigator.goBack()},
+                onNavigateToInventory = { navigator.navigate(InventoryRoute) }
             )
             goalPreviewEntry(
                 onBack = { navigator.goBack() },

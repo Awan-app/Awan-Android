@@ -70,13 +70,22 @@ fun DailyZoneRow(
             horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
         ) {
             dragHandle()
+        Column(modifier = Modifier.weight(1f)) {
             AwanText(
                 zone.name,
                 style = AwanTheme.styles.headingText,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
             )
+            zone.category?.name?.let { categoryName ->
+                AwanText(
+                    text = categoryName,
+                    style = AwanTheme.styles.metaText.copy(color = zoneColor),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
