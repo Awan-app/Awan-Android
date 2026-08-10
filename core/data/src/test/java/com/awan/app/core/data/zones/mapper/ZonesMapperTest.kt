@@ -44,6 +44,41 @@ class ZonesMapperTest {
         assertEquals(LocalDateTime.of(2026, 8, 8, 11, 45), domain.end)
     }
 
+    /**
+     * The move and lock endpoints answer without a `status`. Defaulting that to `SCHEDULED` on the
+     * way into Room reopened a session the user had already finished, just by dragging its card.
+     */
+    @Test
+    fun `a response without a status keeps the one already cached`() {
+        val dto = SessionDto(id = "s1", start = "2026-08-08T10:00:00", end = "2026-08-08T11:00:00")
+
+        assertEquals("COMPLETED", dto.toEntity(existingStatus = "COMPLETED").status)
+        assertEquals("SCHEDULED", dto.toEntity().status)
+        assertEquals("CANCELLED", dto.copy(status = "CANCELLED").toEntity(existingStatus = "COMPLETED").status)
+    }
+
+    /** `toEntity` parsed with a strict local formatter while `toDomain` accepted offsets. */
+    @Test
+    fun `an offset timestamp maps to an entity instead of throwing`() {
+        val entity = SessionDto(
+            id = "s1",
+            start = "2026-08-08T09:00:00+03:00",
+            end = "2026-08-08T10:30:00+03:00",
+        ).toEntity()
+
+        assertEquals("2026-08-08", entity.date)
+        assertEquals("09:00:00", entity.startTime)
+        assertEquals("10:30:00", entity.endTime)
+    }
+
+    /** A malformed row must not take the collector down with it. */
+    @Test
+    fun `an unreadable cached row falls back rather than throwing`() {
+        val entity = SessionDto(id = "s1", start = "nonsense", end = "nonsense").toEntity()
+
+        assertEquals(LocalDateTime.of(1970, 1, 1, 0, 0), entity.toDomain().start)
+    }
+
     private fun zoneDto(category: CategoryDto? = null, categoryId: String? = null) = ZoneDto(
         id = "zone-1",
         name = "Work",

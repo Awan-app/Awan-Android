@@ -12,7 +12,6 @@ import com.awan.app.core.data.zones.mapper.toDto
 import com.awan.app.core.data.sync.SyncTtl
 import com.awan.app.core.data.zones.local.ZonesLocalDataSource
 import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
-import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.ZoneEntity
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.domain.zones.model.DailyZone
@@ -39,7 +38,6 @@ import javax.inject.Inject
 
 class ZonesRepositoryImpl @Inject constructor(
     private val zonesRemoteDataSource: ZonesRemoteDataSource,
-    private val zoneDao: ZoneDao,
     private val zonesLocalDataSource: ZonesLocalDataSource,
     private val connectivityMonitor: NetworkConnectivityMonitor,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
@@ -275,9 +273,9 @@ class ZonesRepositoryImpl @Inject constructor(
         zonesRemoteDataSource.deleteZone(zoneId).suspendOnSuccess { refreshZones() }
     }
 
-    /** Room resolves override-over-template in one query; see [ZoneDao.observeEffectiveZonesForDate]. */
+    /** Room resolves override-over-template in one query; see [ZonesLocalDataSource]. */
     private suspend fun resolveZoneEntitiesForDate(date: LocalDate): List<ZoneEntity> =
-        zoneDao.observeEffectiveZonesForDate(date.toString(), date.dayOfWeek.name).first()
+        zonesLocalDataSource.observeEffectiveZonesForDate(date.toString(), date.dayOfWeek.name).first()
 
     private fun ZoneEntity.toDayZone(): DayZone {
         val startLocalTime = try { LocalTime.parse(startTime) } catch (_: Exception) { LocalTime.of(0, 0) }

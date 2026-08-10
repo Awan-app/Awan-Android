@@ -11,6 +11,7 @@ import com.awan.app.core.database.model.TemplateOverrideEntity
 import com.awan.app.core.database.model.ZoneEntity
 import com.awan.app.core.network.dto.zone.TemplateOverrideDto
 import com.awan.app.core.network.dto.zone.WeeklyTemplateDto
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,6 +34,9 @@ interface ZonesLocalDataSource {
         overrides: List<TemplateOverrideDto>,
         expiryTime: Long,
     )
+
+    /** Override for the date beats template for the day-of-week; see [ZoneDao.observeEffectiveZonesForDate]. */
+    fun observeEffectiveZonesForDate(date: String, dayOfWeek: String): Flow<List<ZoneEntity>>
 }
 
 @Singleton
@@ -73,6 +77,9 @@ class ZonesLocalDataSourceImpl @Inject constructor(
         }
         zoneDao.upsertZones(templateZones + overrideZones)
     }
+
+    override fun observeEffectiveZonesForDate(date: String, dayOfWeek: String): Flow<List<ZoneEntity>> =
+        zoneDao.observeEffectiveZonesForDate(date, dayOfWeek)
 }
 
 private fun com.awan.app.core.network.dto.zone.ZoneDto.toEntity(

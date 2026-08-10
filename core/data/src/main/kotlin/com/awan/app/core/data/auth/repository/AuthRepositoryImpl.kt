@@ -37,13 +37,7 @@ class AuthRepositoryImpl @Inject constructor(
         )
 
         if (result is Result.Success) {
-            // An expired session is cleared by TokenAuthenticator, which cannot reach the database —
-            // so sign-in is the second place the cache's owner is knowable. Anything but the same
-            // user signing back in inherits rows the new account does not own.
-            val previousUserId = authTokenProvider.getUserId()
-            if (previousUserId != result.data.user?.id) {
-                localDataCleaner.clearAll()
-            }
+            clearCacheIfDifferentUser(result.data.user?.id)
 
             authTokenProvider.saveTokens(
                 accessToken = result.data.accessToken,
@@ -89,6 +83,8 @@ class AuthRepositoryImpl @Inject constructor(
         )
 
         if (result is Result.Success) {
+            clearCacheIfDifferentUser(result.data.user?.id)
+
             authTokenProvider.saveTokens(
                 accessToken = result.data.accessToken,
                 refreshToken = result.data.refreshToken,
@@ -121,6 +117,18 @@ class AuthRepositoryImpl @Inject constructor(
             )
             is Result.Error -> result as Result<AuthSession>
             Result.Loading -> result as Result<AuthSession>
+        }
+    }
+
+    /**
+     * An expired session is cleared by TokenAuthenticator, which cannot reach the database — so
+     * sign-in is the second place the cache's owner is knowable. Anything but the same user signing
+     * back in inherits rows the new account does not own. Every sign-in route needs this, not just
+     * the OTP one: Google sign-in reaches the same Room.
+     */
+    private suspend fun clearCacheIfDifferentUser(newUserId: String?) {
+        if (authTokenProvider.getUserId() != newUserId) {
+            localDataCleaner.clearAll()
         }
     }
 

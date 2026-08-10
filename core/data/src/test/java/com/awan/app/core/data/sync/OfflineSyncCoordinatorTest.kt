@@ -343,6 +343,11 @@ private class FakeZonesLocalDataSource : com.awan.app.core.data.zones.local.Zone
         this.templates = templates
         this.overrides = overrides
     }
+
+    override fun observeEffectiveZonesForDate(
+        date: String,
+        dayOfWeek: String,
+    ): Flow<List<ZoneEntity>> = flowOf(emptyList())
 }
 
 private class FakeCachedScheduleDateDao : CachedScheduleDateDao {

@@ -14,8 +14,10 @@ import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.zone.TemplateOverrideDto
 import com.awan.app.core.network.dto.zone.WeeklyTemplateDto
 import com.awan.app.core.network.dto.zone.ZoneDto
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 private val SessionDateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
@@ -90,20 +92,25 @@ fun String?.toSessionStatus(): SessionStatus {
     }
 }
 
-fun SessionDto.toEntity(): SessionEntity = SessionEntity(
+/**
+ * [existingStatus] is what Room already holds. The endpoints that move or lock a session answer with
+ * a body that may omit `status`, and defaulting that to `SCHEDULED` silently reopened a completed
+ * session — dragging a finished card was enough to lose its completion.
+ */
+fun SessionDto.toEntity(existingStatus: String? = null): SessionEntity = SessionEntity(
     id = id,
     taskId = taskId ?: "",
     zoneId = zoneId,
     date = extractDateFromIso(start),
-    startTime = LocalDateTime.parse(start, SessionDateTimeFormatter).toLocalTime().format(DateTimeFormatter.ISO_LOCAL_TIME),
-    endTime = LocalDateTime.parse(end, SessionDateTimeFormatter).toLocalTime().format(DateTimeFormatter.ISO_LOCAL_TIME),
-    status = status ?: "SCHEDULED",
+    startTime = extractTimeFromIso(start),
+    endTime = extractTimeFromIso(end),
+    status = status ?: existingStatus ?: "SCHEDULED",
     locked = locked
 )
 
 fun SessionEntity.toDomain(): Session {
-    val startDateTime = LocalDateTime.parse("${date}T${startTime}")
-    val endDateTime = LocalDateTime.parse("${date}T${endTime}")
+    val startDateTime = parseStoredDateTime(date, startTime)
+    val endDateTime = parseStoredDateTime(date, endTime)
     return Session(
         id = id,
         start = startDateTime,
@@ -113,4 +120,15 @@ fun SessionEntity.toDomain(): Session {
         zoneId = zoneId,
         taskId = taskId
     )
+}
+
+/**
+ * A row written before the time columns were normalised — or from a response whose timestamp did not
+ * parse — must not take the calendar's Flow down with it. The epoch is deliberately conspicuous: a
+ * 1970 session is a visible bug report, a crashed collector is a blank screen.
+ */
+private fun parseStoredDateTime(date: String, time: String): LocalDateTime = try {
+    LocalDateTime.parse("${date}T$time")
+} catch (_: DateTimeParseException) {
+    LocalDate.EPOCH.atStartOfDay()
 }

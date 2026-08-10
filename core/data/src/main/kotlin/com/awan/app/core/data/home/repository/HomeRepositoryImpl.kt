@@ -191,7 +191,10 @@ class HomeRepositoryImpl @Inject constructor(
             val taskId = sessionDetailInfo.taskId
             val taskResult = remoteDataSource.getTask(taskId)
             val taskDto = when (taskResult) {
-                is Result.Success -> taskResult.data
+                is Result.Success -> {
+                    local.cacheTask(taskId, taskResult.data)
+                    taskResult.data
+                }
                 is Result.Error -> {
                     val cached = local.getTask(taskId)
                     if (cached != null) null else return@withContext Result.Error(taskResult.error)

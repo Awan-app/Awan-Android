@@ -5,7 +5,6 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.zones.local.ZonesLocalDataSource
 import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
 import com.awan.app.core.data.zones.repository.ZonesRepositoryImpl
-import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.ZoneEntity
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.domain.zones.model.DailyZone
@@ -110,7 +109,6 @@ class ZonesRepositoryImplTest {
         local = FakeZonesLocalDataSource()
         return ZonesRepositoryImpl(
             zonesRemoteDataSource = remote,
-            zoneDao = FakeZoneDao(),
             zonesLocalDataSource = local,
             connectivityMonitor = object : NetworkConnectivityMonitor {
                 override val isOnline: Flow<Boolean> = flowOf(online)
@@ -131,6 +129,9 @@ private class FakeZonesLocalDataSource : ZonesLocalDataSource {
     ) {
         replaceCount++
     }
+
+    override fun observeEffectiveZonesForDate(date: String, dayOfWeek: String): Flow<List<ZoneEntity>> =
+        flowOf(emptyList())
 }
 
 private class FakeZonesRemoteDataSource : ZonesRemoteDataSource {
@@ -174,16 +175,3 @@ private class FakeZonesRemoteDataSource : ZonesRemoteDataSource {
     override suspend fun deleteZone(zoneId: String) = answer(Unit)
 }
 
-private class FakeZoneDao : ZoneDao {
-    override suspend fun upsertZone(zone: ZoneEntity) {}
-    override suspend fun upsertZones(zones: List<ZoneEntity>) {}
-    override fun observeZone(zoneId: String): Flow<ZoneEntity?> = flowOf(null)
-    override suspend fun getZone(zoneId: String): ZoneEntity? = null
-    override fun observeZonesForTemplate(templateId: String): Flow<List<ZoneEntity>> = flowOf(emptyList())
-    override fun observeZonesForOverride(overrideId: String): Flow<List<ZoneEntity>> = flowOf(emptyList())
-    override fun observeEffectiveZonesForDate(date: String, dayOfWeek: String): Flow<List<ZoneEntity>> =
-        flowOf(emptyList())
-    override suspend fun deleteZone(zoneId: String) {}
-    override suspend fun deleteZonesForTemplate(templateId: String) {}
-    override suspend fun deleteZonesForOverride(overrideId: String) {}
-}

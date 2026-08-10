@@ -11,6 +11,7 @@ import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.domain.zones.model.Session
 import com.awan.app.core.domain.zones.repository.SessionRepository
 import com.awan.app.core.model.UpdateSessionParams
+import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.session.UpdateSessionRequest
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -109,7 +110,7 @@ class SessionRepositoryImpl @Inject constructor(
     override suspend fun getSession(sessionId: String): Result<Session> {
         return when (val result = sessionRemoteDataSource.getSession(sessionId)) {
             is Result.Success -> {
-                sessionDao.upsertSession(result.data.toEntity())
+                cacheSession(result.data)
                 Result.Success(result.data.toDomain())
             }
 
@@ -142,7 +143,7 @@ class SessionRepositoryImpl @Inject constructor(
             )
         )
         if (result is Result.Success) {
-            sessionDao.upsertSession(result.data.toEntity())
+            cacheSession(result.data)
         }
         return result.map { it.toDomain() }
     }
@@ -153,7 +154,7 @@ class SessionRepositoryImpl @Inject constructor(
         }
         val result = sessionRemoteDataSource.lockSession(sessionId)
         if (result is Result.Success) {
-            sessionDao.upsertSession(result.data.toEntity())
+            cacheSession(result.data)
         }
         return result.map { it.toDomain() }
     }
@@ -164,7 +165,7 @@ class SessionRepositoryImpl @Inject constructor(
         }
         val result = sessionRemoteDataSource.unlockSession(sessionId)
         if (result is Result.Success) {
-            sessionDao.upsertSession(result.data.toEntity())
+            cacheSession(result.data)
         }
         return result.map { it.toDomain() }
     }
@@ -178,5 +179,15 @@ class SessionRepositoryImpl @Inject constructor(
             sessionDao.deleteSession(sessionId)
         }
         return result
+    }
+
+    /**
+     * Single-session responses replace the whole row, so the status Room already holds has to be
+     * carried in — these endpoints move and lock, they never change a completion.
+     */
+    private suspend fun cacheSession(session: SessionDto) {
+        sessionDao.upsertSession(
+            session.toEntity(existingStatus = sessionDao.getSession(session.id)?.status)
+        )
     }
 }

@@ -38,4 +38,19 @@ class IsoTimeUtilsTest {
     fun `fractional seconds are tolerated`() {
         assertEquals("10:44:03", extractTimeFromIso("2026-08-09T10:44:03.820200"))
     }
+
+    @Test
+    fun `a bare date is passed through`() {
+        assertEquals("2026-07-22", extractDateFromIso("2026-07-22"))
+    }
+
+    /**
+     * The date used to be sliced at ten characters, so anything that long became a `date` column
+     * Room accepts and `LocalDate.parse` throws on the next time the schedule is read.
+     */
+    @Test
+    fun `an unparseable date falls back instead of being sliced`() {
+        assertEquals("2026-01-01", extractDateFromIso("10/08/2026 14:30", fallback = "2026-01-01"))
+        assertEquals("", extractDateFromIso("INVALID_TIMESTAMP"))
+    }
 }
