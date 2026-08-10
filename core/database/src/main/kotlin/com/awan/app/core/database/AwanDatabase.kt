@@ -53,7 +53,7 @@ import com.awan.app.core.database.model.ZoneEntity
         OwnedItemEntity::class,
         EquippedItemEntity::class,
     ],
-    version = 6,
+    version = 1,
     exportSchema = true,
 )
 abstract class AwanDatabase : RoomDatabase() {
