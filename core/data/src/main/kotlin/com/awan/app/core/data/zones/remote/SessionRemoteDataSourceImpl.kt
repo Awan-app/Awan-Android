@@ -44,11 +44,6 @@ class SessionRemoteDataSourceImpl @Inject constructor(
             sessionApiService.updateSession(sessionId, request)
         }
 
-    override suspend fun updateSessionStatus(sessionId: String, status: String): Result<SessionDto> =
-        safeApiCall(dispatcher = ioDispatcher, json = json) {
-            sessionApiService.updateSessionStatus(sessionId, status)
-        }
-
     override suspend fun lockSession(sessionId: String): Result<SessionDto> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             sessionApiService.lockSession(sessionId)

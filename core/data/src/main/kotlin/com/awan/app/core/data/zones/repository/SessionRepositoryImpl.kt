@@ -10,7 +10,6 @@ import com.awan.app.core.data.zones.remote.SessionRemoteDataSource
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.domain.zones.model.Session
 import com.awan.app.core.domain.zones.repository.SessionRepository
-import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.UpdateSessionParams
 import com.awan.app.core.network.dto.session.UpdateSessionRequest
 import java.time.LocalDate
@@ -142,17 +141,6 @@ class SessionRepositoryImpl @Inject constructor(
                 locked = params.locked
             )
         )
-        if (result is Result.Success) {
-            sessionDao.upsertSession(result.data.toEntity())
-        }
-        return result.map { it.toDomain() }
-    }
-
-    override suspend fun updateSessionStatus(sessionId: String, status: SessionStatus): Result<Session> {
-        if (!connectivityMonitor.isCurrentlyOnline()) {
-            return Result.Error(AppError.Network)
-        }
-        val result = sessionRemoteDataSource.updateSessionStatus(sessionId, status.name)
         if (result is Result.Success) {
             sessionDao.upsertSession(result.data.toEntity())
         }

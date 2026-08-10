@@ -51,12 +51,6 @@ interface SessionApiService {
     @POST("v1/sessions/{sessionId}/cancel")
     suspend fun cancelSession(@Path("sessionId") sessionId: String): SessionDto
 
-    @PATCH("v1/sessions/{sessionId}/status")
-    suspend fun updateSessionStatus(
-        @Path("sessionId") sessionId: String,
-        @Query("status") status: String
-    ): SessionDto
-
     @PATCH("v1/sessions/{sessionId}/lock")
     suspend fun lockSession(
         @Path("sessionId") sessionId: String

@@ -9,7 +9,6 @@ interface SessionRemoteDataSource {
     suspend fun getSessionsByRange(startDate: String, endDate: String): Result<Map<String, List<SessionDto>>>
     suspend fun getSession(sessionId: String): Result<SessionDto>
     suspend fun updateSession(sessionId: String, request: UpdateSessionRequest): Result<SessionDto>
-    suspend fun updateSessionStatus(sessionId: String, status: String): Result<SessionDto>
     suspend fun lockSession(sessionId: String): Result<SessionDto>
     suspend fun unlockSession(sessionId: String): Result<SessionDto>
     suspend fun deleteSession(sessionId: String): Result<Unit>
