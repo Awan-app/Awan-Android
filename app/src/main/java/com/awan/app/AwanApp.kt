@@ -96,7 +96,7 @@ private fun NavigationState.rememberDecoratedEntries(
     entryProvider: (Route) -> NavEntry<Route>,
 ): List<NavEntry<Route>> {
     val decoratedStacks = subStacks.mapValues { (topLevelKey, stack) ->
-        key(topLevelKey) {
+        key(generation, topLevelKey) {
             rememberDecoratedNavEntries(
                 backStack = stack,
                 entryDecorators = listOf(
