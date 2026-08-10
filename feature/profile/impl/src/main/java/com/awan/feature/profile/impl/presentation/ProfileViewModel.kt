@@ -8,8 +8,8 @@ import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.auth.usecase.LogoutUseCase
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.image.usecase.ReadImageUseCase
-import com.awan.app.core.domain.inventory.usecase.ObserveEquippedFrameUseCase
-import com.awan.app.core.domain.inventory.usecase.RefreshInventoryUseCase
+import com.awan.app.core.domain.marketplace.usecase.GetEquippedItemsUseCase
+import com.awan.app.core.domain.marketplace.usecase.RefreshMarketplaceUseCase
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.usecase.DeleteProfilePictureUseCase
 import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
@@ -23,6 +23,7 @@ import com.awan.app.core.domain.profile.usecase.UpdateProfilePictureUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateSessionSettingsUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateSleepScheduleUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateTimezoneUseCase
+import com.awan.app.core.model.StoreItemType
 import com.awan.feature.profile.impl.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -46,8 +47,8 @@ class ProfileViewModel @Inject constructor(
     private val setDarkThemeUseCase: SetDarkThemeUseCase,
     private val setLocaleUseCase: SetLocaleUseCase,
     private val logoutUseCase: LogoutUseCase,
-    private val observeEquippedFrameUseCase: ObserveEquippedFrameUseCase,
-    private val refreshInventoryUseCase: RefreshInventoryUseCase,
+    private val getEquippedItemsUseCase: GetEquippedItemsUseCase,
+    private val refreshMarketplaceUseCase: RefreshMarketplaceUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
 ) : ViewModel() {
 
@@ -114,14 +115,21 @@ class ProfileViewModel @Inject constructor(
 
     private fun observeEquippedFrame() {
         viewModelScope.launch {
-            observeEquippedFrameUseCase().collectLatest { imageUrl ->
-                _uiState.update { it.copy(equippedFrameImageUrl = imageUrl) }
+            getEquippedItemsUseCase().collectLatest { equippedItems ->
+                val frameUrl = equippedItems.find { it.type == StoreItemType.FRAME }?.item?.image
+                _uiState.update { it.copy(equippedFrameImageUrl = frameUrl) }
             }
         }
     }
 
     private fun refreshInventory() {
-        viewModelScope.launch { refreshInventoryUseCase() }
+        viewModelScope.launch {
+            try {
+                refreshMarketplaceUseCase()
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
     }
 
     private fun setTheme(useDarkTheme: Boolean) {

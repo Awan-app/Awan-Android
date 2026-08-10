@@ -66,7 +66,6 @@ private class FakeRemoteDataSource : SessionRemoteDataSource {
             locked = request.locked ?: false
         ))
     }
-    override suspend fun updateSessionStatus(sessionId: String, status: String): Result<SessionDto> = TODO()
     override suspend fun lockSession(sessionId: String): Result<SessionDto> = TODO()
     override suspend fun unlockSession(sessionId: String): Result<SessionDto> = TODO()
     override suspend fun deleteSession(sessionId: String): Result<Unit> = Result.Success(Unit)

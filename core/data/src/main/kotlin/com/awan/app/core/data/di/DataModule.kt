@@ -18,16 +18,15 @@ import com.awan.app.core.data.home.remote.HomeRemoteDataSource
 import com.awan.app.core.data.home.remote.HomeRemoteDataSourceImpl
 import com.awan.app.core.data.home.repository.HomeRepositoryImpl
 import com.awan.app.core.data.image.ImageRepositoryImpl
-import com.awan.app.core.data.inventory.InventoryRepositoryImpl
-import com.awan.app.core.data.inventory.remote.InventoryRemoteDataSource
-import com.awan.app.core.data.inventory.remote.InventoryRemoteDataSourceImpl
 import com.awan.app.core.domain.image.repository.ImageRepository
-import com.awan.app.core.domain.inventory.repository.InventoryRepository
 import com.awan.app.core.domain.onboarding.repository.OnboardingRepository
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSourceImpl
 import com.awan.app.core.data.profile.repository.ProfileRepositoryImpl
 import com.awan.app.core.data.profile.repository.UserDataRepositoryImpl
+import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSource
+import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSourceImpl
+import com.awan.app.core.data.marketplace.repository.StoreRepositoryImpl
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSourceImpl
@@ -56,6 +55,7 @@ import com.awan.app.core.domain.template.repository.TemplateRepository
 import com.awan.app.core.domain.gamification.repository.GamificationRepository
 import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.domain.zones.repository.ZonesRepository
+import com.awan.app.core.domain.marketplace.repository.StoreRepository
 import com.awan.app.core.data.network.NetworkConnectivityMonitorImpl
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.data.zones.remote.SessionRemoteDataSource
@@ -136,18 +136,6 @@ internal abstract class DataModule {
     abstract fun bindImageRepository(
         impl: ImageRepositoryImpl,
     ): ImageRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindInventoryRemoteDataSource(
-        impl: InventoryRemoteDataSourceImpl,
-    ): InventoryRemoteDataSource
-
-    @Binds
-    @Singleton
-    abstract fun bindInventoryRepository(
-        impl: InventoryRepositoryImpl,
-    ): InventoryRepository
 
     @Binds
     @Singleton
@@ -249,14 +237,25 @@ internal abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindGoalRepository(
-impl: GoalRepositoryImpl,
+        impl: GoalRepositoryImpl,
     ): GoalRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindStoreRemoteDataSource(
+        impl: StoreRemoteDataSourceImpl,
+    ): StoreRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindStoreRepository(
+        impl: StoreRepositoryImpl,
+    ): StoreRepository
 
     @Binds
     @Singleton
     abstract fun bindNetworkConnectivityMonitor(
         impl: NetworkConnectivityMonitorImpl,
     ): NetworkConnectivityMonitor
-
 }
 

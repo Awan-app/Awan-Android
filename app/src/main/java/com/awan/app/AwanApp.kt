@@ -222,7 +222,9 @@ fun AwanApp(
                 onComplete = { navigator.replaceAll(HomeRoute()) },
                 onExit = { navigator.replaceAll(LoginRoute) }
             )
-            marketplaceEntry()
+            marketplaceEntry(
+                onNavigateToHome = { navigator.navigate(HomeRoute()) }
+            )
             homeEntry(
                 onLogout = { navigator.replaceAll(LoginRoute) },
                 onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
