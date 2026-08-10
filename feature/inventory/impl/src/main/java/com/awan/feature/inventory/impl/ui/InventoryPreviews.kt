@@ -60,7 +60,7 @@ fun InventoryScreenPreview() {
     }
 }
 
-@Preview(name = "Inventory · Details edge shadow", showBackground = true, widthDp = 420, heightDp = 720)
+@Preview(name = "Inventory · Details edge + bottom blend", showBackground = true, widthDp = 420, heightDp = 720)
 @Composable
 fun InventoryDetailsSheetPreview() {
     AwanTheme {

@@ -7,10 +7,10 @@ Replace the centered radial gradient in the details bottom sheet with a rarity-t
 ## Implementation Changes
 
 - Keep the details artwork in its existing full-width, fixed-aspect frame.
-- Render the left, right, and top fades as a separate overlay whose width follows the sheet content bounds and whose height exactly matches the artwork frame.
+- Render the left, right, and top fades plus a bottom blend as a separate overlay whose width follows the sheet bounds and whose side height exactly matches the artwork frame.
 - Stop the side gradients at the artwork frame’s bottom edge; they must not continue into the type, rarity, description, or Equip sections.
 - Base the gradient geometry on the sheet-width artwork container, not the remote image’s intrinsic dimensions, so changing image aspect/content does not move or resize the effect.
-- Use the selected rarity accent at low opacity, fading toward transparent at the center; leave the bottom edge untreated.
+- Use the selected rarity accent at low opacity, fading toward transparent inward and below the artwork before the item details begin.
 - Disable the image-level radial backdrop in the details sheet while preserving the current radial treatment on grid cards.
 - Clip the overlay to the existing artwork/sheet shape and preserve all existing details, equip behavior, localization, previews, and offline handling.
 
@@ -29,6 +29,6 @@ Replace the centered radial gradient in the details bottom sheet with a rarity-t
 
 ## Implementation notes (what actually differed)
 
-- The details sheet now draws a rarity-colored left, right, and top overlay from the sheet bounds. Its diagonal side fades taper downward and stop at the fixed-aspect artwork bottom, leaving the item details below untreated.
+- The details sheet now draws horizontal rarity-colored left and right overlays from the sheet borders, keeps the top fade, and adds a full-width bottom blend that fades through the artwork-to-details spacing before the item name.
 - The grid cards retain their existing radial rarity backdrop; the details artwork remains neutral. Added a details artwork semantics tag and renamed the details preview to expose the sheet-level edge-shadow treatment.
 - Inventory unit tests, lint, Android-test compilation, and `:app:assembleDebug` passed. Connected Compose execution remains unavailable because no Android device is connected.

@@ -405,6 +405,7 @@ internal fun CustomizationDetailsSheet(
                     horizontalPadding = AwanTheme.spacing.md,
                     topPadding = AwanTheme.spacing.sm,
                     edgeDepth = AwanTheme.spacing.lg,
+                    bottomBlendDepth = AwanTheme.spacing.sm,
                 ),
         )
     }
@@ -451,26 +452,36 @@ private fun Modifier.detailsSheetEdgeShadow(
     horizontalPadding: Dp,
     topPadding: Dp,
     edgeDepth: Dp,
+    bottomBlendDepth: Dp,
 ) = drawWithCache {
     val artworkWidth = (size.width - (horizontalPadding.toPx() * 2f)).coerceAtLeast(0f)
     val artworkBottom = (topPadding.toPx() + artworkWidth / artworkAspectRatio)
         .coerceAtMost(size.height)
     val edgeSize = edgeDepth.toPx().coerceAtMost(size.width / 2f)
+    val bottomBlendSize = bottomBlendDepth.toPx()
+    val visibleBottomBlendSize = (size.height - artworkBottom)
+        .coerceAtLeast(0f)
+        .coerceAtMost(bottomBlendSize)
     val edgeColor = accent.copy(alpha = 0.24f)
-    val leftBrush = Brush.linearGradient(
+    val leftBrush = Brush.horizontalGradient(
         colors = listOf(edgeColor, Color.Transparent),
-        start = Offset(0f, 0f),
-        end = Offset(edgeSize, artworkBottom),
+        startX = 0f,
+        endX = edgeSize,
     )
-    val rightBrush = Brush.linearGradient(
-        colors = listOf(edgeColor, Color.Transparent),
-        start = Offset(size.width, 0f),
-        end = Offset(size.width - edgeSize, artworkBottom),
+    val rightBrush = Brush.horizontalGradient(
+        colors = listOf(Color.Transparent, edgeColor),
+        startX = size.width - edgeSize,
+        endX = size.width,
     )
     val topBrush = Brush.verticalGradient(
         colors = listOf(edgeColor, Color.Transparent),
         startY = 0f,
         endY = edgeSize,
+    )
+    val bottomBrush = Brush.verticalGradient(
+        colors = listOf(edgeColor, Color.Transparent),
+        startY = artworkBottom,
+        endY = artworkBottom + bottomBlendSize,
     )
 
     onDrawWithContent {
@@ -482,6 +493,11 @@ private fun Modifier.detailsSheetEdgeShadow(
             size = Size(edgeSize, artworkBottom),
         )
         drawRect(topBrush, topLeft = Offset.Zero, size = Size(size.width, edgeSize))
+        drawRect(
+            bottomBrush,
+            topLeft = Offset(0f, artworkBottom),
+            size = Size(size.width, visibleBottomBlendSize),
+        )
     }
 }
 
