@@ -28,7 +28,7 @@ enum class InboxTaskDisplayStatus {
 }
 
 fun TaskWithSessions.deriveDisplayStatus(): InboxTaskDisplayStatus {
-    if (sessions.isEmpty()) return InboxTaskDisplayStatus.Active
+    if (sessions.isEmpty()) return InboxTaskDisplayStatus.Drafted
     val nonCancelled = sessions.filter { it.status != SessionStatus.CANCELLED }
     if (nonCancelled.isEmpty()) return InboxTaskDisplayStatus.Cancelled
     if (nonCancelled.all { it.status == SessionStatus.COMPLETED }) return InboxTaskDisplayStatus.Completed

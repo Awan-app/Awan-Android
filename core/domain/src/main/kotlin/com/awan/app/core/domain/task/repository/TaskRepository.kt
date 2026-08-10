@@ -8,6 +8,8 @@ import com.awan.app.core.model.TaskProposals
 import com.awan.app.core.model.TaskSchedule
 import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.model.TaskWithSessionsDraft
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 interface TaskRepository {
 
@@ -38,6 +40,11 @@ interface TaskRepository {
     suspend fun scheduleTask(taskId: String): Result<TaskSchedule>
 
     suspend fun deleteTask(taskId: String): Result<Unit>
+
+    /**
+     * Observes all tasks whose [Task.goalId] is null (the Inbox), each bundled with their sessions.
+     */
+    fun observeInboxTasks(): Flow<List<TaskWithSessions>> = flowOf(emptyList())
 
     /**
      * Returns all tasks whose [Task.goalId] is null (the Inbox), each bundled with their sessions.

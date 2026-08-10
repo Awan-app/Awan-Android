@@ -29,6 +29,11 @@ import com.awan.app.core.data.common.extractTimeFromIso
 import com.awan.app.core.data.task.toModel
 import com.awan.app.core.data.task.toSessionModel
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -169,7 +174,51 @@ class TaskRepositoryImpl @Inject constructor(
         }
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    override fun observeInboxTasks(): Flow<List<TaskWithSessions>> {
+        return goalDao.observeInboxGoal().flatMapLatest { inboxGoal ->
+            val inboxGoalId = inboxGoal?.id
+            combine(
+                taskDao.observeAllTasks(),
+                sessionDao.observeAllSessions(),
+            ) { tasks, sessions ->
+                tasks.filter { it.goalId == null || (inboxGoalId != null && it.goalId == inboxGoalId) }
+                    .map { entity ->
+                        TaskWithSessions(
+                            task = entity.toModel(),
+                            sessions = sessions.filter { it.taskId == entity.id }.mapNotNull { it.toSessionModel() },
+                        )
+                    }
+            }
+        }
+    }
+
     override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = withContext(ioDispatcher) {
+        if (connectivityMonitor.isCurrentlyOnline()) {
+            when (val result = remoteDataSource.getInboxTasks()) {
+                is Result.Success -> {
+                    val dtos = result.data
+                    for (dto in dtos) {
+                        val t = dto.task
+                        val categoryEntity = t.category?.let { CategoryEntity(id = it.id, name = it.name) }
+                        if (categoryEntity != null) {
+                            categoryDao.upsertCategory(categoryEntity)
+                        }
+                        taskDao.upsertTask(t.toEntity())
+                        
+                        val sessionEntities = dto.sessions.map { s ->
+                            s.toEntity(taskId = t.id, date = "")
+                        }
+                        if (sessionEntities.isNotEmpty()) {
+                            sessionDao.upsertSessions(sessionEntities)
+                        }
+                    }
+                }
+                is Result.Error -> return@withContext Result.Error(result.error)
+                Result.Loading -> Unit
+            }
+        }
+
         val inboxGoal = goalDao.getAllGoals().find { it.isInbox }
         val inboxGoalId = inboxGoal?.id
         

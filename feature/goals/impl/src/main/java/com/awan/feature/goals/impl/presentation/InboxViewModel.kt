@@ -30,7 +30,23 @@ class InboxViewModel @Inject constructor(
     private var fetchJob: Job? = null
 
     init {
+        observeInboxTasks()
         loadInboxTasks()
+    }
+
+    private fun observeInboxTasks() {
+        viewModelScope.launch {
+            getInboxTasksUseCase.observe().collect { tasks ->
+                val now = LocalDateTime.now()
+                val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
+                val timeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
+                updateState {
+                    it.copy(
+                        allTasks = tasks.map { tws -> tws.toUiModel(now, dateFormatter, timeFormatter) },
+                    )
+                }
+            }
+        }
     }
 
     fun onAction(action: InboxAction) {
@@ -101,18 +117,7 @@ class InboxViewModel @Inject constructor(
         fetchJob = viewModelScope.launch {
             updateState { it.copy(isLoading = true, isError = false) }
             when (val result = getInboxTasksUseCase()) {
-                is Result.Success -> {
-                    val now = LocalDateTime.now()
-                    val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
-                    val timeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
-                    updateState {
-                        it.copy(
-                            isLoading = false,
-                            isError = false,
-                            allTasks = result.data.map { tws -> tws.toUiModel(now, dateFormatter, timeFormatter) },
-                        ).copy(visibleTasks = filterTasks(it.copy(allTasks = result.data.map { tws -> tws.toUiModel(now, dateFormatter, timeFormatter) })))
-                    }
-                }
+                is Result.Success -> updateState { it.copy(isLoading = false, isError = false) }
                 is Result.Error -> updateState { it.copy(isLoading = false, isError = true) }
                 Result.Loading -> { /* Handled above */ }
             }
