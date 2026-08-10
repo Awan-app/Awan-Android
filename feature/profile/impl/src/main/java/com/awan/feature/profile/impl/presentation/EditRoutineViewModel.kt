@@ -179,7 +179,8 @@ class EditRoutineViewModel @Inject constructor(
                 val newStartMins = DailyZonesHelper.parseTimeToMinutes(newStart) ?: 540
                 
                 // Ensure total minutes don't exceed a day
-                val newEndMins = (newStartMins + duration).coerceAtMost(1439)
+                val newEndMins = newStartMins + duration
+                if (newEndMins > 1439) return@update state
                 val newEnd = DailyZonesHelper.formatMinutesToTime(newEndMins)
 
                 updated.add(zone.copy(startTime = newStart, endTime = newEnd))
