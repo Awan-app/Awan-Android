@@ -50,7 +50,8 @@ fun AwanChip(
     tone: AwanChipTone,
     modifier: Modifier = Modifier,
     active: Boolean = true,
-    leading: @Composable () -> Unit = { AwanChipDot(tone = tone, active = active) },
+    leading: (@Composable () -> Unit)? = { AwanChipDot(tone = tone, active = active) },
+    trailing: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val colors = AwanTheme.colors
@@ -98,9 +99,15 @@ fun AwanChip(
         rimStyle = rimStyle,
         variant = AwanButtonVariant.Chip,
     ) {
-        leading()
-        Spacer(Modifier.width(AwanTheme.spacing.xs))
+        leading?.invoke()
+        if (leading != null) {
+            Spacer(Modifier.width(AwanTheme.spacing.xs))
+        }
         AwanText(text = label, style = AwanTheme.styles.buttonCompactText.copy(color = ink))
+        if (trailing != null) {
+            Spacer(Modifier.width(AwanTheme.spacing.xs))
+            trailing()
+        }
     }
 }
 

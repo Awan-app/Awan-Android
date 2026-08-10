@@ -6,6 +6,7 @@ import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.auth.usecase.LogoutUseCase
+import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.image.usecase.ReadImageUseCase
 import com.awan.app.core.domain.marketplace.usecase.GetEquippedItemsUseCase
 import com.awan.app.core.domain.marketplace.usecase.RefreshMarketplaceUseCase
@@ -48,6 +49,7 @@ class ProfileViewModel @Inject constructor(
     private val logoutUseCase: LogoutUseCase,
     private val getEquippedItemsUseCase: GetEquippedItemsUseCase,
     private val refreshMarketplaceUseCase: RefreshMarketplaceUseCase,
+    private val getCategoriesUseCase: GetCategoriesUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileState())
@@ -58,6 +60,7 @@ class ProfileViewModel @Inject constructor(
 
     init {
         loadProfile()
+        loadCategories()
         observeProfile()
         observePreferences()
         observeEquippedFrame()
@@ -120,7 +123,7 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun refreshInventory() {
-        viewModelScope.launch { 
+        viewModelScope.launch {
             try {
                 refreshMarketplaceUseCase()
             } catch (e: Exception) {
@@ -138,6 +141,15 @@ class ProfileViewModel @Inject constructor(
     private fun setLanguage(languageCode: String) {
         viewModelScope.launch {
             setLocaleUseCase(languageCode)
+        }
+    }
+
+    private fun loadCategories() {
+        viewModelScope.launch {
+            when (val result = getCategoriesUseCase()) {
+                is Result.Success -> _uiState.update { it.copy(categories = result.data) }
+                else -> Unit
+            }
         }
     }
 

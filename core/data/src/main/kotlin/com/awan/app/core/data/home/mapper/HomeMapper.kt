@@ -3,7 +3,7 @@ package com.awan.app.core.data.home.mapper
 import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.domain.home.model.DaySession
 import com.awan.app.core.domain.home.model.DayZone
-import com.awan.app.core.domain.home.model.SessionStatus
+import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto

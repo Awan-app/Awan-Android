@@ -1,14 +1,48 @@
 package com.awan.app.core.data.zones.mapper
 
+import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.network.di.NetworkModule
 import com.awan.app.core.network.dto.category.CategoryDto
+import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.zone.ZoneDto
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDateTime
 
 class ZonesMapperTest {
+    
+    @Test
+    fun `session dto to domain mapping handles statuses correctly`() {
+        val baseDto = SessionDto(
+            id = "s1",
+            start = "2026-08-08T10:00:00",
+            end = "2026-08-08T11:00:00",
+            locked = true
+        )
+
+        assertEquals(SessionStatus.SCHEDULED, baseDto.copy(status = "SCHEDULED").toDomain().status)
+        assertEquals(SessionStatus.COMPLETED, baseDto.copy(status = "COMPLETED").toDomain().status)
+        assertEquals(SessionStatus.MISSED, baseDto.copy(status = "MISSED").toDomain().status)
+        assertEquals(SessionStatus.CANCELLED, baseDto.copy(status = "CANCELLED").toDomain().status)
+        assertEquals(SessionStatus.UNKNOWN, baseDto.copy(status = "something else").toDomain().status)
+        assertEquals(SessionStatus.SCHEDULED, baseDto.copy(status = null).toDomain().status)
+    }
+
+    @Test
+    fun `session dto to domain mapping parses datetime correctly`() {
+        val dto = SessionDto(
+            id = "s1",
+            start = "2026-08-08T10:30:00",
+            end = "2026-08-08T11:45:00",
+            status = "SCHEDULED"
+        )
+
+        val domain = dto.toDomain()
+        assertEquals(LocalDateTime.of(2026, 8, 8, 10, 30), domain.start)
+        assertEquals(LocalDateTime.of(2026, 8, 8, 11, 45), domain.end)
+    }
 
     private fun zoneDto(category: CategoryDto? = null, categoryId: String? = null) = ZoneDto(
         id = "zone-1",

@@ -16,7 +16,6 @@ import com.awan.app.core.domain.gamification.model.SessionReward
 import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.domain.home.model.DaySession
 import com.awan.app.core.domain.home.model.DayZone
-import com.awan.app.core.domain.home.model.SessionStatus
 import com.awan.app.core.domain.home.model.UserProfileInfo
 import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
@@ -30,12 +29,15 @@ import kotlinx.coroutines.withContext
 import android.util.Log
 import com.awan.app.core.common.result.map
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.awan.app.core.model.SessionDetailInfo
+import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.SessionTaskDetail
 import com.awan.app.core.model.TaskDetailInfo
+import com.awan.app.core.model.TaskStatus
 
 @Singleton
 class HomeRepositoryImpl @Inject constructor(
@@ -148,62 +150,94 @@ class HomeRepositoryImpl @Inject constructor(
             .flowOn(ioDispatcher)
     }
 
-    override suspend fun getSessionDetail(sessionId: String): Result<SessionTaskDetail> {
-        val sessionResult = remoteDataSource.getSession(sessionId)
-        if (sessionResult is Result.Error) {
-            return Result.Error(sessionResult.error)
-        }
-        if (sessionResult !is Result.Success) {
-            return Result.Error(AppError.Unknown(Throwable("Failed to fetch session")))
-        }
+    override suspend fun getSessionDetail(sessionId: String): Result<SessionTaskDetail> =
+        withContext(ioDispatcher) {
+            val sessionResult = remoteDataSource.getSession(sessionId)
+            val sessionDto = when (sessionResult) {
+                is Result.Success -> {
+                    local.cacheSession(sessionResult.data)
+                    sessionResult.data
+                }
+                is Result.Error -> {
+                    val cached = local.getSession(sessionId)
+                    if (cached != null) null else return@withContext Result.Error(sessionResult.error)
+                }
+                Result.Loading -> return@withContext Result.Loading
+            }
 
-        val sessionDto = sessionResult.data
-        val taskId = sessionDto.taskId
-        if (taskId.isNullOrBlank()) {
-            return Result.Error(AppError.Unknown(Throwable("Session does not have a valid taskId")))
-        }
+            val sessionDetailInfo = if (sessionDto != null) {
+                SessionDetailInfo(
+                    id = sessionDto.id,
+                    start = LocalDateTime.parse(sessionDto.start),
+                    end = LocalDateTime.parse(sessionDto.end),
+                    status = mapStatus(sessionDto.status),
+                    locked = sessionDto.locked,
+                    zoneId = sessionDto.zoneId,
+                    taskId = sessionDto.taskId ?: "",
+                )
+            } else {
+                val cached = local.getSession(sessionId)!!
+                SessionDetailInfo(
+                    id = cached.id,
+                    start = LocalDateTime.parse("${cached.date}T${cached.startTime}"),
+                    end = LocalDateTime.parse("${cached.date}T${cached.endTime}"),
+                    status = mapStatus(cached.status),
+                    locked = cached.locked,
+                    zoneId = cached.zoneId,
+                    taskId = cached.taskId,
+                )
+            }
 
-        val taskResult = remoteDataSource.getTask(taskId)
-        if (taskResult is Result.Error) {
-            return Result.Error(taskResult.error)
-        }
-        if (taskResult !is Result.Success) {
-            return Result.Error(AppError.Unknown(Throwable("Failed to fetch task")))
-        }
+            val taskId = sessionDetailInfo.taskId
+            val taskResult = remoteDataSource.getTask(taskId)
+            val taskDto = when (taskResult) {
+                is Result.Success -> taskResult.data
+                is Result.Error -> {
+                    val cached = local.getTask(taskId)
+                    if (cached != null) null else return@withContext Result.Error(taskResult.error)
+                }
+                Result.Loading -> return@withContext Result.Loading
+            }
 
-        val taskDto = taskResult.data
+            val taskDetailInfo = if (taskDto != null) {
+                TaskDetailInfo(
+                    id = taskDto.id,
+                    title = taskDto.title,
+                    description = taskDto.description,
+                    estimatedDuration = taskDto.estimatedDuration,
+                    status = mapTaskStatus(taskDto.status),
+                    mandatory = taskDto.mandatory ?: false,
+                    estimatedPoints = taskDto.estimatedPoints ?: 0,
+                    allowTaskSplitting = taskDto.allowTaskSplitting ?: false,
+                    goalId = taskDto.goalId,
+                    categoryName = taskDto.category?.name,
+                    dependsOnTaskIds = taskDto.dependsOnTaskIds ?: emptyList(),
+                )
+            } else {
+                val cached = local.getTask(taskId)!!
+                val category = cached.categoryId?.let { local.getCategory(it) }
+                TaskDetailInfo(
+                    id = cached.id,
+                    title = cached.title,
+                    description = cached.description,
+                    estimatedDuration = cached.estimatedDuration,
+                    status = mapTaskStatus(cached.status),
+                    mandatory = cached.mandatory,
+                    estimatedPoints = cached.estimatedPoints,
+                    allowTaskSplitting = cached.allowTaskSplitting,
+                    goalId = cached.goalId,
+                    categoryName = category?.name,
+                    dependsOnTaskIds = emptyList(), // Local fallback doesn't include deps for now
+                )
+            }
 
-        val sessionDetailInfo = SessionDetailInfo(
-            id = sessionDto.id,
-            start = sessionDto.start,
-            end = sessionDto.end,
-            status = sessionDto.status ?: "SCHEDULED",
-            locked = sessionDto.locked,
-            zoneId = sessionDto.zoneId,
-            taskId = taskId,
-        )
-
-        val taskDetailInfo = TaskDetailInfo(
-            id = taskDto.id,
-            title = taskDto.title,
-            description = taskDto.description,
-            estimatedDuration = taskDto.estimatedDuration,
-            status = taskDto.status ?: "SCHEDULED",
-            mandatory = taskDto.mandatory ?: false,
-            estimatedPoints = taskDto.estimatedPoints ?: 0,
-            allowTaskSplitting = taskDto.allowTaskSplitting ?: false,
-            goalId = taskDto.goalId,
-            categoryName = taskDto.category?.name,
-            dependsOnTaskIds = taskDto.dependsOnTaskIds ?: emptyList(),
-        )
-
-        return Result.Success(
-            SessionTaskDetail(
-                session = sessionDetailInfo,
-                task = taskDetailInfo,
+            Result.Success(
+                SessionTaskDetail(
+                    session = sessionDetailInfo,
+                    task = taskDetailInfo,
+                )
             )
-        )
-    }
+        }
 
     override suspend fun completeSession(sessionId: String): Result<SessionReward> =
         withContext(ioDispatcher) {
@@ -265,12 +299,21 @@ class HomeRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun mapStatus(statusStr: String): SessionStatus {
-        return when (statusStr.uppercase()) {
-            "COMPLETED" -> SessionStatus.COMPLETED
-            "IN_PROGRESS" -> SessionStatus.IN_PROGRESS
-            "CANCELLED" -> SessionStatus.CANCELLED
-            else -> SessionStatus.SCHEDULED
+    private fun mapStatus(statusStr: String?): SessionStatus {
+        if (statusStr == null) return SessionStatus.SCHEDULED
+        return try {
+            SessionStatus.valueOf(statusStr.uppercase())
+        } catch (e: Exception) {
+            SessionStatus.UNKNOWN
+        }
+    }
+
+    private fun mapTaskStatus(statusStr: String?): TaskStatus {
+        if (statusStr == null) return TaskStatus.SCHEDULED
+        return try {
+            TaskStatus.valueOf(statusStr.uppercase())
+        } catch (e: Exception) {
+            TaskStatus.UNKNOWN
         }
     }
 
@@ -291,20 +334,11 @@ class HomeRepositoryImpl @Inject constructor(
     override suspend fun updateSessionLock(
         sessionId: String,
         locked: Boolean,
-    ): Result<Unit> {
-        checkOnline()?.let { return it }
-        val result = if (locked) {
+    ): Result<Unit> = applySessionChange {
+        if (locked) {
             remoteDataSource.lockSession(sessionId)
         } else {
             remoteDataSource.unlockSession(sessionId)
-        }
-        return when (result) {
-            is Result.Success -> {
-                local.cacheSession(result.data)
-                Result.Success(Unit)
-            }
-            is Result.Error -> Result.Error(result.error)
-            else -> Result.Error(AppError.Unknown(Throwable("Failed to update session lock state")))
         }
     }
 

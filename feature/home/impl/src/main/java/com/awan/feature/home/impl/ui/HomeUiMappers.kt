@@ -8,7 +8,7 @@ import com.awan.app.core.designsystem.TaskCategory
 import com.awan.app.core.designsystem.TaskStatus
 import com.awan.app.core.domain.home.model.DaySession
 import com.awan.app.core.domain.home.model.DayZone
-import com.awan.app.core.domain.home.model.SessionStatus
+import com.awan.app.core.model.SessionStatus
 
 internal fun DayZone.toUiZone(): ScheduleZone = ScheduleZone(
     id = id,

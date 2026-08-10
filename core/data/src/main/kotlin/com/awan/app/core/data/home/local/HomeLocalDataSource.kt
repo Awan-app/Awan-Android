@@ -28,6 +28,8 @@ interface HomeLocalDataSource {
 
     fun observeEffectiveZonesForDate(date: String, dayOfWeek: String): Flow<List<ZoneEntity>>
 
+    suspend fun getSession(sessionId: String): SessionEntity?
+
     suspend fun getTask(taskId: String): TaskEntity?
 
     suspend fun getCategory(categoryId: String): CategoryEntity?
@@ -64,6 +66,8 @@ class HomeLocalDataSourceImpl @Inject constructor(
 
     override fun observeEffectiveZonesForDate(date: String, dayOfWeek: String): Flow<List<ZoneEntity>> =
         zoneDao.observeEffectiveZonesForDate(date, dayOfWeek)
+
+    override suspend fun getSession(sessionId: String): SessionEntity? = sessionDao.getSession(sessionId)
 
     override suspend fun getTask(taskId: String): TaskEntity? = taskDao.getTask(taskId)
 

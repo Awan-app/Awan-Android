@@ -4,7 +4,6 @@ package com.awan.feature.home.impl.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.compose.ui.graphics.Color
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
@@ -16,25 +15,27 @@ import com.awan.app.core.domain.gamification.usecase.PublishWheelRewardUseCase
 import com.awan.app.core.domain.gamification.usecase.RefreshGamificationProgressUseCase
 import com.awan.app.core.domain.gamification.usecase.SpinWheelUseCase
 import com.awan.feature.home.impl.R
-import com.awan.app.core.designsystem.CategoryProgressSegment
 import com.awan.app.core.designsystem.MascotExpression
-import com.awan.app.core.designsystem.ScheduleCategory
 import com.awan.app.core.designsystem.ScheduleSession
-import com.awan.app.core.designsystem.ScheduleTask
 import com.awan.app.core.designsystem.ScheduleZone
 import com.awan.app.core.designsystem.TaskCategory
 import com.awan.app.core.designsystem.TaskStatus
 import com.awan.app.core.domain.home.model.DaySchedule
-import com.awan.app.core.domain.home.model.DaySession
-import com.awan.app.core.domain.home.model.DayZone
-import com.awan.app.core.domain.home.repository.HomeRepository
-import com.awan.app.core.domain.home.usecase.CompleteSessionUseCase
+import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.domain.home.usecase.GetDayScheduleUseCase
-import com.awan.app.core.domain.home.usecase.GetUserProfileUseCase
-import com.awan.app.core.domain.home.usecase.MoveSessionUseCase
+import com.awan.app.core.domain.home.usecase.GetSessionDetailUseCase
 import com.awan.app.core.domain.home.usecase.RefreshDayScheduleUseCase
 import com.awan.app.core.domain.zones.usecase.RefreshZonesUseCase
+import com.awan.app.core.domain.home.usecase.UpdateTaskDetailUseCase
+import com.awan.app.core.domain.home.usecase.DeleteSessionUseCase
+import com.awan.app.core.domain.home.usecase.DeleteTaskUseCase
+import com.awan.app.core.domain.home.usecase.CompleteSessionUseCase
 import com.awan.app.core.domain.home.usecase.UncompleteSessionUseCase
+import com.awan.app.core.domain.home.usecase.MoveSessionUseCase
+import com.awan.app.core.domain.home.usecase.UpdateSessionLockUseCase
+import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
+import com.awan.feature.home.impl.ui.components.calculateDurationMinutes
+import com.awan.feature.home.impl.ui.components.calculateEnd
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,16 +46,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import java.util.Locale
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
-import com.awan.app.core.domain.home.usecase.GetSessionDetailUseCase
-import com.awan.app.core.domain.home.usecase.UpdateTaskDetailUseCase
-import com.awan.app.core.domain.home.usecase.DeleteSessionUseCase
-import com.awan.app.core.domain.home.usecase.DeleteTaskUseCase
-import com.awan.feature.home.impl.ui.components.calculateDurationMinutes
 
 /** Returned by a spin the user has already used up today. */
 private const val DAILY_GIFT_ALREADY_CLAIMED = "DAILY_GIFT_ALREADY_CLAIMED"
@@ -62,10 +56,6 @@ private const val DAILY_GIFT_ALREADY_CLAIMED = "DAILY_GIFT_ALREADY_CLAIMED"
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getDayScheduleUseCase: GetDayScheduleUseCase,
-    private val getUserProfileUseCase: GetUserProfileUseCase,
-    private val completeSessionUseCase: CompleteSessionUseCase,
-    private val uncompleteSessionUseCase: UncompleteSessionUseCase,
-    private val moveSessionUseCase: MoveSessionUseCase,
     private val observeGamificationProgressUseCase: ObserveGamificationProgressUseCase,
     private val refreshGamificationProgressUseCase: RefreshGamificationProgressUseCase,
     private val getWheelConfigUseCase: GetWheelConfigUseCase,
@@ -77,8 +67,11 @@ class HomeViewModel @Inject constructor(
     private val updateTaskDetailUseCase: UpdateTaskDetailUseCase,
     private val deleteSessionUseCase: DeleteSessionUseCase,
     private val deleteTaskUseCase: DeleteTaskUseCase,
-    // Still here only for session locking, which has no use case yet.
-    private val homeRepository: HomeRepository,
+    private val completeSessionUseCase: CompleteSessionUseCase,
+    private val uncompleteSessionUseCase: UncompleteSessionUseCase,
+    private val moveSessionUseCase: MoveSessionUseCase,
+    private val updateSessionLockUseCase: UpdateSessionLockUseCase,
+    private val getProfileUseCase: GetProfileUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -98,11 +91,17 @@ class HomeViewModel @Inject constructor(
 
     private fun loadUserProfile() {
         viewModelScope.launch {
-            when (val result = getUserProfileUseCase()) {
+            when (val result = getProfileUseCase()) {
                 is Result.Success -> {
                     val user = result.data
-                    val name = user.firstName.takeIf { it.isNotBlank() } ?: "User"
-                    _uiState.update { state -> state.copy(userName = name) }
+                    val name = user.firstName?.takeIf { it.isNotBlank() } ?: "User"
+                    _uiState.update { state ->
+                        state.copy(
+                            userName = name,
+                            streakCount = user.streak ?: 0,
+                            pointsCount = user.points ?: 0,
+                        )
+                    }
                 }
                 else -> Unit
             }
@@ -348,7 +347,7 @@ class HomeViewModel @Inject constructor(
                 durationMinutes = 30,
                 category = matchedZone.category,
                 status = TaskStatus.Pending,
-                points = 20,
+                points = 0,
             )
             val updated = state.sessions + newSession
             val (completedHours, totalHours) = calculateSessionHours(updated)
@@ -368,6 +367,7 @@ class HomeViewModel @Inject constructor(
 
         _uiState.update { state ->
             val target = state.sessions.find { it.id == sessionId } ?: return@update state
+            val sessionPoints = target.points
 
             isCompleting = target.status != TaskStatus.Completed
             targetSession = target
@@ -375,7 +375,7 @@ class HomeViewModel @Inject constructor(
             val updated = state.sessions.map { session ->
                 if (session.id != sessionId) return@map session
                 if (isCompleting) {
-                    session.copy(status = TaskStatus.Completed)
+                    session.copy(status = TaskStatus.Completed, points = sessionPoints)
                 } else {
                     val restoredStatus = if (session.isFixed || session.status is TaskStatus.Fixed) {
                         TaskStatus.Fixed
@@ -403,19 +403,16 @@ class HomeViewModel @Inject constructor(
 
         viewModelScope.launch {
             val result = if (isCompleting) {
-                // The reward reaches the celebration through the data layer's bus, and carries the
-                // new balance with it — re-reading progress here would race the star-by-star
-                // count-up and snap the badge straight to the final total.
-                completeSessionUseCase(sessionToSync.id)
+                completeSessionUseCase(sessionId)
             } else {
-                uncompleteSessionUseCase(sessionToSync.id).also {
-                    // Points are not clawed back, but the contract is silent on the streak, so the
-                    // only way the badges stay honest is to ask.
-                    if (it is Result.Success) refreshGamificationProgressUseCase()
-                }
+                uncompleteSessionUseCase(sessionId)
             }
-
-            if (result is Result.Error) restoreSessionStatus(sessionId, previousStatus)
+            
+            if (result is Result.Error) {
+                restoreSessionStatus(sessionId, previousStatus)
+            } else if (!isCompleting) {
+                refreshGamificationProgressUseCase()
+            }
         }
     }
 
@@ -472,16 +469,12 @@ class HomeViewModel @Inject constructor(
         val startTime = date.atStartOfDay().plusMinutes(sessionToSync.startMinutes.toLong())
         val endTime = startTime.plusMinutes(sessionToSync.durationMinutes.toLong())
         val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
-        val startIso = startTime.format(dtFormatter)
-        val endIso = endTime.format(dtFormatter)
 
         viewModelScope.launch {
-            // Times only. A move must never touch status — that is what the dedicated
-            // complete/uncomplete endpoints are for.
             moveSessionUseCase(
                 sessionId = sessionToSync.id,
-                startIso = startIso,
-                endIso = endIso,
+                startIso = startTime.format(dtFormatter),
+                endIso = endTime.format(dtFormatter),
             )
         }
     }
@@ -511,14 +504,11 @@ class HomeViewModel @Inject constructor(
             for (session in resequencedZoneSessions) {
                 val startTime = date.atStartOfDay().plusMinutes(session.startMinutes.toLong())
                 val endTime = startTime.plusMinutes(session.durationMinutes.toLong())
-                val startIso = startTime.format(dtFormatter)
-                val endIso = endTime.format(dtFormatter)
 
-                // Reordering only re-times a session; its status is left exactly as it was.
                 val result = moveSessionUseCase(
                     sessionId = session.id,
-                    startIso = startIso,
-                    endIso = endIso,
+                    startIso = startTime.format(dtFormatter),
+                    endIso = endTime.format(dtFormatter),
                 )
                 if (result is Result.Error) {
                     _uiState.update { it.copy(errorMessage = result.error.toReadableMessage()) }
@@ -556,16 +546,14 @@ class HomeViewModel @Inject constructor(
                     _uiState.update { state ->
                         val taskId = result.data.task.id
                         val taskSessions = state.sessions.filter { it.taskId == taskId }.map { s ->
-                            val startMins = s.startMinutes
-                            val endMins = s.startMinutes + s.durationMinutes
-                            val startStr = com.awan.app.core.designsystem.formatTime(startMins)
-                            val endStr = com.awan.app.core.designsystem.formatTime(endMins)
+                            val startDateTime = state.selectedDate.atStartOfDay().plusMinutes(s.startMinutes.toLong())
+                            val endDateTime = startDateTime.plusMinutes(s.durationMinutes.toLong())
                             val isDone = s.status == com.awan.app.core.designsystem.TaskStatus.Completed
                             com.awan.app.core.model.SessionDetailInfo(
                                 id = s.id,
-                                start = startStr,
-                                end = endStr,
-                                status = if (isDone) "COMPLETED" else "SCHEDULED",
+                                start = startDateTime,
+                                end = endDateTime,
+                                status = if (isDone) SessionStatus.COMPLETED else SessionStatus.SCHEDULED,
                                 locked = s.isFixed,
                                 zoneId = s.zoneId,
                                 taskId = taskId,
@@ -612,16 +600,17 @@ class HomeViewModel @Inject constructor(
         val currentDetail = currentDialogState.detail ?: return
         val sessionId = currentDialogState.sessionId
 
-        val isCurrentlyCompleted = currentDetail.session.status.uppercase() == "COMPLETED"
-        val newStatusStr = if (isCurrentlyCompleted) "SCHEDULED" else "COMPLETED"
+        val isCurrentlyCompleted = currentDetail.session.status == SessionStatus.COMPLETED
+        val newStatus = if (isCurrentlyCompleted) SessionStatus.SCHEDULED else SessionStatus.COMPLETED
+        val newTaskStatus = if (isCurrentlyCompleted) com.awan.app.core.model.TaskStatus.SCHEDULED else com.awan.app.core.model.TaskStatus.COMPLETED
 
         toggleSessionStatus(sessionId)
 
         _uiState.update { state ->
             val updatedDetail = state.selectedSessionDetailState?.detail?.let { detail ->
                 detail.copy(
-                    session = detail.session.copy(status = newStatusStr),
-                    task = detail.task.copy(status = newStatusStr),
+                    session = detail.session.copy(status = newStatus),
+                    task = detail.task.copy(status = newTaskStatus),
                 )
             }
             state.copy(
@@ -657,7 +646,10 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val result = homeRepository.updateSessionLock(sessionId, newLocked)
+            val result = updateSessionLockUseCase(
+                sessionId = sessionId,
+                locked = newLocked
+            )
             if (result is Result.Error) {
                 _uiState.update { state ->
                     val revertedSessions = state.sessions.map { session ->
@@ -755,27 +747,24 @@ class HomeViewModel @Inject constructor(
             )
 
             // 2. Update specific session end time if duration changed
-            val currentDuration = calculateDurationMinutes(detail.session.start, detail.session.end) ?: 30
-            var newEndIso = detail.session.end
+            val currentDuration = calculateDurationMinutes(detail.session.start, detail.session.end)
+            var newEnd = detail.session.end
             if (newDuration != currentDuration) {
-                val calculatedEnd = com.awan.feature.home.impl.ui.components.calculateEndIso(detail.session.start, newDuration)
-                if (calculatedEnd != null) {
-                    newEndIso = calculatedEnd
-                    // Changing the duration only moves the session's end; its status is untouched.
-                    moveSessionUseCase(
-                        sessionId = sessionId,
-                        startIso = detail.session.start,
-                        endIso = calculatedEnd,
-                    )
-                }
+                newEnd = calculateEnd(detail.session.start, newDuration)
+                val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                moveSessionUseCase(
+                    sessionId = sessionId,
+                    startIso = detail.session.start.format(dtFormatter),
+                    endIso = newEnd.format(dtFormatter),
+                )
             }
 
             if (taskResult is Result.Success) {
                 _uiState.update { state ->
                     val updatedDetail = state.selectedSessionDetailState?.detail?.let { d ->
-                        val updatedSession = d.session.copy(end = newEndIso)
+                        val updatedSession = d.session.copy(end = newEnd)
                         val updatedRelatedSessions = d.relatedSessions.map { s ->
-                            if (s.id == sessionId) s.copy(end = newEndIso) else s
+                            if (s.id == sessionId) s.copy(end = newEnd) else s
                         }
                         d.copy(
                             session = updatedSession,

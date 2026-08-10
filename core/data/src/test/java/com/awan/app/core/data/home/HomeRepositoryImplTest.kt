@@ -44,6 +44,7 @@ private class FakeHomeRemoteDataSource : HomeRemoteDataSource {
     var taskResult: Result<TaskInfoResponse> = Result.Error(AppError.Unknown())
     var reward: RewardDto? = null
     var completeResult: Result<CompleteSessionResponse>? = null
+    var deleteResult: Result<Unit> = Result.Success(Unit)
     var uncompleteCalls = 0
     var moveCalls = 0
 
@@ -87,7 +88,7 @@ private class FakeHomeRemoteDataSource : HomeRemoteDataSource {
         taskId: String,
         request: com.awan.app.core.network.dto.task.TaskUpdateRequest,
     ): Result<TaskInfoResponse> = taskResult
-    override suspend fun deleteSession(sessionId: String): Result<Unit> = Result.Success(Unit)
+    override suspend fun deleteSession(sessionId: String): Result<Unit> = deleteResult
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = Result.Success(Unit)
 }
 
@@ -115,6 +116,8 @@ private class FakeHomeLocalDataSource(
         cachedSessions += session
         return true
     }
+    override suspend fun getSession(sessionId: String): com.awan.app.core.database.model.SessionEntity? =
+        sessions.value.firstOrNull { it.id == sessionId }
     override suspend fun deleteSession(sessionId: String) { deletedSessions += sessionId }
     override suspend fun cacheTask(taskId: String, task: TaskInfoResponse) { cachedTasks += taskId }
     override suspend fun deleteTask(taskId: String) { deletedTasks += taskId }
@@ -134,7 +137,7 @@ private class FakeScheduleSynchronizer : com.awan.app.core.data.sync.ScheduleSyn
     }
 }
 
-private class AlwaysOnlineMonitor : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
+private open class AlwaysOnlineMonitor : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
     override val isOnline: Flow<Boolean> = flowOf(true)
     override fun isCurrentlyOnline(): Boolean = true
 }
@@ -147,13 +150,14 @@ class HomeRepositoryImplTest {
         fakeRemote: HomeRemoteDataSource,
         local: FakeHomeLocalDataSource = FakeHomeLocalDataSource(),
         scheduleSynchronizer: com.awan.app.core.data.sync.ScheduleSynchronizer = FakeScheduleSynchronizer(),
+        connectivityMonitor: com.awan.app.core.domain.network.NetworkConnectivityMonitor = AlwaysOnlineMonitor(),
     ): HomeRepositoryImpl {
         return HomeRepositoryImpl(
             remoteDataSource = fakeRemote,
             local = local,
             eventBus = eventBus,
             scheduleSynchronizer = scheduleSynchronizer,
-            connectivityMonitor = AlwaysOnlineMonitor(),
+            connectivityMonitor = connectivityMonitor,
             ioDispatcher = kotlinx.coroutines.Dispatchers.Unconfined,
         )
     }
@@ -401,6 +405,68 @@ class HomeRepositoryImplTest {
 
         synchronizer.result = false
         assertTrue(repository.refreshSchedule(date) is Result.Error)
+    }
+
+    @Test
+    fun `deleteSession returns AppError Network when offline`() = runTest {
+        val remote = FakeHomeRemoteDataSource()
+        val offlineMonitor = object : AlwaysOnlineMonitor() {
+            override fun isCurrentlyOnline(): Boolean = false
+        }
+        val repository = createRepository(remote, connectivityMonitor = offlineMonitor)
+        
+        val result = repository.deleteSession("s1")
+        
+        assertTrue(result is Result.Error)
+        assertEquals(AppError.Network, (result as Result.Error).error)
+    }
+
+    @Test
+    fun `deleteSession returns remote error when call fails`() = runTest {
+        val remote = FakeHomeRemoteDataSource()
+        val error = AppError.Server(500)
+        remote.deleteResult = Result.Error(error)
+        val repository = createRepository(remote)
+        
+        val result = repository.deleteSession("s1")
+        
+        assertTrue(result is Result.Error)
+        assertEquals(error, (result as Result.Error).error)
+    }
+
+    @Test
+    fun `mapStatus falls back to UNKNOWN for unrecognized server values`() = runTest {
+        val fakeRemote = FakeHomeRemoteDataSource()
+        val sessionId = "session-123"
+        val taskId = "task-456"
+
+        fakeRemote.sessionResult = Result.Success(
+            SessionDto(
+                id = sessionId,
+                start = "2026-08-05T09:00:00",
+                end = "2026-08-05T09:30:00",
+                status = "TOTALLY_NEW_STATUS",
+                locked = false,
+                zoneId = "zone-789",
+                taskId = taskId,
+            )
+        )
+
+        fakeRemote.taskResult = Result.Success(
+            TaskInfoResponse(
+                id = taskId,
+                title = "Study",
+                estimatedDuration = 30,
+                status = "SCHEDULED",
+                estimatedPoints = 10,
+            )
+        )
+
+        val repository = createRepository(fakeRemote)
+        val result = repository.getSessionDetail(sessionId)
+
+        assertTrue(result is Result.Success)
+        assertEquals(com.awan.app.core.model.SessionStatus.UNKNOWN, (result as Result.Success).data.session.status)
     }
 }
 
