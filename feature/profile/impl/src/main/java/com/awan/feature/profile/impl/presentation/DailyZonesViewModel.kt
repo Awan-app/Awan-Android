@@ -172,7 +172,6 @@ class DailyZonesViewModel @Inject constructor(
             return
         }
         val newZones = currentZones.filter { it.id != zone.id }
-        _uiState.update { it.copy(selectedDayZones = newZones) }
         saveZones(newZones)
     }
 
