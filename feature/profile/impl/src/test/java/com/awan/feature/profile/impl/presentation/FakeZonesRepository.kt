@@ -31,6 +31,8 @@ class FakeZonesRepository : ZonesRepository {
         return Result.Success(zones)
     }
 
+    override suspend fun refreshZones(): Result<Unit> = Result.Success(Unit)
+
     override suspend fun getZonesForDate(date: LocalDate): Result<List<DayZone>> = Result.Success(emptyList())
 
     override suspend fun createTemplate(name: String, daysOfWeek: List<DayOfWeek>, zones: List<DailyZone>): Result<WeeklyTemplate> {

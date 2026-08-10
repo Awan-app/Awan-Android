@@ -6,6 +6,14 @@ import com.awan.app.core.data.auth.repository.AuthRepositoryImpl
 import com.awan.app.core.data.calendar.CalendarRepositoryImpl
 import com.awan.app.core.data.calendar.local.CalendarLocalDataSource
 import com.awan.app.core.data.calendar.local.CalendarLocalDataSourceImpl
+import com.awan.app.core.data.home.local.HomeLocalDataSource
+import com.awan.app.core.data.home.local.HomeLocalDataSourceImpl
+import com.awan.app.core.data.zones.local.ZonesLocalDataSource
+import com.awan.app.core.data.zones.local.ZonesLocalDataSourceImpl
+import com.awan.app.core.data.auth.LocalDataCleaner
+import com.awan.app.core.data.auth.RoomLocalDataCleaner
+import com.awan.app.core.data.sync.OfflineSyncCoordinator
+import com.awan.app.core.data.sync.ScheduleSynchronizer
 import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSource
 import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSourceImpl
 import com.awan.app.core.data.category.CategoryRepositoryImpl
@@ -83,6 +91,30 @@ internal abstract class DataModule {
     abstract fun bindCalendarLocalDataSource(
         impl: CalendarLocalDataSourceImpl,
     ): CalendarLocalDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindHomeLocalDataSource(
+        impl: HomeLocalDataSourceImpl,
+    ): HomeLocalDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindZonesLocalDataSource(
+        impl: ZonesLocalDataSourceImpl,
+    ): ZonesLocalDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindScheduleSynchronizer(
+        impl: OfflineSyncCoordinator,
+    ): ScheduleSynchronizer
+
+    @Binds
+    @Singleton
+    abstract fun bindLocalDataCleaner(
+        impl: RoomLocalDataCleaner,
+    ): LocalDataCleaner
 
     @Binds
     @Singleton

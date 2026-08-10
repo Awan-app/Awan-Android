@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -106,6 +107,30 @@ class OnboardingViewModelTest {
         assertEquals(4, vm.state.value.zones.size)
         assertTrue(vm.state.value.availableCategories.isEmpty())
         assertTrue(vm.state.value.zones.all { it.categoryId == null })
+    }
+
+    /** The whole point of Skip is being fast, so it beats the category fetch every time. */
+    @Test
+    fun `skipping the setup still sends the default zones with their categories`() = runTest(testDispatcher) {
+        val vm = viewModel(FakeCategoryRepository(loadDelayMillis = 1_000))
+
+        vm.onAction(OnboardingAction.SkipSetup)
+        advanceUntilIdle()
+
+        val sent = repository.lastCompletedData?.zones.orEmpty()
+        assertEquals(4, sent.size)
+        assertTrue(sent.all { it.categoryId != null })
+    }
+
+    @Test
+    fun `a category load that came back empty is retried before the hand-off`() = runTest(testDispatcher) {
+        val categoryRepository = FakeCategoryRepository(categories = emptyList())
+        val vm = viewModel(categoryRepository)
+
+        vm.onAction(OnboardingAction.SkipSetup)
+        advanceUntilIdle()
+
+        assertEquals(2, categoryRepository.callCount)
     }
 
     @Test

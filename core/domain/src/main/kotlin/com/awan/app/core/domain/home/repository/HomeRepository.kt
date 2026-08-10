@@ -12,6 +12,13 @@ import kotlinx.coroutines.flow.Flow
 
 interface HomeRepository {
     fun getDaySchedule(date: LocalDate): Flow<Result<DaySchedule>>
+
+    /**
+     * Pulls one day's sessions into Room, replacing what is there for that date. [getDaySchedule]
+     * renders the cached day immediately; this is what makes another device's edits show up, and
+     * it is the only way a day outside the background sync's week gets fetched at all.
+     */
+    suspend fun refreshSchedule(date: LocalDate): Result<Unit>
     suspend fun getUserProfile(): Result<UserProfileInfo>
     suspend fun getSessionDetail(sessionId: String): Result<SessionTaskDetail>
 

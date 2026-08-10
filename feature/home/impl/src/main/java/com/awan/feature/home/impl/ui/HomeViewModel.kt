@@ -24,6 +24,8 @@ import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.domain.home.usecase.GetDayScheduleUseCase
 import com.awan.app.core.domain.home.usecase.GetSessionDetailUseCase
+import com.awan.app.core.domain.home.usecase.RefreshDayScheduleUseCase
+import com.awan.app.core.domain.zones.usecase.RefreshZonesUseCase
 import com.awan.app.core.domain.home.usecase.UpdateTaskDetailUseCase
 import com.awan.app.core.domain.home.usecase.DeleteSessionUseCase
 import com.awan.app.core.domain.home.usecase.DeleteTaskUseCase
@@ -59,6 +61,8 @@ class HomeViewModel @Inject constructor(
     private val getWheelConfigUseCase: GetWheelConfigUseCase,
     private val spinWheelUseCase: SpinWheelUseCase,
     private val publishWheelRewardUseCase: PublishWheelRewardUseCase,
+    private val refreshDayScheduleUseCase: RefreshDayScheduleUseCase,
+    private val refreshZonesUseCase: RefreshZonesUseCase,
     private val getSessionDetailUseCase: GetSessionDetailUseCase,
     private val updateTaskDetailUseCase: UpdateTaskDetailUseCase,
     private val deleteSessionUseCase: DeleteSessionUseCase,
@@ -229,6 +233,17 @@ class HomeViewModel @Inject constructor(
                 }
             }
         }
+        refreshFromServer(date)
+    }
+
+    /**
+     * Room already rendered above; this only refills it. A failure is deliberately silent — the day
+     * on screen is real data, and replacing it with an error because a background pull failed is
+     * worse than being briefly stale. Offline is the common case here, not an incident.
+     */
+    private fun refreshFromServer(date: LocalDate) {
+        viewModelScope.launch { refreshDayScheduleUseCase(date) }
+        viewModelScope.launch { refreshZonesUseCase() }
     }
 
     private fun applySchedule(schedule: DaySchedule, isToday: Boolean) {

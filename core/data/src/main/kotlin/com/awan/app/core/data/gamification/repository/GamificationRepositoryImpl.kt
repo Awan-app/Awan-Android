@@ -47,7 +47,6 @@ class GamificationRepositoryImpl @Inject constructor(
         val result = remoteDataSource.getProgress().map { it.toDomain() }
         if (result is Result.Success) {
             eventBus.setProgress(result.data)
-            cacheProgress(result.data)
         }
         return result
     }
@@ -74,18 +73,6 @@ class GamificationRepositoryImpl @Inject constructor(
 
     override suspend fun publishWheelReward(result: WheelSpinResult) {
         eventBus.publishWheelSpin(result)
-        cacheProgress(eventBus.progress.value)
-    }
-
-    /** Room is the progress cache — `UserEntity` already owns these three columns. */
-    private suspend fun cacheProgress(progress: GamificationProgress) {
-        val cached = userDao.getFirstUser() ?: return
-        userDao.upsertUser(
-            cached.copy(
-                points = progress.points,
-                streak = progress.streak,
-                maxStreak = progress.maxStreak,
-            )
-        )
     }
 }
+

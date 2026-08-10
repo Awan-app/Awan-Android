@@ -12,7 +12,6 @@ import com.awan.app.core.database.dao.TemplateDao
 import com.awan.app.core.database.dao.TemplateOverrideDao
 import com.awan.app.core.database.dao.StoreDao
 import com.awan.app.core.database.dao.UserDao
-import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.CachedScheduleDateEntity
 import com.awan.app.core.database.model.CategoryEntity
 import com.awan.app.core.database.model.EquippedItemEntity
@@ -21,18 +20,15 @@ import com.awan.app.core.database.model.OwnedItemEntity
 import com.awan.app.core.database.model.SessionEntity
 import com.awan.app.core.database.model.StoreItemEntity
 import com.awan.app.core.database.model.TaskEntity
-import com.awan.app.core.database.model.TemplateDayOfWeekEntity
-import com.awan.app.core.database.model.TemplateEntity
-import com.awan.app.core.database.model.TemplateOverrideEntity
 import com.awan.app.core.database.model.UserEntity
 import com.awan.app.core.database.model.UserPreferencesEntity
-import com.awan.app.core.database.model.ZoneEntity
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
 import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSource
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.data.task.toEntity
+import com.awan.app.core.data.zones.local.ZonesLocalDataSource
 import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import kotlinx.coroutines.CoroutineDispatcher
@@ -59,13 +55,12 @@ class OfflineSyncCoordinator @Inject constructor(
     private val goalDao: GoalDao,
     private val storeDao: StoreDao,
     private val userDao: UserDao,
-    private val zoneDao: ZoneDao,
     private val templateDao: TemplateDao,
-    private val templateOverrideDao: TemplateOverrideDao,
+    private val zonesLocalDataSource: ZonesLocalDataSource,
     private val cachedScheduleDateDao: CachedScheduleDateDao,
     private val connectivityMonitor: NetworkConnectivityMonitor,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
-) {
+) : ScheduleSynchronizer {
     suspend fun syncAll(
         startDate: LocalDate = LocalDate.now(),
         endDate: LocalDate = startDate.plusDays(6),
@@ -86,10 +81,10 @@ class OfflineSyncCoordinator @Inject constructor(
         success
     }
 
-    suspend fun syncScheduleRange(
+    override suspend fun syncScheduleRange(
         startDate: LocalDate,
         endDate: LocalDate,
-        forceRefresh: Boolean = false
+        forceRefresh: Boolean
     ): Boolean = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) return@withContext false
 
@@ -280,81 +275,17 @@ class OfflineSyncCoordinator @Inject constructor(
             }
         }
 
-        val expiry = SyncTtl.computeExpiry(SyncTtl.TEMPLATES_TTL_MS)
-        
-        val tplRes = zonesRemoteDataSource.getTemplates()
-        if (tplRes is Result.Success) {
-            val tplEntities = tplRes.data.map {
-                TemplateEntity(
-                    id = it.id,
-                    name = it.name,
-                    expiryTime = expiry
-                )
-            }
-            templateDao.upsertTemplates(tplEntities)
+        // All-or-nothing: replaceAll clears both halves, so writing one of them after the other
+        // failed would delete data this sync could not refetch.
+        val templates = zonesRemoteDataSource.getTemplates()
+        val overrides = zonesRemoteDataSource.getOverrides()
+        if (templates !is Result.Success || overrides !is Result.Success) return@withContext false
 
-            val templateZones = mutableListOf<ZoneEntity>()
-            val daysOfWeek = mutableListOf<TemplateDayOfWeekEntity>()
-            for (tpl in tplRes.data) {
-                for (day in tpl.daysOfWeek) {
-                    daysOfWeek.add(TemplateDayOfWeekEntity(dayOfWeek = day, templateId = tpl.id))
-                }
-                for (z in tpl.zones) {
-                    z.id?.let { zoneId ->
-                        templateZones.add(
-                            ZoneEntity(
-                                id = zoneId,
-                                name = z.name,
-                                startTime = z.startTime,
-                                endTime = z.endTime,
-                                color = z.color,
-                                templateId = tpl.id,
-                                templateOverrideId = null,
-                            )
-                        )
-                    }
-                }
-            }
-            if (daysOfWeek.isNotEmpty()) {
-                templateDao.upsertDays(daysOfWeek)
-            }
-            if (templateZones.isNotEmpty()) {
-                zoneDao.upsertZones(templateZones)
-            }
-        }
-        val overrideRes = zonesRemoteDataSource.getOverrides()
-        if (overrideRes is Result.Success) {
-            val overrideEntities = overrideRes.data.map {
-                TemplateOverrideEntity(
-                    id = it.id,
-                    name = it.name,
-                    dateOfDay = it.dateOfDay,
-                )
-            }
-            templateOverrideDao.upsertOverrides(overrideEntities)
-
-            val overrideZones = mutableListOf<ZoneEntity>()
-            for (ov in overrideRes.data) {
-                for (z in ov.zones) {
-                    z.id?.let { zoneId ->
-                        overrideZones.add(
-                            ZoneEntity(
-                                id = zoneId,
-                                name = z.name,
-                                startTime = z.startTime,
-                                endTime = z.endTime,
-                                color = z.color,
-                                templateId = null,
-                                templateOverrideId = ov.id,
-                            )
-                        )
-                    }
-                }
-            }
-            if (overrideZones.isNotEmpty()) {
-                zoneDao.upsertZones(overrideZones)
-            }
-        }
+        zonesLocalDataSource.replaceAll(
+            templates = templates.data,
+            overrides = overrides.data,
+            expiryTime = SyncTtl.computeExpiry(SyncTtl.TEMPLATES_TTL_MS),
+        )
         true
     }
 

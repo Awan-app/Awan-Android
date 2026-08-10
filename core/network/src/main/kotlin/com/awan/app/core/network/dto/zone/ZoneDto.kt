@@ -9,7 +9,8 @@ import kotlinx.serialization.Serializable
  *
  * [category] is the read side (the server nests it on every `ZoneResponse`); [categoryId] is the
  * write side and is required by the backend on every request body that contains a zone. Both live on
- * one type because `explicitNulls = false` drops whichever half is unset from the serialized body.
+ * one type, and since the app's Json sets `explicitNulls = true`, a write posts `"category": null`
+ * alongside the id — which the backend accepts. Splitting the type is only worth it if that changes.
  */
 @Serializable
 data class ZoneDto(

@@ -76,6 +76,44 @@ class TaskRemoteDataSourceTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private val json = Json { ignoreUnknownKeys = true }
 
+    /**
+     * Verbatim `GET v1/goals/inbox` body. Faking the api service cannot catch a DTO that does not
+     * match the wire — decoding the real payload is the only thing that does.
+     */
+    @Test
+    fun `the inbox goal payload decodes into its bare tasks`() {
+        val payload = """
+            {"id":"11d47a00","title":"Inbox","description":null,"status":"ACTIVE","targetDate":null,
+             "createdAt":"2026-08-09T10:44:03.820200Z","inbox":true,
+             "tasks":[{"id":"7355ff18","title":"Read Clean Code","description":"Read and review.",
+                       "estimatedDuration":60,"status":"SCHEDULED","mandatory":true,
+                       "estimatedPoints":10,"allowTaskSplitting":true,"goalId":"11d47a00",
+                       "category":{"id":"1487aead","name":"Learning"},"dependsOnTaskIds":[]}]}
+        """.trimIndent()
+
+        val decoded = json.decodeFromString<InboxTasksResponse>(payload)
+
+        assertEquals(1, decoded.tasks.size)
+        assertEquals("Read Clean Code", decoded.tasks.first().title)
+        assertEquals("1487aead", decoded.tasks.first().category?.id)
+    }
+
+    @Test
+    fun `getInboxTasks pairs every task with an empty session list`() = runTest(testDispatcher) {
+        val api = object : FakeTaskApiService() {
+            override suspend fun getInboxTasks() = InboxTasksResponse(
+                tasks = listOf(TaskInfoResponse(id = "task-inbox", title = "Read Clean Code")),
+            )
+        }
+
+        val result = dataSource(api, json, testDispatcher).getInboxTasks()
+
+        assertTrue(result is Result.Success)
+        val tasks = (result as Result.Success<List<TaskWithSessionsDto>>).data
+        assertEquals("task-inbox", tasks.single().task.id)
+        assertTrue(tasks.single().sessions.isEmpty())
+    }
+
     @Test
     fun `createTask returns Success when API call succeeds`() = runTest(testDispatcher) {
         val api = object : FakeTaskApiService() {

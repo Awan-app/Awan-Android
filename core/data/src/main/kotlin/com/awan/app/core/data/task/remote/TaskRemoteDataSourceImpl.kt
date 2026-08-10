@@ -91,6 +91,6 @@ class TaskRemoteDataSourceImpl @Inject constructor(
 
     override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
-            taskApiService.getInboxTasks().tasks
+            taskApiService.getInboxTasks().tasks.map { TaskWithSessionsDto(task = it) }
         }
 }

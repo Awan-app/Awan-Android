@@ -6,16 +6,11 @@ import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.gamification.GamificationEventBus
 import com.awan.app.core.data.gamification.mapper.toDomain
-import com.awan.app.core.database.dao.CategoryDao
-import com.awan.app.core.database.dao.SessionDao
-import com.awan.app.core.database.dao.TaskDao
-import com.awan.app.core.database.dao.TemplateDao
-import com.awan.app.core.database.dao.TemplateOverrideDao
-import com.awan.app.core.database.dao.UserDao
-import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.UserEntity
+import com.awan.app.core.database.model.ZoneEntity
+import com.awan.app.core.data.home.local.HomeLocalDataSource
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
-import com.awan.app.core.data.common.extractTimeFromIso
+import com.awan.app.core.data.sync.ScheduleSynchronizer
 import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.domain.gamification.model.SessionReward
 import com.awan.app.core.domain.home.model.DaySchedule
@@ -26,12 +21,15 @@ import com.awan.app.core.domain.home.repository.HomeRepository
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import android.util.Log
+import com.awan.app.core.common.result.map
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -44,14 +42,9 @@ import com.awan.app.core.model.TaskStatus
 @Singleton
 class HomeRepositoryImpl @Inject constructor(
     private val remoteDataSource: HomeRemoteDataSource,
-    private val userDao: UserDao,
+    private val local: HomeLocalDataSource,
     private val eventBus: GamificationEventBus,
-    private val taskDao: TaskDao,
-    private val sessionDao: SessionDao,
-    private val zoneDao: ZoneDao,
-    private val templateDao: TemplateDao,
-    private val templateOverrideDao: TemplateOverrideDao,
-    private val categoryDao: CategoryDao,
+    private val scheduleSynchronizer: ScheduleSynchronizer,
     private val connectivityMonitor: NetworkConnectivityMonitor,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : HomeRepository {
@@ -65,7 +58,7 @@ class HomeRepositoryImpl @Inject constructor(
                 val lastName = dto.lastName ?: ""
                 val points = dto.points ?: 0
                 val streak = dto.streak ?: 0
-                userDao.upsertUser(
+                local.upsertUser(
                     UserEntity(
                         id = dto.id,
                         email = dto.email ?: "",
@@ -82,7 +75,7 @@ class HomeRepositoryImpl @Inject constructor(
             }
         }
 
-        val cachedUser = userDao.getFirstUser()
+        val cachedUser = local.getCachedUser()
         if (cachedUser != null) {
             Result.Success(
                 UserProfileInfo(
@@ -98,14 +91,31 @@ class HomeRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun refreshSchedule(date: LocalDate): Result<Unit> = withContext(ioDispatcher) {
+        checkOnline()?.let { return@withContext it }
+        // Forced: a screen open must not be answered from a TTL window the user cannot see.
+        if (scheduleSynchronizer.syncScheduleRange(date, date, forceRefresh = true)) {
+            Result.Success(Unit)
+        } else {
+            Result.Error(AppError.Network)
+        }
+    }
+
+    /**
+     * Both halves are Room Flows so the timeline reacts to either changing. Resolving zones with a
+     * suspend lookup inside the map — as this did — produces a Flow that Room only invalidates for
+     * the `sessions` table, so a zone edit stayed invisible until a day change built a new Flow.
+     */
     override fun getDaySchedule(date: LocalDate): Flow<Result<DaySchedule>> {
         val dateStr = date.toString()
 
-        return sessionDao.observeSessionsForDate(dateStr)
-            .map { sessionEntities ->
+        return combine(
+            local.observeSessionsForDate(dateStr),
+            local.observeEffectiveZonesForDate(dateStr, date.dayOfWeek.name),
+        ) { sessionEntities, zoneEntities ->
                 val daySessions = sessionEntities.mapNotNull { s ->
-                    val task = taskDao.getTask(s.taskId) ?: return@mapNotNull null
-                    val category = task.categoryId?.let { categoryDao.getCategory(it) }
+                    val task = local.getTask(s.taskId) ?: return@mapNotNull null
+                    val category = task.categoryId?.let { local.getCategory(it) }
                     val startLocalTime = parseLocalTime(s.startTime)
                     val endLocalTime = parseLocalTime(s.endTime)
                     val startMinutes = startLocalTime.hour * 60 + startLocalTime.minute
@@ -132,7 +142,7 @@ class HomeRepositoryImpl @Inject constructor(
                 Result.Success(
                     DaySchedule(
                         date = date,
-                        zones = resolveZonesForDate(dateStr, date),
+                        zones = zoneEntities.map(::toDayZone),
                         sessions = daySessions,
                     )
                 )
@@ -145,11 +155,11 @@ class HomeRepositoryImpl @Inject constructor(
             val sessionResult = remoteDataSource.getSession(sessionId)
             val sessionDto = when (sessionResult) {
                 is Result.Success -> {
-                    cacheSession(sessionResult.data)
+                    local.cacheSession(sessionResult.data)
                     sessionResult.data
                 }
                 is Result.Error -> {
-                    val cached = sessionDao.getSession(sessionId)
+                    val cached = local.getSession(sessionId)
                     if (cached != null) null else return@withContext Result.Error(sessionResult.error)
                 }
                 Result.Loading -> return@withContext Result.Loading
@@ -158,19 +168,19 @@ class HomeRepositoryImpl @Inject constructor(
             val sessionDetailInfo = if (sessionDto != null) {
                 SessionDetailInfo(
                     id = sessionDto.id,
-                    start = java.time.LocalDateTime.parse(sessionDto.start),
-                    end = java.time.LocalDateTime.parse(sessionDto.end),
+                    start = LocalDateTime.parse(sessionDto.start),
+                    end = LocalDateTime.parse(sessionDto.end),
                     status = mapStatus(sessionDto.status),
                     locked = sessionDto.locked,
                     zoneId = sessionDto.zoneId,
                     taskId = sessionDto.taskId ?: "",
                 )
             } else {
-                val cached = sessionDao.getSession(sessionId)!!
+                val cached = local.getSession(sessionId)!!
                 SessionDetailInfo(
                     id = cached.id,
-                    start = java.time.LocalDateTime.parse("${cached.date}T${cached.startTime}"),
-                    end = java.time.LocalDateTime.parse("${cached.date}T${cached.endTime}"),
+                    start = LocalDateTime.parse("${cached.date}T${cached.startTime}"),
+                    end = LocalDateTime.parse("${cached.date}T${cached.endTime}"),
                     status = mapStatus(cached.status),
                     locked = cached.locked,
                     zoneId = cached.zoneId,
@@ -181,9 +191,12 @@ class HomeRepositoryImpl @Inject constructor(
             val taskId = sessionDetailInfo.taskId
             val taskResult = remoteDataSource.getTask(taskId)
             val taskDto = when (taskResult) {
-                is Result.Success -> taskResult.data
+                is Result.Success -> {
+                    local.cacheTask(taskId, taskResult.data)
+                    taskResult.data
+                }
                 is Result.Error -> {
-                    val cached = taskDao.getTask(taskId)
+                    val cached = local.getTask(taskId)
                     if (cached != null) null else return@withContext Result.Error(taskResult.error)
                 }
                 Result.Loading -> return@withContext Result.Loading
@@ -204,8 +217,8 @@ class HomeRepositoryImpl @Inject constructor(
                     dependsOnTaskIds = taskDto.dependsOnTaskIds ?: emptyList(),
                 )
             } else {
-                val cached = taskDao.getTask(taskId)!!
-                val category = cached.categoryId?.let { categoryDao.getCategory(it) }
+                val cached = local.getTask(taskId)!!
+                val category = cached.categoryId?.let { local.getCategory(it) }
                 TaskDetailInfo(
                     id = cached.id,
                     title = cached.title,
@@ -236,7 +249,7 @@ class HomeRepositoryImpl @Inject constructor(
             }
             when (val result = remoteDataSource.completeSession(sessionId)) {
                 is Result.Success -> {
-                    cacheSession(result.data.session)
+                    local.cacheSession(result.data.session)
                     val reward = result.data.reward.toDomain()
                     // Published here rather than from the caller so any future path that completes
                     // a session celebrates identically, without each one remembering to.
@@ -264,31 +277,6 @@ class HomeRepositoryImpl @Inject constructor(
         remoteDataSource.moveSession(sessionId, startIso, endIso)
     }
 
-    override suspend fun updateSessionLock(
-        sessionId: String,
-        locked: Boolean,
-    ): Result<Unit> = applySessionChange {
-        if (locked) {
-            remoteDataSource.lockSession(sessionId)
-        } else {
-            remoteDataSource.unlockSession(sessionId)
-        }
-    }
-
-    override suspend fun deleteSession(sessionId: String): Result<Unit> = withContext(ioDispatcher) {
-        if (!connectivityMonitor.isCurrentlyOnline()) {
-            return@withContext Result.Error(AppError.Network)
-        }
-        when (val result = remoteDataSource.deleteSession(sessionId)) {
-            is Result.Success -> {
-                sessionDao.deleteSession(sessionId)
-                Result.Success(Unit)
-            }
-            is Result.Error -> Result.Error(result.error)
-            Result.Loading -> unexpectedLoading()
-        }
-    }
-
     private suspend fun applySessionChange(
         call: suspend () -> Result<SessionDto>,
     ): Result<Unit> = withContext(ioDispatcher) {
@@ -297,31 +285,12 @@ class HomeRepositoryImpl @Inject constructor(
         }
         when (val result = call()) {
             is Result.Success -> {
-                cacheSession(result.data)
+                local.cacheSession(result.data)
                 Result.Success(Unit)
             }
             is Result.Error -> Result.Error(result.error)
             Result.Loading -> unexpectedLoading()
         }
-    }
-
-    /**
-     * Mirrors the server's copy of a session into Room, which the schedule flow observes — without
-     * this the timeline keeps showing the old state until something forces a refresh.
-     *
-     * The status falls back to what is already stored rather than to a guess, so moving a completed
-     * session cannot silently reopen it.
-     */
-    private suspend fun cacheSession(dto: SessionDto) {
-        val existing = sessionDao.getSession(dto.id) ?: return
-        sessionDao.upsertSession(
-            existing.copy(
-                status = dto.status ?: existing.status,
-                startTime = extractTimeFromIso(dto.start, existing.startTime),
-                endTime = extractTimeFromIso(dto.end, existing.endTime),
-                locked = dto.locked,
-            )
-        )
     }
 
     private fun parseLocalTime(timeStr: String): LocalTime {
@@ -351,34 +320,28 @@ class HomeRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun resolveZonesForDate(dateStr: String, date: LocalDate): List<DayZone> {
-        val override = templateOverrideDao.getOverrideForDate(dateStr)
-        val zones = if (override != null) {
-            zoneDao.observeZonesForOverride(override.id).first()
+    private fun toDayZone(entity: ZoneEntity): DayZone {
+        val startLocalTime = parseLocalTime(entity.startTime)
+        val endLocalTime = parseLocalTime(entity.endTime)
+        return DayZone(
+            id = entity.id,
+            name = entity.name,
+            categoryId = entity.id,
+            categoryName = entity.name,
+            startMinutes = startLocalTime.hour * 60 + startLocalTime.minute,
+            endMinutes = endLocalTime.hour * 60 + endLocalTime.minute,
+            color = entity.color
+        )
+    }
+
+    override suspend fun updateSessionLock(
+        sessionId: String,
+        locked: Boolean,
+    ): Result<Unit> = applySessionChange {
+        if (locked) {
+            remoteDataSource.lockSession(sessionId)
         } else {
-            val dayOfWeek = date.dayOfWeek.name.uppercase()
-            val templateAssignment = templateDao.getDayAssignment(dayOfWeek)
-            if (templateAssignment != null) {
-                zoneDao.observeZonesForTemplate(templateAssignment.templateId).first()
-            } else {
-                emptyList()
-            }
-        }
-        
-        return zones.map { entity ->
-            val startLocalTime = parseLocalTime(entity.startTime)
-            val endLocalTime = parseLocalTime(entity.endTime)
-            val startMinutes = startLocalTime.hour * 60 + startLocalTime.minute
-            val endMinutes = endLocalTime.hour * 60 + endLocalTime.minute
-            DayZone(
-                id = entity.id,
-                name = entity.name,
-                categoryId = entity.id,
-                categoryName = entity.name,
-                startMinutes = startMinutes,
-                endMinutes = endMinutes,
-                color = entity.color
-            )
+            remoteDataSource.unlockSession(sessionId)
         }
     }
 
@@ -390,10 +353,7 @@ class HomeRepositoryImpl @Inject constructor(
         estimatedPoints: Int?,
         mandatory: Boolean?,
         allowTaskSplitting: Boolean?,
-    ): Result<Unit> = withContext(ioDispatcher) {
-        if (!connectivityMonitor.isCurrentlyOnline()) {
-            return@withContext Result.Error(AppError.Network)
-        }
+    ): Result<Unit> {
         val request = com.awan.app.core.network.dto.task.TaskUpdateRequest(
             title = title,
             description = description,
@@ -403,24 +363,44 @@ class HomeRepositoryImpl @Inject constructor(
             allowTaskSplitting = allowTaskSplitting,
         )
         val result = remoteDataSource.updateTask(taskId, request)
-        when (result) {
-            is Result.Success -> Result.Success(Unit)
+        return when (result) {
+            is Result.Success -> {
+                local.cacheTask(taskId, result.data)
+                Result.Success(Unit)
+            }
             is Result.Error -> Result.Error(result.error)
             else -> Result.Error(AppError.Unknown(Throwable("Failed to update task details")))
         }
     }
 
-    override suspend fun deleteTask(taskId: String): Result<Unit> = withContext(ioDispatcher) {
-        if (!connectivityMonitor.isCurrentlyOnline()) {
-            return@withContext Result.Error(AppError.Network)
+    override suspend fun deleteSession(sessionId: String): Result<Unit> {
+        checkOnline()?.let { return it }
+        val result = remoteDataSource.deleteSession(sessionId)
+        return when (result) {
+            is Result.Success -> {
+                local.deleteSession(sessionId)
+                Result.Success(Unit)
+            }
+            is Result.Error -> Result.Error(result.error)
+            else -> Result.Error(AppError.Unknown(Throwable("Failed to delete session")))
         }
+    }
+
+    override suspend fun deleteTask(taskId: String): Result<Unit> {
+        checkOnline()?.let { return it }
         val result = remoteDataSource.deleteTask(taskId, cascade = true)
-        when (result) {
-            is Result.Success -> Result.Success(Unit)
+        return when (result) {
+            is Result.Success -> {
+                local.deleteTask(taskId)
+                Result.Success(Unit)
+            }
             is Result.Error -> Result.Error(result.error)
             else -> Result.Error(AppError.Unknown(Throwable("Failed to delete task")))
         }
     }
+
+    private fun checkOnline(): Result<Nothing>? =
+        if (connectivityMonitor.isCurrentlyOnline()) null else Result.Error(AppError.Network)
 
     private fun unexpectedLoading(): Result.Error =
         Result.Error(AppError.Unknown(Throwable("Session call returned Loading")))

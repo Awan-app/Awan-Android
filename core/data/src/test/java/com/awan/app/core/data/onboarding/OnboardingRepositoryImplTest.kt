@@ -171,10 +171,21 @@ class OnboardingRepositoryImplTest {
 
     @Test
     fun `an account with no categories gets no template rather than an error`() = runTest(testDispatcher.scheduler) {
-        val result = repository.completeOnboarding(onboardingData(zones = emptyList()))
+        // Zone.defaults carry no categoryId — the zones the backend rejects. Passing an empty list
+        // here instead would pass against an impl that drops the category and 422s on a real device.
+        val result = repository.completeOnboarding(onboardingData(zones = Zone.defaults))
 
         assertTrue(result is Result.Success)
         assertNull(fakeZonesRepository.createdZones)
+    }
+
+    @Test
+    fun `every zone in the template carries its category`() = runTest(testDispatcher.scheduler) {
+        repository.completeOnboarding(onboardingData(zones = zonesWithCategories()))
+
+        val sent = fakeZonesRepository.createdZones.orEmpty()
+        assertEquals(2, sent.size)
+        assertTrue(sent.all { it.categoryId != null })
     }
 
 
@@ -241,6 +252,7 @@ class OnboardingRepositoryImplTest {
     }
 
     private class FakeZonesRepository : ZonesRepository {
+        override suspend fun refreshZones(): Result<Unit> = Result.Success(Unit)
         var failWith: AppError? = null
         var createdZones: List<DailyZone>? = null
 

@@ -27,12 +27,14 @@ class AuthRepositoryImplTest {
     private lateinit var fakeRemoteDataSource: FakeAuthRemoteDataSource
     private lateinit var fakeAuthTokenProvider: FakeAuthTokenProvider
     private lateinit var fakeDeviceIdProvider: DeviceIdProvider
+    private lateinit var fakeLocalDataCleaner: FakeLocalDataCleaner
     private lateinit var repository: AuthRepositoryImpl
 
     @Before
     fun setUp() {
         fakeRemoteDataSource = FakeAuthRemoteDataSource()
         fakeAuthTokenProvider = FakeAuthTokenProvider()
+        fakeLocalDataCleaner = FakeLocalDataCleaner()
         fakeDeviceIdProvider = object : DeviceIdProvider {
             override fun getDeviceId(): String = "test-device-id-123"
         }
@@ -40,6 +42,7 @@ class AuthRepositoryImplTest {
             remoteDataSource = fakeRemoteDataSource,
             authTokenProvider = fakeAuthTokenProvider,
             deviceIdProvider = fakeDeviceIdProvider,
+            localDataCleaner = fakeLocalDataCleaner,
         )
     }
 
@@ -70,6 +73,43 @@ class AuthRepositoryImplTest {
         assertEquals("user-1", fakeAuthTokenProvider.savedUserId)
         assertEquals("test@example.com", fakeAuthTokenProvider.savedEmail)
         assertTrue(fakeAuthTokenProvider.isLoggedInState)
+    }
+
+    /**
+     * `verifyOtp` grew this guard; Google sign-in reaches the same Room and did not. Signing in as
+     * someone else left the previous account's sessions and zones on screen, and the backend
+     * answered 404 for every id they touched.
+     */
+    @Test
+    fun `signing in as a different user through Firebase clears the previous cache`() = runTest {
+        fakeAuthTokenProvider.savedUserId = "user-1"
+        fakeRemoteDataSource.firebaseResponse = Result.Success(
+            VerifyOtpResponse(
+                accessToken = "a",
+                refreshToken = "b",
+                user = UserDto(id = "user-2", email = "other@example.com"),
+            )
+        )
+
+        repository.signInWithFirebase("firebase-id-token-123")
+
+        assertEquals(1, fakeLocalDataCleaner.clearCount)
+    }
+
+    @Test
+    fun `the same user signing back in through Firebase keeps their cache`() = runTest {
+        fakeAuthTokenProvider.savedUserId = "user-1"
+        fakeRemoteDataSource.firebaseResponse = Result.Success(
+            VerifyOtpResponse(
+                accessToken = "a",
+                refreshToken = "b",
+                user = UserDto(id = "user-1", email = "test@example.com"),
+            )
+        )
+
+        repository.signInWithFirebase("firebase-id-token-123")
+
+        assertEquals(0, fakeLocalDataCleaner.clearCount)
     }
 
     private class FakeAuthRemoteDataSource : AuthRemoteDataSource {
@@ -125,4 +165,14 @@ class AuthRepositoryImplTest {
         }
         override fun notifySessionExpired() {}
     }
+
+    private class FakeLocalDataCleaner : com.awan.app.core.data.auth.LocalDataCleaner {
+        var clearCount = 0
+            private set
+
+        override suspend fun clearAll() {
+            clearCount++
+        }
+    }
+
 }
