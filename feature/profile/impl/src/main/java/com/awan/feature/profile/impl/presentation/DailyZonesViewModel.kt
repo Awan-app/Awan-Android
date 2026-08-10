@@ -65,10 +65,10 @@ class DailyZonesViewModel @Inject constructor(
             val templatesResult = templatesDeferred.await()
             val overridesResult = overridesDeferred.await()
             val categoriesResult = categoriesDeferred.await()
-
-            if (templatesResult is Result.Success && overridesResult is Result.Success && categoriesResult is Result.Success) {
+            if (templatesResult is Result.Success) {
                 val templates = templatesResult.data
-                val overrides = overridesResult.data
+                val overrides = (overridesResult as? Result.Success)?.data.orEmpty()
+                val categories = (categoriesResult as? Result.Success)?.data.orEmpty()
                 val categories = categoriesResult.data
 
                 _uiState.update { state ->
