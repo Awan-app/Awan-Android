@@ -6,6 +6,8 @@ import com.awan.app.core.data.auth.repository.AuthRepositoryImpl
 import com.awan.app.core.data.calendar.CalendarRepositoryImpl
 import com.awan.app.core.data.calendar.local.CalendarLocalDataSource
 import com.awan.app.core.data.calendar.local.CalendarLocalDataSourceImpl
+import com.awan.app.core.data.home.local.HomeLocalDataSource
+import com.awan.app.core.data.home.local.HomeLocalDataSourceImpl
 import com.awan.app.core.data.zones.local.ZonesLocalDataSource
 import com.awan.app.core.data.zones.local.ZonesLocalDataSourceImpl
 import com.awan.app.core.data.auth.LocalDataCleaner
@@ -85,6 +87,12 @@ internal abstract class DataModule {
     abstract fun bindCalendarLocalDataSource(
         impl: CalendarLocalDataSourceImpl,
     ): CalendarLocalDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindHomeLocalDataSource(
+        impl: HomeLocalDataSourceImpl,
+    ): HomeLocalDataSource
 
     @Binds
     @Singleton

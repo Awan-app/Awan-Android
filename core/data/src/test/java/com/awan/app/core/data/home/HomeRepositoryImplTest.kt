@@ -91,95 +91,33 @@ private class FakeHomeRemoteDataSource : HomeRemoteDataSource {
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = Result.Success(Unit)
 }
 
-private class FakeUserDao : UserDao {
-    override suspend fun upsertUser(user: UserEntity) {}
-    override fun observeUser(userId: String): Flow<UserEntity?> = flowOf(null)
-    override suspend fun getUser(userId: String): UserEntity? = null
-    override suspend fun getFirstUser(): UserEntity? = null
-    override suspend fun deleteUser(userId: String) {}
-    override suspend fun upsertPreferences(preferences: UserPreferencesEntity) {}
-    override fun observePreferences(userId: String): Flow<UserPreferencesEntity?> = flowOf(null)
-    override suspend fun getPreferences(userId: String): UserPreferencesEntity? = null
-    override fun observeUserWithPreferences(userId: String): Flow<UserWithPreferences?> = flowOf(null)
-    override suspend fun getUserWithPreferences(userId: String): UserWithPreferences? = null
-    override suspend fun getMinExpiryTime(): Long? = null
-}
+private class FakeHomeLocalDataSource(
+    templateZones: List<ZoneEntity> = emptyList(),
+    private val tasks: Map<String, com.awan.app.core.database.model.TaskEntity> = emptyMap(),
+) : com.awan.app.core.data.home.local.HomeLocalDataSource {
 
-private class FakeTaskDao : com.awan.app.core.database.dao.TaskDao {
-    override suspend fun upsertTask(task: com.awan.app.core.database.model.TaskEntity) {}
-    override suspend fun upsertTasks(tasks: List<com.awan.app.core.database.model.TaskEntity>) {}
-    override fun observeTasksByGoal(goalId: String): Flow<List<com.awan.app.core.database.model.TaskEntity>> = flowOf(emptyList())
-    override fun observeInboxTasks(): Flow<List<com.awan.app.core.database.model.TaskEntity>> = flowOf(emptyList())
-    override fun observeAllTasks(): Flow<List<com.awan.app.core.database.model.TaskEntity>> = flowOf(emptyList())
-    override suspend fun getAllTasks(): List<com.awan.app.core.database.model.TaskEntity> = emptyList()
-    override fun observeTask(taskId: String): Flow<com.awan.app.core.database.model.TaskEntity?> = flowOf(null)
-    override suspend fun getTask(taskId: String): com.awan.app.core.database.model.TaskEntity? = null
-    override suspend fun deleteTask(taskId: String) {}
-    override suspend fun upsertDependency(dependency: com.awan.app.core.database.model.TaskDependencyEntity) {}
-    override suspend fun upsertDependencies(dependencies: List<com.awan.app.core.database.model.TaskDependencyEntity>) {}
-    override suspend fun deleteDependency(dependency: com.awan.app.core.database.model.TaskDependencyEntity) {}
-    override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
-    override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
-    override suspend fun deleteAllDependenciesForTask(taskId: String) {}
-    override suspend fun deleteTasksByGoal(goalId: String) {}
-    override suspend fun nullifyOrphanedGoalReferences() {}
-}
+    val effectiveZones = MutableStateFlow(templateZones)
+    val sessions = MutableStateFlow(emptyList<com.awan.app.core.database.model.SessionEntity>())
+    var cachedSessions = mutableListOf<SessionDto>()
+    var deletedSessions = mutableListOf<String>()
+    var deletedTasks = mutableListOf<String>()
+    var cachedTasks = mutableListOf<String>()
+    var upsertedUsers = mutableListOf<UserEntity>()
+    var storedUser: UserEntity? = null
 
-private class FakeSessionDao : com.awan.app.core.database.dao.SessionDao {
-    override suspend fun upsertSession(session: com.awan.app.core.database.model.SessionEntity) {}
-    override suspend fun upsertSessions(sessions: List<com.awan.app.core.database.model.SessionEntity>) {}
-    override fun observeSessionsForDate(date: String): Flow<List<com.awan.app.core.database.model.SessionEntity>> = flowOf(emptyList())
-    override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<com.awan.app.core.database.model.SessionEntity>> = flowOf(emptyList())
-    override suspend fun getSessionsForDate(date: String): List<com.awan.app.core.database.model.SessionEntity> = emptyList()
-    override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<com.awan.app.core.database.model.SessionEntity> = emptyList()
-    override suspend fun getSession(id: String): com.awan.app.core.database.model.SessionEntity? = null
-    override suspend fun deleteSessionsForDates(dates: List<String>) {}
-    override suspend fun deleteSession(id: String) {}
-}
-
-private class FakeZoneDao(
-    private val templateZones: List<ZoneEntity> = emptyList(),
-    val effectiveZones: MutableStateFlow<List<ZoneEntity>> = MutableStateFlow(templateZones),
-) : ZoneDao {
-    override fun observeEffectiveZonesForDate(date: String, dayOfWeek: String): Flow<List<ZoneEntity>> =
-        effectiveZones
-    override suspend fun upsertZone(zone: com.awan.app.core.database.model.ZoneEntity) {}
-    override suspend fun upsertZones(zones: List<com.awan.app.core.database.model.ZoneEntity>) {}
-    override fun observeZone(zoneId: String): Flow<com.awan.app.core.database.model.ZoneEntity?> = flowOf(null)
-    override suspend fun getZone(zoneId: String): com.awan.app.core.database.model.ZoneEntity? = null
-    override fun observeZonesForTemplate(templateId: String): Flow<List<ZoneEntity>> = flowOf(templateZones)
-    override fun observeZonesForOverride(overrideId: String): Flow<List<com.awan.app.core.database.model.ZoneEntity>> = flowOf(emptyList())
-    override suspend fun deleteZone(zoneId: String) {}
-    override suspend fun deleteZonesForTemplate(templateId: String) {}
-    override suspend fun deleteZonesForOverride(overrideId: String) {}
-}
-
-private class FakeTemplateDao(
-    private val dayAssignment: TemplateDayOfWeekEntity? = null,
-) : TemplateDao {
-    override suspend fun upsertTemplate(template: com.awan.app.core.database.model.TemplateEntity) {}
-    override suspend fun upsertTemplates(templates: List<com.awan.app.core.database.model.TemplateEntity>) {}
-    override fun observeAllTemplates(): Flow<List<com.awan.app.core.database.model.TemplateEntity>> = flowOf(emptyList())
-    override fun observeTemplate(templateId: String): Flow<com.awan.app.core.database.model.TemplateEntity?> = flowOf(null)
-    override suspend fun getTemplate(templateId: String): com.awan.app.core.database.model.TemplateEntity? = null
-    override suspend fun deleteTemplate(templateId: String) {}
-    override suspend fun deleteAllTemplates() {}
-    override suspend fun getMinExpiryTime(): Long? = null
-    override suspend fun upsertDays(days: List<com.awan.app.core.database.model.TemplateDayOfWeekEntity>) {}
-    override fun observeDaysForTemplate(templateId: String): Flow<List<com.awan.app.core.database.model.TemplateDayOfWeekEntity>> = flowOf(emptyList())
-    override suspend fun getDayAssignment(dayOfWeek: String): TemplateDayOfWeekEntity? = dayAssignment
-    override suspend fun deleteDaysForTemplate(templateId: String) {}
-}
-
-private class FakeTemplateOverrideDao : com.awan.app.core.database.dao.TemplateOverrideDao {
-    override suspend fun upsertOverride(override: com.awan.app.core.database.model.TemplateOverrideEntity) {}
-    override suspend fun upsertOverrides(overrides: List<com.awan.app.core.database.model.TemplateOverrideEntity>) {}
-    override fun observeAllOverrides(): Flow<List<com.awan.app.core.database.model.TemplateOverrideEntity>> = flowOf(emptyList())
-    override fun observeOverride(overrideId: String): Flow<com.awan.app.core.database.model.TemplateOverrideEntity?> = flowOf(null)
-    override suspend fun getOverride(overrideId: String): com.awan.app.core.database.model.TemplateOverrideEntity? = null
-    override suspend fun getOverrideForDate(date: String): com.awan.app.core.database.model.TemplateOverrideEntity? = null
-    override suspend fun deleteOverride(overrideId: String) {}
-    override suspend fun deleteAllOverrides() {}
+    override fun observeSessionsForDate(date: String) = sessions
+    override fun observeEffectiveZonesForDate(date: String, dayOfWeek: String) = effectiveZones
+    override suspend fun getTask(taskId: String) = tasks[taskId]
+    override suspend fun getCategory(categoryId: String): com.awan.app.core.database.model.CategoryEntity? = null
+    override suspend fun getCachedUser() = storedUser
+    override suspend fun upsertUser(user: UserEntity) { upsertedUsers += user; storedUser = user }
+    override suspend fun cacheSession(session: SessionDto): Boolean {
+        cachedSessions += session
+        return true
+    }
+    override suspend fun deleteSession(sessionId: String) { deletedSessions += sessionId }
+    override suspend fun cacheTask(taskId: String, task: TaskInfoResponse) { cachedTasks += taskId }
+    override suspend fun deleteTask(taskId: String) { deletedTasks += taskId }
 }
 
 private class FakeScheduleSynchronizer : com.awan.app.core.data.sync.ScheduleSynchronizer {
@@ -196,17 +134,6 @@ private class FakeScheduleSynchronizer : com.awan.app.core.data.sync.ScheduleSyn
     }
 }
 
-private class FakeCategoryDao : com.awan.app.core.database.dao.CategoryDao {
-    override suspend fun upsertCategories(categories: List<com.awan.app.core.database.model.CategoryEntity>) {}
-    override suspend fun upsertCategory(category: com.awan.app.core.database.model.CategoryEntity) {}
-    override fun observeAllCategories(): Flow<List<com.awan.app.core.database.model.CategoryEntity>> = flowOf(emptyList())
-    override suspend fun getAllCategories(): List<com.awan.app.core.database.model.CategoryEntity> = emptyList()
-    override suspend fun getCategory(id: String): com.awan.app.core.database.model.CategoryEntity? = null
-    override suspend fun deleteCategory(id: String) {}
-    override suspend fun deleteAllCategories() {}
-    override suspend fun getMinExpiryTime(): Long? = null
-}
-
 private class AlwaysOnlineMonitor : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
     override val isOnline: Flow<Boolean> = flowOf(true)
     override fun isCurrentlyOnline(): Boolean = true
@@ -218,18 +145,13 @@ class HomeRepositoryImplTest {
 
     private fun createRepository(
         fakeRemote: HomeRemoteDataSource,
-        zoneDao: ZoneDao = FakeZoneDao(),
-        sessionDao: SessionDao = FakeSessionDao(),
+        local: FakeHomeLocalDataSource = FakeHomeLocalDataSource(),
         scheduleSynchronizer: com.awan.app.core.data.sync.ScheduleSynchronizer = FakeScheduleSynchronizer(),
     ): HomeRepositoryImpl {
         return HomeRepositoryImpl(
             remoteDataSource = fakeRemote,
-            userDao = FakeUserDao(),
+            local = local,
             eventBus = eventBus,
-            taskDao = FakeTaskDao(),
-            sessionDao = sessionDao,
-            zoneDao = zoneDao,
-            categoryDao = FakeCategoryDao(),
             scheduleSynchronizer = scheduleSynchronizer,
             connectivityMonitor = AlwaysOnlineMonitor(),
             ioDispatcher = kotlinx.coroutines.Dispatchers.Unconfined,
@@ -410,7 +332,7 @@ class HomeRepositoryImplTest {
         val date = java.time.LocalDate.of(2026, 8, 9)
         val repository = createRepository(
             fakeRemote = FakeHomeRemoteDataSource(),
-            zoneDao = FakeZoneDao(
+            local = FakeHomeLocalDataSource(
                 templateZones = listOf(
                     ZoneEntity(
                         id = "zone-study",
@@ -437,8 +359,8 @@ class HomeRepositoryImplTest {
      */
     @Test
     fun `getDaySchedule re-emits when only the zones change`() = runTest {
-        val zoneDao = FakeZoneDao()
-        val repository = createRepository(fakeRemote = FakeHomeRemoteDataSource(), zoneDao = zoneDao)
+        val local = FakeHomeLocalDataSource()
+        val repository = createRepository(fakeRemote = FakeHomeRemoteDataSource(), local = local)
 
         val emissions = mutableListOf<DaySchedule>()
         val job = launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -447,7 +369,7 @@ class HomeRepositoryImplTest {
             }
         }
 
-        zoneDao.effectiveZones.value = listOf(
+        local.effectiveZones.value = listOf(
             ZoneEntity(
                 id = "zone-work",
                 name = "Work",

@@ -6,13 +6,9 @@ import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.gamification.GamificationEventBus
 import com.awan.app.core.data.gamification.mapper.toDomain
-import com.awan.app.core.database.dao.CategoryDao
-import com.awan.app.core.database.dao.SessionDao
-import com.awan.app.core.database.dao.TaskDao
-import com.awan.app.core.database.dao.UserDao
-import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.UserEntity
 import com.awan.app.core.database.model.ZoneEntity
+import com.awan.app.core.data.home.local.HomeLocalDataSource
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
 import com.awan.app.core.data.sync.ScheduleSynchronizer
 import com.awan.app.core.network.dto.session.SessionDto
@@ -32,7 +28,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import android.util.Log
-import com.awan.app.core.data.common.extractTimeFromIso
+import com.awan.app.core.common.result.map
 import java.time.LocalDate
 import java.time.LocalTime
 import javax.inject.Inject
@@ -44,12 +40,8 @@ import com.awan.app.core.model.TaskDetailInfo
 @Singleton
 class HomeRepositoryImpl @Inject constructor(
     private val remoteDataSource: HomeRemoteDataSource,
-    private val userDao: UserDao,
+    private val local: HomeLocalDataSource,
     private val eventBus: GamificationEventBus,
-    private val taskDao: TaskDao,
-    private val sessionDao: SessionDao,
-    private val zoneDao: ZoneDao,
-    private val categoryDao: CategoryDao,
     private val scheduleSynchronizer: ScheduleSynchronizer,
     private val connectivityMonitor: NetworkConnectivityMonitor,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
@@ -64,7 +56,7 @@ class HomeRepositoryImpl @Inject constructor(
                 val lastName = dto.lastName ?: ""
                 val points = dto.points ?: 0
                 val streak = dto.streak ?: 0
-                userDao.upsertUser(
+                local.upsertUser(
                     UserEntity(
                         id = dto.id,
                         email = dto.email ?: "",
@@ -81,7 +73,7 @@ class HomeRepositoryImpl @Inject constructor(
             }
         }
 
-        val cachedUser = userDao.getFirstUser()
+        val cachedUser = local.getCachedUser()
         if (cachedUser != null) {
             Result.Success(
                 UserProfileInfo(
@@ -116,12 +108,12 @@ class HomeRepositoryImpl @Inject constructor(
         val dateStr = date.toString()
 
         return combine(
-            sessionDao.observeSessionsForDate(dateStr),
-            zoneDao.observeEffectiveZonesForDate(dateStr, date.dayOfWeek.name),
+            local.observeSessionsForDate(dateStr),
+            local.observeEffectiveZonesForDate(dateStr, date.dayOfWeek.name),
         ) { sessionEntities, zoneEntities ->
                 val daySessions = sessionEntities.mapNotNull { s ->
-                    val task = taskDao.getTask(s.taskId) ?: return@mapNotNull null
-                    val category = task.categoryId?.let { categoryDao.getCategory(it) }
+                    val task = local.getTask(s.taskId) ?: return@mapNotNull null
+                    val category = task.categoryId?.let { local.getCategory(it) }
                     val startLocalTime = parseLocalTime(s.startTime)
                     val endLocalTime = parseLocalTime(s.endTime)
                     val startMinutes = startLocalTime.hour * 60 + startLocalTime.minute
@@ -220,7 +212,7 @@ class HomeRepositoryImpl @Inject constructor(
             }
             when (val result = remoteDataSource.completeSession(sessionId)) {
                 is Result.Success -> {
-                    cacheSession(result.data.session)
+                    local.cacheSession(result.data.session)
                     val reward = result.data.reward.toDomain()
                     // Published here rather than from the caller so any future path that completes
                     // a session celebrates identically, without each one remembering to.
@@ -256,31 +248,12 @@ class HomeRepositoryImpl @Inject constructor(
         }
         when (val result = call()) {
             is Result.Success -> {
-                cacheSession(result.data)
+                local.cacheSession(result.data)
                 Result.Success(Unit)
             }
             is Result.Error -> Result.Error(result.error)
             Result.Loading -> unexpectedLoading()
         }
-    }
-
-    /**
-     * Mirrors the server's copy of a session into Room, which the schedule flow observes — without
-     * this the timeline keeps showing the old state until something forces a refresh.
-     *
-     * The status falls back to what is already stored rather than to a guess, so moving a completed
-     * session cannot silently reopen it.
-     */
-    private suspend fun cacheSession(dto: SessionDto) {
-        val existing = sessionDao.getSession(dto.id) ?: return
-        sessionDao.upsertSession(
-            existing.copy(
-                status = dto.status ?: existing.status,
-                startTime = extractTimeFromIso(dto.start, existing.startTime),
-                endTime = extractTimeFromIso(dto.end, existing.endTime),
-                locked = dto.locked,
-            )
-        )
     }
 
     private fun parseLocalTime(timeStr: String): LocalTime {
@@ -327,7 +300,7 @@ class HomeRepositoryImpl @Inject constructor(
         }
         return when (result) {
             is Result.Success -> {
-                cacheSession(result.data)
+                local.cacheSession(result.data)
                 Result.Success(Unit)
             }
             is Result.Error -> Result.Error(result.error)
@@ -355,19 +328,7 @@ class HomeRepositoryImpl @Inject constructor(
         val result = remoteDataSource.updateTask(taskId, request)
         return when (result) {
             is Result.Success -> {
-                val dto = result.data
-                taskDao.getTask(taskId)?.let { existing ->
-                    taskDao.upsertTask(
-                        existing.copy(
-                            title = dto.title,
-                            description = dto.description ?: existing.description,
-                            estimatedDuration = dto.estimatedDuration ?: existing.estimatedDuration,
-                            estimatedPoints = dto.estimatedPoints ?: existing.estimatedPoints,
-                            mandatory = dto.mandatory ?: existing.mandatory,
-                            allowTaskSplitting = dto.allowTaskSplitting ?: existing.allowTaskSplitting,
-                        )
-                    )
-                }
+                local.cacheTask(taskId, result.data)
                 Result.Success(Unit)
             }
             is Result.Error -> Result.Error(result.error)
@@ -380,7 +341,7 @@ class HomeRepositoryImpl @Inject constructor(
         val result = remoteDataSource.deleteSession(sessionId)
         return when (result) {
             is Result.Success -> {
-                sessionDao.deleteSession(sessionId)
+                local.deleteSession(sessionId)
                 Result.Success(Unit)
             }
             is Result.Error -> Result.Error(result.error)
@@ -393,9 +354,7 @@ class HomeRepositoryImpl @Inject constructor(
         val result = remoteDataSource.deleteTask(taskId, cascade = true)
         return when (result) {
             is Result.Success -> {
-                // Sessions CASCADE from tasks; dependencies do not carry the task's own row away.
-                taskDao.deleteAllDependenciesForTask(taskId)
-                taskDao.deleteTask(taskId)
+                local.deleteTask(taskId)
                 Result.Success(Unit)
             }
             is Result.Error -> Result.Error(result.error)
