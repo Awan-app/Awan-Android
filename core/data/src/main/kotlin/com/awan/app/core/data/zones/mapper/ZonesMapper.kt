@@ -95,8 +95,8 @@ fun SessionDto.toEntity(): SessionEntity = SessionEntity(
     taskId = taskId ?: "",
     zoneId = zoneId,
     date = extractDateFromIso(start),
-    startTime = extractTimeFromIso(start),
-    endTime = extractTimeFromIso(end),
+    startTime = LocalDateTime.parse(start, SessionDateTimeFormatter).toLocalTime().format(DateTimeFormatter.ISO_LOCAL_TIME),
+    endTime = LocalDateTime.parse(end, SessionDateTimeFormatter).toLocalTime().format(DateTimeFormatter.ISO_LOCAL_TIME),
     status = status ?: "SCHEDULED",
     locked = locked
 )
