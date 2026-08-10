@@ -9,16 +9,22 @@ import com.awan.app.core.database.dao.GoalDao
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.dao.TemplateDao
+import com.awan.app.core.database.dao.TemplateOverrideDao
+import com.awan.app.core.database.dao.StoreDao
 import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.model.CachedScheduleDateEntity
 import com.awan.app.core.database.model.CategoryEntity
+import com.awan.app.core.database.model.EquippedItemEntity
 import com.awan.app.core.database.model.GoalEntity
+import com.awan.app.core.database.model.OwnedItemEntity
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.StoreItemEntity
 import com.awan.app.core.database.model.TaskEntity
 import com.awan.app.core.database.model.UserEntity
 import com.awan.app.core.database.model.UserPreferencesEntity
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
+import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSource
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.data.task.toEntity
@@ -29,6 +35,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import com.awan.app.core.data.common.extractDateFromIso
 import com.awan.app.core.data.common.extractTimeFromIso
+import com.awan.app.core.data.marketplace.asStoreItemType
 import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
@@ -39,12 +46,14 @@ class OfflineSyncCoordinator @Inject constructor(
     private val taskRemoteDataSource: TaskRemoteDataSource,
     private val goalRemoteDataSource: GoalRemoteDataSource,
     private val categoryRemoteDataSource: CategoryRemoteDataSource,
+    private val storeRemoteDataSource: StoreRemoteDataSource,
     private val profileRemoteDataSource: ProfileRemoteDataSource,
     private val zonesRemoteDataSource: ZonesRemoteDataSource,
     private val taskDao: TaskDao,
     private val categoryDao: CategoryDao,
     private val sessionDao: SessionDao,
     private val goalDao: GoalDao,
+    private val storeDao: StoreDao,
     private val userDao: UserDao,
     private val templateDao: TemplateDao,
     private val zonesLocalDataSource: ZonesLocalDataSource,
@@ -65,6 +74,7 @@ class OfflineSyncCoordinator @Inject constructor(
         if (!syncGoals(forceRefresh)) success = false
         if (!syncScheduleRange(startDate, endDate, forceRefresh)) success = false
         if (!syncZonesAndTemplates(forceRefresh)) success = false
+        if (!syncMarketplace(forceRefresh)) success = false
 
         taskDao.nullifyOrphanedGoalReferences()
 
@@ -277,5 +287,80 @@ class OfflineSyncCoordinator @Inject constructor(
             expiryTime = SyncTtl.computeExpiry(SyncTtl.TEMPLATES_TTL_MS),
         )
         true
+    }
+
+    suspend fun syncMarketplace(forceRefresh: Boolean = false): Boolean = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) return@withContext false
+
+        if (!forceRefresh) {
+            val storeExpiry = storeDao.getMinExpiryTime()
+            val ownedExpiry = storeDao.getMinOwnedExpiryTime()
+            val equippedExpiry = storeDao.getMinEquippedExpiryTime()
+            
+            if (storeExpiry != null && storeExpiry > System.currentTimeMillis() &&
+                ownedExpiry != null && ownedExpiry > System.currentTimeMillis() &&
+                equippedExpiry != null && equippedExpiry > System.currentTimeMillis()) {
+                return@withContext true
+            }
+        }
+
+        val expiry = SyncTtl.computeExpiry(SyncTtl.STORE_TTL_MS)
+        var success = true
+
+        // 1. Sync Store Items
+        val itemsRes = storeRemoteDataSource.getStoreItems()
+        if (itemsRes is Result.Success) {
+            val entities = itemsRes.data.mapNotNull { dto ->
+                val mappedType = dto.type.asStoreItemType() ?: return@mapNotNull null
+                StoreItemEntity(
+                    id = dto.id,
+                    name = dto.name ?: "",
+                    description = dto.description ?: "",
+                    image = dto.image ?: "",
+                    info = dto.info,
+                    price = dto.price,
+                    version = dto.version ?: "",
+                    type = mappedType.name,
+                    expiryTime = expiry
+                )
+            }
+            storeDao.replaceStoreItems(entities)
+        } else {
+            success = false
+        }
+
+        // 2. Sync Inventory
+        val invRes = storeRemoteDataSource.getInventory()
+        if (invRes is Result.Success) {
+            val entities = invRes.data.map { dto ->
+                OwnedItemEntity(
+                    id = dto.id,
+                    itemId = dto.item.id,
+                    boughtAt = dto.boughtAt,
+                    expiryTime = expiry
+                )
+            }
+            storeDao.replaceOwnedItems(entities)
+        } else {
+            success = false
+        }
+
+        // 3. Sync Equipped Items
+        val eqRes = storeRemoteDataSource.getEquippedItems()
+        if (eqRes is Result.Success) {
+            val entities = eqRes.data.map { dto ->
+                EquippedItemEntity(
+                    type = dto.type.name,
+                    itemId = dto.item.id,
+                    equippedAt = dto.equippedAt,
+                    expiryTime = expiry
+                )
+            }
+            storeDao.replaceEquippedItems(entities)
+        } else {
+            success = false
+        }
+
+        success
     }
 }

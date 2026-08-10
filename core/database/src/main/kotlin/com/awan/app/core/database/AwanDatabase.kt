@@ -7,8 +7,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.awan.app.core.database.dao.CachedScheduleDateDao
 import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
-import com.awan.app.core.database.dao.OwnedCustomizationDao
 import com.awan.app.core.database.dao.SessionDao
+import com.awan.app.core.database.dao.StoreDao
 import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.dao.TemplateDao
 import com.awan.app.core.database.dao.TemplateOverrideDao
@@ -16,9 +16,11 @@ import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.CachedScheduleDateEntity
 import com.awan.app.core.database.model.CategoryEntity
+import com.awan.app.core.database.model.EquippedItemEntity
 import com.awan.app.core.database.model.GoalEntity
-import com.awan.app.core.database.model.OwnedCustomizationEntity
+import com.awan.app.core.database.model.OwnedItemEntity
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.StoreItemEntity
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
 import com.awan.app.core.database.model.TemplateDayOfWeekEntity
@@ -49,7 +51,9 @@ import com.awan.app.core.database.model.ZoneEntity
         CategoryEntity::class,
         SessionEntity::class,
         CachedScheduleDateEntity::class,
-        OwnedCustomizationEntity::class,
+        StoreItemEntity::class,
+        OwnedItemEntity::class,
+        EquippedItemEntity::class,
     ],
     version = 5,
     exportSchema = true,
@@ -74,7 +78,7 @@ abstract class AwanDatabase : RoomDatabase() {
 
     abstract fun cachedScheduleDateDao(): CachedScheduleDateDao
 
-    abstract fun ownedCustomizationDao(): OwnedCustomizationDao
+    abstract fun storeDao(): StoreDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -287,20 +291,41 @@ abstract class AwanDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     """
-                    CREATE TABLE IF NOT EXISTS `owned_customizations` (
-                        `userId` TEXT NOT NULL,
-                        `inventoryId` TEXT NOT NULL,
-                        `itemId` TEXT NOT NULL,
+                    CREATE TABLE IF NOT EXISTS `store_items` (
+                        `id` TEXT NOT NULL,
                         `name` TEXT NOT NULL,
                         `description` TEXT NOT NULL,
-                        `imageUrl` TEXT,
+                        `image` TEXT NOT NULL,
+                        `info` TEXT,
+                        `price` INTEGER NOT NULL,
+                        `version` TEXT NOT NULL,
                         `type` TEXT NOT NULL,
-                        `rarity` TEXT NOT NULL,
-                        `acquiredAt` TEXT NOT NULL,
-                        `isEquipped` INTEGER NOT NULL,
-                        PRIMARY KEY(`userId`, `itemId`)
+                        `expiryTime` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`id`)
                     )
-                    """.trimIndent(),
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `owned_items` (
+                        `id` TEXT NOT NULL,
+                        `itemId` TEXT NOT NULL,
+                        `boughtAt` TEXT NOT NULL,
+                        `expiryTime` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `equipped_items` (
+                        `type` TEXT NOT NULL,
+                        `itemId` TEXT NOT NULL,
+                        `equippedAt` TEXT NOT NULL,
+                        `expiryTime` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`type`)
+                    )
+                    """.trimIndent()
                 )
             }
         }

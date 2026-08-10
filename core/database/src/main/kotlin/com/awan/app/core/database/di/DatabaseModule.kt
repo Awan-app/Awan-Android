@@ -6,8 +6,8 @@ import com.awan.app.core.database.AwanDatabase
 import com.awan.app.core.database.dao.CachedScheduleDateDao
 import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
-import com.awan.app.core.database.dao.OwnedCustomizationDao
 import com.awan.app.core.database.dao.SessionDao
+import com.awan.app.core.database.dao.StoreDao
 import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.dao.TemplateDao
 import com.awan.app.core.database.dao.TemplateOverrideDao
@@ -83,6 +83,6 @@ object DatabaseModule {
         database.cachedScheduleDateDao()
 
     @Provides
-    fun providesOwnedCustomizationDao(database: AwanDatabase): OwnedCustomizationDao =
-        database.ownedCustomizationDao()
+    fun providesStoreDao(database: AwanDatabase): StoreDao =
+        database.storeDao()
 }

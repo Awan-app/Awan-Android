@@ -33,6 +33,7 @@ fun AwanTextField(
     style: Style = Style,
     textStyle: AwanTextStyle? = null,
     placeholder: (@Composable () -> Unit)? = null,
+    leadingContent: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
     isError: Boolean = false,
     enabled: Boolean = true,
@@ -77,6 +78,11 @@ fun AwanTextField(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (leadingContent != null) {
+                    Box(modifier = Modifier.padding(end = 8.dp)) {
+                        leadingContent()
+                    }
+                }
                 Box(modifier = Modifier.weight(1f)) {
                     if (value.isEmpty() && placeholder != null) {
                         placeholder()
@@ -103,6 +109,7 @@ fun AwanTextField(
     style: Style = Style,
     textStyle: AwanTextStyle? = null,
     placeholderStyle: AwanTextStyle? = null,
+    leadingContent: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
     isError: Boolean = false,
     enabled: Boolean = true,
@@ -130,6 +137,7 @@ fun AwanTextField(
                 style = placeholderStyle ?: AwanTheme.styles.placeholderText,
             )
         },
+        leadingContent = leadingContent,
         trailingContent = trailingContent,
         isError = isError,
         enabled = enabled,
