@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -167,8 +168,14 @@ object AwanTheme {
                     medium = values.shapes.card,
                     large = values.shapes.button,
                 ),
-                content = content,
-            )
+            ) {
+                // Ensure every themed screen has a consistent background and content color.
+                Surface(
+                    color = values.colors.background,
+                    contentColor = values.colors.textPrimary,
+                    content = content
+                )
+            }
         }
     }
 }
