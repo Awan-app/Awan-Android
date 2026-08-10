@@ -39,10 +39,6 @@ object DatabaseModule {
         AwanDatabase::class.java,
         "awan-database",
     )
-        .addMigrations(AwanDatabase.MIGRATION_1_2)
-        .addMigrations(AwanDatabase.MIGRATION_2_3)
-        .addMigrations(AwanDatabase.MIGRATION_3_4)
-        .addMigrations(AwanDatabase.MIGRATION_4_5)
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 
