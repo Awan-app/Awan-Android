@@ -26,7 +26,23 @@ class Migration4To5InstrumentedTest {
             true,
             AwanDatabase.MIGRATION_4_5,
         )
-        migrated.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'owned_customizations'").use {
+        migrated.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'store_items'").use {
+            assertTrue(it.moveToFirst())
+        }
+        migrated.close()
+    }
+
+    @Test
+    fun migratesFrom5To6() {
+        migrationHelper.createDatabase(TEST_DATABASE_V5_TO_V6, 5).close()
+
+        val migrated = migrationHelper.runMigrationsAndValidate(
+            TEST_DATABASE_V5_TO_V6,
+            6,
+            true,
+            AwanDatabase.MIGRATION_5_6,
+        )
+        migrated.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'equipped_items'").use {
             assertTrue(it.moveToFirst())
         }
         migrated.close()
@@ -34,5 +50,6 @@ class Migration4To5InstrumentedTest {
 
     private companion object {
         const val TEST_DATABASE = "migration-test"
+        const val TEST_DATABASE_V5_TO_V6 = "migration-5-to-6-test"
     }
 }

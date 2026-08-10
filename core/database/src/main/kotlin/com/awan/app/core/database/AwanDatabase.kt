@@ -55,7 +55,7 @@ import com.awan.app.core.database.model.ZoneEntity
         OwnedItemEntity::class,
         EquippedItemEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class AwanDatabase : RoomDatabase() {
@@ -288,6 +288,49 @@ abstract class AwanDatabase : RoomDatabase() {
         }
 
         val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `store_items` (
+                        `id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `image` TEXT NOT NULL,
+                        `info` TEXT,
+                        `price` INTEGER NOT NULL,
+                        `version` TEXT NOT NULL,
+                        `type` TEXT NOT NULL,
+                        `expiryTime` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `owned_items` (
+                        `id` TEXT NOT NULL,
+                        `itemId` TEXT NOT NULL,
+                        `boughtAt` TEXT NOT NULL,
+                        `expiryTime` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `equipped_items` (
+                        `type` TEXT NOT NULL,
+                        `itemId` TEXT NOT NULL,
+                        `equippedAt` TEXT NOT NULL,
+                        `expiryTime` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`type`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     """

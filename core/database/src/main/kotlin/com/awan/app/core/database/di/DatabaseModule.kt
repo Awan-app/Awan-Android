@@ -43,6 +43,7 @@ object DatabaseModule {
         .addMigrations(AwanDatabase.MIGRATION_2_3)
         .addMigrations(AwanDatabase.MIGRATION_3_4)
         .addMigrations(AwanDatabase.MIGRATION_4_5)
+        .addMigrations(AwanDatabase.MIGRATION_5_6)
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 
