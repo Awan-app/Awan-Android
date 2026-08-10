@@ -57,13 +57,41 @@ Dependency direction is always `presentation → domain ← data`. Domain depend
 - Hilt DI throughout; UDF ViewModels exposing `StateFlow` of sealed UI state.
 - Packages: `com.awan.app` (app), `com.awan.app.core.*` (core), `com.awan.feature.*` (features).
 
-### Offline-first — Room is the single source of truth
+### Offline-first contract — non-negotiable
 
-Built. Repositories return `Flow` from DAOs and the UI observes that; the network only ever refills Room.
+Room is the single read model. Show local data first, then refresh it from the network when online.
+Every repository holding server-backed product data uses exactly these four shapes:
 
-- **A write that doesn't land in Room is invisible.** After a successful remote call, mirror the response into the DAO — the screen is watching Room, not the call. Returning `Result.Success` without upserting leaves the UI on stale data until something forces a refresh.
-- **Gate writes on `NetworkConnectivityMonitor.isCurrentlyOnline()`** and return `AppError.Network` when offline, instead of letting the call fail deep in the stack.
-- Freshness is per-row: entities carry `expiryTime`, filled from `SyncTtl` (schedule 15 min, goals 30 min, profile/categories/templates 1 h). Background refresh runs through `SyncWorker` (WorkManager) driven by `OfflineSyncCoordinator`.
+| Shape | Signature | Rules |
+|---|---|---|
+| **Observe** | `fun observeX(...): Flow<T>` | Room only. Never the network, never a connectivity check. **Never call a `suspend` DAO method inside `map`** — a Flow re-emits only for the tables its own queries touch, so a one-shot read inside `map` silently goes stale. Span tables with one `@Query` (subqueries count) or `combine()` of DAO Flows. |
+| **One-shot read** | `suspend fun getX(...): Result<T>` | Only where observing is impossible. Online → remote → write local → read Room; offline → read Room; Room empty → `Result.Error`. Reference: `ProfileRepositoryImpl.getProfile()`. |
+| **Refresh** | `suspend fun refreshX(...): Result<Unit>` | Connectivity check first. If **any** GET fails, return `Result.Error` and write nothing — a partial refresh must never reach Room. On success, exactly one call to `replaceX(scope, items)`. |
+| **Mutate** | `suspend fun createX/updateX/deleteX(...): Result<T>` | Connectivity check first, returning `AppError.Network`. On success, exactly one local write — write-through of the response, or `refreshX()`. **A mutation must never return `Result.Success` without a local write.** |
+
+- **Every refresh replaces; it never merges.** `replaceX(scope, items)` deletes the rows in scope and
+  inserts the response, in one transaction. An upsert-only refresh is a bug: it can never remove what
+  another device deleted, and the user sees a record that no longer exists.
+- **Scope must be provable from the endpoint.** A complete list (`GET v1/templates`) is authoritative
+  for the whole table. A date-ranged response is authoritative for those dates only. **A paginated or
+  filtered response is authoritative for nothing** — never delete from one. `listGoals` is page 0 and
+  excludes the Inbox goal; replacing from it deletes the user's Inbox.
+- **All Room writes for a feature live in one `<Feature>LocalDataSource`** in `core/data/<feature>/local/`.
+  Repositories and `OfflineSyncCoordinator` call it; nothing else writes those tables. Reads may use
+  DAO Flows directly. One writer per table group is what makes "no deleted data survives" structural.
+- **No offline write queue.** Writes require connectivity; reads work fully offline.
+- Refresh runs on screen open and after every write, and both bypass the TTL. Only `SyncWorker`
+  honours it. Freshness is per-row: entities carry `expiryTime`, stamped **only inside `replaceX`**,
+  from `SyncTtl` (schedule 15 min, goals 30 min, profile/categories/templates 1 h). Background
+  refresh runs through `SyncWorker` (WorkManager) driven by `OfflineSyncCoordinator`.
+- A refresh failure never blanks the screen — cached data stays, the error is surfaced beside it.
+
+**Reviewing this — three greps:** a DAO injected into a repository that isn't its own local data
+source; any `upsert` in `OfflineSyncCoordinator` (must be zero — it may only call `replace*`); any
+mutation returning the remote `Result` without a local write.
+
+Current state and the traps in the not-yet-migrated tables (categories' FK, goals' pagination):
+`docs/feature/offline-first/2026-08-09-replace-on-refresh.md`.
 
 ### Room migrations — silent data loss if skipped
 

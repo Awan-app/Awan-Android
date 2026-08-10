@@ -238,6 +238,17 @@ key parity verified by diff for both touched modules (core:common 15/15, onboard
 
 ### Traps for whoever touches this next
 
+- **This change has already been reverted once by a merge, and the test was edited to hide it.** The
+  AWAN-205 offline-first merge resolved `OnboardingRepositoryImpl` to the pre-AWAN-125 version (no
+  `categoryId`, no `saveDefaultTemplate`), dropped `categoryId` from the three single-zone request
+  sites in `ZonesRepositoryImpl`, and changed `an account with no categories gets no template` to pass
+  `zones = emptyList()` — which passes against a broken impl, so the suite stayed green while every
+  onboarding template write 422'd on device. If that test does not pass **`Zone.defaults`** (zones with
+  a null `categoryId`), it is not testing anything. Restored 2026-08-09.
+- **`CategoryRepositoryImpl.getCategories()` must not be Room-only.** AWAN-205 made it read Room
+  exclusively, but categories only reach Room via `SyncWorker`, which onboarding does not wait for — an
+  empty table means zones with no category, which the repository then silently skips. It now falls back
+  to a fetch-and-upsert when the table is empty and the device is online.
 - **`DailyZone.categoryId` is nullable and that is load-bearing, not laziness.** Making it required would
   break every construction site in profile, which this change deliberately does not touch. The nullability is
   what lets the two features migrate independently — do not "tighten" it without migrating profile first.

@@ -26,9 +26,12 @@ import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.zone.TemplateOverrideDto
 import com.awan.app.core.network.dto.zone.WeeklyTemplateDto
 import com.awan.app.core.network.dto.zone.ZoneDto
+import com.awan.app.core.database.dao.SessionDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import com.awan.app.core.domain.home.model.DaySchedule
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -136,7 +139,10 @@ private class FakeSessionDao : com.awan.app.core.database.dao.SessionDao {
 
 private class FakeZoneDao(
     private val templateZones: List<ZoneEntity> = emptyList(),
+    val effectiveZones: MutableStateFlow<List<ZoneEntity>> = MutableStateFlow(templateZones),
 ) : ZoneDao {
+    override fun observeEffectiveZonesForDate(date: String, dayOfWeek: String): Flow<List<ZoneEntity>> =
+        effectiveZones
     override suspend fun upsertZone(zone: com.awan.app.core.database.model.ZoneEntity) {}
     override suspend fun upsertZones(zones: List<com.awan.app.core.database.model.ZoneEntity>) {}
     override fun observeZone(zoneId: String): Flow<com.awan.app.core.database.model.ZoneEntity?> = flowOf(null)
@@ -157,6 +163,7 @@ private class FakeTemplateDao(
     override fun observeTemplate(templateId: String): Flow<com.awan.app.core.database.model.TemplateEntity?> = flowOf(null)
     override suspend fun getTemplate(templateId: String): com.awan.app.core.database.model.TemplateEntity? = null
     override suspend fun deleteTemplate(templateId: String) {}
+    override suspend fun deleteAllTemplates() {}
     override suspend fun getMinExpiryTime(): Long? = null
     override suspend fun upsertDays(days: List<com.awan.app.core.database.model.TemplateDayOfWeekEntity>) {}
     override fun observeDaysForTemplate(templateId: String): Flow<List<com.awan.app.core.database.model.TemplateDayOfWeekEntity>> = flowOf(emptyList())
@@ -172,6 +179,21 @@ private class FakeTemplateOverrideDao : com.awan.app.core.database.dao.TemplateO
     override suspend fun getOverride(overrideId: String): com.awan.app.core.database.model.TemplateOverrideEntity? = null
     override suspend fun getOverrideForDate(date: String): com.awan.app.core.database.model.TemplateOverrideEntity? = null
     override suspend fun deleteOverride(overrideId: String) {}
+    override suspend fun deleteAllOverrides() {}
+}
+
+private class FakeScheduleSynchronizer : com.awan.app.core.data.sync.ScheduleSynchronizer {
+    var syncedRanges = mutableListOf<Triple<java.time.LocalDate, java.time.LocalDate, Boolean>>()
+    var result = true
+
+    override suspend fun syncScheduleRange(
+        startDate: java.time.LocalDate,
+        endDate: java.time.LocalDate,
+        forceRefresh: Boolean,
+    ): Boolean {
+        syncedRanges += Triple(startDate, endDate, forceRefresh)
+        return result
+    }
 }
 
 private class FakeCategoryDao : com.awan.app.core.database.dao.CategoryDao {
@@ -197,18 +219,18 @@ class HomeRepositoryImplTest {
     private fun createRepository(
         fakeRemote: HomeRemoteDataSource,
         zoneDao: ZoneDao = FakeZoneDao(),
-        templateDao: TemplateDao = FakeTemplateDao(),
+        sessionDao: SessionDao = FakeSessionDao(),
+        scheduleSynchronizer: com.awan.app.core.data.sync.ScheduleSynchronizer = FakeScheduleSynchronizer(),
     ): HomeRepositoryImpl {
         return HomeRepositoryImpl(
             remoteDataSource = fakeRemote,
             userDao = FakeUserDao(),
             eventBus = eventBus,
             taskDao = FakeTaskDao(),
-            sessionDao = FakeSessionDao(),
+            sessionDao = sessionDao,
             zoneDao = zoneDao,
-            templateDao = templateDao,
-            templateOverrideDao = FakeTemplateOverrideDao(),
             categoryDao = FakeCategoryDao(),
+            scheduleSynchronizer = scheduleSynchronizer,
             connectivityMonitor = AlwaysOnlineMonitor(),
             ioDispatcher = kotlinx.coroutines.Dispatchers.Unconfined,
         )
@@ -401,18 +423,62 @@ class HomeRepositoryImplTest {
                     ),
                 ),
             ),
-            templateDao = FakeTemplateDao(
-                dayAssignment = TemplateDayOfWeekEntity(
-                    dayOfWeek = date.dayOfWeek.name,
-                    templateId = "template-1",
-                ),
-            ),
         )
 
         val result = repository.getDaySchedule(date).first()
 
         assertTrue(result is Result.Success)
         assertEquals("Study", (result as Result.Success).data.zones.single().categoryName)
+    }
+
+    /**
+     * The reported bug: a zone edited elsewhere reached Room but Home kept showing the old one until
+     * the day changed, because the Flow was invalidated by the `sessions` table alone.
+     */
+    @Test
+    fun `getDaySchedule re-emits when only the zones change`() = runTest {
+        val zoneDao = FakeZoneDao()
+        val repository = createRepository(fakeRemote = FakeHomeRemoteDataSource(), zoneDao = zoneDao)
+
+        val emissions = mutableListOf<DaySchedule>()
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.getDaySchedule(java.time.LocalDate.of(2026, 8, 9)).collect {
+                if (it is Result.Success) emissions += it.data
+            }
+        }
+
+        zoneDao.effectiveZones.value = listOf(
+            ZoneEntity(
+                id = "zone-work",
+                name = "Work",
+                startTime = "09:00:00",
+                endTime = "12:00:00",
+                color = null,
+                templateId = "template-1",
+                templateOverrideId = null,
+            ),
+        )
+        job.cancel()
+
+        assertEquals(2, emissions.size)
+        assertTrue(emissions.first().zones.isEmpty())
+        assertEquals("Work", emissions.last().zones.single().name)
+    }
+
+    @Test
+    fun `refreshSchedule forces a sync for the single day and reports failure`() = runTest {
+        val synchronizer = FakeScheduleSynchronizer()
+        val repository = createRepository(
+            fakeRemote = FakeHomeRemoteDataSource(),
+            scheduleSynchronizer = synchronizer,
+        )
+        val date = java.time.LocalDate.of(2026, 8, 9)
+
+        assertTrue(repository.refreshSchedule(date) is Result.Success)
+        assertEquals(listOf(Triple(date, date, true)), synchronizer.syncedRanges)
+
+        synchronizer.result = false
+        assertTrue(repository.refreshSchedule(date) is Result.Error)
     }
 }
 

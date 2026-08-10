@@ -27,12 +27,14 @@ class AuthRepositoryImplTest {
     private lateinit var fakeRemoteDataSource: FakeAuthRemoteDataSource
     private lateinit var fakeAuthTokenProvider: FakeAuthTokenProvider
     private lateinit var fakeDeviceIdProvider: DeviceIdProvider
+    private lateinit var fakeLocalDataCleaner: FakeLocalDataCleaner
     private lateinit var repository: AuthRepositoryImpl
 
     @Before
     fun setUp() {
         fakeRemoteDataSource = FakeAuthRemoteDataSource()
         fakeAuthTokenProvider = FakeAuthTokenProvider()
+        fakeLocalDataCleaner = FakeLocalDataCleaner()
         fakeDeviceIdProvider = object : DeviceIdProvider {
             override fun getDeviceId(): String = "test-device-id-123"
         }
@@ -40,6 +42,7 @@ class AuthRepositoryImplTest {
             remoteDataSource = fakeRemoteDataSource,
             authTokenProvider = fakeAuthTokenProvider,
             deviceIdProvider = fakeDeviceIdProvider,
+            localDataCleaner = fakeLocalDataCleaner,
         )
     }
 
@@ -125,4 +128,14 @@ class AuthRepositoryImplTest {
         }
         override fun notifySessionExpired() {}
     }
+
+    private class FakeLocalDataCleaner : com.awan.app.core.data.auth.LocalDataCleaner {
+        var clearCount = 0
+            private set
+
+        override suspend fun clearAll() {
+            clearCount++
+        }
+    }
+
 }

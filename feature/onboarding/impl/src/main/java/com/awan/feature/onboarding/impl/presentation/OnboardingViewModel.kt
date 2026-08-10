@@ -19,6 +19,7 @@ import com.awan.app.core.domain.profile.model.UserProfile
 import com.awan.app.core.domain.zones.model.Zone
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,16 +50,14 @@ class OnboardingViewModel @Inject constructor(
     private val _events = Channel<OnboardingEvent>()
     val events = _events.receiveAsFlow()
 
-    init {
-        loadCategories()
-    }
+    private var categoriesLoad: Job = loadCategories()
 
     /**
      * The backend rejects a zone without a category, so the zones step needs the user's own list
      * before it can produce a saveable day. A failure is not fatal: the step still works, the sheet
      * says there are no categories, and the repository skips the template rather than 422-ing.
      */
-    private fun loadCategories() {
+    private fun loadCategories(): Job =
         viewModelScope.launch {
             val categories = (getCategories() as? Result.Success)?.data ?: return@launch
             _state.update {
@@ -67,6 +66,18 @@ class OnboardingViewModel @Inject constructor(
                     zones = assignDefaultCategories(it.zones, categories),
                 )
             }
+        }
+
+    /**
+     * Skipping the setup reaches the submit before the initial load lands, and the repository drops a
+     * zone that has no category — the skipping user would silently get no zone template at all. So the
+     * hand-off waits for the load, and retries it once if it has not produced anything yet.
+     */
+    private suspend fun awaitZoneCategories() {
+        categoriesLoad.join()
+        if (_state.value.availableCategories.isEmpty()) {
+            categoriesLoad = loadCategories()
+            categoriesLoad.join()
         }
     }
 
@@ -165,8 +176,9 @@ class OnboardingViewModel @Inject constructor(
      * account permanently half-configured, so a failure blocks the exit instead of navigating on.
      */
     private suspend fun submitOnboarding(): Boolean {
-        val s = _state.value
         if (!isBackendOnboarded) {
+            awaitZoneCategories()
+            val s = _state.value
             val data = OnboardingData(
                 profile = UserProfile(s.trimmedFirstName, s.lastName.trim()),
                 bounds = s.bounds,

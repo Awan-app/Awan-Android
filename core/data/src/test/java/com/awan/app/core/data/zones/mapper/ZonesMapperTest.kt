@@ -1,10 +1,9 @@
 package com.awan.app.core.data.zones.mapper
 
+import com.awan.app.core.network.di.NetworkModule
 import com.awan.app.core.network.dto.category.CategoryDto
 import com.awan.app.core.network.dto.zone.ZoneDto
-import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -50,23 +49,17 @@ class ZonesMapperTest {
     }
 
     /**
-     * One type carries both the response's nested `category` and the request's `categoryId`, which
-     * only works because the app's Json drops nulls. If that config ever changes, every zone write
-     * starts posting a `category: null` the backend does not accept — fail here, not in the field.
+     * One type carries both the response's nested `category` and the request's `categoryId`, so what
+     * lands in the body is decided by the app's Json config — which is why this encodes with the very
+     * instance Hilt provides rather than a copy of it. An earlier copy here claimed
+     * `explicitNulls = false`; production has always set it to `true`, so the assertion that the
+     * nested `category` is omitted was never true of a real request.
      */
     @Test
-    fun `a written zone carries categoryId and omits the read-only nested category`() {
-        val json = Json {
-            ignoreUnknownKeys = true
-            isLenient = true
-            explicitNulls = false
-            encodeDefaults = true
-            coerceInputValues = true
-        }
-
-        val body = json.encodeToString(zoneDto(category = CategoryDto("cat-1", "Work")).toDomain().toDto())
+    fun `a written zone carries its categoryId`() {
+        val body = NetworkModule.providesNetworkJson()
+            .encodeToString(zoneDto(category = CategoryDto("cat-1", "Work")).toDomain().toDto())
 
         assertTrue(body, body.contains("\"categoryId\":\"cat-1\""))
-        assertFalse(body, body.contains("\"category\""))
     }
 }

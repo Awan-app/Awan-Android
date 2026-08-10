@@ -158,6 +158,8 @@ class AddTaskViewModelTest {
     private class FakeZoneRepository(private val zones: List<DayZone>) : ZonesRepository {
         var requestedDate: LocalDate? = null
 
+        override suspend fun refreshZones(): Result<Unit> = Result.Success(Unit)
+
         override suspend fun getZonesForDate(date: LocalDate): Result<List<DayZone>> {
             requestedDate = date
             return Result.Success(zones)

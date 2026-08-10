@@ -5,10 +5,13 @@ import com.awan.app.core.database.AwanDatabase
 import com.awan.app.core.database.buildInMemoryDb
 import com.awan.app.core.database.model.TemplateDayOfWeekEntity
 import com.awan.app.core.database.model.TemplateEntity
+import com.awan.app.core.database.model.TemplateOverrideEntity
+import com.awan.app.core.database.model.ZoneEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -151,5 +154,43 @@ class TemplateDaoTest {
         dao.upsertTemplateWithDays(template(), listOf(day("MONDAY")))
         dao.upsertTemplateWithDays(template(), emptyList())
         assertTrue(dao.observeDaysForTemplate("tmpl1").first().isEmpty())
+    }
+
+    /** What `ZonesLocalDataSource.replaceAll` relies on: one delete clears the whole template side. */
+    @Test
+    fun deleteAllTemplates_cascadesDaysAndTemplateZonesButLeavesOverrideZones() = runTest {
+        dao.upsertTemplateWithDays(template(), listOf(day("MONDAY")))
+        db.zoneDao().upsertZone(
+            ZoneEntity(
+                id = "z-template",
+                name = "Study",
+                startTime = "09:00:00",
+                endTime = "12:00:00",
+                color = null,
+                templateId = "tmpl1",
+                templateOverrideId = null,
+            )
+        )
+        db.templateOverrideDao().upsertOverride(
+            TemplateOverrideEntity(id = "ov1", name = null, dateOfDay = "2026-07-21")
+        )
+        db.zoneDao().upsertZone(
+            ZoneEntity(
+                id = "z-override",
+                name = "Work",
+                startTime = "10:00:00",
+                endTime = "18:00:00",
+                color = null,
+                templateId = null,
+                templateOverrideId = "ov1",
+            )
+        )
+
+        dao.deleteAllTemplates()
+
+        assertNull(dao.getTemplate("tmpl1"))
+        assertTrue(dao.observeDaysForTemplate("tmpl1").first().isEmpty())
+        assertNull(db.zoneDao().getZone("z-template"))
+        assertNotNull(db.zoneDao().getZone("z-override"))
     }
 }

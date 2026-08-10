@@ -3,6 +3,7 @@ package com.awan.app.core.data.auth.repository
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.auth.remote.AuthRemoteDataSource
+import com.awan.app.core.data.auth.LocalDataCleaner
 import com.awan.app.core.datastore.auth.AuthTokenProvider
 import com.awan.app.core.domain.auth.model.AuthSession
 import com.awan.app.core.domain.auth.model.User
@@ -20,6 +21,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val remoteDataSource: AuthRemoteDataSource,
     private val authTokenProvider: AuthTokenProvider,
     private val deviceIdProvider: DeviceIdProvider,
+    private val localDataCleaner: LocalDataCleaner,
 ) : AuthRepository {
 
     override suspend fun requestOtp(email: String): Result<Unit> =
@@ -35,6 +37,14 @@ class AuthRepositoryImpl @Inject constructor(
         )
 
         if (result is Result.Success) {
+            // An expired session is cleared by TokenAuthenticator, which cannot reach the database —
+            // so sign-in is the second place the cache's owner is knowable. Anything but the same
+            // user signing back in inherits rows the new account does not own.
+            val previousUserId = authTokenProvider.getUserId()
+            if (previousUserId != result.data.user?.id) {
+                localDataCleaner.clearAll()
+            }
+
             authTokenProvider.saveTokens(
                 accessToken = result.data.accessToken,
                 refreshToken = result.data.refreshToken,
@@ -125,6 +135,10 @@ class AuthRepositoryImpl @Inject constructor(
         }
 
         authTokenProvider.clearTokens()
+        // Room is keyed by nothing but the row id, so whatever the last account cached reads back as
+        // the next one's data — and the backend answers 404 CATEGORY_NOT_FOUND for an id it does not
+        // own. Sign-out is the only point where "this data belongs to someone else" is knowable.
+        localDataCleaner.clearAll()
 
         return Result.Success(Unit)
     }
