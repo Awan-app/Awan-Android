@@ -4,6 +4,7 @@ import com.awan.app.core.domain.gamification.model.GamificationProgress
 import com.awan.app.core.domain.gamification.model.RewardEvent
 import com.awan.app.core.domain.gamification.model.SessionReward
 import com.awan.app.core.domain.gamification.model.WheelSpinResult
+import com.awan.app.core.database.dao.UserDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,9 @@ import javax.inject.Singleton
  * missed should not fire late, when the user is somewhere else entirely.
  */
 @Singleton
-class GamificationEventBus @Inject constructor() {
+class GamificationEventBus @Inject constructor(
+    private val userDao: UserDao,
+) {
 
     private val _progress = MutableStateFlow(GamificationProgress())
     val progress = _progress.asStateFlow()
@@ -33,8 +36,9 @@ class GamificationEventBus @Inject constructor() {
     private val _rewards = MutableSharedFlow<RewardEvent>(extraBufferCapacity = REWARD_BUFFER)
     val rewards: Flow<RewardEvent> = _rewards.asSharedFlow()
 
-    fun setProgress(progress: GamificationProgress) {
+    suspend fun setProgress(progress: GamificationProgress) {
         _progress.value = progress
+        cacheProgress(progress)
     }
 
     /** Seeds from cache without clobbering fresher numbers already published by an award. */
@@ -44,7 +48,7 @@ class GamificationEventBus @Inject constructor() {
         }
     }
 
-    fun publishSessionReward(reward: SessionReward) {
+    suspend fun publishSessionReward(reward: SessionReward) {
         reward.points?.let { award ->
             _progress.update { it.copy(points = award.newValue) }
             _rewards.tryEmit(RewardEvent.Points(amount = award.amount, newTotal = award.newValue))
@@ -62,14 +66,16 @@ class GamificationEventBus @Inject constructor() {
                 )
             )
         }
+        cacheProgress(_progress.value)
     }
 
     /**
      * A spin always pays out, but only one of the two ways. `newBalance` is authoritative either
      * way — on an item win it is the unchanged balance, so it is safe to apply unconditionally.
      */
-    fun publishWheelSpin(result: WheelSpinResult) {
+    suspend fun publishWheelSpin(result: WheelSpinResult) {
         _progress.update { it.copy(points = result.newBalance) }
+        cacheProgress(_progress.value)
         val item = result.item
         if (item != null) {
             _rewards.tryEmit(RewardEvent.Item(name = item.name, imageUrl = item.imageUrl))
@@ -80,7 +86,20 @@ class GamificationEventBus @Inject constructor() {
         }
     }
 
+    /** Room is the progress cache — `UserEntity` already owns these three columns. */
+    private suspend fun cacheProgress(progress: GamificationProgress) {
+        val cached = userDao.getFirstUser() ?: return
+        userDao.upsertUser(
+            cached.copy(
+                points = progress.points,
+                streak = progress.streak,
+                maxStreak = progress.maxStreak,
+            )
+        )
+    }
+
     private companion object {
         const val REWARD_BUFFER = 8
     }
 }
+

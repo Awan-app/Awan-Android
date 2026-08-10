@@ -142,9 +142,39 @@ private open class AlwaysOnlineMonitor : com.awan.app.core.domain.network.Networ
     override fun isCurrentlyOnline(): Boolean = true
 }
 
+private class FakeUserDao : UserDao {
+    var storedUser: UserEntity? = UserEntity(
+        id = "user_1",
+        email = "test@example.com",
+        firstName = "Test",
+        lastName = "User",
+        birthDate = null,
+        points = 150,
+        streak = 5,
+        maxStreak = 6,
+    )
+
+    override suspend fun getFirstUser(): UserEntity? = storedUser
+
+    override suspend fun upsertUser(user: UserEntity) {
+        storedUser = user
+    }
+
+    override fun observeUser(userId: String): Flow<UserEntity?> = TODO()
+    override suspend fun getUser(userId: String): UserEntity? = storedUser
+    override suspend fun deleteUser(userId: String) = TODO()
+    override suspend fun getMinExpiryTime(): Long? = TODO()
+    override suspend fun upsertPreferences(preferences: UserPreferencesEntity) = TODO()
+    override fun observePreferences(userId: String): Flow<UserPreferencesEntity?> = TODO()
+    override suspend fun getPreferences(userId: String): UserPreferencesEntity? = TODO()
+    override fun observeUserWithPreferences(userId: String): Flow<UserWithPreferences?> = TODO()
+    override suspend fun getUserWithPreferences(userId: String): UserWithPreferences? = TODO()
+}
+
 class HomeRepositoryImplTest {
 
-    private val eventBus = GamificationEventBus()
+    private val userDao = FakeUserDao()
+    private val eventBus = GamificationEventBus(userDao)
 
     private fun createRepository(
         fakeRemote: HomeRemoteDataSource,
@@ -274,7 +304,11 @@ class HomeRepositoryImplTest {
         assertTrue(events[1] is RewardEvent.Streak)
         assertEquals(true, (events[1] as RewardEvent.Streak).maxStreakBroken)
         assertEquals(7, (events[1] as RewardEvent.Streak).maxStreakNew)
+        assertEquals(175, userDao.storedUser?.points)
+        assertEquals(6, userDao.storedUser?.streak)
+        assertEquals(7, userDao.storedUser?.maxStreak)
     }
+
 
     @Test
     fun `re-completing a session publishes nothing and returns an empty reward`() =
