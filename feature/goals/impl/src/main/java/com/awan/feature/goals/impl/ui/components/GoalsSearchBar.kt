@@ -43,6 +43,8 @@ internal fun GoalsSearchBar(
     val colors = AwanTheme.colors
     val shape = RoundedCornerShape(16.dp)
 
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -92,8 +94,7 @@ internal fun GoalsSearchBar(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(
                         onSearch = {
-                            // The parent usually handles onQueryChange, but if there's a specific search action 
-                            // we could trigger it here. For now, just clearing focus is standard.
+                            focusManager.clearFocus()
                         }
                     )
                 )

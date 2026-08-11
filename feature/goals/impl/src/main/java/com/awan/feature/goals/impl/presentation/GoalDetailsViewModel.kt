@@ -29,7 +29,8 @@ class GoalDetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val goalId: String = checkNotNull(savedStateHandle["id"])
+    private val goalId: String? = savedStateHandle.get<String>("goalId") ?: savedStateHandle.get<String>("id")
+    private var currentGoalId: String? = goalId
 
     private val _state = MutableStateFlow(GoalDetailsState())
     val state: StateFlow<GoalDetailsState> = _state.asStateFlow()
@@ -38,10 +39,11 @@ class GoalDetailsViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     init {
-        loadGoal(goalId)
+        currentGoalId?.let { loadGoal(it) }
     }
 
     fun loadGoal(id: String) {
+        currentGoalId = id
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             when (val result = getGoalUseCase(id)) {
@@ -66,7 +68,7 @@ class GoalDetailsViewModel @Inject constructor(
     fun onAction(action: GoalDetailsAction) {
         when (action) {
             GoalDetailsAction.Retry -> {
-                loadGoal(goalId)
+                currentGoalId?.let { loadGoal(it) }
             }
 
             GoalDetailsAction.Back -> {
