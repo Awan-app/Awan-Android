@@ -72,32 +72,3 @@ data class InboxTaskUiModel(
     val displayStatus: InboxTaskDisplayStatus,
     val sessions: List<InboxSessionUiModel>,
 )
-
-// ─── State & Actions ──────────────────────────────────────────────────────────
-
-data class InboxUiState(
-    val isLoading: Boolean = true,
-    val isError: Boolean = false,
-    /** All inbox tasks fetched from the server — unfiltered. */
-    val allTasks: List<InboxTaskUiModel> = emptyList(),
-    val searchQuery: String = "",
-    /** Active task-status filter chips. Empty = show all. */
-    val activeStatusFilters: Set<InboxTaskDisplayStatus> = emptySet(),
-    /** Active session-display filter chips. Empty = show all. */
-    val activeSessionFilters: Set<InboxSessionFilter> = emptySet(),
-    /** The id of the task card currently expanded to show sessions. */
-    val expandedTaskId: String? = null,
-    /** Tasks visible after applying search and filter. */
-    val visibleTasks: List<InboxTaskUiModel> = emptyList(),
-    val showFilterSheet: Boolean = false,
-)
-
-sealed interface InboxAction {
-    data class SearchQueryChanged(val query: String) : InboxAction
-    data class StatusFilterToggled(val filter: InboxTaskDisplayStatus) : InboxAction
-    data class SessionFilterToggled(val filter: InboxSessionFilter) : InboxAction
-    data class TaskExpandToggled(val taskId: String) : InboxAction
-    data object FilterClicked : InboxAction
-    data object FilterDismissed : InboxAction
-    data object RetryClicked : InboxAction
-}

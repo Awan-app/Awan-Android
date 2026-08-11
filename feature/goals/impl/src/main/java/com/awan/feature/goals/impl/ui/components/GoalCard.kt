@@ -35,7 +35,6 @@ import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.model.Goal
 import com.awan.feature.goals.impl.R
-import com.awan.feature.goals.impl.presentation.moscowPriority
 import com.composables.icons.lucide.Check
 import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.Lucide

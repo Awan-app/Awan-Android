@@ -19,9 +19,12 @@ import com.awan.app.core.network.dto.GoalDecomposeRequest
 import com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest
 import com.awan.app.core.network.dto.goal.CreateGoalRequest
 import com.awan.app.core.network.dto.goal.ProposedGoalSessionDto
+import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.data.sync.SyncTtl
+import com.awan.app.core.database.model.GoalEntity
 import com.awan.app.core.data.task.toEntity
 import com.awan.app.core.data.task.toTaskModel
+import com.awan.app.core.common.result.suspendOnSuccess
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -44,24 +47,9 @@ class GoalRepositoryImpl @Inject constructor(
 
     override suspend fun getGoals(): Result<List<Goal>> = withContext(ioDispatcher) {
         if (connectivityMonitor.isCurrentlyOnline()) {
-            val result = remoteDataSource.getGoals()
-            if (result is Result.Success) {
-                val expiry = SyncTtl.computeExpiry(SyncTtl.GOALS_TTL_MS)
-                goalDao.upsertGoals(result.data.map { it.toEntity().copy(expiryTime = expiry) })
-                
-                // Also cache tasks if provided
-                result.data.forEach { goalDto ->
-                    if (goalDto.tasks.isNotEmpty()) {
-                        taskDao.upsertTasks(goalDto.tasks.map { it.toEntity(expiryTime = expiry) })
-                    }
-                }
-            }
+            remoteDataSource.getGoals().suspendOnSuccess { syncGoals(it) }
         }
-        val entities = goalDao.getAllGoals()
-        val models = entities.map { entity ->
-            val tasks = taskDao.getTasksByGoal(entity.id).map { it.toTaskModel() }
-            entity.toModel().copy(tasks = tasks)
-        }
+        val models = goalDao.getAllGoals().map { it.toModelWithTasks() }
         Result.Success(models)
     }
 
@@ -74,58 +62,29 @@ class GoalRepositoryImpl @Inject constructor(
             return@withContext Result.Error(AppError.Network)
         }
         remoteDataSource.createGoal(
-            CreateGoalRequest(
-                title = title,
-                description = description,
-                targetDate = targetDate,
-            ),
+            CreateGoalRequest(title = title, description = description, targetDate = targetDate),
         ).map { dto ->
-            val expiry = SyncTtl.computeExpiry(SyncTtl.GOALS_TTL_MS)
-            val entity = dto.toEntity().copy(expiryTime = expiry)
-            goalDao.upsertGoal(entity)
-            if (dto.tasks.isNotEmpty()) {
-                taskDao.upsertTasks(dto.tasks.map { it.toEntity(expiryTime = expiry) })
-            }
-            entity.toModel().copy(tasks = dto.tasks.map { it.toTaskModel() })
+            syncGoal(dto)
+            dto.toEntity().toModelWithTasks()
         }
     }
 
     override suspend fun getInboxGoal(): Result<Goal> = withContext(ioDispatcher) {
         if (connectivityMonitor.isCurrentlyOnline()) {
-            val result = remoteDataSource.getInboxGoal()
-            if (result is Result.Success) {
-                val expiry = SyncTtl.computeExpiry(SyncTtl.GOALS_TTL_MS)
-                goalDao.upsertGoal(result.data.toEntity().copy(expiryTime = expiry))
-                if (result.data.tasks.isNotEmpty()) {
-                    taskDao.upsertTasks(result.data.tasks.map { it.toEntity(expiryTime = expiry) })
-                }
-            }
+            remoteDataSource.getInboxGoal().suspendOnSuccess { syncGoal(it) }
         }
-        val cached = goalDao.getAllGoals().find { it.isInbox }
-        if (cached != null) {
-            val tasks = taskDao.getTasksByGoal(cached.id).map { it.toTaskModel() }
-            return@withContext Result.Success(cached.toModel().copy(tasks = tasks))
-        }
-        Result.Error(AppError.NotFound)
+        goalDao.getAllGoals().find { it.isInbox }?.let {
+            Result.Success(it.toModelWithTasks())
+        } ?: Result.Error(AppError.NotFound)
     }
 
     override suspend fun getGoal(goalId: String): Result<Goal> = withContext(ioDispatcher) {
         if (connectivityMonitor.isCurrentlyOnline()) {
-            val result = remoteDataSource.getGoal(goalId)
-            if (result is Result.Success) {
-                val expiry = SyncTtl.computeExpiry(SyncTtl.GOALS_TTL_MS)
-                goalDao.upsertGoal(result.data.toEntity().copy(expiryTime = expiry))
-                if (result.data.tasks.isNotEmpty()) {
-                    taskDao.upsertTasks(result.data.tasks.map { it.toEntity(expiryTime = expiry) })
-                }
-            }
+            remoteDataSource.getGoal(goalId).suspendOnSuccess { syncGoal(it) }
         }
-        val entity = goalDao.getGoal(goalId)
-        if (entity != null) {
-            val tasks = taskDao.getTasksByGoal(goalId).map { it.toTaskModel() }
-            return@withContext Result.Success(entity.toModel().copy(tasks = tasks))
-        }
-        Result.Error(AppError.NotFound)
+        goalDao.getGoal(goalId)?.let {
+            Result.Success(it.toModelWithTasks())
+        } ?: Result.Error(AppError.NotFound)
     }
 
     override suspend fun deleteGoal(goalId: String): Result<Unit> = withContext(ioDispatcher) {
@@ -162,13 +121,31 @@ class GoalRepositoryImpl @Inject constructor(
             return@withContext Result.Error(AppError.Network)
         }
         remoteDataSource.confirmDecomposition(sessionId).map { dto ->
-            val expiry = SyncTtl.computeExpiry(SyncTtl.GOALS_TTL_MS)
-            val entity = dto.toEntity().copy(expiryTime = expiry)
-            goalDao.upsertGoal(entity)
+            syncGoal(dto)
+            dto.toEntity().toModelWithTasks()
+        }
+    }
+
+    private suspend fun GoalEntity.toModelWithTasks(): Goal {
+        val tasks = taskDao.getTasksByGoal(id).map { it.toTaskModel() }
+        return toModel().copy(tasks = tasks)
+    }
+
+    private suspend fun syncGoal(dto: GoalInfoResponse) {
+        val expiry = SyncTtl.computeExpiry(SyncTtl.GOALS_TTL_MS)
+        goalDao.upsertGoal(dto.toEntity().copy(expiryTime = expiry))
+        if (dto.tasks.isNotEmpty()) {
+            taskDao.upsertTasks(dto.tasks.map { it.toEntity(expiryTime = expiry) })
+        }
+    }
+
+    private suspend fun syncGoals(dtos: List<GoalInfoResponse>) {
+        val expiry = SyncTtl.computeExpiry(SyncTtl.GOALS_TTL_MS)
+        goalDao.upsertGoals(dtos.map { it.toEntity().copy(expiryTime = expiry) })
+        dtos.forEach { dto ->
             if (dto.tasks.isNotEmpty()) {
                 taskDao.upsertTasks(dto.tasks.map { it.toEntity(expiryTime = expiry) })
             }
-            entity.toModel().copy(tasks = dto.tasks.map { it.toTaskModel() })
         }
     }
 

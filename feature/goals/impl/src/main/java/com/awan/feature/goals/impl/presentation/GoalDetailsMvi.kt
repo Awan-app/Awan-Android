@@ -11,4 +11,6 @@ data class GoalDetailsState(
 sealed interface GoalDetailsAction {
     data object Retry : GoalDetailsAction
     data object Back : GoalDetailsAction
+    data object DeleteClicked : GoalDetailsAction
+    data object AddTaskClicked : GoalDetailsAction
 }

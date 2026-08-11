@@ -44,26 +44,42 @@ import com.awan.app.core.model.Task
 import com.awan.app.core.model.TaskStatus
 import com.awan.feature.goals.impl.R
 import com.awan.feature.goals.impl.presentation.GoalDetailsAction
+import com.awan.feature.goals.impl.presentation.GoalDetailsEvent
 import com.awan.feature.goals.impl.presentation.GoalDetailsState
 import com.awan.feature.goals.impl.ui.components.goalAccentColor
 import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.Link
 import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Plus
 import com.composables.icons.lucide.Tag
+import com.composables.icons.lucide.Trash2
+import kotlinx.coroutines.flow.Flow
 
 @Composable
 fun GoalDetailsScreen(
     state: GoalDetailsState,
+    events: Flow<GoalDetailsEvent>,
     onAction: (GoalDetailsAction) -> Unit,
+    onNavigateBack: () -> Unit,
+    onOpenAddTask: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val colors = AwanTheme.colors
+
+    ObserveAsEvents(events) { event ->
+        when (event) {
+            GoalDetailsEvent.NavigateBack -> onNavigateBack()
+            is GoalDetailsEvent.OpenAddTask -> onOpenAddTask(event.goalId)
+        }
+    }
 
     Scaffold(
         topBar = {
             GoalDetailsTopBar(
                 title = state.goal?.title ?: "",
-                onBack = { onAction(GoalDetailsAction.Back) }
+                onBack = { onAction(GoalDetailsAction.Back) },
+                onDeleteClick = { onAction(GoalDetailsAction.DeleteClicked) },
+                onAddTaskClick = { onAction(GoalDetailsAction.AddTaskClicked) }
             )
         },
         containerColor = colors.background,
@@ -95,7 +111,9 @@ fun GoalDetailsScreen(
 @Composable
 private fun GoalDetailsTopBar(
     title: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onAddTaskClick: () -> Unit,
 ) {
     val colors = AwanTheme.colors
     Column(
@@ -128,20 +146,51 @@ private fun GoalDetailsTopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            AwanBackButton(onClick = onBack)
-            Spacer(modifier = Modifier.width(12.dp))
-            AwanText(
-                text = title,
-                style = AwanTheme.typography.title.copy(
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.ink
-                ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                AwanBackButton(onClick = onBack)
+                Spacer(modifier = Modifier.width(12.dp))
+                AwanText(
+                    text = title,
+                    style = AwanTheme.typography.title.copy(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.ink
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AwanIconButton(
+                    onClick = onAddTaskClick,
+                    contentDescription = "Add Task",
+                    icon = {
+                        Icon(
+                            imageVector = Lucide.Plus,
+                            contentDescription = null,
+                            tint = colors.sky,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                )
+
+                AwanIconButton(
+                    onClick = onDeleteClick,
+                    contentDescription = "Delete Goal",
+                    icon = {
+                        Icon(
+                            imageVector = Lucide.Trash2,
+                            contentDescription = null,
+                            tint = colors.destructive,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                )
+            }
         }
     }
 }

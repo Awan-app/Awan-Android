@@ -38,6 +38,8 @@ class GoalsViewModel @Inject constructor(
                     _events.send(GoalsEvent.NavigateToGoalDetails(action.goalId))
                 }
             }
+
+            is GoalsAction.TabSelected -> _state.update { it.copy(tab = action.tab) }
         }
     }
 

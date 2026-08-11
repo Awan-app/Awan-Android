@@ -94,9 +94,7 @@ class AiTaskRepositoryImplTest {
         override suspend fun upsertTask(task: TaskEntity) {}
         override suspend fun upsertTasks(tasks: List<TaskEntity>) {}
         override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
-        override fun observeInboxTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-        override fun observeAllTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-        override suspend fun getAllTasks(): List<TaskEntity> = emptyList()
+        override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = emptyList()
         override fun observeTask(taskId: String): Flow<TaskEntity?> = flowOf(null)
         override suspend fun getTask(taskId: String): TaskEntity? = null
         override suspend fun deleteTask(taskId: String) {}

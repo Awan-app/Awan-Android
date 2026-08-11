@@ -5,7 +5,10 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSourceImpl
 import com.awan.app.core.database.dao.GoalDao
+import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.model.GoalEntity
+import com.awan.app.core.database.model.TaskDependencyEntity
+import com.awan.app.core.database.model.TaskEntity
 import com.awan.app.core.network.api.GoalApiService
 import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.GoalStatusDto
@@ -84,10 +87,27 @@ class GoalRepositoryTest {
         override fun observeGoalsByStatus(status: String): Flow<List<GoalEntity>> = flowOf(emptyList())
         override fun observeGoal(goalId: String): Flow<GoalEntity?> = MutableStateFlow(null)
         override suspend fun getGoal(goalId: String): GoalEntity? = stored.firstOrNull { it.id == goalId }
-        override fun observeInboxGoal(): Flow<GoalEntity?> = MutableStateFlow(null)
         override suspend fun deleteGoal(goalId: String) {}
-        override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
         override suspend fun getMinExpiryTime(): Long? = null
+    }
+
+    private class FakeTaskDao : TaskDao {
+        override suspend fun upsertTask(task: TaskEntity) {}
+        override suspend fun upsertTasks(tasks: List<TaskEntity>) {}
+        override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
+        override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = emptyList()
+        override fun observeTask(taskId: String): Flow<TaskEntity?> = flowOf(null)
+        override suspend fun getTask(taskId: String): TaskEntity? = null
+        override suspend fun deleteTask(taskId: String) {}
+        override suspend fun upsertDependency(dependency: TaskDependencyEntity) {}
+        override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
+        override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
+        override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+        override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+        override suspend fun deleteAllDependenciesForTask(taskId: String) {}
+        override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}
+        override suspend fun deleteTasksByGoal(goalId: String) {}
+        override suspend fun nullifyOrphanedGoalReferences() {}
     }
 
     @Test
@@ -146,10 +166,11 @@ class GoalRepositoryTest {
             override fun isCurrentlyOnline(): Boolean = true
         }
         val repository = GoalRepositoryImpl(
-
             remoteDataSource = FakeGoalRemoteDataSource(),
             goalDao = dao,
+            taskDao = FakeTaskDao(),
             connectivityMonitor = onlineMonitor,
+            ioDispatcher = testDispatcher,
         )
 
         val result = repository.getGoals()
@@ -171,7 +192,9 @@ class GoalRepositoryTest {
         val repository = GoalRepositoryImpl(
             remoteDataSource = FakeGoalRemoteDataSource(),
             goalDao = FakeGoalDao(stored = emptyList()),
+            taskDao = FakeTaskDao(),
             connectivityMonitor = onlineMonitor,
+            ioDispatcher = testDispatcher,
         )
 
 

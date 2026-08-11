@@ -185,9 +185,7 @@ private class FakeTaskDao : TaskDao {
     override suspend fun upsertTask(task: TaskEntity) { upsertedTasks += task }
     override suspend fun upsertTasks(tasks: List<TaskEntity>) { upsertedTasks += tasks }
     override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override fun observeInboxTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override fun observeAllTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override suspend fun getAllTasks(): List<TaskEntity> = emptyList()
+    override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = emptyList()
     override fun observeTask(taskId: String): Flow<TaskEntity?> = MutableStateFlow(null)
     override suspend fun getTask(taskId: String): TaskEntity? = null
     override suspend fun deleteTask(taskId: String) {}
@@ -237,9 +235,7 @@ private class FakeGoalDao : GoalDao {
     override fun observeGoalsByStatus(status: String): Flow<List<GoalEntity>> = flowOf(emptyList())
     override fun observeGoal(goalId: String): Flow<GoalEntity?> = MutableStateFlow(null)
     override suspend fun getGoal(goalId: String): GoalEntity? = null
-    override fun observeInboxGoal(): Flow<GoalEntity?> = MutableStateFlow(null)
     override suspend fun deleteGoal(goalId: String) {}
-    override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
     override suspend fun getMinExpiryTime(): Long? = null
 }
 

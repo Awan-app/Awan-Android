@@ -27,7 +27,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import com.awan.app.core.database.dao.GoalDao
+import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.model.GoalEntity
+import com.awan.app.core.database.model.TaskDependencyEntity
+import com.awan.app.core.database.model.TaskEntity
 
 /**
  * Tests for the remote/repository layer:
@@ -93,10 +96,27 @@ class GoalDecompositionRepositoryTest {
         override fun observeGoalsByStatus(status: String): Flow<List<GoalEntity>> = flowOf(emptyList())
         override fun observeGoal(goalId: String): Flow<GoalEntity?> = MutableStateFlow(null)
         override suspend fun getGoal(goalId: String): GoalEntity? = null
-        override fun observeInboxGoal(): Flow<GoalEntity?> = MutableStateFlow(null)
         override suspend fun deleteGoal(goalId: String) {}
-        override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
         override suspend fun getMinExpiryTime(): Long? = null
+    }
+
+    private val noOpTaskDao = object : TaskDao {
+        override suspend fun upsertTask(task: TaskEntity) {}
+        override suspend fun upsertTasks(tasks: List<TaskEntity>) {}
+        override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
+        override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = emptyList()
+        override fun observeTask(taskId: String): Flow<TaskEntity?> = flowOf(null)
+        override suspend fun getTask(taskId: String): TaskEntity? = null
+        override suspend fun deleteTask(taskId: String) {}
+        override suspend fun upsertDependency(dependency: TaskDependencyEntity) {}
+        override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
+        override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
+        override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+        override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+        override suspend fun deleteAllDependenciesForTask(taskId: String) {}
+        override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}
+        override suspend fun deleteTasksByGoal(goalId: String) {}
+        override suspend fun nullifyOrphanedGoalReferences() {}
     }
 
     // --- C. Remote data source / repository behavior ---
@@ -174,7 +194,7 @@ class GoalDecompositionRepositoryTest {
             override suspend fun continueDecomposition(request: GoalDecomposeRequest): Result<GoalDecomposeResponse> =
                 expectedError
         }
-        val repository = GoalRepositoryImpl(fakeDs, noOpGoalDao, onlineMonitor)
+        val repository = GoalRepositoryImpl(fakeDs, noOpGoalDao, noOpTaskDao, onlineMonitor, testDispatcher)
         val result = repository.continueDecomposition(sessionId = null, message = "Test")
 
         assertEquals(expectedError, result)
@@ -188,7 +208,7 @@ class GoalDecompositionRepositoryTest {
             override suspend fun confirmDecomposition(sessionId: String): Result<GoalInfoResponse> =
                 expectedError
         }
-        val repository = GoalRepositoryImpl(fakeDs, noOpGoalDao, onlineMonitor)
+        val repository = GoalRepositoryImpl(fakeDs, noOpGoalDao, noOpTaskDao, onlineMonitor, testDispatcher)
 
         val result = repository.confirmDecomposition(sessionId = "sess-x")
 

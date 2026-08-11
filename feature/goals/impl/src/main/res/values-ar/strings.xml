@@ -7,7 +7,6 @@
     <string name="goals_tasks_count">%1$d مهام</string>
     <string name="goals_independent_count">%1$d مستقل</string>
     <string name="goals_dependent_count">%1$d تابع</string>
-    <string name="goals_title">أهدافي</string>
     <string name="goals_progress_format">%1$d من %2$d مهمة منجزة</string>
     <string name="goals_progress_percentage">%1$d%%</string>
     <string name="goals_empty_active_title">لا توجد أهداف نشطة بعد</string>
