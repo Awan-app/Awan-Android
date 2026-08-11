@@ -2,8 +2,6 @@ package com.awan.app.core.database.di
 
 import android.content.Context
 import androidx.room.Room
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.awan.app.core.database.AwanDatabase
 import com.awan.app.core.database.dao.CachedScheduleDateDao
 import com.awan.app.core.database.dao.CategoryDao
@@ -33,23 +31,6 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
-    val MIGRATION_1_2 = object : Migration(1, 2) {
-        override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `mcp_tokens` (
-                    `id` TEXT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `maskedToken` TEXT NOT NULL,
-                    `createdAt` TEXT NOT NULL,
-                    `lastUsedAt` TEXT,
-                    PRIMARY KEY(`id`)
-                )
-                """.trimIndent()
-            )
-        }
-    }
-
     @Provides
     @Singleton
     fun providesAwanDatabase(
@@ -59,7 +40,6 @@ object DatabaseModule {
         AwanDatabase::class.java,
         "awan-database",
     )
-        .addMigrations(MIGRATION_1_2)
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 
