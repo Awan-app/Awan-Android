@@ -190,7 +190,6 @@
     <string name="profile_mcp_subtitle">Connect AI assistants (Claude, Cursor) via Model Context Protocol</string>
     <string name="profile_mcp_connection_title">Connection Details</string>
     <string name="profile_mcp_url_label">MCP Server URL</string>
-    <string name="profile_mcp_client_id_label">OAuth Client ID</string>
     <string name="profile_mcp_tokens_title">API Tokens</string>
     <string name="profile_mcp_add_token">Add New Token</string>
     <string name="profile_mcp_token_name_hint">Token Name (e.g. Claude Desktop)</string>
@@ -202,7 +201,6 @@
     <string name="profile_mcp_token_copy">Copy Token</string>
     <string name="profile_mcp_token_copied">Token copied to clipboard</string>
     <string name="profile_mcp_url_copied">MCP server URL copied to clipboard</string>
-    <string name="profile_mcp_client_id_copied">Client ID copied to clipboard</string>
     <string name="profile_mcp_claude_config_copied">Claude Desktop configuration copied to clipboard</string>
     <string name="profile_mcp_cursor_config_copied">Cursor configuration copied to clipboard</string>
     <string name="profile_mcp_ai_prompt_copied">AI setup prompt copied to clipboard</string>
@@ -221,7 +219,6 @@
     <string name="profile_mcp_token_created_on">Created: %1$s</string>
     <string name="profile_mcp_cd_info">MCP Setup Info</string>
     <string name="profile_mcp_cd_copy_url">Copy MCP Server URL</string>
-    <string name="profile_mcp_cd_copy_client_id">Copy OAuth Client ID</string>
     <string name="profile_mcp_cd_copy_snippet">Copy Configuration Snippet</string>
     <string name="profile_mcp_cd_delete_token">Delete Token %1$s</string>
     <string name="profile_mcp_cd_regenerate_token">Regenerate Token %1$s</string>

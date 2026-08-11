@@ -190,7 +190,6 @@
     <string name="profile_mcp_subtitle">ربط المساعدين الذكيين (Claude, Cursor) عبر بروتوكول MCP</string>
     <string name="profile_mcp_connection_title">تفاصيل الاتصال</string>
     <string name="profile_mcp_url_label">رابط خادم MCP</string>
-    <string name="profile_mcp_client_id_label">معرف العميل (Client ID)</string>
     <string name="profile_mcp_tokens_title">رموز الوصول (Tokens)</string>
     <string name="profile_mcp_add_token">إضافة رمز جديد</string>
     <string name="profile_mcp_token_name_hint">اسم الرمز (مثال: Claude Desktop)</string>
@@ -202,7 +201,6 @@
     <string name="profile_mcp_token_copy">نسخ الرمز</string>
     <string name="profile_mcp_token_copied">تم نسخ الرمز إلى الحافظة</string>
     <string name="profile_mcp_url_copied">تم نسخ رابط خادم MCP إلى الحافظة</string>
-    <string name="profile_mcp_client_id_copied">تم نسخ معرف العميل إلى الحافظة</string>
     <string name="profile_mcp_claude_config_copied">تم نسخ إعداد Claude Desktop إلى الحافظة</string>
     <string name="profile_mcp_cursor_config_copied">تم نسخ إعداد Cursor إلى الحافظة</string>
     <string name="profile_mcp_ai_prompt_copied">تم نسخ مطالبة إعداد الذكاء الاصطناعي إلى الحافظة</string>
@@ -221,7 +219,6 @@
     <string name="profile_mcp_token_created_on">تاريخ الإنشاء: %1$s</string>
     <string name="profile_mcp_cd_info">معلومات إعداد MCP</string>
     <string name="profile_mcp_cd_copy_url">نسخ رابط خادم MCP</string>
-    <string name="profile_mcp_cd_copy_client_id">نسخ معرف العميل</string>
     <string name="profile_mcp_cd_copy_snippet">نسخ البرمجية النصية للتكوين</string>
     <string name="profile_mcp_cd_delete_token">حذف الرمز %1$s</string>
     <string name="profile_mcp_cd_regenerate_token">إعادة إنشاء الرمز %1$s</string>

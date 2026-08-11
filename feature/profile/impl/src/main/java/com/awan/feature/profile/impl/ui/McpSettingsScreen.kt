@@ -66,7 +66,6 @@ fun McpSettingsScreen(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val urlCopiedToastMessage = stringResource(ProfileR.string.profile_mcp_url_copied)
-    val clientIdCopiedToastMessage = stringResource(ProfileR.string.profile_mcp_client_id_copied)
 
 
     if (uiState.createdToken != null) {
@@ -215,7 +214,6 @@ fun McpSettingsScreen(
 
                         val details = uiState.connectionDetails
                         val mcpUrl = details?.mcpUrl ?: "https://mcp.awan.app/v1"
-                        val clientId = details?.clientId ?: "awan-android-client"
 
                         // MCP URL Row
                         Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
@@ -259,47 +257,6 @@ fun McpSettingsScreen(
                             }
                         }
 
-                        // Client ID Row
-                        Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
-                            AwanText(
-                                text = stringResource(ProfileR.string.profile_mcp_client_id_label),
-                                style = AwanTheme.styles.captionText
-                            )
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(AwanTheme.spacing.xs))
-                                    .background(AwanTheme.colors.disabledSurface)
-                                    .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
-                                    .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                AwanText(
-                                    text = clientId,
-                                    style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                                IconButton(
-                                    onClick = {
-                                        clipboardManager.setText(AnnotatedString(clientId))
-                                        Toast.makeText(
-                                            context,
-                                            clientIdCopiedToastMessage,
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    },
-                                    modifier = Modifier.size(28.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.ContentCopy,
-                                        contentDescription = stringResource(ProfileR.string.profile_mcp_cd_copy_client_id),
-                                        tint = AwanTheme.colors.textSecondary,
-                                        modifier = Modifier.size(AwanTheme.spacing.md)
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
 
