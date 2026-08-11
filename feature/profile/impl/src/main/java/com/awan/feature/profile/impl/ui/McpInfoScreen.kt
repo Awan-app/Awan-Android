@@ -1,0 +1,299 @@
+package com.awan.feature.profile.impl.ui
+
+import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.dp
+import com.awan.app.core.designsystem.AwanBackButton
+import com.awan.app.core.designsystem.AwanCard
+import com.awan.app.core.designsystem.AwanText
+import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.profile.impl.R as ProfileR
+
+internal fun formatMcpTokenCreationDate(createdAt: String): String =
+    createdAt.trim().substringBefore('T').substringBefore(' ')
+
+@Composable
+fun McpInfoScreen(
+    mcpUrl: String,
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    val aiSetupPrompt = stringResource(ProfileR.string.profile_mcp_ai_setup_prompt, mcpUrl)
+    val claudeCopiedToastMessage = stringResource(ProfileR.string.profile_mcp_claude_config_copied)
+    val cursorCopiedToastMessage = stringResource(ProfileR.string.profile_mcp_cursor_config_copied)
+    val aiPromptCopiedToastMessage = stringResource(ProfileR.string.profile_mcp_ai_prompt_copied)
+
+    val claudeSnippet = """
+        {
+          "mcpServers": {
+            "awan": {
+              "command": "npx",
+              "args": [
+                "-y",
+                "@awan/mcp-server",
+                "--url", "$mcpUrl",
+                "--token", "YOUR_API_TOKEN"
+              ]
+            }
+          }
+        }
+    """.trimIndent()
+
+    val cursorSnippet = """
+        {
+          "mcp": {
+            "servers": {
+              "awan": {
+                "url": "$mcpUrl",
+                "headers": {
+                  "Authorization": "Bearer YOUR_API_TOKEN"
+                }
+              }
+            }
+          }
+        }
+    """.trimIndent()
+
+    Scaffold(
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = AwanTheme.spacing.md, vertical = AwanTheme.spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AwanBackButton(onClick = onBackClick)
+                AwanText(
+                    text = stringResource(ProfileR.string.profile_mcp_info_title),
+                    style = AwanTheme.styles.titleText
+                )
+            }
+        },
+        containerColor = AwanTheme.colors.background,
+        modifier = modifier
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = AwanTheme.spacing.lg, vertical = AwanTheme.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)
+        ) {
+            // Setup steps card
+            AwanCard(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(AwanTheme.spacing.md)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
+                    AwanText(
+                        text = stringResource(ProfileR.string.profile_mcp_setup_title),
+                        style = AwanTheme.styles.headingText
+                    )
+                    AwanText(
+                        text = stringResource(ProfileR.string.profile_mcp_info_step1),
+                        style = AwanTheme.styles.bodyText
+                    )
+                    AwanText(
+                        text = stringResource(ProfileR.string.profile_mcp_info_step2),
+                        style = AwanTheme.styles.bodyText
+                    )
+                }
+            }
+
+            // Claude Desktop Guide
+            AwanCard(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(AwanTheme.spacing.md)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AwanText(
+                            text = "Claude Desktop (claude_desktop_config.json)",
+                            style = AwanTheme.styles.headingText,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2
+                        )
+                        IconButton(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(claudeSnippet))
+                                Toast.makeText(
+                                    context,
+                                    claudeCopiedToastMessage,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = stringResource(ProfileR.string.profile_mcp_cd_copy_snippet),
+                                tint = AwanTheme.colors.sky,
+                                modifier = Modifier.size(AwanTheme.spacing.md)
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(AwanTheme.spacing.xs))
+                            .background(AwanTheme.colors.disabledSurface)
+                            .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
+                            .padding(AwanTheme.spacing.sm)
+                    ) {
+                        SelectionContainer {
+                            AwanText(
+                                text = claudeSnippet,
+                                style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Cursor Guide
+            AwanCard(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(AwanTheme.spacing.md)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AwanText(
+                            text = "Cursor IDE Setup",
+                            style = AwanTheme.styles.headingText,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2
+                        )
+                        IconButton(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(cursorSnippet))
+                                Toast.makeText(
+                                    context,
+                                    cursorCopiedToastMessage,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = stringResource(ProfileR.string.profile_mcp_cd_copy_snippet),
+                                tint = AwanTheme.colors.sky,
+                                modifier = Modifier.size(AwanTheme.spacing.md)
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(AwanTheme.spacing.xs))
+                            .background(AwanTheme.colors.disabledSurface)
+                            .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
+                            .padding(AwanTheme.spacing.sm)
+                    ) {
+                        SelectionContainer {
+                            AwanText(
+                                text = cursorSnippet,
+                                style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) }
+                            )
+                        }
+                    }
+                }
+            }
+            // AI-assisted setup
+            AwanCard(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(AwanTheme.spacing.md)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AwanText(
+                            text = stringResource(ProfileR.string.profile_mcp_ai_setup_title),
+                            style = AwanTheme.styles.headingText,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2
+                        )
+                        IconButton(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(aiSetupPrompt))
+                                Toast.makeText(
+                                    context,
+                                    aiPromptCopiedToastMessage,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = stringResource(ProfileR.string.profile_mcp_cd_copy_ai_prompt),
+                                tint = AwanTheme.colors.sky,
+                                modifier = Modifier.size(AwanTheme.spacing.md)
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(AwanTheme.spacing.xs))
+                            .background(AwanTheme.colors.disabledSurface)
+                            .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
+                            .padding(AwanTheme.spacing.sm)
+                    ) {
+                        SelectionContainer {
+                            AwanText(
+                                text = aiSetupPrompt,
+                                style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

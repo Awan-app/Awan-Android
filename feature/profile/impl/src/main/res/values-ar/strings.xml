@@ -184,4 +184,42 @@
     <string name="profile_day_friday_short">ج</string>
     <string name="profile_day_saturday_short">س</string>
     <string name="profile_day_sunday_short">ح</string>
+
+    <!-- MCP Settings Strings -->
+    <string name="profile_mcp_title">تكامل MCP</string>
+    <string name="profile_mcp_subtitle">ربط المساعدين الذكيين (Claude, Cursor) عبر بروتوكول MCP</string>
+    <string name="profile_mcp_connection_title">تفاصيل الاتصال</string>
+    <string name="profile_mcp_url_label">رابط خادم MCP</string>
+    <string name="profile_mcp_tokens_title">رموز الوصول (Tokens)</string>
+    <string name="profile_mcp_add_token">إضافة رمز جديد</string>
+    <string name="profile_mcp_token_name_hint">اسم الرمز (مثال: Claude Desktop)</string>
+    <string name="profile_mcp_token_obscured_notice">تم إخفاء المفتاح لأسباب أمنية</string>
+    <string name="profile_mcp_token_copy_disabled">يمكن نسخ الرمز فقط عند إنشائه لأول مرة</string>
+    <string name="profile_mcp_token_notice_formatted">%1$s. %2$s</string>
+    <string name="profile_mcp_token_created_banner_title">تم إنشاء الرمز بنجاح!</string>
+    <string name="profile_mcp_token_created_banner_warning">احرص على نسخ رمز الوصول الخاص بك الآن. لن تتمكن من رؤيته مرة أخرى!</string>
+    <string name="profile_mcp_token_copy">نسخ الرمز</string>
+    <string name="profile_mcp_token_copied">تم نسخ الرمز إلى الحافظة</string>
+    <string name="profile_mcp_url_copied">تم نسخ رابط خادم MCP إلى الحافظة</string>
+    <string name="profile_mcp_claude_config_copied">تم نسخ إعداد Claude Desktop إلى الحافظة</string>
+    <string name="profile_mcp_cursor_config_copied">تم نسخ إعداد Cursor إلى الحافظة</string>
+    <string name="profile_mcp_ai_prompt_copied">تم نسخ مطالبة إعداد الذكاء الاصطناعي إلى الحافظة</string>
+    <string name="profile_mcp_token_delete_confirm_title">حذف الرمز؟</string>
+    <string name="profile_mcp_token_delete_confirm_body">هل أنت تأكد من حذف رمز MCP هذا؟ سيفقد المساعد الذكي الوصول فوراً.</string>
+    <string name="profile_mcp_token_regenerate_confirm_title">إعادة إنشاء الرمز؟</string>
+    <string name="profile_mcp_token_regenerate_confirm_body">إعادة إنشاء الرمز ستلغي المفتاح الحالي. ستحتاج إلى تحديثه في المساعد الذكي.</string>
+    <string name="profile_mcp_info_title">كيفية ربط مساعدك الذكي</string>
+    <string name="profile_mcp_setup_title">تعليمات الإعداد</string>
+    <string name="profile_mcp_info_step1">1. احصل على رمز API من شاشة تكامل MCP. اضغط على إضافة رمز جديد وانسخه من رسالة النجاح التي تظهر مرة واحدة.</string>
+    <string name="profile_mcp_info_step2">2. انسخ إعداداً من الأسفل واستبدل YOUR_API_TOKEN بالرمز الخاص بك، أو انسخ مطالبة إعداد الذكاء الاصطناعي والصقها في مساعدك.</string>
+    <string name="profile_mcp_ai_setup_title">أو دع مساعدك الذكي يتولى الإعداد</string>
+    <string name="profile_mcp_cd_copy_ai_prompt">نسخ مطالبة إعداد الذكاء الاصطناعي</string>
+    <string name="profile_mcp_ai_setup_prompt">صِلني بخادم Awan عبر MCP.\n\nأولاً، اطلب مني رمز MCP API الخاص بـ Awan. لا تتابع قبل أن أقدمه لك.\n\nبعد أن أرسل الرمز، أعد إعداد خادم Awan MCP لهذا المساعد باستخدام:\n- رابط الخادم: %1$s\n- التفويض: Bearer [الرمز الذي أقدمه]\n\nتولَّ إعداد MCP بنفسك، وتحقق من الاتصال، وأخبرني عند جاهزيته.</string>
+
+    <string name="profile_mcp_token_created_on">تاريخ الإنشاء: %1$s</string>
+    <string name="profile_mcp_cd_info">معلومات إعداد MCP</string>
+    <string name="profile_mcp_cd_copy_url">نسخ رابط خادم MCP</string>
+    <string name="profile_mcp_cd_copy_snippet">نسخ البرمجية النصية للتكوين</string>
+    <string name="profile_mcp_cd_delete_token">حذف الرمز %1$s</string>
+    <string name="profile_mcp_cd_regenerate_token">إعادة إنشاء الرمز %1$s</string>
 </resources>
