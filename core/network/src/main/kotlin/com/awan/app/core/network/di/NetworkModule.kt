@@ -2,6 +2,7 @@ package com.awan.app.core.network.di
 
 import android.content.Context
 import com.awan.app.core.network.BuildConfig
+import com.awan.app.core.network.api.McpApiService
 import com.awan.app.core.network.api.AuthApiService
 import com.awan.app.core.network.api.CategoryApiService
 import com.awan.app.core.network.api.GoalApiService
@@ -180,6 +181,11 @@ object NetworkModule {
     @Singleton
     fun providesDeviceTokenApiService(retrofit: Retrofit): com.awan.app.core.network.api.DeviceTokenApiService =
         retrofit.create(com.awan.app.core.network.api.DeviceTokenApiService::class.java)
+        
+    @Provides
+    @Singleton
+    fun providesMcpApiService(retrofit: Retrofit): McpApiService =
+        retrofit.create(McpApiService::class.java)
 
     @Provides
     @Singleton

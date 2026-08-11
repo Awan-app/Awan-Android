@@ -184,4 +184,42 @@
     <string name="profile_day_friday_short">Fri</string>
     <string name="profile_day_saturday_short">Sat</string>
     <string name="profile_day_sunday_short">Sun</string>
+
+    <!-- MCP Settings Strings -->
+    <string name="profile_mcp_title">MCP Integration</string>
+    <string name="profile_mcp_subtitle">Connect AI assistants (Claude, Cursor) via Model Context Protocol</string>
+    <string name="profile_mcp_connection_title">Connection Details</string>
+    <string name="profile_mcp_url_label">MCP Server URL</string>
+    <string name="profile_mcp_tokens_title">API Tokens</string>
+    <string name="profile_mcp_add_token">Add New Token</string>
+    <string name="profile_mcp_token_name_hint">Token Name (e.g. Claude Desktop)</string>
+    <string name="profile_mcp_token_obscured_notice">Token key is hidden for security</string>
+    <string name="profile_mcp_token_copy_disabled">Token can only be copied when initially created</string>
+    <string name="profile_mcp_token_notice_formatted">%1$s. %2$s</string>
+    <string name="profile_mcp_token_created_banner_title">Token Created Successfully!</string>
+    <string name="profile_mcp_token_created_banner_warning">Make sure to copy your personal access token now. You won\'t be able to see it again!</string>
+    <string name="profile_mcp_token_copy">Copy Token</string>
+    <string name="profile_mcp_token_copied">Token copied to clipboard</string>
+    <string name="profile_mcp_url_copied">MCP server URL copied to clipboard</string>
+    <string name="profile_mcp_claude_config_copied">Claude Desktop configuration copied to clipboard</string>
+    <string name="profile_mcp_cursor_config_copied">Cursor configuration copied to clipboard</string>
+    <string name="profile_mcp_ai_prompt_copied">AI setup prompt copied to clipboard</string>
+    <string name="profile_mcp_token_delete_confirm_title">Delete Token?</string>
+    <string name="profile_mcp_token_delete_confirm_body">Are you sure you want to delete this MCP token? AI assistants using this token will lose access immediately.</string>
+    <string name="profile_mcp_token_regenerate_confirm_title">Regenerate Token?</string>
+    <string name="profile_mcp_token_regenerate_confirm_body">Regenerating this token will revoke the existing key. Any connected agent will need the new token.</string>
+    <string name="profile_mcp_info_title">How to Connect your AI Assistant</string>
+    <string name="profile_mcp_setup_title">Setup Instructions</string>
+    <string name="profile_mcp_info_step1">1. Get an API token from the MCP Integration screen. Tap Add New Token and copy it from the one-time success dialog.</string>
+    <string name="profile_mcp_info_step2">2. Copy a configuration below and replace YOUR_API_TOKEN with your token, or copy the AI setup prompt below and paste it into your assistant.</string>
+    <string name="profile_mcp_ai_setup_title">Or let your AI assistant set it up</string>
+    <string name="profile_mcp_cd_copy_ai_prompt">Copy AI setup prompt</string>
+    <string name="profile_mcp_ai_setup_prompt">Connect me to Awan through MCP.\n\nFirst, ask me for my Awan MCP API token. Do not continue until I provide it.\n\nAfter I provide the token, configure the Awan MCP server for this assistant using:\n- Server URL: %1$s\n- Authorization: Bearer [the token I provide]\n\nHandle the MCP setup yourself, verify the connection, and tell me when it is ready.</string>
+
+    <string name="profile_mcp_token_created_on">Created: %1$s</string>
+    <string name="profile_mcp_cd_info">MCP Setup Info</string>
+    <string name="profile_mcp_cd_copy_url">Copy MCP Server URL</string>
+    <string name="profile_mcp_cd_copy_snippet">Copy Configuration Snippet</string>
+    <string name="profile_mcp_cd_delete_token">Delete Token %1$s</string>
+    <string name="profile_mcp_cd_regenerate_token">Regenerate Token %1$s</string>
 </resources>
