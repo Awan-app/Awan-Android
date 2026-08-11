@@ -69,6 +69,19 @@ internal fun TaskInfoResponse.toTaskModel(): Task = Task(
     category = category?.toModel(),
 )
 
+internal fun com.awan.app.core.database.model.TaskEntity.toTaskModel(): Task = Task(
+    id = id,
+    title = title,
+    description = description,
+    estimatedDurationMinutes = estimatedDuration,
+    status = status.toTaskStatus(),
+    mandatory = mandatory,
+    estimatedPoints = estimatedPoints,
+    allowTaskSplitting = allowTaskSplitting,
+    goalId = goalId,
+    dependsOnTaskIds = emptyList(), // Dependencies are stored separately in Room
+)
+
 internal fun TaskProposalResponse.toModel(): TaskProposals = TaskProposals(
     sourceSummary = sourceSummary,
     tasks = tasks.map { it.toModel() },

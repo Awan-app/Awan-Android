@@ -50,6 +50,7 @@ internal fun GoalInfoResponse.toModel(): Goal {
         emoji = extractedEmoji,
         status = status.toModel(),
         tasks = tasks.map { it.toTaskModel() },
+        targetDate = targetDate,
     )
 }
 
@@ -68,6 +69,7 @@ internal fun GoalEntity.toModel(): Goal {
         emoji = extractedEmoji,
         status = goalStatus,
         tasks = emptyList(), // tasks are stored separately in TaskEntity
+        targetDate = targetDate,
     )
 }
 

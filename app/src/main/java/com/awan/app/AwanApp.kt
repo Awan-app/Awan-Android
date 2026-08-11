@@ -61,6 +61,7 @@ import com.awan.feature.auth.impl.navigation.authEntry
 import com.awan.feature.calendar.impl.navigation.calendarEntry
 import com.awan.feature.chat.impl.navigation.chatEntry
 import com.awan.feature.goals.api.GoalsRoute
+import com.awan.feature.goals.api.GoalDetailsRoute
 import com.awan.feature.goals.impl.navigation.goalsEntry
 import com.awan.feature.home.api.HomeRoute
 import com.awan.feature.home.impl.navigation.homeEntry
@@ -242,7 +243,10 @@ fun AwanApp(
                 onBack = { navigator.goBack() },
             )
             chatEntry()
-            goalsEntry()
+            goalsEntry(
+                onNavigateToGoalDetails = { id -> navigator.navigate(com.awan.feature.goals.api.GoalDetailsRoute(id)) },
+                onBack = { navigator.goBack() }
+            )
             aiTasksEntry(onBack = { navigator.goBack() })
             inventoryEntry(onBack = { navigator.goBack() })
             profileEntry(

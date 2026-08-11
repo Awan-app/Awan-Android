@@ -54,6 +54,10 @@ class InboxViewModel @Inject constructor(
                 current.copy(expandedTaskId = newId)
             }
 
+            InboxAction.FilterClicked -> updateState { it.copy(showFilterSheet = true) }
+
+            InboxAction.FilterDismissed -> updateState { it.copy(showFilterSheet = false) }
+
             InboxAction.RetryClicked -> loadInboxTasks()
         }
     }

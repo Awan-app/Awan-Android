@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="goals_title">My Goals</string>
-    <string name="goals_tab_active">Active</string>
-    <string name="goals_tab_completed">Done</string>
-    <string name="goals_tab_badge_format">%1$s  %2$d</string>
+    <string name="goals_search_placeholder">Search tasks or sessions</string>
+    <string name="goals_title_count">Goals</string>
+    <string name="goals_status_active">Active</string>
+    <string name="goals_status_completed">Completed</string>
+    <string name="goals_tasks_count">%1$d tasks</string>
+    <string name="goals_independent_count">%1$d independent</string>
+    <string name="goals_dependent_count">%1$d dependent</string>
     <string name="goals_progress_format">%1$d of %2$d tasks done</string>
     <string name="goals_progress_percentage">%1$d%%</string>
     <string name="goals_empty_active_title">No active goals yet</string>
@@ -15,6 +18,12 @@
     <string name="goals_error_retry">Retry</string>
     <string name="goals_card_state_expanded">Expanded</string>
     <string name="goals_card_state_collapsed">Collapsed</string>
+    <string name="goals_target_date">Target %1$s</string>
+    <string name="goals_progress_label">Progress</string>
+    <string name="goals_tasks_label">Tasks</string>
+    <string name="goals_tasks_summary_format">%1$s · %2$s</string>
+    <string name="goals_task_duration_format">%1$d min</string>
+    <string name="goals_depends_on">Depends on</string>
     <string name="inbox_status_scheduled">Scheduled</string>
     <string name="inbox_status_completed">Completed</string>
     <string name="inbox_status_cancelled">Cancelled</string>

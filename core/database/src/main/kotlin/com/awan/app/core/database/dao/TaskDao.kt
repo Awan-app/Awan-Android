@@ -24,15 +24,8 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE goalId = :goalId")
     fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>>
 
-    /** Observe all Inbox tasks (goalId IS NULL). */
-    @Query("SELECT * FROM tasks WHERE goalId IS NULL")
-    fun observeInboxTasks(): Flow<List<TaskEntity>>
-
-    @Query("SELECT * FROM tasks")
-    fun observeAllTasks(): Flow<List<TaskEntity>>
-
-    @Query("SELECT * FROM tasks")
-    suspend fun getAllTasks(): List<TaskEntity>
+    @Query("SELECT * FROM tasks WHERE goalId = :goalId")
+    suspend fun getTasksByGoal(goalId: String): List<TaskEntity>
 
     @Query("SELECT * FROM tasks WHERE id = :taskId")
     fun observeTask(taskId: String): Flow<TaskEntity?>

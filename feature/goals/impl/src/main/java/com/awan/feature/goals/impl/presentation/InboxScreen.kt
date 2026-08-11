@@ -31,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,7 +47,13 @@ import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.MascotExpression
 import com.awan.feature.goals.impl.R
+import com.awan.feature.goals.impl.ui.components.GoalsSearchBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import com.awan.app.core.designsystem.AwanSurface
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InboxScreen(
     state: InboxUiState,
@@ -56,6 +61,7 @@ fun InboxScreen(
     modifier: Modifier = Modifier,
 ) {
     val colors = AwanTheme.colors
+    val filterSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Box(
         modifier = modifier.fillMaxSize(),
@@ -63,58 +69,14 @@ fun InboxScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Search Bar
+            // Search Bar with Filter Button
             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                AwanTextField(
-                    value = state.searchQuery,
-                    onValueChange = { onAction(InboxAction.SearchQueryChanged(it)) },
-                    placeholder = stringResource(R.string.inbox_search_placeholder),
+                GoalsSearchBar(
+                    query = state.searchQuery,
+                    onQueryChange = { onAction(InboxAction.SearchQueryChanged(it)) },
+                    onFilterClick = { onAction(InboxAction.FilterClicked) },
                     modifier = Modifier.fillMaxWidth()
                 )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Filters
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Status Filters
-                InboxTaskDisplayStatus.entries.forEach { status ->
-                    val isSelected = status in state.activeStatusFilters
-                    val labelRes = when (status) {
-                        InboxTaskDisplayStatus.Drafted -> R.string.inbox_status_drafted
-                        InboxTaskDisplayStatus.Active -> R.string.inbox_status_active
-                        InboxTaskDisplayStatus.Completed -> R.string.inbox_status_completed
-                        InboxTaskDisplayStatus.Cancelled -> R.string.inbox_status_cancelled
-                        InboxTaskDisplayStatus.Missed -> R.string.inbox_status_missed
-                    }
-                    AwanChip(
-                        label = stringResource(labelRes),
-                        active = isSelected,
-                        tone = if (isSelected) AwanChipTone.Sky else AwanChipTone.Neutral,
-                        onClick = { onAction(InboxAction.StatusFilterToggled(status)) }
-                    )
-                }
-
-                // Session Filters
-                InboxSessionFilter.entries.forEach { filter ->
-                    val isSelected = filter in state.activeSessionFilters
-                    val labelRes = when (filter) {
-                        InboxSessionFilter.ActiveNow -> R.string.inbox_filter_active_now
-                        InboxSessionFilter.Missed -> R.string.inbox_filter_missed
-                    }
-                    AwanChip(
-                        label = stringResource(labelRes),
-                        active = isSelected,
-                        tone = if (isSelected) AwanChipTone.Sky else AwanChipTone.Neutral,
-                        onClick = { onAction(InboxAction.SessionFilterToggled(filter)) }
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -164,6 +126,120 @@ fun InboxScreen(
                         }
                     }
                 }
+            }
+        }
+
+        // Filter Bottom Sheet
+        if (state.showFilterSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { onAction(InboxAction.FilterDismissed) },
+                sheetState = filterSheetState,
+                containerColor = colors.background,
+                dragHandle = {
+                    // Standard Awan Drag Handle
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(width = 36.dp, height = 4.dp)
+                                .clip(AwanTheme.shapes.pill)
+                                .background(AwanTheme.colors.line)
+                        )
+                    }
+                }
+            ) {
+                InboxFilterSheetContent(state = state, onAction = onAction)
+            }
+        }
+    }
+}
+
+@Composable
+private fun InboxFilterSheetContent(
+    state: InboxUiState,
+    onAction: (InboxAction) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 32.dp), // Space for system nav
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            AwanText(
+                text = "Filters",
+                style = AwanTheme.styles.headingText
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                AwanText(
+                    text = "Task Status",
+                    style = AwanTheme.styles.captionText
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    InboxTaskDisplayStatus.entries.forEach { status ->
+                        val isSelected = status in state.activeStatusFilters
+                        val labelRes = when (status) {
+                            InboxTaskDisplayStatus.Drafted -> R.string.inbox_status_drafted
+                            InboxTaskDisplayStatus.Active -> R.string.inbox_status_active
+                            InboxTaskDisplayStatus.Completed -> R.string.inbox_status_completed
+                            InboxTaskDisplayStatus.Cancelled -> R.string.inbox_status_cancelled
+                            InboxTaskDisplayStatus.Missed -> R.string.inbox_status_missed
+                        }
+                        AwanChip(
+                            label = stringResource(labelRes),
+                            active = isSelected,
+                            tone = if (isSelected) AwanChipTone.Sky else AwanChipTone.Neutral,
+                            onClick = { onAction(InboxAction.StatusFilterToggled(status)) }
+                        )
+                    }
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                AwanText(
+                    text = "Time Filters",
+                    style = AwanTheme.styles.captionText
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    InboxSessionFilter.entries.forEach { filter ->
+                        val isSelected = filter in state.activeSessionFilters
+                        val labelRes = when (filter) {
+                            InboxSessionFilter.ActiveNow -> R.string.inbox_filter_active_now
+                            InboxSessionFilter.Missed -> R.string.inbox_filter_missed
+                        }
+                        AwanChip(
+                            label = stringResource(labelRes),
+                            active = isSelected,
+                            tone = if (isSelected) AwanChipTone.Sky else AwanChipTone.Neutral,
+                            onClick = { onAction(InboxAction.SessionFilterToggled(filter)) }
+                        )
+                    }
+                }
+            }
+
+            AwanButton(
+                onClick = { onAction(InboxAction.FilterDismissed) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                AwanText("Show Results")
             }
         }
     }

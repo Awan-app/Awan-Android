@@ -89,6 +89,7 @@ data class InboxUiState(
     val expandedTaskId: String? = null,
     /** Tasks visible after applying search and filter. */
     val visibleTasks: List<InboxTaskUiModel> = emptyList(),
+    val showFilterSheet: Boolean = false,
 )
 
 sealed interface InboxAction {
@@ -96,5 +97,7 @@ sealed interface InboxAction {
     data class StatusFilterToggled(val filter: InboxTaskDisplayStatus) : InboxAction
     data class SessionFilterToggled(val filter: InboxSessionFilter) : InboxAction
     data class TaskExpandToggled(val taskId: String) : InboxAction
+    data object FilterClicked : InboxAction
+    data object FilterDismissed : InboxAction
     data object RetryClicked : InboxAction
 }

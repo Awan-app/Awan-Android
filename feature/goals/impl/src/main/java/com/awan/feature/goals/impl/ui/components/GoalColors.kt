@@ -22,7 +22,3 @@ internal fun goalAccentColor(index: Int): Color {
     val palette = goalAccentColors()
     return palette[index % palette.size]
 }
-
-/** Gold color used for every card on the Completed tab. */
-@Composable
-internal fun completedGoalColor(): Color = AwanTheme.colors.zoneSun
