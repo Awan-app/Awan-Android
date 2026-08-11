@@ -76,8 +76,8 @@ fun McpSettingsScreen(
             AwanCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(AwanTheme.spacing.md),
-                contentPadding = PaddingValues(AwanTheme.spacing.xl)
+                    .padding(AwanTheme.spacing.xs),
+                contentPadding = PaddingValues(AwanTheme.spacing.md)
             ) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)

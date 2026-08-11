@@ -54,8 +54,8 @@ fun CreatedTokenModal(
         AwanCard(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(AwanTheme.spacing.md),
-            contentPadding = PaddingValues(AwanTheme.spacing.xl)
+                .padding(AwanTheme.spacing.xs),
+            contentPadding = PaddingValues(AwanTheme.spacing.md)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
