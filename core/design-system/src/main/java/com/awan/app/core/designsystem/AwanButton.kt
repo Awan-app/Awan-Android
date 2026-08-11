@@ -218,8 +218,6 @@ fun AwanButton(
             }
         },
     ) { measurables, constraints ->
-        // Same fix as AwanCard: measure the face first (honouring the touch-target minimum),
-        // then force the rim into exactly that size. No reliance on matchParentSize/propagation.
         val minTouchPx = minTouchSize.roundToPx()
         val safeMaxWidth = constraints.maxWidth.coerceAtLeast(0)
         val safeMaxHeight = constraints.maxHeight.coerceAtLeast(0)
@@ -229,9 +227,9 @@ fun AwanButton(
 
         val safeConstraints = Constraints(
             minWidth = minW,
-            maxWidth = maxOf(safeMaxWidth, minW),
+            maxWidth = maxOf(minW, safeMaxWidth),
             minHeight = minH,
-            maxHeight = maxOf(safeMaxHeight, minH),
+            maxHeight = maxOf(minH, safeMaxHeight),
         )
 
         val facePlaceable = measurables[1].measure(safeConstraints)

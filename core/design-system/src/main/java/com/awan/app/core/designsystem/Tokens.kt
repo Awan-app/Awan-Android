@@ -70,6 +70,15 @@ data class AwanColors(
     val pointsSurface: Color,
     val pointsIcon: Color,
     val zoneCardAlpha: Float,
+    val wheelNavy: Color,
+    val wheelYellow: Color,
+    val wheelOrange: Color,
+    val wheelRed: Color,
+    val wheelPurple: Color,
+    val wheelBlue: Color,
+    val wheelGreen: Color,
+    val wheelGoldOuter: Color,
+    val wheelGoldInner: Color,
 )
 
 internal val LightAwanColors = AwanColors(
@@ -137,6 +146,15 @@ internal val LightAwanColors = AwanColors(
     pointsSurface = Color(0xFFFDF3D0),
     pointsIcon = Color(0xFFCA8A04),
     zoneCardAlpha = 0.35f, // Increased for better visibility with pastels
+    wheelNavy = Color(0xFF1E2D4A),
+    wheelYellow = Color(0xFFF7C92B),
+    wheelOrange = Color(0xFFFF8E00),
+    wheelRed = Color(0xFFE83D3D),
+    wheelPurple = Color(0xFF8B5CF6),
+    wheelBlue = Color(0xFF0096FF),
+    wheelGreen = Color(0xFF22C55E),
+    wheelGoldOuter = Color(0xFFFFD700),
+    wheelGoldInner = Color(0xFFFFF7C2),
 )
 
 internal val LightHighContrastAwanColors = LightAwanColors.copy(
@@ -209,6 +227,15 @@ internal val DarkAwanColors = AwanColors(
     pointsSurface = Color(0xFF3A331C),
     pointsIcon = Color(0xFFFFD84D),
     zoneCardAlpha = 0.45f,
+    wheelNavy = Color(0xFF1E2D4A),
+    wheelYellow = Color(0xFFF7C92B),
+    wheelOrange = Color(0xFFFF8E00),
+    wheelRed = Color(0xFFE83D3D),
+    wheelPurple = Color(0xFF8B5CF6),
+    wheelBlue = Color(0xFF0096FF),
+    wheelGreen = Color(0xFF22C55E),
+    wheelGoldOuter = Color(0xFFFFD700),
+    wheelGoldInner = Color(0xFFFFF7C2),
 )
 
 
