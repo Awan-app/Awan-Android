@@ -184,4 +184,28 @@
     <string name="profile_day_friday_short">ج</string>
     <string name="profile_day_saturday_short">س</string>
     <string name="profile_day_sunday_short">ح</string>
+
+    <!-- MCP Settings Strings -->
+    <string name="profile_mcp_title">تكامل MCP</string>
+    <string name="profile_mcp_subtitle">ربط المساعدين الذكيين (Claude, Cursor) عبر بروتوكول MCP</string>
+    <string name="profile_mcp_connection_title">تفاصيل الاتصال</string>
+    <string name="profile_mcp_url_label">رابط خادم MCP</string>
+    <string name="profile_mcp_client_id_label">معرف العميل (Client ID)</string>
+    <string name="profile_mcp_tokens_title">رموز الوصول (Tokens)</string>
+    <string name="profile_mcp_add_token">إضافة رمز جديد</string>
+    <string name="profile_mcp_token_name_hint">اسم الرمز (مثال: Claude Desktop)</string>
+    <string name="profile_mcp_token_obscured_notice">تم إخفاء المفتاح لأسباب أمنية</string>
+    <string name="profile_mcp_token_copy_disabled">يمكن نسخ الرمز فقط عند إنشائه لأول مرة</string>
+    <string name="profile_mcp_token_created_banner_title">تم إنشاء الرمز بنجاح!</string>
+    <string name="profile_mcp_token_created_banner_warning">احرص على نسخ رمز الوصول الخاص بك الآن. لن تتمكن من رؤيته مرة أخرى!</string>
+    <string name="profile_mcp_token_copy">نسخ الرمز</string>
+    <string name="profile_mcp_token_copied">تم نسخ الرمز إلى الحافظة</string>
+    <string name="profile_mcp_token_delete_confirm_title">حذف الرمز؟</string>
+    <string name="profile_mcp_token_delete_confirm_body">هل أنت تأكد من حذف رمز MCP هذا؟ سيفقد المساعد الذكي الوصول فوراً.</string>
+    <string name="profile_mcp_token_regenerate_confirm_title">إعادة إنشاء الرمز؟</string>
+    <string name="profile_mcp_token_regenerate_confirm_body">إعادة إنشاء الرمز ستلغي المفتاح الحالي. ستحتاج إلى تحديثه في المساعد الذكي.</string>
+    <string name="profile_mcp_info_title">كيفية ربط مساعدك الذكي</string>
+    <string name="profile_mcp_info_step1">1. انسخ رابط خادم MCP ومعرف العميل أعلاه.</string>
+    <string name="profile_mcp_info_step2">2. أنشئ رمز وصول واحفظ المفتاح فوراً.</string>
+    <string name="profile_mcp_info_step3">3. قم بتضمين الإعدادات في ملف التكوين (مثل claude_desktop_config.json).</string>
 </resources>

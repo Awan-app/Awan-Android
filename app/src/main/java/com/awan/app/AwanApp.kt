@@ -250,7 +250,9 @@ fun AwanApp(
                 onNavigateToEditRoutine = { templateId -> navigator.navigate(EditRoutineRoute(templateId)) },
                 onLogout = { navigator.replaceAll(LoginRoute) },
                 onBack = { navigator.goBack()},
-                onNavigateToInventory = { navigator.navigate(InventoryRoute) }
+                onNavigateToInventory = { navigator.navigate(InventoryRoute) },
+                onNavigateToMcpSettings = { navigator.navigate(com.awan.feature.profile.api.McpSettingsRoute) },
+                onNavigateToMcpInfo = { navigator.navigate(com.awan.feature.profile.api.McpInfoRoute) },
             )
             goalPreviewEntry(
                 onBack = { navigator.goBack() },

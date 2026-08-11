@@ -184,4 +184,28 @@
     <string name="profile_day_friday_short">Fri</string>
     <string name="profile_day_saturday_short">Sat</string>
     <string name="profile_day_sunday_short">Sun</string>
+
+    <!-- MCP Settings Strings -->
+    <string name="profile_mcp_title">MCP Integration</string>
+    <string name="profile_mcp_subtitle">Connect AI assistants (Claude, Cursor) via Model Context Protocol</string>
+    <string name="profile_mcp_connection_title">Connection Details</string>
+    <string name="profile_mcp_url_label">MCP Server URL</string>
+    <string name="profile_mcp_client_id_label">OAuth Client ID</string>
+    <string name="profile_mcp_tokens_title">API Tokens</string>
+    <string name="profile_mcp_add_token">Add New Token</string>
+    <string name="profile_mcp_token_name_hint">Token Name (e.g. Claude Desktop)</string>
+    <string name="profile_mcp_token_obscured_notice">Token key is hidden for security</string>
+    <string name="profile_mcp_token_copy_disabled">Token can only be copied when initially created</string>
+    <string name="profile_mcp_token_created_banner_title">Token Created Successfully!</string>
+    <string name="profile_mcp_token_created_banner_warning">Make sure to copy your personal access token now. You won\'t be able to see it again!</string>
+    <string name="profile_mcp_token_copy">Copy Token</string>
+    <string name="profile_mcp_token_copied">Token copied to clipboard</string>
+    <string name="profile_mcp_token_delete_confirm_title">Delete Token?</string>
+    <string name="profile_mcp_token_delete_confirm_body">Are you sure you want to delete this MCP token? AI assistants using this token will lose access immediately.</string>
+    <string name="profile_mcp_token_regenerate_confirm_title">Regenerate Token?</string>
+    <string name="profile_mcp_token_regenerate_confirm_body">Regenerating this token will revoke the existing key. Any connected agent will need the new token.</string>
+    <string name="profile_mcp_info_title">How to Connect your AI Assistant</string>
+    <string name="profile_mcp_info_step1">1. Copy the MCP Server URL and Client ID above.</string>
+    <string name="profile_mcp_info_step2">2. Create an API Token and copy the key immediately.</string>
+    <string name="profile_mcp_info_step3">3. Paste the configuration into your assistant (e.g. claude_desktop_config.json).</string>
 </resources>
