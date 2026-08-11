@@ -4,6 +4,7 @@ import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.goal.repository.GoalRepository
 import com.awan.app.core.domain.goal.usecase.GetGoalsUseCase
+import com.awan.app.core.domain.goal.usecase.ObserveGoalsUseCase
 import com.awan.app.core.model.Goal
 import com.awan.app.core.model.GoalDecompositionReply
 import com.awan.app.core.model.GoalStatus
@@ -35,8 +36,16 @@ class GoalsViewModelTest {
     }
 
     private class FakeGoalRepository : GoalRepository {
+        val goalsFlow = kotlinx.coroutines.flow.MutableStateFlow<List<Goal>>(emptyList())
         var result: Result<List<Goal>> = Result.Success(emptyList())
+            set(value) {
+                field = value
+                if (value is Result.Success) {
+                    goalsFlow.value = value.data
+                }
+            }
 
+        override fun observeGoals(): kotlinx.coroutines.flow.Flow<List<Goal>> = goalsFlow
         override suspend fun getGoals(): Result<List<Goal>> = result
 
         override suspend fun continueDecomposition(
@@ -50,6 +59,13 @@ class GoalsViewModelTest {
         override suspend fun createGoal(title: String, description: String?, targetDate: String?): Result<Goal> = error("Not implemented")
         override suspend fun getInboxGoal(): Result<Goal> = error("Not implemented")
         override suspend fun getGoal(goalId: String): Result<Goal> = error("Not implemented")
+        override suspend fun updateGoal(
+            goalId: String,
+            title: String?,
+            description: String?,
+            status: String?,
+            targetDate: String?,
+        ): Result<Goal> = error("Not implemented")
         override suspend fun deleteGoal(goalId: String): Result<Unit> = error("Not implemented")
         override suspend fun getDecompositionTranscript(sessionId: String): Result<com.awan.app.core.model.GoalDecompositionTranscript> = error("Not implemented")
         override suspend fun cancelDecomposition(sessionId: String): Result<Unit> = error("Not implemented")
@@ -68,7 +84,7 @@ class GoalsViewModelTest {
                 )
             )
         }
-        val viewModel = GoalsViewModel(GetGoalsUseCase(repo))
+        val viewModel = GoalsViewModel(GetGoalsUseCase(repo), ObserveGoalsUseCase(repo))
 
         val state = viewModel.state.value
         assertFalse(state.isLoading)
@@ -84,7 +100,7 @@ class GoalsViewModelTest {
         val repo = FakeGoalRepository().apply {
             result = Result.Error(AppError.Network)
         }
-        val viewModel = GoalsViewModel(GetGoalsUseCase(repo))
+        val viewModel = GoalsViewModel(GetGoalsUseCase(repo), ObserveGoalsUseCase(repo))
 
         val errorState = viewModel.state.value
         assertFalse(errorState.isLoading)
@@ -105,7 +121,7 @@ class GoalsViewModelTest {
     @Test
     fun `tab selection changes only the selected tab`() {
         val repo = FakeGoalRepository()
-        val viewModel = GoalsViewModel(GetGoalsUseCase(repo))
+        val viewModel = GoalsViewModel(GetGoalsUseCase(repo), ObserveGoalsUseCase(repo))
 
         assertEquals(GoalsTab.Active, viewModel.state.value.tab)
 

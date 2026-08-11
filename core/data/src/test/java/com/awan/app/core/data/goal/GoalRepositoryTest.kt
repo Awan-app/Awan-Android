@@ -41,6 +41,7 @@ class GoalRepositoryTest {
         override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): GoalInfoResponse = error("Not implemented")
         override suspend fun getInboxGoal(): GoalInfoResponse = error("Not implemented")
         override suspend fun getGoal(goalId: String, expand: Boolean): GoalInfoResponse = error("Not implemented")
+        override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest): GoalInfoResponse = error("Not implemented")
         override suspend fun deleteGoal(goalId: String) = error("Not implemented")
 
         override suspend fun decomposeGoal(
@@ -65,6 +66,7 @@ class GoalRepositoryTest {
         override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun getInboxGoal(): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun getGoal(goalId: String): Result<GoalInfoResponse> = error("Not implemented")
+        override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun deleteGoal(goalId: String): Result<Unit> = error("Not implemented")
         override suspend fun continueDecomposition(request: com.awan.app.core.network.dto.GoalDecomposeRequest): Result<com.awan.app.core.network.dto.GoalDecomposeResponse> = error("Not implemented")
         override suspend fun confirmDecomposition(sessionId: String): Result<GoalInfoResponse> = error("Not implemented")
@@ -103,6 +105,7 @@ class GoalRepositoryTest {
         override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
         override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
         override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+        override fun getDependsOnIds(taskId: String): List<String> = emptyList()
         override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
         override suspend fun deleteAllDependenciesForTask(taskId: String) {}
         override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}

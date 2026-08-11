@@ -108,6 +108,7 @@ private class FakeGoalRemoteDataSource(
     override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest) = error("not used")
     override suspend fun getInboxGoal() = error("not used")
     override suspend fun getGoal(goalId: String) = error("not used")
+    override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest) = error("not used")
     override suspend fun deleteGoal(goalId: String) = error("not used")
     override suspend fun continueDecomposition(request: GoalDecomposeRequest) = error("not used")
     override suspend fun confirmDecomposition(sessionId: String) = error("not used")
@@ -193,6 +194,7 @@ private class FakeTaskDao : TaskDao {
     override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
     override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
     override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+    override fun getDependsOnIds(taskId: String): List<String> = emptyList()
     override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
     override suspend fun deleteAllDependenciesForTask(taskId: String) {}
     override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}
