@@ -178,6 +178,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun providesMcpApiService(retrofit: Retrofit): com.awan.app.core.network.api.McpApiService =
+        retrofit.create(com.awan.app.core.network.api.McpApiService::class.java)
+
+    @Provides
+    @Singleton
     fun providesDeviceIdProvider(
         @ApplicationContext context: Context,
     ): DeviceIdProvider = AndroidDeviceIdProvider(context)
