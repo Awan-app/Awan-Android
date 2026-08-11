@@ -111,7 +111,7 @@ class McpSettingsViewModel @Inject constructor(
                 }
                 is Result.Error -> {
                     val uiError = ProfileErrorMapper.mapToUiText(result.error)
-                    _uiState.update { it.copy(isCreating = false, error = uiError) }
+                    _uiState.update { it.copy(isCreating = false, showAddTokenDialog = false, error = uiError) }
                     _events.send(McpSettingsEvent.Error(uiError))
                 }
                 Result.Loading -> Unit

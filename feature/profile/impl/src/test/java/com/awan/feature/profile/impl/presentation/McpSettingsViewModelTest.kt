@@ -1,5 +1,6 @@
 package com.awan.feature.profile.impl.presentation
 
+import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.mcp.model.CreatedMcpToken
 import com.awan.app.core.domain.mcp.model.McpConnectionDetails
@@ -116,6 +117,18 @@ class McpSettingsViewModelTest {
     }
 
     @Test
+    fun createTokenErrorClosesAddTokenDialogAndExposesSnackbarError() = runTest(testDispatcher) {
+        fakeRepository.createResult = Result.Error(AppError.Network)
+
+        viewModel.onAction(McpSettingsAction.ShowAddTokenDialog)
+        viewModel.onAction(McpSettingsAction.UpdateNewTokenName("Cursor"))
+        viewModel.onAction(McpSettingsAction.CreateToken("Cursor"))
+
+        val state = viewModel.uiState.value
+        assert(!state.showAddTokenDialog)
+        assertNotNull(state.error)
+    }
+    @Test
     fun `DeleteToken action removes token from state, clears deletingToken, and emits TokenDeleted event`() = runTest(testDispatcher) {
         val events = mutableListOf<McpSettingsEvent>()
         val job = launch { viewModel.events.toList(events) }
@@ -162,6 +175,7 @@ class McpSettingsViewModelTest {
     }
 
     private class FakeMcpRepository : McpRepository {
+        var createResult: Result<CreatedMcpToken>? = null
         private val tokensList = mutableListOf(
             McpToken("token-1", "Claude Desktop", "••••••••abcd", "2026-08-11T00:00:00Z")
         )
@@ -174,6 +188,7 @@ class McpSettingsViewModelTest {
         override fun getMcpTokens(): Flow<Result<List<McpToken>>> = tokensFlow
 
         override suspend fun createMcpToken(name: String): Result<CreatedMcpToken> {
+            createResult?.let { return it }
             val created = CreatedMcpToken(
                 id = "token-${System.currentTimeMillis()}",
                 name = name,
