@@ -1,6 +1,7 @@
 package com.awan.app.core.data.mcp
 
 import com.awan.app.core.common.error.AppError
+import com.awan.app.core.network.BuildConfig
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.mcp.repository.McpRepositoryImpl
 import com.awan.app.core.database.dao.McpTokenDao
@@ -35,6 +36,7 @@ private class FakeMcpApiService : McpApiService {
     var lastCreatedName: String? = null
     var lastRevokedId: String? = null
     var httpErrorCode: Int? = null
+    var revokeHttpErrorCode: Int? = null
 
     override suspend fun getApiKeys(): Response<List<ApiKeySummaryDto>> {
         shouldFailWithException?.let { throw it }
@@ -55,6 +57,9 @@ private class FakeMcpApiService : McpApiService {
 
     override suspend fun revokeApiKey(keyId: String): Response<Unit> {
         shouldFailWithException?.let { throw it }
+        revokeHttpErrorCode?.let {
+            return Response.error(it, "Error".toResponseBody(null))
+        }
         httpErrorCode?.let {
             return Response.error(it, "Error".toResponseBody(null))
         }
@@ -132,7 +137,7 @@ class McpRepositoryImplTest {
 
         assertTrue(result is Result.Success)
         val details = (result as Result.Success).data
-        assertEquals("https://backend-production-c701.up.railway.app/api/v1/mcp", details.mcpUrl)
+        assertEquals("${BuildConfig.AWAN_BASE_URL.trimEnd('/')}/v1/mcp", details.mcpUrl)
         assertEquals("awan-android-client", details.clientId)
     }
 
@@ -288,6 +293,32 @@ class McpRepositoryImplTest {
         assertEquals("token-2", tokenDao.storedTokens.first().id)
     }
 
+    @Test
+    fun `regenerateMcpToken keeps old Room token when revocation fails`() = runTest(testDispatcher) {
+        val apiService = FakeMcpApiService().apply {
+            createApiKeyResponse = ApiKeyResponseDto(
+                id = "token-2",
+                name = "Claude Desktop",
+                keyValue = "new-raw-secret",
+                createdAt = "2026-08-11T01:00:00Z",
+            )
+            revokeHttpErrorCode = 500
+        }
+        val tokenDao = FakeMcpTokenDao().apply {
+            upsertMcpTokens(
+                listOf(
+                    McpTokenEntity("token-1", "Claude Desktop", "mcp_...old", "2026-08-11T00:00:00Z")
+                )
+            )
+        }
+        val repository = buildRepository(apiService = apiService, tokenDao = tokenDao, monitor = onlineMonitor)
+
+        val result = repository.regenerateMcpToken("token-1")
+
+        assertTrue(result is Result.Error)
+        assertEquals(1, tokenDao.storedTokens.size)
+        assertEquals("token-1", tokenDao.storedTokens.first().id)
+    }
     @Test
     fun `regenerateMcpToken preserves raw token success even if Room write fails`() = runTest(testDispatcher) {
         val apiService = FakeMcpApiService().apply {

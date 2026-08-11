@@ -12,6 +12,7 @@ import com.awan.app.core.domain.mcp.model.McpConnectionDetails
 import com.awan.app.core.domain.mcp.model.McpToken
 import com.awan.app.core.domain.mcp.repository.McpRepository
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
+import com.awan.app.core.network.BuildConfig
 import com.awan.app.core.network.api.McpApiService
 import com.awan.app.core.network.dto.mcp.CreateApiKeyRequestDto
 import com.awan.app.core.network.error.safeApiCall
@@ -39,7 +40,7 @@ class McpRepositoryImpl @Inject constructor(
         emit(
             Result.Success(
                 McpConnectionDetails(
-                    mcpUrl = "https://backend-production-c701.up.railway.app/api/v1/mcp",
+                    mcpUrl = "${BuildConfig.AWAN_BASE_URL.trimEnd('/')}/v1/mcp",
                     clientId = "awan-android-client",
                 )
             )
@@ -115,11 +116,8 @@ class McpRepositoryImpl @Inject constructor(
             val dto = createResponse.body() ?: throw IllegalStateException("Empty response body")
             val createdToken = dto.toDomain()
 
-            try {
-                mcpApiService.revokeApiKey(id)
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-            }
+            val revokeResponse = mcpApiService.revokeApiKey(id)
+            if (!revokeResponse.isSuccessful) throw HttpException(revokeResponse)
 
             try {
                 mcpTokenDao.deleteMcpToken(id)

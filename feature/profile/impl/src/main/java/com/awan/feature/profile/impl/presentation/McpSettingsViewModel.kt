@@ -10,6 +10,7 @@ import com.awan.app.core.domain.mcp.usecase.GetMcpTokensUseCase
 import com.awan.app.core.domain.mcp.usecase.RegenerateMcpTokenUseCase
 import com.awan.feature.profile.impl.helpers.ProfileErrorMapper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +36,8 @@ class McpSettingsViewModel @Inject constructor(
     private val _events = Channel<McpSettingsEvent>(Channel.BUFFERED)
     val events: Flow<McpSettingsEvent> = _events.receiveAsFlow()
 
+    private var loadJob: Job? = null
+
     init {
         loadData()
     }
@@ -58,35 +61,54 @@ class McpSettingsViewModel @Inject constructor(
     }
 
     private fun loadData() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            getMcpConnectionDetailsUseCase().collect { result ->
-                when (result) {
-                    is Result.Success -> {
-                        _uiState.update { it.copy(connectionDetails = result.data, isLoading = false) }
-                    }
-                    is Result.Error -> {
-                        val uiError = ProfileErrorMapper.mapToUiText(result.error)
-                        _uiState.update { it.copy(error = uiError, isLoading = false) }
-                    }
-                    Result.Loading -> {
-                        _uiState.update { it.copy(isLoading = true) }
+            var detailsLoaded = false
+            var tokensLoaded = false
+
+            launch {
+                getMcpConnectionDetailsUseCase().collect { result ->
+                    when (result) {
+                        is Result.Success -> {
+                            detailsLoaded = true
+                            _uiState.update {
+                                it.copy(
+                                    connectionDetails = result.data,
+                                    isLoading = !detailsLoaded || !tokensLoaded,
+                                )
+                            }
+                        }
+                        is Result.Error -> {
+                            detailsLoaded = true
+                            val uiError = ProfileErrorMapper.mapToUiText(result.error)
+                            _uiState.update {
+                                it.copy(error = uiError, isLoading = !detailsLoaded || !tokensLoaded)
+                            }
+                        }
+                        Result.Loading -> _uiState.update { it.copy(isLoading = true) }
                     }
                 }
             }
-        }
 
-        viewModelScope.launch {
-            getMcpTokensUseCase().collect { result ->
-                when (result) {
-                    is Result.Success -> {
-                        _uiState.update { it.copy(tokens = result.data) }
+            launch {
+                getMcpTokensUseCase().collect { result ->
+                    when (result) {
+                        is Result.Success -> {
+                            tokensLoaded = true
+                            _uiState.update {
+                                it.copy(tokens = result.data, isLoading = !detailsLoaded || !tokensLoaded)
+                            }
+                        }
+                        is Result.Error -> {
+                            tokensLoaded = true
+                            val uiError = ProfileErrorMapper.mapToUiText(result.error)
+                            _uiState.update {
+                                it.copy(error = uiError, isLoading = !detailsLoaded || !tokensLoaded)
+                            }
+                        }
+                        Result.Loading -> Unit
                     }
-                    is Result.Error -> {
-                        val uiError = ProfileErrorMapper.mapToUiText(result.error)
-                        _uiState.update { it.copy(error = uiError) }
-                    }
-                    Result.Loading -> Unit
                 }
             }
         }
@@ -125,7 +147,6 @@ class McpSettingsViewModel @Inject constructor(
                 is Result.Success -> {
                     _uiState.update { state ->
                         state.copy(
-                            tokens = state.tokens.filterNot { it.id == id },
                             deletingToken = null,
                         )
                     }

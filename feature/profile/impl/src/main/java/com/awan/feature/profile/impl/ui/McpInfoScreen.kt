@@ -43,12 +43,13 @@ internal fun formatMcpTokenCreationDate(createdAt: String): String =
 
 @Composable
 fun McpInfoScreen(
+    mcpUrl: String,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
-    val aiSetupPrompt = stringResource(ProfileR.string.profile_mcp_ai_setup_prompt)
+    val aiSetupPrompt = stringResource(ProfileR.string.profile_mcp_ai_setup_prompt, mcpUrl)
     val claudeCopiedToastMessage = stringResource(ProfileR.string.profile_mcp_claude_config_copied)
     val cursorCopiedToastMessage = stringResource(ProfileR.string.profile_mcp_cursor_config_copied)
     val aiPromptCopiedToastMessage = stringResource(ProfileR.string.profile_mcp_ai_prompt_copied)
@@ -61,7 +62,7 @@ fun McpInfoScreen(
               "args": [
                 "-y",
                 "@awan/mcp-server",
-                "--url", "https://backend-production-c701.up.railway.app/api/v1/mcp",
+                "--url", "$mcpUrl",
                 "--token", "YOUR_API_TOKEN"
               ]
             }
@@ -74,7 +75,7 @@ fun McpInfoScreen(
           "mcp": {
             "servers": {
               "awan": {
-                "url": "https://backend-production-c701.up.railway.app/api/v1/mcp",
+                "url": "$mcpUrl",
                 "headers": {
                   "Authorization": "Bearer YOUR_API_TOKEN"
                 }

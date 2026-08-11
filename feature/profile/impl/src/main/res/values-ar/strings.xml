@@ -214,7 +214,7 @@
     <string name="profile_mcp_info_step2">2. انسخ إعداداً من الأسفل واستبدل YOUR_API_TOKEN بالرمز الخاص بك، أو انسخ مطالبة إعداد الذكاء الاصطناعي والصقها في مساعدك.</string>
     <string name="profile_mcp_ai_setup_title">أو دع مساعدك الذكي يتولى الإعداد</string>
     <string name="profile_mcp_cd_copy_ai_prompt">نسخ مطالبة إعداد الذكاء الاصطناعي</string>
-    <string name="profile_mcp_ai_setup_prompt">صِلني بخادم Awan عبر MCP.\n\nأولاً، اطلب مني رمز MCP API الخاص بـ Awan. لا تتابع قبل أن أقدمه لك.\n\nبعد أن أرسل الرمز، أعد إعداد خادم Awan MCP لهذا المساعد باستخدام:\n- رابط الخادم: https://backend-production-c701.up.railway.app/api/v1/mcp\n- التفويض: Bearer [الرمز الذي أقدمه]\n\nتولَّ إعداد MCP بنفسك، وتحقق من الاتصال، وأخبرني عند جاهزيته.</string>
+    <string name="profile_mcp_ai_setup_prompt">صِلني بخادم Awan عبر MCP.\n\nأولاً، اطلب مني رمز MCP API الخاص بـ Awan. لا تتابع قبل أن أقدمه لك.\n\nبعد أن أرسل الرمز، أعد إعداد خادم Awan MCP لهذا المساعد باستخدام:\n- رابط الخادم: %1$s\n- التفويض: Bearer [الرمز الذي أقدمه]\n\nتولَّ إعداد MCP بنفسك، وتحقق من الاتصال، وأخبرني عند جاهزيته.</string>
 
     <string name="profile_mcp_token_created_on">تاريخ الإنشاء: %1$s</string>
     <string name="profile_mcp_cd_info">معلومات إعداد MCP</string>
