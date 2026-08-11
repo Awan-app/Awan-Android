@@ -681,72 +681,105 @@ private fun WheelCanvas(
                 val spotlightCenter = Offset(centerOffset.x, centerOffset.y - wheelRadius * 0.58f)
                 val flashlightSource = Offset(centerOffset.x, centerOffset.y - outerRadius + 4.dp.toPx())
 
-                // Pitch Dark Stage Mask: Hides all inactive segments in deep pitch darkness
+                // 5-Stop Pitch Dark Stage Mask with silky feathered soft-blur cutout over active segment
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.70f * darknessAlpha),
-                            Color.Black.copy(alpha = 0.98f * darknessAlpha),
+                        colorStops = arrayOf(
+                            0.00f to Color.Transparent,
+                            0.35f to Color.Transparent,
+                            0.55f to Color.Black.copy(alpha = 0.35f * darknessAlpha),
+                            0.78f to Color.Black.copy(alpha = 0.78f * darknessAlpha),
+                            1.00f to Color.Black.copy(alpha = 0.98f * darknessAlpha),
                         ),
                         center = spotlightCenter,
                         radius = wheelRadius * SPOTLIGHT_CONFIG.spotlightRadiusRatio,
                     ),
-                    radius = outerRadius + 8.dp.toPx(),
+                    radius = outerRadius + 12.dp.toPx(),
                     center = centerOffset,
                 )
 
                 // Realistic Volumetric Flashlight Beam emitting from Pointer Tip
                 if (spotlightAlpha > 0.001f) {
-                    // 1. Triangular Volumetric Cone Beam
+                    // 1. Smooth Curvy Volumetric Light Cone with Parabolic Bezier Edges
                     val beamPath = Path().apply {
                         moveTo(flashlightSource.x, flashlightSource.y)
-                        lineTo(centerOffset.x - wheelRadius * 0.38f, centerOffset.y - wheelRadius * 0.15f)
-                        lineTo(centerOffset.x + wheelRadius * 0.38f, centerOffset.y - wheelRadius * 0.15f)
+                        // Left curved edge expanding outward
+                        quadraticTo(
+                            centerOffset.x - wheelRadius * 0.15f, centerOffset.y - wheelRadius * 0.40f,
+                            centerOffset.x - wheelRadius * 0.42f, centerOffset.y - wheelRadius * 0.05f
+                        )
+                        // Curved bottom arc across target segment
+                        quadraticTo(
+                            centerOffset.x, centerOffset.y + wheelRadius * 0.05f,
+                            centerOffset.x + wheelRadius * 0.42f, centerOffset.y - wheelRadius * 0.05f
+                        )
+                        // Right curved edge returning smoothly to flashlight bulb source
+                        quadraticTo(
+                            centerOffset.x + wheelRadius * 0.15f, centerOffset.y - wheelRadius * 0.40f,
+                            flashlightSource.x, flashlightSource.y
+                        )
                         close()
                     }
+
+                    // Strong Multi-Stop Distance Falloff Gradient (Inverse-Square Optical Decay)
                     drawPath(
                         path = beamPath,
                         brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFFFFFEE0).copy(alpha = 0.85f * spotlightAlpha), // Hotspot bulb source
-                                Color(0xFFFFE680).copy(alpha = 0.45f * spotlightAlpha), // Warm cone beam
-                                Color(0xFFFFC700).copy(alpha = 0.15f * spotlightAlpha),
-                                Color.Transparent,
+                            colorStops = arrayOf(
+                                0.00f to Color(0xFFFFFFFF).copy(alpha = 0.90f * spotlightAlpha), // Intense white bulb tip
+                                0.15f to Color(0xFFFFF9DB).copy(alpha = 0.70f * spotlightAlpha), // Hotspot beam core
+                                0.40f to Color(0xFFFFEC99).copy(alpha = 0.45f * spotlightAlpha), // Mid-distance warm beam
+                                0.70f to Color(0xFFFFD43B).copy(alpha = 0.20f * spotlightAlpha), // Fading far distance light
+                                1.00f to Color.Transparent,                                       // Dissipates smoothly into darkness
                             ),
                             startY = flashlightSource.y,
-                            endY = centerOffset.y,
+                            endY = centerOffset.y + wheelRadius * 0.10f,
                         ),
                     )
 
-                    // 2. High-Intensity Radial Hot-Spot on the Target Segment
+                    // 2. High-Intensity Feathered Hot-Spot Disc on Target Segment (No Strokes, Pure Soft Blur)
                     drawCircle(
                         brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFFFFFFFF).copy(alpha = 0.55f * spotlightAlpha), // Bright hot-spot core
-                                Color(0xFFFFF2A3).copy(alpha = 0.35f * spotlightAlpha), // Warm inner glow
-                                Color(0xFFFFB800).copy(alpha = 0.10f * spotlightAlpha),
-                                Color.Transparent,
+                            colorStops = arrayOf(
+                                0.00f to Color(0xFFFFFFFF).copy(alpha = 0.65f * spotlightAlpha), // Pure white center hotspot
+                                0.35f to Color(0xFFFFF4B8).copy(alpha = 0.45f * spotlightAlpha), // Warm inner glow
+                                0.70f to Color(0xFFFFC700).copy(alpha = 0.15f * spotlightAlpha), // Soft outer halo
+                                1.00f to Color.Transparent,
                             ),
                             center = spotlightCenter,
-                            radius = wheelRadius * 0.48f,
+                            radius = wheelRadius * 0.52f,
                         ),
-                        radius = wheelRadius * 0.48f,
+                        radius = wheelRadius * 0.52f,
                         center = spotlightCenter,
                     )
 
-                    // 3. Flashlight Lens Bulb Glow at Pointer Base
+                    // 3. Ambient Outer Soft Light Bloom
                     drawCircle(
                         brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.95f * spotlightAlpha),
-                                Color(0xFFFFD700).copy(alpha = 0.60f * spotlightAlpha),
-                                Color.Transparent,
+                            colorStops = arrayOf(
+                                0.00f to Color(0xFFFFEC99).copy(alpha = 0.30f * spotlightAlpha),
+                                0.60f to Color(0xFFFFD43B).copy(alpha = 0.10f * spotlightAlpha),
+                                1.00f to Color.Transparent,
+                            ),
+                            center = spotlightCenter,
+                            radius = wheelRadius * 0.70f,
+                        ),
+                        radius = wheelRadius * 0.70f,
+                        center = spotlightCenter,
+                    )
+
+                    // 4. Optical Flashlight Lens Bulb Glow at Pointer Tip
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colorStops = arrayOf(
+                                0.00f to Color.White.copy(alpha = 0.98f * spotlightAlpha),
+                                0.40f to Color(0xFFFFF3A8).copy(alpha = 0.70f * spotlightAlpha),
+                                1.00f to Color.Transparent,
                             ),
                             center = flashlightSource,
-                            radius = 14.dp.toPx(),
+                            radius = 16.dp.toPx(),
                         ),
-                        radius = 14.dp.toPx(),
+                        radius = 16.dp.toPx(),
                         center = flashlightSource,
                     )
                 }
