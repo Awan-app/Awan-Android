@@ -41,7 +41,7 @@ dependencies {
     implementation(project(":core:datastore"))
 
     // Networking
-    api(libs.retrofit)
+    implementation(libs.retrofit)
     implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
