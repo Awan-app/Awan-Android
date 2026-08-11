@@ -36,7 +36,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import com.awan.app.core.designsystem.AwanBackButton
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
@@ -52,6 +54,7 @@ import com.awan.feature.profile.impl.presentation.McpSettingsAction
 import com.awan.feature.profile.impl.presentation.McpSettingsState
 import com.awan.feature.profile.impl.ui.components.CreatedTokenModal
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun McpSettingsScreen(
     uiState: McpSettingsState,
@@ -72,51 +75,53 @@ fun McpSettingsScreen(
     }
 
     if (uiState.showAddTokenDialog) {
-        Dialog(onDismissRequest = { onAction(McpSettingsAction.HideAddTokenDialog) }) {
-            AwanCard(
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { onAction(McpSettingsAction.HideAddTokenDialog) },
+            sheetState = sheetState,
+            containerColor = AwanTheme.colors.surface
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(AwanTheme.spacing.xs),
-                contentPadding = PaddingValues(AwanTheme.spacing.md)
+                    .padding(horizontal = AwanTheme.spacing.lg)
+                    .padding(bottom = AwanTheme.spacing.xl),
+                verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)
             ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)
+                AwanText(
+                    text = stringResource(ProfileR.string.profile_mcp_add_token),
+                    style = AwanTheme.styles.titleText
+                )
+                AwanTextField(
+                    value = uiState.newTokenName,
+                    onValueChange = { onAction(McpSettingsAction.UpdateNewTokenName(it)) },
+                    placeholder = stringResource(ProfileR.string.profile_mcp_token_name_hint),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)
                 ) {
-                    AwanText(
-                        text = stringResource(ProfileR.string.profile_mcp_add_token),
-                        style = AwanTheme.styles.titleText
-                    )
-                    AwanTextField(
-                        value = uiState.newTokenName,
-                        onValueChange = { onAction(McpSettingsAction.UpdateNewTokenName(it)) },
-                        placeholder = stringResource(ProfileR.string.profile_mcp_token_name_hint),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)
+                    AwanButton(
+                        onClick = { onAction(McpSettingsAction.HideAddTokenDialog) },
+                        modifier = Modifier.weight(1f),
+                        variant = AwanButtonVariant.Quiet
                     ) {
-                        AwanButton(
-                            onClick = { onAction(McpSettingsAction.HideAddTokenDialog) },
-                            modifier = Modifier.weight(1f),
-                            variant = AwanButtonVariant.Quiet
-                        ) {
-                            AwanText(stringResource(ProfileR.string.profile_cancel))
-                        }
-                        AwanButton(
-                            onClick = {
-                                if (uiState.newTokenName.isNotBlank()) {
-                                    onAction(McpSettingsAction.CreateToken(uiState.newTokenName))
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            enabled = uiState.newTokenName.isNotBlank() && !uiState.isCreating
-                        ) {
-                            if (uiState.isCreating) {
-                                CircularProgressIndicator(modifier = Modifier.size(AwanTheme.spacing.md), color = AwanTheme.colors.surface)
-                            } else {
-                                AwanText(stringResource(ProfileR.string.profile_mcp_add_token))
+                        AwanText(stringResource(ProfileR.string.profile_cancel))
+                    }
+                    AwanButton(
+                        onClick = {
+                            if (uiState.newTokenName.isNotBlank()) {
+                                onAction(McpSettingsAction.CreateToken(uiState.newTokenName))
                             }
+                        },
+                        modifier = Modifier.weight(1f),
+                        enabled = uiState.newTokenName.isNotBlank() && !uiState.isCreating
+                    ) {
+                        if (uiState.isCreating) {
+                            CircularProgressIndicator(modifier = Modifier.size(AwanTheme.spacing.md), color = AwanTheme.colors.surface)
+                        } else {
+                            AwanText(stringResource(ProfileR.string.profile_mcp_add_token))
                         }
                     }
                 }

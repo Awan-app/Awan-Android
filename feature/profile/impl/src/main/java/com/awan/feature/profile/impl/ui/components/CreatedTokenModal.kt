@@ -30,15 +30,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
-import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.domain.mcp.model.CreatedMcpToken
 import com.awan.feature.profile.impl.R as ProfileR
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreatedTokenModal(
     createdToken: CreatedMcpToken,
@@ -49,18 +51,22 @@ fun CreatedTokenModal(
     val clipboardManager = LocalClipboardManager.current
     val copiedToastMessage = stringResource(ProfileR.string.profile_mcp_token_copied)
     var copied by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    Dialog(onDismissRequest = onDismiss) {
-        AwanCard(
-            modifier = modifier
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = AwanTheme.colors.surface,
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier
                 .fillMaxWidth()
-                .padding(AwanTheme.spacing.xs),
-            contentPadding = PaddingValues(AwanTheme.spacing.md)
+                .padding(horizontal = AwanTheme.spacing.lg)
+                .padding(bottom = AwanTheme.spacing.xl),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)
-            ) {
                 AwanText(
                     text = stringResource(ProfileR.string.profile_mcp_token_created_banner_title),
                     style = AwanTheme.styles.titleText
@@ -143,5 +149,4 @@ fun CreatedTokenModal(
                 }
             }
         }
-    }
 }
