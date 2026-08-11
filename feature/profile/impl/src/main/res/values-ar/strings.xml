@@ -201,14 +201,24 @@
     <string name="profile_mcp_token_created_banner_warning">احرص على نسخ رمز الوصول الخاص بك الآن. لن تتمكن من رؤيته مرة أخرى!</string>
     <string name="profile_mcp_token_copy">نسخ الرمز</string>
     <string name="profile_mcp_token_copied">تم نسخ الرمز إلى الحافظة</string>
+    <string name="profile_mcp_url_copied">تم نسخ رابط خادم MCP إلى الحافظة</string>
+    <string name="profile_mcp_client_id_copied">تم نسخ معرف العميل إلى الحافظة</string>
+    <string name="profile_mcp_claude_config_copied">تم نسخ إعداد Claude Desktop إلى الحافظة</string>
+    <string name="profile_mcp_cursor_config_copied">تم نسخ إعداد Cursor إلى الحافظة</string>
+    <string name="profile_mcp_ai_prompt_copied">تم نسخ مطالبة إعداد الذكاء الاصطناعي إلى الحافظة</string>
     <string name="profile_mcp_token_delete_confirm_title">حذف الرمز؟</string>
     <string name="profile_mcp_token_delete_confirm_body">هل أنت تأكد من حذف رمز MCP هذا؟ سيفقد المساعد الذكي الوصول فوراً.</string>
     <string name="profile_mcp_token_regenerate_confirm_title">إعادة إنشاء الرمز؟</string>
     <string name="profile_mcp_token_regenerate_confirm_body">إعادة إنشاء الرمز ستلغي المفتاح الحالي. ستحتاج إلى تحديثه في المساعد الذكي.</string>
     <string name="profile_mcp_info_title">كيفية ربط مساعدك الذكي</string>
-    <string name="profile_mcp_info_step1">1. انسخ رابط خادم MCP ومعرف العميل أعلاه.</string>
-    <string name="profile_mcp_info_step2">2. أنشئ رمز وصول واحفظ المفتاح فوراً.</string>
-    <string name="profile_mcp_info_step3">3. قم بتضمين الإعدادات في ملف التكوين (مثل claude_desktop_config.json).</string>
+    <string name="profile_mcp_setup_title">تعليمات الإعداد</string>
+    <string name="profile_mcp_info_step1">1. احصل على رمز API من شاشة تكامل MCP. اضغط على إضافة رمز جديد وانسخه من رسالة النجاح التي تظهر مرة واحدة.</string>
+    <string name="profile_mcp_info_step2">2. انسخ إعداداً من الأسفل واستبدل YOUR_API_TOKEN بالرمز الخاص بك، أو انسخ مطالبة إعداد الذكاء الاصطناعي والصقها في مساعدك.</string>
+    <string name="profile_mcp_ai_setup_title">أو دع مساعدك الذكي يتولى الإعداد</string>
+    <string name="profile_mcp_cd_copy_ai_prompt">نسخ مطالبة إعداد الذكاء الاصطناعي</string>
+    <string name="profile_mcp_ai_setup_prompt">صِلني بخادم Awan عبر MCP.\n\nأولاً، اطلب مني رمز MCP API الخاص بـ Awan. لا تتابع قبل أن أقدمه لك.\n\nبعد أن أرسل الرمز، أعد إعداد خادم Awan MCP لهذا المساعد باستخدام:\n- رابط الخادم: https://backend-production-c701.up.railway.app/api/v1/mcp\n- التفويض: Bearer [الرمز الذي أقدمه]\n\nتولَّ إعداد MCP بنفسك، وتحقق من الاتصال، وأخبرني عند جاهزيته.</string>
+
+    <string name="profile_mcp_token_created_on">تاريخ الإنشاء: %1$s</string>
     <string name="profile_mcp_cd_info">معلومات إعداد MCP</string>
     <string name="profile_mcp_cd_copy_url">نسخ رابط خادم MCP</string>
     <string name="profile_mcp_cd_copy_client_id">نسخ معرف العميل</string>

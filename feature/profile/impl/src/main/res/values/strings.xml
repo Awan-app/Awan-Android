@@ -201,14 +201,24 @@
     <string name="profile_mcp_token_created_banner_warning">Make sure to copy your personal access token now. You won\'t be able to see it again!</string>
     <string name="profile_mcp_token_copy">Copy Token</string>
     <string name="profile_mcp_token_copied">Token copied to clipboard</string>
+    <string name="profile_mcp_url_copied">MCP server URL copied to clipboard</string>
+    <string name="profile_mcp_client_id_copied">Client ID copied to clipboard</string>
+    <string name="profile_mcp_claude_config_copied">Claude Desktop configuration copied to clipboard</string>
+    <string name="profile_mcp_cursor_config_copied">Cursor configuration copied to clipboard</string>
+    <string name="profile_mcp_ai_prompt_copied">AI setup prompt copied to clipboard</string>
     <string name="profile_mcp_token_delete_confirm_title">Delete Token?</string>
     <string name="profile_mcp_token_delete_confirm_body">Are you sure you want to delete this MCP token? AI assistants using this token will lose access immediately.</string>
     <string name="profile_mcp_token_regenerate_confirm_title">Regenerate Token?</string>
     <string name="profile_mcp_token_regenerate_confirm_body">Regenerating this token will revoke the existing key. Any connected agent will need the new token.</string>
     <string name="profile_mcp_info_title">How to Connect your AI Assistant</string>
-    <string name="profile_mcp_info_step1">1. Copy the MCP Server URL and Client ID above.</string>
-    <string name="profile_mcp_info_step2">2. Create an API Token and copy the key immediately.</string>
-    <string name="profile_mcp_info_step3">3. Paste the configuration into your assistant (e.g. claude_desktop_config.json).</string>
+    <string name="profile_mcp_setup_title">Setup Instructions</string>
+    <string name="profile_mcp_info_step1">1. Get an API token from the MCP Integration screen. Tap Add New Token and copy it from the one-time success dialog.</string>
+    <string name="profile_mcp_info_step2">2. Copy a configuration below and replace YOUR_API_TOKEN with your token, or copy the AI setup prompt below and paste it into your assistant.</string>
+    <string name="profile_mcp_ai_setup_title">Or let your AI assistant set it up</string>
+    <string name="profile_mcp_cd_copy_ai_prompt">Copy AI setup prompt</string>
+    <string name="profile_mcp_ai_setup_prompt">Connect me to Awan through MCP.\n\nFirst, ask me for my Awan MCP API token. Do not continue until I provide it.\n\nAfter I provide the token, configure the Awan MCP server for this assistant using:\n- Server URL: https://backend-production-c701.up.railway.app/api/v1/mcp\n- Authorization: Bearer [the token I provide]\n\nHandle the MCP setup yourself, verify the connection, and tell me when it is ready.</string>
+
+    <string name="profile_mcp_token_created_on">Created: %1$s</string>
     <string name="profile_mcp_cd_info">MCP Setup Info</string>
     <string name="profile_mcp_cd_copy_url">Copy MCP Server URL</string>
     <string name="profile_mcp_cd_copy_client_id">Copy OAuth Client ID</string>

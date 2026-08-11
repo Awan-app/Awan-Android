@@ -38,6 +38,9 @@ import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.profile.impl.R as ProfileR
 
+internal fun formatMcpTokenCreationDate(createdAt: String): String =
+    createdAt.trim().substringBefore('T').substringBefore(' ')
+
 @Composable
 fun McpInfoScreen(
     onBackClick: () -> Unit,
@@ -45,7 +48,10 @@ fun McpInfoScreen(
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
-    val copiedToastMessage = stringResource(ProfileR.string.profile_mcp_token_copied)
+    val aiSetupPrompt = stringResource(ProfileR.string.profile_mcp_ai_setup_prompt)
+    val claudeCopiedToastMessage = stringResource(ProfileR.string.profile_mcp_claude_config_copied)
+    val cursorCopiedToastMessage = stringResource(ProfileR.string.profile_mcp_cursor_config_copied)
+    val aiPromptCopiedToastMessage = stringResource(ProfileR.string.profile_mcp_ai_prompt_copied)
 
     val claudeSnippet = """
         {
@@ -106,102 +112,6 @@ fun McpInfoScreen(
                 .padding(horizontal = AwanTheme.spacing.lg, vertical = AwanTheme.spacing.md),
             verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)
         ) {
-            // Connection Details Card
-            AwanCard(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(AwanTheme.spacing.md)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
-                    AwanText(
-                        text = stringResource(ProfileR.string.profile_mcp_connection_title),
-                        style = AwanTheme.styles.headingText
-                    )
-
-                    val mcpUrl = "https://backend-production-c701.up.railway.app/api/v1/mcp"
-                    val clientId = "awan-android-client"
-
-                    // MCP Server URL Row
-                    Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
-                        AwanText(
-                            text = stringResource(ProfileR.string.profile_mcp_url_label),
-                            style = AwanTheme.styles.captionText
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(AwanTheme.spacing.xs))
-                                .background(AwanTheme.colors.disabledSurface)
-                                .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
-                                .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            SelectionContainer {
-                                AwanText(
-                                    text = mcpUrl,
-                                    style = AwanTheme.styles.bodyText,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            IconButton(
-                                onClick = {
-                                    clipboardManager.setText(AnnotatedString(mcpUrl))
-                                    Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
-                                },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ContentCopy,
-                                    contentDescription = stringResource(ProfileR.string.profile_mcp_cd_copy_url),
-                                    tint = AwanTheme.colors.sky,
-                                    modifier = Modifier.size(AwanTheme.spacing.md)
-                                )
-                            }
-                        }
-                    }
-
-                    // OAuth Client ID Row
-                    Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
-                        AwanText(
-                            text = stringResource(ProfileR.string.profile_mcp_client_id_label),
-                            style = AwanTheme.styles.captionText
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(AwanTheme.spacing.xs))
-                                .background(AwanTheme.colors.disabledSurface)
-                                .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
-                                .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            SelectionContainer {
-                                AwanText(
-                                    text = clientId,
-                                    style = AwanTheme.styles.bodyText,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            IconButton(
-                                onClick = {
-                                    clipboardManager.setText(AnnotatedString(clientId))
-                                    Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
-                                },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ContentCopy,
-                                    contentDescription = stringResource(ProfileR.string.profile_mcp_cd_copy_client_id),
-                                    tint = AwanTheme.colors.sky,
-                                    modifier = Modifier.size(AwanTheme.spacing.md)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
             // Setup steps card
             AwanCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -209,7 +119,7 @@ fun McpInfoScreen(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
                     AwanText(
-                        text = "Setup Instructions",
+                        text = stringResource(ProfileR.string.profile_mcp_setup_title),
                         style = AwanTheme.styles.headingText
                     )
                     AwanText(
@@ -218,10 +128,6 @@ fun McpInfoScreen(
                     )
                     AwanText(
                         text = stringResource(ProfileR.string.profile_mcp_info_step2),
-                        style = AwanTheme.styles.bodyText
-                    )
-                    AwanText(
-                        text = stringResource(ProfileR.string.profile_mcp_info_step3),
                         style = AwanTheme.styles.bodyText
                     )
                 }
@@ -240,12 +146,18 @@ fun McpInfoScreen(
                     ) {
                         AwanText(
                             text = "Claude Desktop (claude_desktop_config.json)",
-                            style = AwanTheme.styles.headingText
+                            style = AwanTheme.styles.headingText,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2
                         )
                         IconButton(
                             onClick = {
                                 clipboardManager.setText(AnnotatedString(claudeSnippet))
-                                Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    claudeCopiedToastMessage,
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             },
                             modifier = Modifier.size(28.dp)
                         ) {
@@ -288,12 +200,18 @@ fun McpInfoScreen(
                     ) {
                         AwanText(
                             text = "Cursor IDE Setup",
-                            style = AwanTheme.styles.headingText
+                            style = AwanTheme.styles.headingText,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2
                         )
                         IconButton(
                             onClick = {
                                 clipboardManager.setText(AnnotatedString(cursorSnippet))
-                                Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    cursorCopiedToastMessage,
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             },
                             modifier = Modifier.size(28.dp)
                         ) {
@@ -316,6 +234,59 @@ fun McpInfoScreen(
                         SelectionContainer {
                             AwanText(
                                 text = cursorSnippet,
+                                style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) }
+                            )
+                        }
+                    }
+                }
+            }
+            // AI-assisted setup
+            AwanCard(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(AwanTheme.spacing.md)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AwanText(
+                            text = stringResource(ProfileR.string.profile_mcp_ai_setup_title),
+                            style = AwanTheme.styles.headingText,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2
+                        )
+                        IconButton(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(aiSetupPrompt))
+                                Toast.makeText(
+                                    context,
+                                    aiPromptCopiedToastMessage,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = stringResource(ProfileR.string.profile_mcp_cd_copy_ai_prompt),
+                                tint = AwanTheme.colors.sky,
+                                modifier = Modifier.size(AwanTheme.spacing.md)
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(AwanTheme.spacing.xs))
+                            .background(AwanTheme.colors.disabledSurface)
+                            .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
+                            .padding(AwanTheme.spacing.sm)
+                    ) {
+                        SelectionContainer {
+                            AwanText(
+                                text = aiSetupPrompt,
                                 style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) }
                             )
                         }

@@ -65,7 +65,9 @@ fun McpSettingsScreen(
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
-    val copiedToastMessage = stringResource(ProfileR.string.profile_mcp_token_copied)
+    val urlCopiedToastMessage = stringResource(ProfileR.string.profile_mcp_url_copied)
+    val clientIdCopiedToastMessage = stringResource(ProfileR.string.profile_mcp_client_id_copied)
+
 
     if (uiState.createdToken != null) {
         CreatedTokenModal(
@@ -239,7 +241,11 @@ fun McpSettingsScreen(
                                 IconButton(
                                     onClick = {
                                         clipboardManager.setText(AnnotatedString(mcpUrl))
-                                        Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(
+                                            context,
+                                            urlCopiedToastMessage,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     },
                                     modifier = Modifier.size(28.dp)
                                 ) {
@@ -277,7 +283,11 @@ fun McpSettingsScreen(
                                 IconButton(
                                     onClick = {
                                         clipboardManager.setText(AnnotatedString(clientId))
-                                        Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(
+                                            context,
+                                            clientIdCopiedToastMessage,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     },
                                     modifier = Modifier.size(28.dp)
                                 ) {
@@ -441,7 +451,10 @@ private fun TokenItemRow(
                     style = AwanTheme.styles.captionText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) }
                 )
                 AwanText(
-                    text = token.createdAt,
+                    text = stringResource(
+                        ProfileR.string.profile_mcp_token_created_on,
+                        formatMcpTokenCreationDate(token.createdAt)
+                    ),
                     style = AwanTheme.styles.captionText
                 )
             }
