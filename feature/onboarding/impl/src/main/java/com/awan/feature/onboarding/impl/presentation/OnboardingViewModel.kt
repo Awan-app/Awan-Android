@@ -51,6 +51,7 @@ class OnboardingViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     private var categoriesLoad: Job = loadCategories()
+    private var submitJob: Job? = null
 
     /**
      * The backend rejects a zone without a category, so the zones step needs the user's own list
@@ -158,8 +159,16 @@ class OnboardingViewModel @Inject constructor(
     private fun finishOnboarding() =
         submitting { if (submitOnboarding()) _events.send(OnboardingEvent.NavigateHome) }
 
+    /**
+     * One submit at a time. `isSubmittingTask` disables the buttons, but only from the frame after
+     * it is set — and `EnableNotifications` does not set it at all, so the enabled button survives
+     * the whole round trip out through the event channel and back as a permission result. A second
+     * tap in that window used to start a second `submitOnboarding`, which reads `isBackendOnboarded`
+     * before the first one has finished setting it: two accounts' worth of setup for one user.
+     */
     private inline fun submitting(crossinline block: suspend () -> Unit) {
-        viewModelScope.launch {
+        if (submitJob?.isActive == true) return
+        submitJob = viewModelScope.launch {
             _state.update { it.copy(isSubmittingTask = true, setupError = null) }
             block()
             _state.update { it.copy(isSubmittingTask = false) }

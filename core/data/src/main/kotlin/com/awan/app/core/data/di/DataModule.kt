@@ -289,5 +289,11 @@ internal abstract class DataModule {
     abstract fun bindNetworkConnectivityMonitor(
         impl: NetworkConnectivityMonitorImpl,
     ): NetworkConnectivityMonitor
+
+    @Binds
+    @Singleton
+    abstract fun bindDeviceTokenRepository(
+        impl: com.awan.app.core.data.devicetoken.repository.DeviceTokenRepositoryImpl,
+    ): com.awan.app.core.domain.devicetoken.repository.DeviceTokenRepository
 }
 

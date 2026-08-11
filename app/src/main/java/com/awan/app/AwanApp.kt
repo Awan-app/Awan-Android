@@ -313,5 +313,7 @@ fun AwanApp(
         // Last child of the root Box: above every screen and the bottom bar, and in the same
         // coordinate space as the anchors it animates between — which a Dialog would not be.
         RewardOverlayHost(rewardEvents = rewardEvents)
+
+        com.awan.app.core.designsystem.AwanTopToastHost()
     }
 }
