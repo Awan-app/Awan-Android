@@ -61,6 +61,10 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -217,7 +221,7 @@ fun AwanWheelOverlay(
                     .padding(top = 16.dp, end = 20.dp)
                     .size(42.dp)
                     .clip(CircleShape)
-                    .background(Color.White)
+                    .background(AwanTheme.colors.surface)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -228,7 +232,7 @@ fun AwanWheelOverlay(
                 Icon(
                     imageVector = Lucide.X,
                     contentDescription = closeLabel,
-                    tint = Color(0xFF1E293B),
+                    tint = AwanTheme.colors.ink,
                     modifier = Modifier.size(24.dp),
                 )
             }
@@ -302,7 +306,7 @@ fun AwanWheelOverlay(
 
                 // Bottom Action & Status Footer
                 if (isAlreadyClaimedSession) {
-                    ClaimedStatusFooter()
+                    ClaimedStatusFooter(onClose = currentOnClose)
                 } else {
                     AwanText(
                         text = stringResource(
@@ -342,6 +346,7 @@ private fun VictoryOverlay(
             modifier = Modifier.padding(horizontal = 24.dp),
         ) {
             // Large Glowing Golden Star Badge
+            val colors = AwanTheme.colors
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
@@ -350,7 +355,7 @@ private fun VictoryOverlay(
                         drawCircle(
                             brush = Brush.radialGradient(
                                 listOf(
-                                    Color(0xFFFFD700).copy(alpha = 0.5f),
+                                    colors.pointsIcon.copy(alpha = 0.5f),
                                     Color.Transparent,
                                 )
                             ),
@@ -365,15 +370,15 @@ private fun VictoryOverlay(
                         .clip(CircleShape)
                         .background(
                             Brush.verticalGradient(
-                                listOf(Color(0xFFFFE885), Color(0xFFFFB800))
+                                listOf(colors.pointsSurface, colors.pointsIcon)
                             )
                         )
-                        .border(3.dp, Color.White, CircleShape),
+                        .border(3.dp, colors.surface, CircleShape),
                 ) {
                     Icon(
                         imageVector = Lucide.Star,
                         contentDescription = null,
-                        tint = Color(0xFF1E293B),
+                        tint = colors.ink,
                         modifier = Modifier.size(64.dp),
                     )
                 }
@@ -387,7 +392,7 @@ private fun VictoryOverlay(
                 style = AwanTheme.typography.title.copy(
                     fontSize = 32.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
+                    color = colors.surface,
                     textAlign = TextAlign.Center,
                 ),
             )
@@ -400,7 +405,7 @@ private fun VictoryOverlay(
                 style = AwanTheme.typography.title.copy(
                     fontSize = 24.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFFFFD700),
+                    color = colors.pointsIcon,
                     textAlign = TextAlign.Center,
                 ),
             )
@@ -420,7 +425,7 @@ private fun VictoryOverlay(
                     Icon(
                         imageVector = Lucide.Check,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = colors.surface,
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -439,10 +444,10 @@ private fun VictoryOverlay(
 
 /**
  * Bottom Status Footer when gift is claimed today.
- * Displays "Today's gift is claimed" & "See you tomorrow!".
+ * Displays "Today's gift is claimed" & "See you tomorrow!" with explicit Close action button.
  */
 @Composable
-private fun ClaimedStatusFooter() {
+private fun ClaimedStatusFooter(onClose: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -468,6 +473,16 @@ private fun ClaimedStatusFooter() {
                 textAlign = TextAlign.Center,
             ),
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        AwanButton(
+            onClick = onClose,
+            variant = AwanButtonVariant.Primary,
+            modifier = Modifier.fillMaxWidth(0.6f),
+        ) {
+            AwanText(stringResource(R.string.ds_wheel_close))
+        }
     }
 }
 
@@ -484,27 +499,43 @@ private fun WheelCanvas(
     enabled: Boolean,
     onSpin: () -> Unit,
 ) {
-    // Vibrant cartoon game palette matching reference images
+    val colors = AwanTheme.colors
     val happyPalette = listOf(
-        Color(0xFF1E2D4A), // 0: Dark Navy (Gift)
-        Color(0xFFF7C92B), // 1: Golden Yellow (1 Star)
-        Color(0xFFFF8E00), // 2: Bright Orange (5 Stars)
-        Color(0xFFE83D3D), // 3: Coral Red (10 Stars)
-        Color(0xFF7C3AED), // 4: Violet Purple (20 Stars)
-        Color(0xFF0096FF), // 5: Sky Blue (50 Stars)
-        Color(0xFF22C55E), // 6: Lime Green (100 Stars)
+        colors.wheelNavy,
+        colors.wheelYellow,
+        colors.wheelOrange,
+        colors.wheelRed,
+        colors.wheelPurple,
+        colors.wheelBlue,
+        colors.wheelGreen,
     )
 
     val density = LocalDensity.current
     val labelSizePx = remember(density) { with(density) { 15.sp.toPx() } }
+    val textPaint = remember(labelSizePx) {
+        android.graphics.Paint().apply {
+            textAlign = android.graphics.Paint.Align.CENTER
+            isFakeBoldText = true
+            isAntiAlias = true
+        }
+    }
 
-    val goldOuterBorder = Color(0xFFFFD700)
-    val goldInnerBorder = Color(0xFFFFF7C2)
-    val whiteColor = Color.White
+    val goldOuterBorder = colors.wheelGoldOuter
+    val goldInnerBorder = colors.wheelGoldInner
+    val whiteColor = colors.surface
+
+    val wheelDescription = stringResource(
+        if (canSpin) R.string.ds_wheel_tap_to_spin else R.string.ds_wheel_claimed_title
+    )
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(WheelCanvasSize),
+        modifier = Modifier
+            .size(WheelCanvasSize)
+            .semantics {
+                role = Role.Button
+                contentDescription = wheelDescription
+            },
     ) {
         Canvas(
             modifier = Modifier.fillMaxSize(),
@@ -520,7 +551,7 @@ private fun WheelCanvas(
             // 1. Draw Double Golden Outer Ring
             drawCircle(
                 brush = Brush.verticalGradient(
-                    listOf(goldOuterBorder, Color(0xFFFF9400))
+                    listOf(goldOuterBorder, colors.streakIcon)
                 ),
                 radius = outerRadius,
                 center = centerOffset,
@@ -534,7 +565,7 @@ private fun WheelCanvas(
 
             // 2. Draw Rotated Wheel Segments
             rotate(degrees = rotationDegrees, pivot = centerOffset) {
-                segments.forEachIndexed { index, _ ->
+                segments.forEachIndexed { index, segment ->
                     val startAngle = POINTER_ANGLE_DEG + index * sweep
                     val baseColor = happyPalette[index % happyPalette.size]
 
@@ -548,8 +579,9 @@ private fun WheelCanvas(
                         size = androidx.compose.ui.geometry.Size(wheelRadius * 2f, wheelRadius * 2f),
                     )
 
-                    // Polka-dot white texture inside wedge
-                    val midAngleRad = Math.toRadians((startAngle + sweep / 2f).toDouble())
+                    // Polka-dot texture inside wedge
+                    val midAngle = startAngle + sweep / 2f
+                    val midAngleRad = Math.toRadians(midAngle.toDouble())
                     val dot1Radius = wheelRadius * 0.35f
                     val dot2Radius = wheelRadius * 0.75f
 
@@ -589,25 +621,24 @@ private fun WheelCanvas(
                         radius = 3.dp.toPx(),
                         center = Offset(pegX, pegY),
                     )
+
+                    // Wedge Label & Icon positioned dynamically with wedge angle
+                    drawWedgeLabel(
+                        label = segment.label,
+                        isItem = segment.isItem,
+                        wedgeAngleDeg = midAngle,
+                        labelColor = whiteColor.toArgb(),
+                        labelSizePx = labelSizePx,
+                        textPaint = textPaint,
+                        wheelRadius = wheelRadius,
+                        centerOffset = centerOffset,
+                    )
                 }
             }
 
-            // 3. Draw Upright Wedge Labels & Icons
-            segments.forEachIndexed { index, segment ->
-                drawWedgeLabel(
-                    label = segment.label,
-                    isItem = segment.isItem,
-                    angleDeg = POINTER_ANGLE_DEG + index * sweep + sweep / 2f + rotationDegrees,
-                    labelColor = whiteColor.toArgb(),
-                    labelSizePx = labelSizePx,
-                    wheelRadius = wheelRadius,
-                    centerOffset = centerOffset,
-                )
-            }
-
-            // 4. Center Cap Outer Ring
+            // 3. Center Cap Outer Ring
             drawCircle(
-                brush = Brush.verticalGradient(listOf(goldOuterBorder, Color(0xFFFF9400))),
+                brush = Brush.verticalGradient(listOf(goldOuterBorder, colors.streakIcon)),
                 radius = hubRadius + 3.dp.toPx(),
                 center = centerOffset,
             )
@@ -628,18 +659,19 @@ private fun WheelCanvas(
 }
 
 /**
- * Draws wedge label with star/gift icon text, always upright.
+ * Draws wedge label with star/gift icon text, upright and centered dynamically inside each wedge.
  */
 private fun DrawScope.drawWedgeLabel(
     label: String,
     isItem: Boolean,
-    angleDeg: Float,
+    wedgeAngleDeg: Float,
     labelColor: Int,
     labelSizePx: Float,
+    textPaint: android.graphics.Paint,
     wheelRadius: Float,
     centerOffset: Offset,
 ) {
-    val radians = Math.toRadians(angleDeg.toDouble())
+    val radians = Math.toRadians(wedgeAngleDeg.toDouble())
     val labelRadius = wheelRadius * 0.62f
     val position = Offset(
         x = centerOffset.x + (cos(radians) * labelRadius).toFloat(),
@@ -648,20 +680,18 @@ private fun DrawScope.drawWedgeLabel(
 
     // Render Icon + Text inside wedge
     val displayText = if (isItem) "🎁\n$label" else "★\n$label"
-    val paint = android.graphics.Paint().apply {
-        color = labelColor
-        textSize = labelSizePx
-        textAlign = android.graphics.Paint.Align.CENTER
-        isFakeBoldText = true
-        isAntiAlias = true
-        setShadowLayer(4f, 1f, 1f, Color.Black.copy(alpha = 0.5f).toArgb())
-    }
+    textPaint.color = labelColor
+    textPaint.textSize = labelSizePx
+    textPaint.setShadowLayer(4f, 1f, 1f, Color.Black.copy(alpha = 0.5f).toArgb())
 
-    val lines = displayText.split("\n")
-    var currentY = position.y - (lines.size - 1) * labelSizePx * 0.6f
-    for (line in lines) {
-        drawContext.canvas.nativeCanvas.drawText(line, position.x, currentY + labelSizePx / 3f, paint)
-        currentY += labelSizePx * 1.1f
+    // Rotate text to align radially with each wedge angle along the circle
+    rotate(degrees = wedgeAngleDeg + 90f, pivot = position) {
+        val lines = displayText.split("\n")
+        var currentY = position.y - (lines.size - 1) * labelSizePx * 0.6f
+        for (line in lines) {
+            drawContext.canvas.nativeCanvas.drawText(line, position.x, currentY + labelSizePx / 3f, textPaint)
+            currentY += labelSizePx * 1.1f
+        }
     }
 }
 
@@ -677,6 +707,7 @@ private fun CenterCapIcon(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val pressScale = if (isPressed && enabled) 0.92f else 1f
+    val colors = AwanTheme.colors
 
     Box(
         modifier = Modifier
@@ -694,7 +725,7 @@ private fun CenterCapIcon(
         Icon(
             imageVector = if (canSpin) Lucide.Sparkles else Lucide.Lock,
             contentDescription = null,
-            tint = Color(0xFFFFB800),
+            tint = colors.pointsIcon,
             modifier = Modifier.size(32.dp),
         )
     }

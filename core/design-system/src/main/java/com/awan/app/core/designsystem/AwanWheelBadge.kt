@@ -90,16 +90,16 @@ fun AwanWheelBadge(
     val badgeGradient = if (hasFreeSpin) {
         Brush.verticalGradient(
             listOf(
-                Color(0xFFFFE885),
-                Color(0xFFFFB800),
-                Color(0xFFD97706),
+                colors.pointsSurface,
+                colors.pointsIcon,
+                colors.streakIcon,
             )
         )
     } else {
         Brush.verticalGradient(
             listOf(
-                Color(0xFFCBD5E1),
-                Color(0xFF94A3B8),
+                colors.disabledContent,
+                colors.meta,
             )
         )
     }
@@ -121,7 +121,7 @@ fun AwanWheelBadge(
                         drawCircle(
                             brush = Brush.radialGradient(
                                 listOf(
-                                    Color(0xFFFFD700).copy(alpha = 0.5f),
+                                    colors.pointsIcon.copy(alpha = 0.5f),
                                     Color.Transparent,
                                 )
                             )
@@ -135,13 +135,13 @@ fun AwanWheelBadge(
             modifier = Modifier
                 .size(BadgeSize)
                 .clip(CircleShape)
-                .background(if (hasFreeSpin) colors.ink else Color(0xFF475569))
+                .background(if (hasFreeSpin) colors.ink else colors.meta)
                 .padding(bottom = 2.5.dp)
                 .clip(CircleShape)
                 .background(badgeGradient)
                 .border(
                     width = 2.dp,
-                    color = if (hasFreeSpin) Color(0xFFFFF7C2) else Color(0xFFE2E8F0),
+                    color = if (hasFreeSpin) colors.pointsSurface else colors.line,
                     shape = CircleShape,
                 )
                 .clickable(
@@ -159,7 +159,7 @@ fun AwanWheelBadge(
             Icon(
                 imageVector = Lucide.Gift,
                 contentDescription = null,
-                tint = if (hasFreeSpin) colors.ink else Color(0xFF475569),
+                tint = if (hasFreeSpin) colors.ink else colors.meta,
                 modifier = Modifier.size(22.dp),
             )
         }
