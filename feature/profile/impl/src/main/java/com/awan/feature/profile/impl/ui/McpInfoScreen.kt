@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.Icon
@@ -54,7 +55,7 @@ fun McpInfoScreen(
               "args": [
                 "-y",
                 "@awan/mcp-server",
-                "--url", "https://mcp.awan.app/v1",
+                "--url", "https://backend-production-c701.up.railway.app/api/v1/mcp",
                 "--token", "YOUR_API_TOKEN"
               ]
             }
@@ -67,7 +68,7 @@ fun McpInfoScreen(
           "mcp": {
             "servers": {
               "awan": {
-                "url": "https://mcp.awan.app/v1",
+                "url": "https://backend-production-c701.up.railway.app/api/v1/mcp",
                 "headers": {
                   "Authorization": "Bearer YOUR_API_TOKEN"
                 }
@@ -168,10 +169,12 @@ fun McpInfoScreen(
                             .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
                             .padding(AwanTheme.spacing.sm)
                     ) {
-                        AwanText(
-                            text = claudeSnippet,
-                            style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) }
-                        )
+                        SelectionContainer {
+                            AwanText(
+                                text = claudeSnippet,
+                                style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) }
+                            )
+                        }
                     }
                 }
             }
@@ -214,10 +217,12 @@ fun McpInfoScreen(
                             .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
                             .padding(AwanTheme.spacing.sm)
                     ) {
-                        AwanText(
-                            text = cursorSnippet,
-                            style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) }
-                        )
+                        SelectionContainer {
+                            AwanText(
+                                text = cursorSnippet,
+                                style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) }
+                            )
+                        }
                     }
                 }
             }
