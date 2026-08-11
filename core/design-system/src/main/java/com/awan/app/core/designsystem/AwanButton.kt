@@ -223,14 +223,26 @@ fun AwanButton(
         val minTouchPx = minTouchSize.roundToPx()
         val safeMaxWidth = constraints.maxWidth.coerceAtLeast(0)
         val safeMaxHeight = constraints.maxHeight.coerceAtLeast(0)
-        val minW = maxOf(constraints.minWidth, minTouchPx).coerceIn(0, safeMaxWidth)
-        val minH = maxOf(constraints.minHeight, minTouchPx).coerceIn(0, safeMaxHeight)
+
+        val rawMinW = if (constraints.hasBoundedWidth) {
+            maxOf(constraints.minWidth, minTouchPx).coerceAtMost(safeMaxWidth)
+        } else {
+            maxOf(constraints.minWidth, minTouchPx)
+        }
+        val minW = rawMinW.coerceAtLeast(0)
+
+        val rawMinH = if (constraints.hasBoundedHeight) {
+            maxOf(constraints.minHeight, minTouchPx).coerceAtMost(safeMaxHeight)
+        } else {
+            maxOf(constraints.minHeight, minTouchPx)
+        }
+        val minH = rawMinH.coerceAtLeast(0)
 
         val safeConstraints = Constraints(
             minWidth = minW,
-            maxWidth = safeMaxWidth,
+            maxWidth = maxOf(minW, safeMaxWidth),
             minHeight = minH,
-            maxHeight = safeMaxHeight,
+            maxHeight = maxOf(minH, safeMaxHeight),
         )
 
         val facePlaceable = measurables[1].measure(safeConstraints)
