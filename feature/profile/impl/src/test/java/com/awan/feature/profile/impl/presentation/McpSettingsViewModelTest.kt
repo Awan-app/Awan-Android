@@ -62,16 +62,53 @@ class McpSettingsViewModelTest {
     }
 
     @Test
-    fun `CreateToken action creates token, sets createdToken, and emits TokenCreated event`() = runTest(testDispatcher) {
+    fun `ShowAddTokenDialog and UpdateNewTokenName actions update state correctly`() = runTest(testDispatcher) {
+        viewModel.onAction(McpSettingsAction.ShowAddTokenDialog)
+        assert(viewModel.uiState.value.showAddTokenDialog)
+
+        viewModel.onAction(McpSettingsAction.UpdateNewTokenName("My Token"))
+        assertEquals("My Token", viewModel.uiState.value.newTokenName)
+
+        viewModel.onAction(McpSettingsAction.HideAddTokenDialog)
+        assert(!viewModel.uiState.value.showAddTokenDialog)
+        assertEquals("", viewModel.uiState.value.newTokenName)
+    }
+
+    @Test
+    fun `ShowDeleteDialog and HideDeleteDialog update deletingToken in state`() = runTest(testDispatcher) {
+        val token = McpToken("token-1", "Claude Desktop", "••••••••abcd", "2026-08-11T00:00:00Z")
+        viewModel.onAction(McpSettingsAction.ShowDeleteDialog(token))
+        assertEquals(token, viewModel.uiState.value.deletingToken)
+
+        viewModel.onAction(McpSettingsAction.HideDeleteDialog)
+        assertNull(viewModel.uiState.value.deletingToken)
+    }
+
+    @Test
+    fun `ShowRegenerateDialog and HideRegenerateDialog update regeneratingToken in state`() = runTest(testDispatcher) {
+        val token = McpToken("token-1", "Claude Desktop", "••••••••abcd", "2026-08-11T00:00:00Z")
+        viewModel.onAction(McpSettingsAction.ShowRegenerateDialog(token))
+        assertEquals(token, viewModel.uiState.value.regeneratingToken)
+
+        viewModel.onAction(McpSettingsAction.HideRegenerateDialog)
+        assertNull(viewModel.uiState.value.regeneratingToken)
+    }
+
+    @Test
+    fun `CreateToken action creates token, sets createdToken, resets dialog, and emits TokenCreated event`() = runTest(testDispatcher) {
         val events = mutableListOf<McpSettingsEvent>()
         val job = launch { viewModel.events.toList(events) }
 
+        viewModel.onAction(McpSettingsAction.ShowAddTokenDialog)
+        viewModel.onAction(McpSettingsAction.UpdateNewTokenName("Cursor"))
         viewModel.onAction(McpSettingsAction.CreateToken("Cursor"))
 
         val state = viewModel.uiState.value
         assertNotNull(state.createdToken)
         assertEquals("Cursor", state.createdToken?.name)
         assertEquals("raw_secret_cursor_key", state.createdToken?.rawToken)
+        assert(!state.showAddTokenDialog)
+        assertEquals("", state.newTokenName)
         assertEquals(1, events.size)
         assert(events.first() is McpSettingsEvent.TokenCreated)
 
@@ -79,14 +116,17 @@ class McpSettingsViewModelTest {
     }
 
     @Test
-    fun `DeleteToken action removes token from state and emits TokenDeleted event`() = runTest(testDispatcher) {
+    fun `DeleteToken action removes token from state, clears deletingToken, and emits TokenDeleted event`() = runTest(testDispatcher) {
         val events = mutableListOf<McpSettingsEvent>()
         val job = launch { viewModel.events.toList(events) }
 
+        val token = McpToken("token-1", "Claude Desktop", "••••••••abcd", "2026-08-11T00:00:00Z")
+        viewModel.onAction(McpSettingsAction.ShowDeleteDialog(token))
         viewModel.onAction(McpSettingsAction.DeleteToken("token-1"))
 
         val state = viewModel.uiState.value
         assertEquals(0, state.tokens.size)
+        assertNull(state.deletingToken)
         assertEquals(1, events.size)
         assert(events.first() is McpSettingsEvent.TokenDeleted)
 
@@ -94,15 +134,18 @@ class McpSettingsViewModelTest {
     }
 
     @Test
-    fun `RegenerateToken action sets new createdToken and emits TokenRegenerated event`() = runTest(testDispatcher) {
+    fun `RegenerateToken action sets new createdToken, clears regeneratingToken, and emits TokenRegenerated event`() = runTest(testDispatcher) {
         val events = mutableListOf<McpSettingsEvent>()
         val job = launch { viewModel.events.toList(events) }
 
+        val token = McpToken("token-1", "Claude Desktop", "••••••••abcd", "2026-08-11T00:00:00Z")
+        viewModel.onAction(McpSettingsAction.ShowRegenerateDialog(token))
         viewModel.onAction(McpSettingsAction.RegenerateToken("token-1"))
 
         val state = viewModel.uiState.value
         assertNotNull(state.createdToken)
         assertEquals("raw_regenerated_token-1", state.createdToken?.rawToken)
+        assertNull(state.regeneratingToken)
         assertEquals(1, events.size)
         assert(events.first() is McpSettingsEvent.TokenRegenerated)
 

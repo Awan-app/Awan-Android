@@ -1,8 +1,5 @@
 package com.awan.feature.profile.impl.ui
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,8 +25,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanBackButton
@@ -44,6 +43,7 @@ fun McpInfoScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     val copiedToastMessage = stringResource(ProfileR.string.profile_mcp_token_copied)
 
     val claudeSnippet = """
@@ -83,8 +83,8 @@ fun McpInfoScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(horizontal = AwanTheme.spacing.md, vertical = AwanTheme.spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AwanBackButton(onClick = onBackClick)
@@ -102,15 +102,15 @@ fun McpInfoScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = AwanTheme.spacing.lg, vertical = AwanTheme.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)
         ) {
             // Setup steps card
             AwanCard(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(AwanTheme.spacing.md)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
                     AwanText(
                         text = "Setup Instructions",
                         style = AwanTheme.styles.headingText
@@ -135,7 +135,7 @@ fun McpInfoScreen(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(AwanTheme.spacing.md)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -147,27 +147,26 @@ fun McpInfoScreen(
                         )
                         IconButton(
                             onClick = {
-                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                clipboard.setPrimaryClip(ClipData.newPlainText("Claude Config", claudeSnippet))
+                                clipboardManager.setText(AnnotatedString(claudeSnippet))
                                 Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.size(28.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ContentCopy,
-                                contentDescription = "Copy Claude Snippet",
+                                contentDescription = stringResource(ProfileR.string.profile_mcp_cd_copy_snippet),
                                 tint = AwanTheme.colors.sky,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(AwanTheme.spacing.md)
                             )
                         }
                     }
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(AwanTheme.spacing.xs))
                             .background(AwanTheme.colors.disabledSurface)
-                            .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(8.dp))
-                            .padding(12.dp)
+                            .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
+                            .padding(AwanTheme.spacing.sm)
                     ) {
                         AwanText(
                             text = claudeSnippet,
@@ -182,7 +181,7 @@ fun McpInfoScreen(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(AwanTheme.spacing.md)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -194,27 +193,26 @@ fun McpInfoScreen(
                         )
                         IconButton(
                             onClick = {
-                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                clipboard.setPrimaryClip(ClipData.newPlainText("Cursor Config", cursorSnippet))
+                                clipboardManager.setText(AnnotatedString(cursorSnippet))
                                 Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.size(28.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ContentCopy,
-                                contentDescription = "Copy Cursor Snippet",
+                                contentDescription = stringResource(ProfileR.string.profile_mcp_cd_copy_snippet),
                                 tint = AwanTheme.colors.sky,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(AwanTheme.spacing.md)
                             )
                         }
                     }
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(AwanTheme.spacing.xs))
                             .background(AwanTheme.colors.disabledSurface)
-                            .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(8.dp))
-                            .padding(12.dp)
+                            .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
+                            .padding(AwanTheme.spacing.sm)
                     ) {
                         AwanText(
                             text = cursorSnippet,

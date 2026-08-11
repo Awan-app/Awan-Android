@@ -196,6 +196,7 @@
     <string name="profile_mcp_token_name_hint">Token Name (e.g. Claude Desktop)</string>
     <string name="profile_mcp_token_obscured_notice">Token key is hidden for security</string>
     <string name="profile_mcp_token_copy_disabled">Token can only be copied when initially created</string>
+    <string name="profile_mcp_token_notice_formatted">%1$s. %2$s</string>
     <string name="profile_mcp_token_created_banner_title">Token Created Successfully!</string>
     <string name="profile_mcp_token_created_banner_warning">Make sure to copy your personal access token now. You won\'t be able to see it again!</string>
     <string name="profile_mcp_token_copy">Copy Token</string>
@@ -208,4 +209,10 @@
     <string name="profile_mcp_info_step1">1. Copy the MCP Server URL and Client ID above.</string>
     <string name="profile_mcp_info_step2">2. Create an API Token and copy the key immediately.</string>
     <string name="profile_mcp_info_step3">3. Paste the configuration into your assistant (e.g. claude_desktop_config.json).</string>
+    <string name="profile_mcp_cd_info">MCP Setup Info</string>
+    <string name="profile_mcp_cd_copy_url">Copy MCP Server URL</string>
+    <string name="profile_mcp_cd_copy_client_id">Copy OAuth Client ID</string>
+    <string name="profile_mcp_cd_copy_snippet">Copy Configuration Snippet</string>
+    <string name="profile_mcp_cd_delete_token">Delete Token %1$s</string>
+    <string name="profile_mcp_cd_regenerate_token">Regenerate Token %1$s</string>
 </resources>

@@ -2,6 +2,7 @@ package com.awan.app.core.database.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import com.awan.app.core.database.model.McpTokenEntity
 import kotlinx.coroutines.flow.Flow
@@ -19,4 +20,10 @@ interface McpTokenDao {
 
     @Query("DELETE FROM mcp_tokens")
     suspend fun clearAll()
+
+    @Transaction
+    suspend fun replaceMcpTokens(tokens: List<McpTokenEntity>) {
+        clearAll()
+        upsertMcpTokens(tokens)
+    }
 }

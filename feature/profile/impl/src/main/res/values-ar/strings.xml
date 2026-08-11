@@ -196,6 +196,7 @@
     <string name="profile_mcp_token_name_hint">اسم الرمز (مثال: Claude Desktop)</string>
     <string name="profile_mcp_token_obscured_notice">تم إخفاء المفتاح لأسباب أمنية</string>
     <string name="profile_mcp_token_copy_disabled">يمكن نسخ الرمز فقط عند إنشائه لأول مرة</string>
+    <string name="profile_mcp_token_notice_formatted">%1$s. %2$s</string>
     <string name="profile_mcp_token_created_banner_title">تم إنشاء الرمز بنجاح!</string>
     <string name="profile_mcp_token_created_banner_warning">احرص على نسخ رمز الوصول الخاص بك الآن. لن تتمكن من رؤيته مرة أخرى!</string>
     <string name="profile_mcp_token_copy">نسخ الرمز</string>
@@ -208,4 +209,10 @@
     <string name="profile_mcp_info_step1">1. انسخ رابط خادم MCP ومعرف العميل أعلاه.</string>
     <string name="profile_mcp_info_step2">2. أنشئ رمز وصول واحفظ المفتاح فوراً.</string>
     <string name="profile_mcp_info_step3">3. قم بتضمين الإعدادات في ملف التكوين (مثل claude_desktop_config.json).</string>
+    <string name="profile_mcp_cd_info">معلومات إعداد MCP</string>
+    <string name="profile_mcp_cd_copy_url">نسخ رابط خادم MCP</string>
+    <string name="profile_mcp_cd_copy_client_id">نسخ معرف العميل</string>
+    <string name="profile_mcp_cd_copy_snippet">نسخ البرمجية النصية للتكوين</string>
+    <string name="profile_mcp_cd_delete_token">حذف الرمز %1$s</string>
+    <string name="profile_mcp_cd_regenerate_token">إعادة إنشاء الرمز %1$s</string>
 </resources>

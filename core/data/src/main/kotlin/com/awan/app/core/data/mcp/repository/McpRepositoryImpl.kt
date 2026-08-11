@@ -4,8 +4,9 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.data.mcp.mapper.toDomain
+import com.awan.app.core.data.mcp.mapper.toEntity
 import com.awan.app.core.database.dao.McpTokenDao
-import com.awan.app.core.database.model.McpTokenEntity
 import com.awan.app.core.domain.mcp.model.CreatedMcpToken
 import com.awan.app.core.domain.mcp.model.McpConnectionDetails
 import com.awan.app.core.domain.mcp.model.McpToken
@@ -14,6 +15,7 @@ import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.network.api.McpApiService
 import com.awan.app.core.network.dto.mcp.CreateMcpTokenRequestDto
 import com.awan.app.core.network.error.safeApiCall
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
@@ -50,34 +52,16 @@ class McpRepositoryImpl @Inject constructor(
         if (connectivityMonitor.isCurrentlyOnline()) {
             try {
                 val dtos = mcpApiService.getTokens()
-                val entities = dtos.map { dto ->
-                    McpTokenEntity(
-                        id = dto.id,
-                        name = dto.name,
-                        maskedToken = dto.maskedToken,
-                        createdAt = dto.createdAt,
-                        lastUsedAt = dto.lastUsedAt,
-                    )
-                }
-                mcpTokenDao.clearAll()
-                mcpTokenDao.upsertMcpTokens(entities)
-            } catch (_: Exception) {
+                val entities = dtos.map { it.toEntity() }
+                mcpTokenDao.replaceMcpTokens(entities)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 // If network sync fails, fallback to Room cached tokens
             }
         }
         emitAll(
             mcpTokenDao.getMcpTokens().map { entities ->
-                Result.Success(
-                    entities.map { entity ->
-                        McpToken(
-                            id = entity.id,
-                            name = entity.name,
-                            maskedToken = entity.maskedToken,
-                            createdAt = entity.createdAt,
-                            lastUsedAt = entity.lastUsedAt,
-                        )
-                    }
-                )
+                Result.Success(entities.map { it.toDomain() })
             }
         )
     }.flowOn(ioDispatcher)
@@ -88,21 +72,20 @@ class McpRepositoryImpl @Inject constructor(
         }
         return safeApiCall(ioDispatcher) {
             val dto = mcpApiService.createToken(CreateMcpTokenRequestDto(name = name))
-            val entity = McpTokenEntity(
-                id = dto.id,
-                name = dto.name,
-                maskedToken = dto.maskedToken,
-                createdAt = dto.createdAt,
-                lastUsedAt = null,
-            )
-            mcpTokenDao.upsertMcpTokens(listOf(entity))
-            CreatedMcpToken(
+            val createdToken = CreatedMcpToken(
                 id = dto.id,
                 name = dto.name,
                 rawToken = dto.rawToken,
                 maskedToken = dto.maskedToken,
                 createdAt = dto.createdAt,
             )
+            try {
+                mcpTokenDao.upsertMcpTokens(listOf(dto.toEntity()))
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                // Local DB cache write failure must NOT drop or cause failure of the returned raw token
+            }
+            createdToken
         }
     }
 
@@ -114,7 +97,11 @@ class McpRepositoryImpl @Inject constructor(
             mcpApiService.deleteToken(id)
         }
         if (result is Result.Success) {
-            mcpTokenDao.deleteMcpToken(id)
+            try {
+                mcpTokenDao.deleteMcpToken(id)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
         }
         return result
     }
@@ -125,21 +112,20 @@ class McpRepositoryImpl @Inject constructor(
         }
         return safeApiCall(ioDispatcher) {
             val dto = mcpApiService.regenerateToken(id)
-            val entity = McpTokenEntity(
-                id = dto.id,
-                name = dto.name,
-                maskedToken = dto.maskedToken,
-                createdAt = dto.createdAt,
-                lastUsedAt = null,
-            )
-            mcpTokenDao.upsertMcpTokens(listOf(entity))
-            CreatedMcpToken(
+            val createdToken = CreatedMcpToken(
                 id = dto.id,
                 name = dto.name,
                 rawToken = dto.rawToken,
                 maskedToken = dto.maskedToken,
                 createdAt = dto.createdAt,
             )
+            try {
+                mcpTokenDao.upsertMcpTokens(listOf(dto.toEntity()))
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                // Local DB cache write failure must NOT drop or cause failure of the returned raw token
+            }
+            createdToken
         }
     }
 }

@@ -41,6 +41,13 @@ class McpSettingsViewModel @Inject constructor(
 
     fun onAction(action: McpSettingsAction) {
         when (action) {
+            McpSettingsAction.ShowAddTokenDialog -> _uiState.update { it.copy(showAddTokenDialog = true, newTokenName = "") }
+            McpSettingsAction.HideAddTokenDialog -> _uiState.update { it.copy(showAddTokenDialog = false, newTokenName = "") }
+            is McpSettingsAction.UpdateNewTokenName -> _uiState.update { it.copy(newTokenName = action.name) }
+            is McpSettingsAction.ShowDeleteDialog -> _uiState.update { it.copy(deletingToken = action.token) }
+            McpSettingsAction.HideDeleteDialog -> _uiState.update { it.copy(deletingToken = null) }
+            is McpSettingsAction.ShowRegenerateDialog -> _uiState.update { it.copy(regeneratingToken = action.token) }
+            McpSettingsAction.HideRegenerateDialog -> _uiState.update { it.copy(regeneratingToken = null) }
             is McpSettingsAction.CreateToken -> createToken(action.name)
             is McpSettingsAction.DeleteToken -> deleteToken(action.id)
             is McpSettingsAction.RegenerateToken -> regenerateToken(action.id)
@@ -96,6 +103,8 @@ class McpSettingsViewModel @Inject constructor(
                         state.copy(
                             isCreating = false,
                             createdToken = created,
+                            showAddTokenDialog = false,
+                            newTokenName = "",
                         )
                     }
                     _events.send(McpSettingsEvent.TokenCreated(created))
@@ -115,13 +124,16 @@ class McpSettingsViewModel @Inject constructor(
             when (val result = deleteMcpTokenUseCase(id)) {
                 is Result.Success -> {
                     _uiState.update { state ->
-                        state.copy(tokens = state.tokens.filterNot { it.id == id })
+                        state.copy(
+                            tokens = state.tokens.filterNot { it.id == id },
+                            deletingToken = null,
+                        )
                     }
                     _events.send(McpSettingsEvent.TokenDeleted)
                 }
                 is Result.Error -> {
                     val uiError = ProfileErrorMapper.mapToUiText(result.error)
-                    _uiState.update { it.copy(error = uiError) }
+                    _uiState.update { it.copy(error = uiError, deletingToken = null) }
                     _events.send(McpSettingsEvent.Error(uiError))
                 }
                 Result.Loading -> Unit
@@ -135,13 +147,16 @@ class McpSettingsViewModel @Inject constructor(
                 is Result.Success -> {
                     val regenerated = result.data
                     _uiState.update { state ->
-                        state.copy(createdToken = regenerated)
+                        state.copy(
+                            createdToken = regenerated,
+                            regeneratingToken = null,
+                        )
                     }
                     _events.send(McpSettingsEvent.TokenRegenerated(regenerated))
                 }
                 is Result.Error -> {
                     val uiError = ProfileErrorMapper.mapToUiText(result.error)
-                    _uiState.update { it.copy(error = uiError) }
+                    _uiState.update { it.copy(error = uiError, regeneratingToken = null) }
                     _events.send(McpSettingsEvent.Error(uiError))
                 }
                 Result.Loading -> Unit

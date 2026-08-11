@@ -1,8 +1,5 @@
 package com.awan.feature.profile.impl.ui.components
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,8 +24,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -47,6 +46,7 @@ fun CreatedTokenModal(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     val copiedToastMessage = stringResource(ProfileR.string.profile_mcp_token_copied)
     var copied by remember { mutableStateOf(false) }
 
@@ -69,9 +69,9 @@ fun CreatedTokenModal(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(AwanTheme.spacing.sm))
                         .background(AwanTheme.colors.destructive.copy(alpha = 0.1f))
-                        .border(1.dp, AwanTheme.colors.destructive, RoundedCornerShape(12.dp))
+                        .border(1.dp, AwanTheme.colors.destructive, RoundedCornerShape(AwanTheme.spacing.sm))
                         .padding(AwanTheme.spacing.md)
                 ) {
                     Row(
@@ -82,7 +82,7 @@ fun CreatedTokenModal(
                             imageVector = Icons.Default.Warning,
                             contentDescription = null,
                             tint = AwanTheme.colors.destructive,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(AwanTheme.spacing.lg)
                         )
                         AwanText(
                             text = stringResource(ProfileR.string.profile_mcp_token_created_banner_warning),
@@ -94,9 +94,9 @@ fun CreatedTokenModal(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(AwanTheme.spacing.sm))
                         .background(AwanTheme.colors.disabledSurface)
-                        .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(12.dp))
+                        .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.sm))
                         .padding(AwanTheme.spacing.md),
                     contentAlignment = Alignment.Center
                 ) {
@@ -108,9 +108,7 @@ fun CreatedTokenModal(
 
                 AwanButton(
                     onClick = {
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clip = ClipData.newPlainText("MCP Token", createdToken.rawToken)
-                        clipboard.setPrimaryClip(clip)
+                        clipboardManager.setText(AnnotatedString(createdToken.rawToken))
                         copied = true
                         Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
                     },
@@ -124,7 +122,7 @@ fun CreatedTokenModal(
                         Icon(
                             imageVector = Icons.Default.ContentCopy,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(AwanTheme.spacing.md)
                         )
                         AwanText(
                             text = if (copied) {

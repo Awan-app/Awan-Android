@@ -1,8 +1,5 @@
 package com.awan.feature.profile.impl.ui
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,15 +27,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -66,11 +61,8 @@ fun McpSettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     val copiedToastMessage = stringResource(ProfileR.string.profile_mcp_token_copied)
-    var showAddTokenDialog by remember { mutableStateOf(false) }
-    var newTokenName by remember { mutableStateOf("") }
-    var deletingToken by remember { mutableStateOf<McpToken?>(null) }
-    var regeneratingToken by remember { mutableStateOf<McpToken?>(null) }
 
     if (uiState.createdToken != null) {
         CreatedTokenModal(
@@ -79,8 +71,8 @@ fun McpSettingsScreen(
         )
     }
 
-    if (showAddTokenDialog) {
-        Dialog(onDismissRequest = { showAddTokenDialog = false }) {
+    if (uiState.showAddTokenDialog) {
+        Dialog(onDismissRequest = { onAction(McpSettingsAction.HideAddTokenDialog) }) {
             AwanCard(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -95,8 +87,8 @@ fun McpSettingsScreen(
                         style = AwanTheme.styles.titleText
                     )
                     AwanTextField(
-                        value = newTokenName,
-                        onValueChange = { newTokenName = it },
+                        value = uiState.newTokenName,
+                        onValueChange = { onAction(McpSettingsAction.UpdateNewTokenName(it)) },
                         placeholder = stringResource(ProfileR.string.profile_mcp_token_name_hint),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -105,10 +97,7 @@ fun McpSettingsScreen(
                         horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)
                     ) {
                         AwanButton(
-                            onClick = {
-                                showAddTokenDialog = false
-                                newTokenName = ""
-                            },
+                            onClick = { onAction(McpSettingsAction.HideAddTokenDialog) },
                             modifier = Modifier.weight(1f),
                             variant = AwanButtonVariant.Quiet
                         ) {
@@ -116,17 +105,15 @@ fun McpSettingsScreen(
                         }
                         AwanButton(
                             onClick = {
-                                if (newTokenName.isNotBlank()) {
-                                    onAction(McpSettingsAction.CreateToken(newTokenName))
-                                    showAddTokenDialog = false
-                                    newTokenName = ""
+                                if (uiState.newTokenName.isNotBlank()) {
+                                    onAction(McpSettingsAction.CreateToken(uiState.newTokenName))
                                 }
                             },
                             modifier = Modifier.weight(1f),
-                            enabled = newTokenName.isNotBlank() && !uiState.isCreating
+                            enabled = uiState.newTokenName.isNotBlank() && !uiState.isCreating
                         ) {
                             if (uiState.isCreating) {
-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = AwanTheme.colors.surface)
+                                CircularProgressIndicator(modifier = Modifier.size(AwanTheme.spacing.md), color = AwanTheme.colors.surface)
                             } else {
                                 AwanText(stringResource(ProfileR.string.profile_mcp_add_token))
                             }
@@ -137,35 +124,33 @@ fun McpSettingsScreen(
         }
     }
 
-    if (deletingToken != null) {
+    if (uiState.deletingToken != null) {
         AwanDialog(
             title = stringResource(ProfileR.string.profile_mcp_token_delete_confirm_title),
             body = stringResource(ProfileR.string.profile_mcp_token_delete_confirm_body),
             primaryLabel = stringResource(ProfileR.string.profile_routine_delete),
             primaryVariant = AwanButtonVariant.Destructive,
             onPrimary = {
-                onAction(McpSettingsAction.DeleteToken(deletingToken!!.id))
-                deletingToken = null
+                onAction(McpSettingsAction.DeleteToken(uiState.deletingToken.id))
             },
             secondaryLabel = stringResource(ProfileR.string.profile_cancel),
-            onSecondary = { deletingToken = null },
-            onDismiss = { deletingToken = null }
+            onSecondary = { onAction(McpSettingsAction.HideDeleteDialog) },
+            onDismiss = { onAction(McpSettingsAction.HideDeleteDialog) }
         )
     }
 
-    if (regeneratingToken != null) {
+    if (uiState.regeneratingToken != null) {
         AwanDialog(
             title = stringResource(ProfileR.string.profile_mcp_token_regenerate_confirm_title),
             body = stringResource(ProfileR.string.profile_mcp_token_regenerate_confirm_body),
             primaryLabel = stringResource(ProfileR.string.profile_zone_confirm),
             primaryVariant = AwanButtonVariant.Primary,
             onPrimary = {
-                onAction(McpSettingsAction.RegenerateToken(regeneratingToken!!.id))
-                regeneratingToken = null
+                onAction(McpSettingsAction.RegenerateToken(uiState.regeneratingToken.id))
             },
             secondaryLabel = stringResource(ProfileR.string.profile_cancel),
-            onSecondary = { regeneratingToken = null },
-            onDismiss = { regeneratingToken = null }
+            onSecondary = { onAction(McpSettingsAction.HideRegenerateDialog) },
+            onDismiss = { onAction(McpSettingsAction.HideRegenerateDialog) }
         )
     }
 
@@ -175,7 +160,7 @@ fun McpSettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = AwanTheme.spacing.md, vertical = AwanTheme.spacing.sm),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -187,7 +172,7 @@ fun McpSettingsScreen(
                 IconButton(onClick = onInfoClick) {
                     Icon(
                         imageVector = Icons.Default.Info,
-                        contentDescription = "MCP Setup Info",
+                        contentDescription = stringResource(ProfileR.string.profile_mcp_cd_info),
                         tint = AwanTheme.colors.sky
                     )
                 }
@@ -205,8 +190,8 @@ fun McpSettingsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(horizontal = AwanTheme.spacing.lg, vertical = AwanTheme.spacing.md),
+                verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)
             ) {
                 // Connection Details Card
                 AwanCard(
@@ -214,7 +199,7 @@ fun McpSettingsScreen(
                     contentPadding = PaddingValues(AwanTheme.spacing.md)
                 ) {
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)
                     ) {
                         AwanText(
                             text = stringResource(ProfileR.string.profile_mcp_connection_title),
@@ -226,7 +211,7 @@ fun McpSettingsScreen(
                         val clientId = details?.clientId ?: "awan-android-client"
 
                         // MCP URL Row
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
                             AwanText(
                                 text = stringResource(ProfileR.string.profile_mcp_url_label),
                                 style = AwanTheme.styles.captionText
@@ -234,10 +219,10 @@ fun McpSettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(AwanTheme.spacing.xs))
                                     .background(AwanTheme.colors.disabledSurface)
-                                    .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(8.dp))
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
+                                    .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -248,24 +233,23 @@ fun McpSettingsScreen(
                                 )
                                 IconButton(
                                     onClick = {
-                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                        clipboard.setPrimaryClip(ClipData.newPlainText("MCP URL", mcpUrl))
+                                        clipboardManager.setText(AnnotatedString(mcpUrl))
                                         Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
                                     },
                                     modifier = Modifier.size(28.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.ContentCopy,
-                                        contentDescription = "Copy URL",
+                                        contentDescription = stringResource(ProfileR.string.profile_mcp_cd_copy_url),
                                         tint = AwanTheme.colors.textSecondary,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(AwanTheme.spacing.md)
                                     )
                                 }
                             }
                         }
 
                         // Client ID Row
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
                             AwanText(
                                 text = stringResource(ProfileR.string.profile_mcp_client_id_label),
                                 style = AwanTheme.styles.captionText
@@ -273,10 +257,10 @@ fun McpSettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(AwanTheme.spacing.xs))
                                     .background(AwanTheme.colors.disabledSurface)
-                                    .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(8.dp))
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
+                                    .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -287,17 +271,16 @@ fun McpSettingsScreen(
                                 )
                                 IconButton(
                                     onClick = {
-                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                        clipboard.setPrimaryClip(ClipData.newPlainText("Client ID", clientId))
+                                        clipboardManager.setText(AnnotatedString(clientId))
                                         Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
                                     },
                                     modifier = Modifier.size(28.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.ContentCopy,
-                                        contentDescription = "Copy Client ID",
+                                        contentDescription = stringResource(ProfileR.string.profile_mcp_cd_copy_client_id),
                                         tint = AwanTheme.colors.textSecondary,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(AwanTheme.spacing.md)
                                     )
                                 }
                             }
@@ -311,7 +294,7 @@ fun McpSettingsScreen(
                     contentPadding = PaddingValues(AwanTheme.spacing.md)
                 ) {
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -323,17 +306,17 @@ fun McpSettingsScreen(
                                 style = AwanTheme.styles.headingText
                             )
                             AwanButton(
-                                onClick = { showAddTokenDialog = true },
+                                onClick = { onAction(McpSettingsAction.ShowAddTokenDialog) },
                                 variant = AwanButtonVariant.Quiet
                             ) {
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
                                         contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(AwanTheme.spacing.md)
                                     )
                                     AwanText(stringResource(ProfileR.string.profile_mcp_add_token))
                                 }
@@ -344,7 +327,7 @@ fun McpSettingsScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 16.dp),
+                                    .padding(vertical = AwanTheme.spacing.md),
                                 contentAlignment = Alignment.Center
                             ) {
                                 AwanText(
@@ -356,18 +339,21 @@ fun McpSettingsScreen(
                             uiState.tokens.forEach { token ->
                                 TokenItemRow(
                                     token = token,
-                                    onRegenerate = { regeneratingToken = token },
-                                    onDelete = { deletingToken = token }
+                                    onRegenerate = { onAction(McpSettingsAction.ShowRegenerateDialog(token)) },
+                                    onDelete = { onAction(McpSettingsAction.ShowDeleteDialog(token)) }
                                 )
                             }
                         }
 
                         // Security notice
                         AwanText(
-                            text = stringResource(ProfileR.string.profile_mcp_token_obscured_notice) + ". " +
-                                    stringResource(ProfileR.string.profile_mcp_token_copy_disabled),
+                            text = stringResource(
+                                ProfileR.string.profile_mcp_token_notice_formatted,
+                                stringResource(ProfileR.string.profile_mcp_token_obscured_notice),
+                                stringResource(ProfileR.string.profile_mcp_token_copy_disabled)
+                            ),
                             style = AwanTheme.styles.captionText,
-                            modifier = Modifier.padding(top = 4.dp)
+                            modifier = Modifier.padding(top = AwanTheme.spacing.xxs)
                         )
                     }
                 }
@@ -377,7 +363,7 @@ fun McpSettingsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(20.dp),
+                        .padding(AwanTheme.spacing.lg),
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     AwanErrorSnackbar(
@@ -400,12 +386,12 @@ private fun TokenItemRow(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(AwanTheme.spacing.sm))
             .background(AwanTheme.colors.disabledSurface)
-            .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(12.dp))
-            .padding(12.dp)
+            .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.sm))
+            .padding(AwanTheme.spacing.sm)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -415,14 +401,14 @@ private fun TokenItemRow(
                     text = token.name,
                     style = AwanTheme.styles.bodyText
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
                     IconButton(
                         onClick = onRegenerate,
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Regenerate Token",
+                            contentDescription = stringResource(ProfileR.string.profile_mcp_cd_regenerate_token, token.name),
                             tint = AwanTheme.colors.sky,
                             modifier = Modifier.size(18.dp)
                         )
@@ -433,7 +419,7 @@ private fun TokenItemRow(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete Token",
+                            contentDescription = stringResource(ProfileR.string.profile_mcp_cd_delete_token, token.name),
                             tint = AwanTheme.colors.destructive,
                             modifier = Modifier.size(18.dp)
                         )

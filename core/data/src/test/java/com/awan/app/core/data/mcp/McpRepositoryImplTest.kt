@@ -71,10 +71,15 @@ private class FakeMcpApiService : McpApiService {
 private class FakeMcpTokenDao : McpTokenDao {
     private val tokensState = MutableStateFlow<List<McpTokenEntity>>(emptyList())
     val storedTokens: List<McpTokenEntity> get() = tokensState.value
+    var shouldFailOnUpsert: Boolean = false
+    var replaceCount: Int = 0
 
     override fun getMcpTokens(): Flow<List<McpTokenEntity>> = tokensState
 
     override suspend fun upsertMcpTokens(tokens: List<McpTokenEntity>) {
+        if (shouldFailOnUpsert) {
+            throw IllegalStateException("Database write error")
+        }
         val current = tokensState.value.toMutableList()
         tokens.forEach { newToken ->
             current.removeAll { it.id == newToken.id }
@@ -89,6 +94,12 @@ private class FakeMcpTokenDao : McpTokenDao {
 
     override suspend fun clearAll() {
         tokensState.value = emptyList()
+    }
+
+    override suspend fun replaceMcpTokens(tokens: List<McpTokenEntity>) {
+        replaceCount++
+        clearAll()
+        upsertMcpTokens(tokens)
     }
 }
 
@@ -142,7 +153,7 @@ class McpRepositoryImplTest {
     }
 
     @Test
-    fun `getMcpTokens fetches remote and updates Room when online`() = runTest(testDispatcher) {
+    fun `getMcpTokens fetches remote and updates Room atomically when online`() = runTest(testDispatcher) {
         val apiService = FakeMcpApiService().apply {
             tokensList.add(
                 McpTokenResponseDto(
@@ -164,6 +175,7 @@ class McpRepositoryImplTest {
         assertEquals("Claude Desktop", tokens.first().name)
         assertEquals(1, tokenDao.storedTokens.size)
         assertEquals("Claude Desktop", tokenDao.storedTokens.first().name)
+        assertEquals(1, tokenDao.replaceCount)
     }
 
     @Test
@@ -205,6 +217,20 @@ class McpRepositoryImplTest {
         assertEquals("Claude Desktop", apiService.lastCreatedName)
         assertEquals(1, tokenDao.storedTokens.size)
         assertEquals("token-1", tokenDao.storedTokens.first().id)
+    }
+
+    @Test
+    fun `createMcpToken preserves raw token success even if Room write fails`() = runTest(testDispatcher) {
+        val apiService = FakeMcpApiService()
+        val tokenDao = FakeMcpTokenDao().apply { shouldFailOnUpsert = true }
+        val repository = buildRepository(apiService = apiService, tokenDao = tokenDao, monitor = onlineMonitor)
+
+        val result = repository.createMcpToken("Claude Desktop")
+
+        assertTrue(result is Result.Success)
+        val createdToken = (result as Result.Success).data
+        assertEquals("Claude Desktop", createdToken.name)
+        assertEquals("raw-secret-123", createdToken.rawToken)
     }
 
     @Test
@@ -273,5 +299,26 @@ class McpRepositoryImplTest {
         assertEquals("new-raw-secret", createdToken.rawToken)
         assertEquals("token-1", apiService.lastRegeneratedId)
         assertEquals("mcp_...new", tokenDao.storedTokens.first().maskedToken)
+    }
+
+    @Test
+    fun `regenerateMcpToken preserves raw token success even if Room write fails`() = runTest(testDispatcher) {
+        val apiService = FakeMcpApiService().apply {
+            createdTokenResponse = CreatedMcpTokenResponseDto(
+                id = "token-1",
+                name = "Claude Desktop",
+                rawToken = "new-raw-secret",
+                maskedToken = "mcp_...new",
+                createdAt = "2026-08-11T01:00:00Z",
+            )
+        }
+        val tokenDao = FakeMcpTokenDao().apply { shouldFailOnUpsert = true }
+        val repository = buildRepository(apiService = apiService, tokenDao = tokenDao, monitor = onlineMonitor)
+
+        val result = repository.regenerateMcpToken("token-1")
+
+        assertTrue(result is Result.Success)
+        val createdToken = (result as Result.Success).data
+        assertEquals("new-raw-secret", createdToken.rawToken)
     }
 }

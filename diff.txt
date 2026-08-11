@@ -1,0 +1,4031 @@
+diff --git a/app/src/main/java/com/awan/app/AwanApp.kt b/app/src/main/java/com/awan/app/AwanApp.kt
+index 3c0de9e..5ab1b5d 100644
+--- a/app/src/main/java/com/awan/app/AwanApp.kt
++++ b/app/src/main/java/com/awan/app/AwanApp.kt
+@@ -250,7 +250,9 @@ fun AwanApp(
+                 onNavigateToEditRoutine = { templateId -> navigator.navigate(EditRoutineRoute(templateId)) },
+                 onLogout = { navigator.replaceAll(LoginRoute) },
+                 onBack = { navigator.goBack()},
+-                onNavigateToInventory = { navigator.navigate(InventoryRoute) }
++                onNavigateToInventory = { navigator.navigate(InventoryRoute) },
++                onNavigateToMcpSettings = { navigator.navigate(com.awan.feature.profile.api.McpSettingsRoute) },
++                onNavigateToMcpInfo = { navigator.navigate(com.awan.feature.profile.api.McpInfoRoute) },
+             )
+             goalPreviewEntry(
+                 onBack = { navigator.goBack() },
+diff --git a/core/data/src/main/kotlin/com/awan/app/core/data/mcp/di/McpDataModule.kt b/core/data/src/main/kotlin/com/awan/app/core/data/mcp/di/McpDataModule.kt
+new file mode 100644
+index 0000000..31521c1
+--- /dev/null
++++ b/core/data/src/main/kotlin/com/awan/app/core/data/mcp/di/McpDataModule.kt
+@@ -0,0 +1,20 @@
++package com.awan.app.core.data.mcp.di
++
++import com.awan.app.core.data.mcp.repository.McpRepositoryImpl
++import com.awan.app.core.domain.mcp.repository.McpRepository
++import dagger.Binds
++import dagger.Module
++import dagger.hilt.InstallIn
++import dagger.hilt.components.SingletonComponent
++import javax.inject.Singleton
++
++@Module
++@InstallIn(SingletonComponent::class)
++abstract class McpDataModule {
++
++    @Binds
++    @Singleton
++    abstract fun bindMcpRepository(
++        impl: McpRepositoryImpl,
++    ): McpRepository
++}
+diff --git a/core/data/src/main/kotlin/com/awan/app/core/data/mcp/repository/McpRepositoryImpl.kt b/core/data/src/main/kotlin/com/awan/app/core/data/mcp/repository/McpRepositoryImpl.kt
+new file mode 100644
+index 0000000..7550659
+--- /dev/null
++++ b/core/data/src/main/kotlin/com/awan/app/core/data/mcp/repository/McpRepositoryImpl.kt
+@@ -0,0 +1,145 @@
++package com.awan.app.core.data.mcp.repository
++
++import com.awan.app.core.common.dispatcher.AwanDispatchers
++import com.awan.app.core.common.dispatcher.Dispatcher
++import com.awan.app.core.common.error.AppError
++import com.awan.app.core.common.result.Result
++import com.awan.app.core.database.dao.McpTokenDao
++import com.awan.app.core.database.model.McpTokenEntity
++import com.awan.app.core.domain.mcp.model.CreatedMcpToken
++import com.awan.app.core.domain.mcp.model.McpConnectionDetails
++import com.awan.app.core.domain.mcp.model.McpToken
++import com.awan.app.core.domain.mcp.repository.McpRepository
++import com.awan.app.core.domain.network.NetworkConnectivityMonitor
++import com.awan.app.core.network.api.McpApiService
++import com.awan.app.core.network.dto.mcp.CreateMcpTokenRequestDto
++import com.awan.app.core.network.error.safeApiCall
++import kotlinx.coroutines.CoroutineDispatcher
++import kotlinx.coroutines.flow.Flow
++import kotlinx.coroutines.flow.emitAll
++import kotlinx.coroutines.flow.flow
++import kotlinx.coroutines.flow.flowOn
++import kotlinx.coroutines.flow.map
++import javax.inject.Inject
++import javax.inject.Singleton
++
++@Singleton
++class McpRepositoryImpl @Inject constructor(
++    private val mcpApiService: McpApiService,
++    private val mcpTokenDao: McpTokenDao,
++    private val connectivityMonitor: NetworkConnectivityMonitor,
++    @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
++) : McpRepository {
++
++    override fun getMcpConnectionDetails(): Flow<Result<McpConnectionDetails>> = flow {
++        if (!connectivityMonitor.isCurrentlyOnline()) {
++            emit(Result.Error(AppError.Network))
++            return@flow
++        }
++        val result = safeApiCall(ioDispatcher) {
++            val dto = mcpApiService.getConnectionDetails()
++            McpConnectionDetails(
++                mcpUrl = dto.mcpUrl,
++                clientId = dto.clientId,
++            )
++        }
++        emit(result)
++    }.flowOn(ioDispatcher)
++
++    override fun getMcpTokens(): Flow<Result<List<McpToken>>> = flow {
++        if (connectivityMonitor.isCurrentlyOnline()) {
++            try {
++                val dtos = mcpApiService.getTokens()
++                val entities = dtos.map { dto ->
++                    McpTokenEntity(
++                        id = dto.id,
++                        name = dto.name,
++                        maskedToken = dto.maskedToken,
++                        createdAt = dto.createdAt,
++                        lastUsedAt = dto.lastUsedAt,
++                    )
++                }
++                mcpTokenDao.clearAll()
++                mcpTokenDao.upsertMcpTokens(entities)
++            } catch (_: Exception) {
++                // If network sync fails, fallback to Room cached tokens
++            }
++        }
++        emitAll(
++            mcpTokenDao.getMcpTokens().map { entities ->
++                Result.Success(
++                    entities.map { entity ->
++                        McpToken(
++                            id = entity.id,
++                            name = entity.name,
++                            maskedToken = entity.maskedToken,
++                            createdAt = entity.createdAt,
++                            lastUsedAt = entity.lastUsedAt,
++                        )
++                    }
++                )
++            }
++        )
++    }.flowOn(ioDispatcher)
++
++    override suspend fun createMcpToken(name: String): Result<CreatedMcpToken> {
++        if (!connectivityMonitor.isCurrentlyOnline()) {
++            return Result.Error(AppError.Network)
++        }
++        return safeApiCall(ioDispatcher) {
++            val dto = mcpApiService.createToken(CreateMcpTokenRequestDto(name = name))
++            val entity = McpTokenEntity(
++                id = dto.id,
++                name = dto.name,
++                maskedToken = dto.maskedToken,
++                createdAt = dto.createdAt,
++                lastUsedAt = null,
++            )
++            mcpTokenDao.upsertMcpTokens(listOf(entity))
++            CreatedMcpToken(
++                id = dto.id,
++                name = dto.name,
++                rawToken = dto.rawToken,
++                maskedToken = dto.maskedToken,
++                createdAt = dto.createdAt,
++            )
++        }
++    }
++
++    override suspend fun deleteMcpToken(id: String): Result<Unit> {
++        if (!connectivityMonitor.isCurrentlyOnline()) {
++            return Result.Error(AppError.Network)
++        }
++        val result = safeApiCall(ioDispatcher) {
++            mcpApiService.deleteToken(id)
++        }
++        if (result is Result.Success) {
++            mcpTokenDao.deleteMcpToken(id)
++        }
++        return result
++    }
++
++    override suspend fun regenerateMcpToken(id: String): Result<CreatedMcpToken> {
++        if (!connectivityMonitor.isCurrentlyOnline()) {
++            return Result.Error(AppError.Network)
++        }
++        return safeApiCall(ioDispatcher) {
++            val dto = mcpApiService.regenerateToken(id)
++            val entity = McpTokenEntity(
++                id = dto.id,
++                name = dto.name,
++                maskedToken = dto.maskedToken,
++                createdAt = dto.createdAt,
++                lastUsedAt = null,
++            )
++            mcpTokenDao.upsertMcpTokens(listOf(entity))
++            CreatedMcpToken(
++                id = dto.id,
++                name = dto.name,
++                rawToken = dto.rawToken,
++                maskedToken = dto.maskedToken,
++                createdAt = dto.createdAt,
++            )
++        }
++    }
++}
+diff --git a/core/data/src/test/java/com/awan/app/core/data/mcp/McpRepositoryImplTest.kt b/core/data/src/test/java/com/awan/app/core/data/mcp/McpRepositoryImplTest.kt
+new file mode 100644
+index 0000000..4f6ccce
+--- /dev/null
++++ b/core/data/src/test/java/com/awan/app/core/data/mcp/McpRepositoryImplTest.kt
+@@ -0,0 +1,277 @@
++package com.awan.app.core.data.mcp
++
++import com.awan.app.core.common.error.AppError
++import com.awan.app.core.common.result.Result
++import com.awan.app.core.data.mcp.repository.McpRepositoryImpl
++import com.awan.app.core.database.dao.McpTokenDao
++import com.awan.app.core.database.model.McpTokenEntity
++import com.awan.app.core.domain.network.NetworkConnectivityMonitor
++import com.awan.app.core.network.api.McpApiService
++import com.awan.app.core.network.dto.mcp.CreateMcpTokenRequestDto
++import com.awan.app.core.network.dto.mcp.CreatedMcpTokenResponseDto
++import com.awan.app.core.network.dto.mcp.McpConnectionDetailsDto
++import com.awan.app.core.network.dto.mcp.McpTokenResponseDto
++import kotlinx.coroutines.ExperimentalCoroutinesApi
++import kotlinx.coroutines.flow.Flow
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.first
++import kotlinx.coroutines.flow.flowOf
++import kotlinx.coroutines.test.UnconfinedTestDispatcher
++import kotlinx.coroutines.test.runTest
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++private class FakeMcpApiService : McpApiService {
++    var connectionDetailsDto = McpConnectionDetailsDto(
++        mcpUrl = "https://mcp.awan.com",
++        clientId = "client-123",
++    )
++    var tokensList = mutableListOf<McpTokenResponseDto>()
++    var createdTokenResponse = CreatedMcpTokenResponseDto(
++        id = "token-1",
++        name = "Default Token",
++        rawToken = "raw-secret-123",
++        maskedToken = "mcp_...123",
++        createdAt = "2026-08-11T00:00:00Z",
++    )
++    var shouldFailWithException: Exception? = null
++    var lastCreatedName: String? = null
++    var lastDeletedId: String? = null
++    var lastRegeneratedId: String? = null
++
++    override suspend fun getConnectionDetails(): McpConnectionDetailsDto {
++        shouldFailWithException?.let { throw it }
++        return connectionDetailsDto
++    }
++
++    override suspend fun getTokens(): List<McpTokenResponseDto> {
++        shouldFailWithException?.let { throw it }
++        return tokensList
++    }
++
++    override suspend fun createToken(request: CreateMcpTokenRequestDto): CreatedMcpTokenResponseDto {
++        shouldFailWithException?.let { throw it }
++        lastCreatedName = request.name
++        return createdTokenResponse.copy(name = request.name)
++    }
++
++    override suspend fun deleteToken(id: String) {
++        shouldFailWithException?.let { throw it }
++        lastDeletedId = id
++    }
++
++    override suspend fun regenerateToken(id: String): CreatedMcpTokenResponseDto {
++        shouldFailWithException?.let { throw it }
++        lastRegeneratedId = id
++        return createdTokenResponse
++    }
++}
++
++private class FakeMcpTokenDao : McpTokenDao {
++    private val tokensState = MutableStateFlow<List<McpTokenEntity>>(emptyList())
++    val storedTokens: List<McpTokenEntity> get() = tokensState.value
++
++    override fun getMcpTokens(): Flow<List<McpTokenEntity>> = tokensState
++
++    override suspend fun upsertMcpTokens(tokens: List<McpTokenEntity>) {
++        val current = tokensState.value.toMutableList()
++        tokens.forEach { newToken ->
++            current.removeAll { it.id == newToken.id }
++            current.add(newToken)
++        }
++        tokensState.value = current
++    }
++
++    override suspend fun deleteMcpToken(id: String) {
++        tokensState.value = tokensState.value.filterNot { it.id == id }
++    }
++
++    override suspend fun clearAll() {
++        tokensState.value = emptyList()
++    }
++}
++
++@OptIn(ExperimentalCoroutinesApi::class)
++class McpRepositoryImplTest {
++
++    private val testDispatcher = UnconfinedTestDispatcher()
++
++    private val onlineMonitor = object : NetworkConnectivityMonitor {
++        override val isOnline: Flow<Boolean> = flowOf(true)
++        override fun isCurrentlyOnline(): Boolean = true
++    }
++
++    private val offlineMonitor = object : NetworkConnectivityMonitor {
++        override val isOnline: Flow<Boolean> = flowOf(false)
++        override fun isCurrentlyOnline(): Boolean = false
++    }
++
++    private fun buildRepository(
++        apiService: McpApiService = FakeMcpApiService(),
++        tokenDao: McpTokenDao = FakeMcpTokenDao(),
++        monitor: NetworkConnectivityMonitor = onlineMonitor,
++    ) = McpRepositoryImpl(
++        mcpApiService = apiService,
++        mcpTokenDao = tokenDao,
++        connectivityMonitor = monitor,
++        ioDispatcher = testDispatcher,
++    )
++
++    @Test
++    fun `getMcpConnectionDetails returns success when online`() = runTest(testDispatcher) {
++        val apiService = FakeMcpApiService()
++        val repository = buildRepository(apiService = apiService, monitor = onlineMonitor)
++
++        val result = repository.getMcpConnectionDetails().first()
++
++        assertTrue(result is Result.Success)
++        val details = (result as Result.Success).data
++        assertEquals("https://mcp.awan.com", details.mcpUrl)
++        assertEquals("client-123", details.clientId)
++    }
++
++    @Test
++    fun `getMcpConnectionDetails returns network error when offline`() = runTest(testDispatcher) {
++        val repository = buildRepository(monitor = offlineMonitor)
++
++        val result = repository.getMcpConnectionDetails().first()
++
++        assertTrue(result is Result.Error)
++        assertTrue((result as Result.Error).error is AppError.Network)
++    }
++
++    @Test
++    fun `getMcpTokens fetches remote and updates Room when online`() = runTest(testDispatcher) {
++        val apiService = FakeMcpApiService().apply {
++            tokensList.add(
++                McpTokenResponseDto(
++                    id = "token-1",
++                    name = "Claude Desktop",
++                    maskedToken = "mcp_...123",
++                    createdAt = "2026-08-11T00:00:00Z",
++                )
++            )
++        }
++        val tokenDao = FakeMcpTokenDao()
++        val repository = buildRepository(apiService = apiService, tokenDao = tokenDao, monitor = onlineMonitor)
++
++        val result = repository.getMcpTokens().first()
++
++        assertTrue(result is Result.Success)
++        val tokens = (result as Result.Success).data
++        assertEquals(1, tokens.size)
++        assertEquals("Claude Desktop", tokens.first().name)
++        assertEquals(1, tokenDao.storedTokens.size)
++        assertEquals("Claude Desktop", tokenDao.storedTokens.first().name)
++    }
++
++    @Test
++    fun `getMcpTokens falls back to Room cached tokens when offline`() = runTest(testDispatcher) {
++        val tokenDao = FakeMcpTokenDao().apply {
++            upsertMcpTokens(
++                listOf(
++                    McpTokenEntity(
++                        id = "token-cached",
++                        name = "Cached Token",
++                        maskedToken = "mcp_...cached",
++                        createdAt = "2026-08-10T00:00:00Z",
++                    )
++                )
++            )
++        }
++        val repository = buildRepository(tokenDao = tokenDao, monitor = offlineMonitor)
++
++        val result = repository.getMcpTokens().first()
++
++        assertTrue(result is Result.Success)
++        val tokens = (result as Result.Success).data
++        assertEquals(1, tokens.size)
++        assertEquals("Cached Token", tokens.first().name)
++    }
++
++    @Test
++    fun `createMcpToken succeeds when online and upserts entity into Room`() = runTest(testDispatcher) {
++        val apiService = FakeMcpApiService()
++        val tokenDao = FakeMcpTokenDao()
++        val repository = buildRepository(apiService = apiService, tokenDao = tokenDao, monitor = onlineMonitor)
++
++        val result = repository.createMcpToken("Claude Desktop")
++
++        assertTrue(result is Result.Success)
++        val createdToken = (result as Result.Success).data
++        assertEquals("Claude Desktop", createdToken.name)
++        assertEquals("raw-secret-123", createdToken.rawToken)
++        assertEquals("Claude Desktop", apiService.lastCreatedName)
++        assertEquals(1, tokenDao.storedTokens.size)
++        assertEquals("token-1", tokenDao.storedTokens.first().id)
++    }
++
++    @Test
++    fun `createMcpToken returns network error when offline`() = runTest(testDispatcher) {
++        val repository = buildRepository(monitor = offlineMonitor)
++
++        val result = repository.createMcpToken("Claude Desktop")
++
++        assertTrue(result is Result.Error)
++        assertTrue((result as Result.Error).error is AppError.Network)
++    }
++
++    @Test
++    fun `deleteMcpToken deletes token from network and Room`() = runTest(testDispatcher) {
++        val apiService = FakeMcpApiService()
++        val tokenDao = FakeMcpTokenDao().apply {
++            upsertMcpTokens(
++                listOf(
++                    McpTokenEntity("token-1", "Test", "mcp_...123", "2026-08-11T00:00:00Z")
++                )
++            )
++        }
++        val repository = buildRepository(apiService = apiService, tokenDao = tokenDao, monitor = onlineMonitor)
++
++        val result = repository.deleteMcpToken("token-1")
++
++        assertTrue(result is Result.Success)
++        assertEquals("token-1", apiService.lastDeletedId)
++        assertTrue(tokenDao.storedTokens.none { it.id == "token-1" })
++    }
++
++    @Test
++    fun `deleteMcpToken returns network error when offline`() = runTest(testDispatcher) {
++        val repository = buildRepository(monitor = offlineMonitor)
++
++        val result = repository.deleteMcpToken("token-1")
++
++        assertTrue(result is Result.Error)
++        assertTrue((result as Result.Error).error is AppError.Network)
++    }
++
++    @Test
++    fun `regenerateMcpToken updates token in network and Room`() = runTest(testDispatcher) {
++        val apiService = FakeMcpApiService().apply {
++            createdTokenResponse = CreatedMcpTokenResponseDto(
++                id = "token-1",
++                name = "Claude Desktop",
++                rawToken = "new-raw-secret",
++                maskedToken = "mcp_...new",
++                createdAt = "2026-08-11T01:00:00Z",
++            )
++        }
++        val tokenDao = FakeMcpTokenDao().apply {
++            upsertMcpTokens(
++                listOf(
++                    McpTokenEntity("token-1", "Claude Desktop", "mcp_...old", "2026-08-11T00:00:00Z")
++                )
++            )
++        }
++        val repository = buildRepository(apiService = apiService, tokenDao = tokenDao, monitor = onlineMonitor)
++
++        val result = repository.regenerateMcpToken("token-1")
++
++        assertTrue(result is Result.Success)
++        val createdToken = (result as Result.Success).data
++        assertEquals("new-raw-secret", createdToken.rawToken)
++        assertEquals("token-1", apiService.lastRegeneratedId)
++        assertEquals("mcp_...new", tokenDao.storedTokens.first().maskedToken)
++    }
++}
+diff --git a/core/database/schemas/com.awan.app.core.database.AwanDatabase/2.json b/core/database/schemas/com.awan.app.core.database.AwanDatabase/2.json
+new file mode 100644
+index 0000000..5142afa
+--- /dev/null
++++ b/core/database/schemas/com.awan.app.core.database.AwanDatabase/2.json
+@@ -0,0 +1,968 @@
++{
++  "formatVersion": 1,
++  "database": {
++    "version": 2,
++    "identityHash": "9ec46d8c94844c2fe0b1333f20dc32d2",
++    "entities": [
++      {
++        "tableName": "users",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `email` TEXT NOT NULL, `firstName` TEXT, `lastName` TEXT, `birthDate` TEXT, `points` INTEGER NOT NULL, `streak` INTEGER NOT NULL, `maxStreak` INTEGER NOT NULL, `expiryTime` INTEGER NOT NULL, `profilePictureUrl` TEXT, `isNew` INTEGER NOT NULL, PRIMARY KEY(`id`))",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "email",
++            "columnName": "email",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "firstName",
++            "columnName": "firstName",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "lastName",
++            "columnName": "lastName",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "birthDate",
++            "columnName": "birthDate",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "points",
++            "columnName": "points",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "streak",
++            "columnName": "streak",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "maxStreak",
++            "columnName": "maxStreak",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "expiryTime",
++            "columnName": "expiryTime",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "profilePictureUrl",
++            "columnName": "profilePictureUrl",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "isNew",
++            "columnName": "isNew",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        }
++      },
++      {
++        "tableName": "user_preferences",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`userId` TEXT NOT NULL, `timezone` TEXT NOT NULL, `preferredSessionDuration` INTEGER NOT NULL, `bufferBetweenSessions` INTEGER NOT NULL, `wakeupTime` TEXT NOT NULL, `sleepTime` TEXT NOT NULL, `schedulingType` TEXT NOT NULL, PRIMARY KEY(`userId`), FOREIGN KEY(`userId`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
++        "fields": [
++          {
++            "fieldPath": "userId",
++            "columnName": "userId",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "timezone",
++            "columnName": "timezone",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "preferredSessionDuration",
++            "columnName": "preferredSessionDuration",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "bufferBetweenSessions",
++            "columnName": "bufferBetweenSessions",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "wakeupTime",
++            "columnName": "wakeupTime",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "sleepTime",
++            "columnName": "sleepTime",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "schedulingType",
++            "columnName": "schedulingType",
++            "affinity": "TEXT",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "userId"
++          ]
++        },
++        "indices": [
++          {
++            "name": "index_user_preferences_userId",
++            "unique": false,
++            "columnNames": [
++              "userId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_user_preferences_userId` ON `${TABLE_NAME}` (`userId`)"
++          }
++        ],
++        "foreignKeys": [
++          {
++            "table": "users",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "userId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          }
++        ]
++      },
++      {
++        "tableName": "goals",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `status` TEXT NOT NULL, `targetDate` TEXT, `createdAt` TEXT NOT NULL, `isInbox` INTEGER NOT NULL, `expiryTime` INTEGER NOT NULL, PRIMARY KEY(`id`))",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "title",
++            "columnName": "title",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "description",
++            "columnName": "description",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "status",
++            "columnName": "status",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "targetDate",
++            "columnName": "targetDate",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "createdAt",
++            "columnName": "createdAt",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "isInbox",
++            "columnName": "isInbox",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "expiryTime",
++            "columnName": "expiryTime",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        }
++      },
++      {
++        "tableName": "tasks",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `estimatedDuration` INTEGER NOT NULL, `status` TEXT NOT NULL, `mandatory` INTEGER NOT NULL, `estimatedPoints` INTEGER NOT NULL, `allowTaskSplitting` INTEGER NOT NULL, `goalId` TEXT, `categoryId` TEXT, `expiryTime` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "title",
++            "columnName": "title",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "description",
++            "columnName": "description",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "estimatedDuration",
++            "columnName": "estimatedDuration",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "status",
++            "columnName": "status",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "mandatory",
++            "columnName": "mandatory",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "estimatedPoints",
++            "columnName": "estimatedPoints",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "allowTaskSplitting",
++            "columnName": "allowTaskSplitting",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "goalId",
++            "columnName": "goalId",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "categoryId",
++            "columnName": "categoryId",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "expiryTime",
++            "columnName": "expiryTime",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        },
++        "indices": [
++          {
++            "name": "index_tasks_goalId",
++            "unique": false,
++            "columnNames": [
++              "goalId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_tasks_goalId` ON `${TABLE_NAME}` (`goalId`)"
++          },
++          {
++            "name": "index_tasks_categoryId",
++            "unique": false,
++            "columnNames": [
++              "categoryId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_tasks_categoryId` ON `${TABLE_NAME}` (`categoryId`)"
++          }
++        ],
++        "foreignKeys": [
++          {
++            "table": "categories",
++            "onDelete": "NO ACTION",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "categoryId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          }
++        ]
++      },
++      {
++        "tableName": "task_dependencies",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`taskId` TEXT NOT NULL, `dependsOnTaskId` TEXT NOT NULL, PRIMARY KEY(`taskId`, `dependsOnTaskId`), FOREIGN KEY(`taskId`) REFERENCES `tasks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`dependsOnTaskId`) REFERENCES `tasks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
++        "fields": [
++          {
++            "fieldPath": "taskId",
++            "columnName": "taskId",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "dependsOnTaskId",
++            "columnName": "dependsOnTaskId",
++            "affinity": "TEXT",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "taskId",
++            "dependsOnTaskId"
++          ]
++        },
++        "indices": [
++          {
++            "name": "index_task_dependencies_taskId",
++            "unique": false,
++            "columnNames": [
++              "taskId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_task_dependencies_taskId` ON `${TABLE_NAME}` (`taskId`)"
++          },
++          {
++            "name": "index_task_dependencies_dependsOnTaskId",
++            "unique": false,
++            "columnNames": [
++              "dependsOnTaskId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_task_dependencies_dependsOnTaskId` ON `${TABLE_NAME}` (`dependsOnTaskId`)"
++          }
++        ],
++        "foreignKeys": [
++          {
++            "table": "tasks",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "taskId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          },
++          {
++            "table": "tasks",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "dependsOnTaskId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          }
++        ]
++      },
++      {
++        "tableName": "templates",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `expiryTime` INTEGER NOT NULL, PRIMARY KEY(`id`))",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "name",
++            "columnName": "name",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "expiryTime",
++            "columnName": "expiryTime",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        }
++      },
++      {
++        "tableName": "template_days_of_week",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`dayOfWeek` TEXT NOT NULL, `templateId` TEXT NOT NULL, PRIMARY KEY(`dayOfWeek`), FOREIGN KEY(`templateId`) REFERENCES `templates`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
++        "fields": [
++          {
++            "fieldPath": "dayOfWeek",
++            "columnName": "dayOfWeek",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "templateId",
++            "columnName": "templateId",
++            "affinity": "TEXT",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "dayOfWeek"
++          ]
++        },
++        "indices": [
++          {
++            "name": "index_template_days_of_week_templateId",
++            "unique": false,
++            "columnNames": [
++              "templateId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_template_days_of_week_templateId` ON `${TABLE_NAME}` (`templateId`)"
++          }
++        ],
++        "foreignKeys": [
++          {
++            "table": "templates",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "templateId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          }
++        ]
++      },
++      {
++        "tableName": "template_overrides",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT, `dateOfDay` TEXT NOT NULL, PRIMARY KEY(`id`))",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "name",
++            "columnName": "name",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "dateOfDay",
++            "columnName": "dateOfDay",
++            "affinity": "TEXT",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        },
++        "indices": [
++          {
++            "name": "index_template_overrides_dateOfDay",
++            "unique": true,
++            "columnNames": [
++              "dateOfDay"
++            ],
++            "orders": [],
++            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_template_overrides_dateOfDay` ON `${TABLE_NAME}` (`dateOfDay`)"
++          }
++        ]
++      },
++      {
++        "tableName": "zones",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `startTime` TEXT NOT NULL, `endTime` TEXT NOT NULL, `color` TEXT, `templateId` TEXT, `templateOverrideId` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`templateId`) REFERENCES `templates`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`templateOverrideId`) REFERENCES `template_overrides`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "name",
++            "columnName": "name",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "startTime",
++            "columnName": "startTime",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "endTime",
++            "columnName": "endTime",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "color",
++            "columnName": "color",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "templateId",
++            "columnName": "templateId",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "templateOverrideId",
++            "columnName": "templateOverrideId",
++            "affinity": "TEXT"
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        },
++        "indices": [
++          {
++            "name": "index_zones_templateId",
++            "unique": false,
++            "columnNames": [
++              "templateId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_zones_templateId` ON `${TABLE_NAME}` (`templateId`)"
++          },
++          {
++            "name": "index_zones_templateOverrideId",
++            "unique": false,
++            "columnNames": [
++              "templateOverrideId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_zones_templateOverrideId` ON `${TABLE_NAME}` (`templateOverrideId`)"
++          }
++        ],
++        "foreignKeys": [
++          {
++            "table": "templates",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "templateId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          },
++          {
++            "table": "template_overrides",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "templateOverrideId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          }
++        ]
++      },
++      {
++        "tableName": "categories",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `colorHex` TEXT, `icon` TEXT, `expiryTime` INTEGER NOT NULL, PRIMARY KEY(`id`))",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "name",
++            "columnName": "name",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "colorHex",
++            "columnName": "colorHex",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "icon",
++            "columnName": "icon",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "expiryTime",
++            "columnName": "expiryTime",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        }
++      },
++      {
++        "tableName": "sessions",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `taskId` TEXT NOT NULL, `zoneId` TEXT, `date` TEXT NOT NULL, `startTime` TEXT NOT NULL, `endTime` TEXT NOT NULL, `status` TEXT NOT NULL, `locked` INTEGER NOT NULL, `expiryTime` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`taskId`) REFERENCES `tasks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "taskId",
++            "columnName": "taskId",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "zoneId",
++            "columnName": "zoneId",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "date",
++            "columnName": "date",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "startTime",
++            "columnName": "startTime",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "endTime",
++            "columnName": "endTime",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "status",
++            "columnName": "status",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "locked",
++            "columnName": "locked",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "expiryTime",
++            "columnName": "expiryTime",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        },
++        "indices": [
++          {
++            "name": "index_sessions_taskId",
++            "unique": false,
++            "columnNames": [
++              "taskId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_sessions_taskId` ON `${TABLE_NAME}` (`taskId`)"
++          },
++          {
++            "name": "index_sessions_zoneId",
++            "unique": false,
++            "columnNames": [
++              "zoneId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_sessions_zoneId` ON `${TABLE_NAME}` (`zoneId`)"
++          },
++          {
++            "name": "index_sessions_date",
++            "unique": false,
++            "columnNames": [
++              "date"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_sessions_date` ON `${TABLE_NAME}` (`date`)"
++          }
++        ],
++        "foreignKeys": [
++          {
++            "table": "tasks",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "taskId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          }
++        ]
++      },
++      {
++        "tableName": "cached_schedule_dates",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` TEXT NOT NULL, `lastSyncedAt` TEXT NOT NULL, `expiryTime` INTEGER NOT NULL, PRIMARY KEY(`date`))",
++        "fields": [
++          {
++            "fieldPath": "date",
++            "columnName": "date",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "lastSyncedAt",
++            "columnName": "lastSyncedAt",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "expiryTime",
++            "columnName": "expiryTime",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "date"
++          ]
++        }
++      },
++      {
++        "tableName": "store_items",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `image` TEXT NOT NULL, `info` TEXT, `price` INTEGER NOT NULL, `version` TEXT NOT NULL, `type` TEXT NOT NULL, `expiryTime` INTEGER NOT NULL, PRIMARY KEY(`id`))",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "name",
++            "columnName": "name",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "description",
++            "columnName": "description",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "image",
++            "columnName": "image",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "info",
++            "columnName": "info",
++            "affinity": "TEXT"
++          },
++          {
++            "fieldPath": "price",
++            "columnName": "price",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "version",
++            "columnName": "version",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "type",
++            "columnName": "type",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "expiryTime",
++            "columnName": "expiryTime",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        }
++      },
++      {
++        "tableName": "owned_items",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `itemId` TEXT NOT NULL, `boughtAt` TEXT NOT NULL, `expiryTime` INTEGER NOT NULL, PRIMARY KEY(`id`))",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "itemId",
++            "columnName": "itemId",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "boughtAt",
++            "columnName": "boughtAt",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "expiryTime",
++            "columnName": "expiryTime",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        }
++      },
++      {
++        "tableName": "equipped_items",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`type` TEXT NOT NULL, `itemId` TEXT NOT NULL, `equippedAt` TEXT NOT NULL, `expiryTime` INTEGER NOT NULL, PRIMARY KEY(`type`))",
++        "fields": [
++          {
++            "fieldPath": "type",
++            "columnName": "type",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "itemId",
++            "columnName": "itemId",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "equippedAt",
++            "columnName": "equippedAt",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "expiryTime",
++            "columnName": "expiryTime",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "type"
++          ]
++        }
++      },
++      {
++        "tableName": "mcp_tokens",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `maskedToken` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `lastUsedAt` TEXT, PRIMARY KEY(`id`))",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "name",
++            "columnName": "name",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "maskedToken",
++            "columnName": "maskedToken",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "createdAt",
++            "columnName": "createdAt",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "lastUsedAt",
++            "columnName": "lastUsedAt",
++            "affinity": "TEXT"
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        }
++      }
++    ],
++    "setupQueries": [
++      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
++      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9ec46d8c94844c2fe0b1333f20dc32d2')"
++    ]
++  }
++}
+\ No newline at end of file
+diff --git a/core/database/src/main/kotlin/com/awan/app/core/database/AwanDatabase.kt b/core/database/src/main/kotlin/com/awan/app/core/database/AwanDatabase.kt
+index 0695d6b..0a37454 100644
+--- a/core/database/src/main/kotlin/com/awan/app/core/database/AwanDatabase.kt
++++ b/core/database/src/main/kotlin/com/awan/app/core/database/AwanDatabase.kt
+@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
+ import com.awan.app.core.database.dao.CachedScheduleDateDao
+ import com.awan.app.core.database.dao.CategoryDao
+ import com.awan.app.core.database.dao.GoalDao
++import com.awan.app.core.database.dao.McpTokenDao
+ import com.awan.app.core.database.dao.SessionDao
+ import com.awan.app.core.database.dao.StoreDao
+ import com.awan.app.core.database.dao.TaskDao
+@@ -16,6 +17,7 @@ import com.awan.app.core.database.model.CachedScheduleDateEntity
+ import com.awan.app.core.database.model.CategoryEntity
+ import com.awan.app.core.database.model.EquippedItemEntity
+ import com.awan.app.core.database.model.GoalEntity
++import com.awan.app.core.database.model.McpTokenEntity
+ import com.awan.app.core.database.model.OwnedItemEntity
+ import com.awan.app.core.database.model.SessionEntity
+ import com.awan.app.core.database.model.StoreItemEntity
+@@ -52,8 +54,9 @@ import com.awan.app.core.database.model.ZoneEntity
+         StoreItemEntity::class,
+         OwnedItemEntity::class,
+         EquippedItemEntity::class,
++        McpTokenEntity::class,
+     ],
+-    version = 1,
++    version = 2,
+     exportSchema = true,
+ )
+ abstract class AwanDatabase : RoomDatabase() {
+@@ -77,4 +80,6 @@ abstract class AwanDatabase : RoomDatabase() {
+     abstract fun cachedScheduleDateDao(): CachedScheduleDateDao
+ 
+     abstract fun storeDao(): StoreDao
++
++    abstract fun mcpTokenDao(): McpTokenDao
+ }
+diff --git a/core/database/src/main/kotlin/com/awan/app/core/database/dao/McpTokenDao.kt b/core/database/src/main/kotlin/com/awan/app/core/database/dao/McpTokenDao.kt
+new file mode 100644
+index 0000000..b531812
+--- /dev/null
++++ b/core/database/src/main/kotlin/com/awan/app/core/database/dao/McpTokenDao.kt
+@@ -0,0 +1,22 @@
++package com.awan.app.core.database.dao
++
++import androidx.room.Dao
++import androidx.room.Query
++import androidx.room.Upsert
++import com.awan.app.core.database.model.McpTokenEntity
++import kotlinx.coroutines.flow.Flow
++
++@Dao
++interface McpTokenDao {
++    @Query("SELECT * FROM mcp_tokens ORDER BY createdAt DESC")
++    fun getMcpTokens(): Flow<List<McpTokenEntity>>
++
++    @Upsert
++    suspend fun upsertMcpTokens(tokens: List<McpTokenEntity>)
++
++    @Query("DELETE FROM mcp_tokens WHERE id = :id")
++    suspend fun deleteMcpToken(id: String)
++
++    @Query("DELETE FROM mcp_tokens")
++    suspend fun clearAll()
++}
+diff --git a/core/database/src/main/kotlin/com/awan/app/core/database/di/DatabaseModule.kt b/core/database/src/main/kotlin/com/awan/app/core/database/di/DatabaseModule.kt
+index 2788919..4828f5c 100644
+--- a/core/database/src/main/kotlin/com/awan/app/core/database/di/DatabaseModule.kt
++++ b/core/database/src/main/kotlin/com/awan/app/core/database/di/DatabaseModule.kt
+@@ -2,10 +2,13 @@ package com.awan.app.core.database.di
+ 
+ import android.content.Context
+ import androidx.room.Room
++import androidx.room.migration.Migration
++import androidx.sqlite.db.SupportSQLiteDatabase
+ import com.awan.app.core.database.AwanDatabase
+ import com.awan.app.core.database.dao.CachedScheduleDateDao
+ import com.awan.app.core.database.dao.CategoryDao
+ import com.awan.app.core.database.dao.GoalDao
++import com.awan.app.core.database.dao.McpTokenDao
+ import com.awan.app.core.database.dao.SessionDao
+ import com.awan.app.core.database.dao.StoreDao
+ import com.awan.app.core.database.dao.TaskDao
+@@ -30,6 +33,23 @@ import javax.inject.Singleton
+ @InstallIn(SingletonComponent::class)
+ object DatabaseModule {
+ 
++    val MIGRATION_1_2 = object : Migration(1, 2) {
++        override fun migrate(db: SupportSQLiteDatabase) {
++            db.execSQL(
++                """
++                CREATE TABLE IF NOT EXISTS `mcp_tokens` (
++                    `id` TEXT NOT NULL,
++                    `name` TEXT NOT NULL,
++                    `maskedToken` TEXT NOT NULL,
++                    `createdAt` TEXT NOT NULL,
++                    `lastUsedAt` TEXT,
++                    PRIMARY KEY(`id`)
++                )
++                """.trimIndent()
++            )
++        }
++    }
++
+     @Provides
+     @Singleton
+     fun providesAwanDatabase(
+@@ -39,6 +59,7 @@ object DatabaseModule {
+         AwanDatabase::class.java,
+         "awan-database",
+     )
++        .addMigrations(MIGRATION_1_2)
+         .fallbackToDestructiveMigration(dropAllTables = true)
+         .build()
+ 
+@@ -81,4 +102,8 @@ object DatabaseModule {
+     @Provides
+     fun providesStoreDao(database: AwanDatabase): StoreDao =
+         database.storeDao()
++
++    @Provides
++    fun providesMcpTokenDao(database: AwanDatabase): McpTokenDao =
++        database.mcpTokenDao()
+ }
+diff --git a/core/database/src/main/kotlin/com/awan/app/core/database/model/McpTokenEntity.kt b/core/database/src/main/kotlin/com/awan/app/core/database/model/McpTokenEntity.kt
+new file mode 100644
+index 0000000..9752977
+--- /dev/null
++++ b/core/database/src/main/kotlin/com/awan/app/core/database/model/McpTokenEntity.kt
+@@ -0,0 +1,13 @@
++package com.awan.app.core.database.model
++
++import androidx.room.Entity
++import androidx.room.PrimaryKey
++
++@Entity(tableName = "mcp_tokens")
++data class McpTokenEntity(
++    @PrimaryKey val id: String,
++    val name: String,
++    val maskedToken: String,
++    val createdAt: String,
++    val lastUsedAt: String? = null,
++)
+diff --git a/core/domain/build.gradle.kts b/core/domain/build.gradle.kts
+index 4e6c9ba..7251014 100644
+--- a/core/domain/build.gradle.kts
++++ b/core/domain/build.gradle.kts
+@@ -14,6 +14,7 @@ dependencies {
+     implementation(libs.kotlinx.coroutines.core)
+     compileOnly(libs.javax.inject)
+     testImplementation(libs.junit)
++    testImplementation(libs.kotlinx.coroutines.test)
+     // The parser's regexes run on Android's ICU engine, which the JVM suite cannot speak for.
+     androidTestImplementation(libs.androidx.junit)
+     androidTestImplementation(libs.androidx.espresso.core)
+diff --git a/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/model/CreatedMcpToken.kt b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/model/CreatedMcpToken.kt
+new file mode 100644
+index 0000000..98aad99
+--- /dev/null
++++ b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/model/CreatedMcpToken.kt
+@@ -0,0 +1,9 @@
++package com.awan.app.core.domain.mcp.model
++
++data class CreatedMcpToken(
++    val id: String,
++    val name: String,
++    val rawToken: String,
++    val maskedToken: String,
++    val createdAt: String,
++)
+diff --git a/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/model/McpConnectionDetails.kt b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/model/McpConnectionDetails.kt
+new file mode 100644
+index 0000000..e65b3cd
+--- /dev/null
++++ b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/model/McpConnectionDetails.kt
+@@ -0,0 +1,6 @@
++package com.awan.app.core.domain.mcp.model
++
++data class McpConnectionDetails(
++    val mcpUrl: String,
++    val clientId: String,
++)
+diff --git a/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/model/McpToken.kt b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/model/McpToken.kt
+new file mode 100644
+index 0000000..d36fa0e
+--- /dev/null
++++ b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/model/McpToken.kt
+@@ -0,0 +1,9 @@
++package com.awan.app.core.domain.mcp.model
++
++data class McpToken(
++    val id: String,
++    val name: String,
++    val maskedToken: String,
++    val createdAt: String,
++    val lastUsedAt: String? = null,
++)
+diff --git a/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/repository/McpRepository.kt b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/repository/McpRepository.kt
+new file mode 100644
+index 0000000..bee60bd
+--- /dev/null
++++ b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/repository/McpRepository.kt
+@@ -0,0 +1,15 @@
++package com.awan.app.core.domain.mcp.repository
++
++import com.awan.app.core.common.result.Result
++import com.awan.app.core.domain.mcp.model.CreatedMcpToken
++import com.awan.app.core.domain.mcp.model.McpConnectionDetails
++import com.awan.app.core.domain.mcp.model.McpToken
++import kotlinx.coroutines.flow.Flow
++
++interface McpRepository {
++    fun getMcpConnectionDetails(): Flow<Result<McpConnectionDetails>>
++    fun getMcpTokens(): Flow<Result<List<McpToken>>>
++    suspend fun createMcpToken(name: String): Result<CreatedMcpToken>
++    suspend fun deleteMcpToken(id: String): Result<Unit>
++    suspend fun regenerateMcpToken(id: String): Result<CreatedMcpToken>
++}
+diff --git a/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/CreateMcpTokenUseCase.kt b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/CreateMcpTokenUseCase.kt
+new file mode 100644
+index 0000000..70f0ce6
+--- /dev/null
++++ b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/CreateMcpTokenUseCase.kt
+@@ -0,0 +1,12 @@
++package com.awan.app.core.domain.mcp.usecase
++
++import com.awan.app.core.common.result.Result
++import com.awan.app.core.domain.mcp.model.CreatedMcpToken
++import com.awan.app.core.domain.mcp.repository.McpRepository
++import javax.inject.Inject
++
++class CreateMcpTokenUseCase @Inject constructor(
++    private val repository: McpRepository,
++) {
++    suspend operator fun invoke(name: String): Result<CreatedMcpToken> = repository.createMcpToken(name)
++}
+diff --git a/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/DeleteMcpTokenUseCase.kt b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/DeleteMcpTokenUseCase.kt
+new file mode 100644
+index 0000000..a86f125
+--- /dev/null
++++ b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/DeleteMcpTokenUseCase.kt
+@@ -0,0 +1,11 @@
++package com.awan.app.core.domain.mcp.usecase
++
++import com.awan.app.core.common.result.Result
++import com.awan.app.core.domain.mcp.repository.McpRepository
++import javax.inject.Inject
++
++class DeleteMcpTokenUseCase @Inject constructor(
++    private val repository: McpRepository,
++) {
++    suspend operator fun invoke(id: String): Result<Unit> = repository.deleteMcpToken(id)
++}
+diff --git a/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/GetMcpConnectionDetailsUseCase.kt b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/GetMcpConnectionDetailsUseCase.kt
+new file mode 100644
+index 0000000..a6d3a9c
+--- /dev/null
++++ b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/GetMcpConnectionDetailsUseCase.kt
+@@ -0,0 +1,13 @@
++package com.awan.app.core.domain.mcp.usecase
++
++import com.awan.app.core.common.result.Result
++import com.awan.app.core.domain.mcp.model.McpConnectionDetails
++import com.awan.app.core.domain.mcp.repository.McpRepository
++import kotlinx.coroutines.flow.Flow
++import javax.inject.Inject
++
++class GetMcpConnectionDetailsUseCase @Inject constructor(
++    private val repository: McpRepository,
++) {
++    operator fun invoke(): Flow<Result<McpConnectionDetails>> = repository.getMcpConnectionDetails()
++}
+diff --git a/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/GetMcpTokensUseCase.kt b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/GetMcpTokensUseCase.kt
+new file mode 100644
+index 0000000..d095671
+--- /dev/null
++++ b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/GetMcpTokensUseCase.kt
+@@ -0,0 +1,13 @@
++package com.awan.app.core.domain.mcp.usecase
++
++import com.awan.app.core.common.result.Result
++import com.awan.app.core.domain.mcp.model.McpToken
++import com.awan.app.core.domain.mcp.repository.McpRepository
++import kotlinx.coroutines.flow.Flow
++import javax.inject.Inject
++
++class GetMcpTokensUseCase @Inject constructor(
++    private val repository: McpRepository,
++) {
++    operator fun invoke(): Flow<Result<List<McpToken>>> = repository.getMcpTokens()
++}
+diff --git a/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/RegenerateMcpTokenUseCase.kt b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/RegenerateMcpTokenUseCase.kt
+new file mode 100644
+index 0000000..670ab11
+--- /dev/null
++++ b/core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/RegenerateMcpTokenUseCase.kt
+@@ -0,0 +1,12 @@
++package com.awan.app.core.domain.mcp.usecase
++
++import com.awan.app.core.common.result.Result
++import com.awan.app.core.domain.mcp.model.CreatedMcpToken
++import com.awan.app.core.domain.mcp.repository.McpRepository
++import javax.inject.Inject
++
++class RegenerateMcpTokenUseCase @Inject constructor(
++    private val repository: McpRepository,
++) {
++    suspend operator fun invoke(id: String): Result<CreatedMcpToken> = repository.regenerateMcpToken(id)
++}
+diff --git a/core/domain/src/test/kotlin/com/awan/app/core/domain/mcp/usecase/McpUseCasesTest.kt b/core/domain/src/test/kotlin/com/awan/app/core/domain/mcp/usecase/McpUseCasesTest.kt
+new file mode 100644
+index 0000000..10f7823
+--- /dev/null
++++ b/core/domain/src/test/kotlin/com/awan/app/core/domain/mcp/usecase/McpUseCasesTest.kt
+@@ -0,0 +1,147 @@
++package com.awan.app.core.domain.mcp.usecase
++
++import com.awan.app.core.common.error.AppError
++import com.awan.app.core.common.result.Result
++import com.awan.app.core.domain.mcp.model.CreatedMcpToken
++import com.awan.app.core.domain.mcp.model.McpConnectionDetails
++import com.awan.app.core.domain.mcp.model.McpToken
++import com.awan.app.core.domain.mcp.repository.McpRepository
++import kotlinx.coroutines.flow.Flow
++import kotlinx.coroutines.flow.first
++import kotlinx.coroutines.flow.flowOf
++import kotlinx.coroutines.test.runTest
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Before
++import org.junit.Test
++
++class McpUseCasesTest {
++
++    private lateinit var fakeRepository: FakeMcpRepository
++    private lateinit var getMcpConnectionDetailsUseCase: GetMcpConnectionDetailsUseCase
++    private lateinit var getMcpTokensUseCase: GetMcpTokensUseCase
++    private lateinit var createMcpTokenUseCase: CreateMcpTokenUseCase
++    private lateinit var deleteMcpTokenUseCase: DeleteMcpTokenUseCase
++    private lateinit var regenerateMcpTokenUseCase: RegenerateMcpTokenUseCase
++
++    @Before
++    fun setUp() {
++        fakeRepository = FakeMcpRepository()
++        getMcpConnectionDetailsUseCase = GetMcpConnectionDetailsUseCase(fakeRepository)
++        getMcpTokensUseCase = GetMcpTokensUseCase(fakeRepository)
++        createMcpTokenUseCase = CreateMcpTokenUseCase(fakeRepository)
++        deleteMcpTokenUseCase = DeleteMcpTokenUseCase(fakeRepository)
++        regenerateMcpTokenUseCase = RegenerateMcpTokenUseCase(fakeRepository)
++    }
++
++    @Test
++    fun `GetMcpConnectionDetailsUseCase returns connection details from repository`() = runTest {
++        val result = getMcpConnectionDetailsUseCase().first()
++        assertTrue(result is Result.Success)
++        val data = (result as Result.Success).data
++        assertEquals("https://api.awan.app/mcp", data.mcpUrl)
++        assertEquals("client-123", data.clientId)
++    }
++
++    @Test
++    fun `GetMcpTokensUseCase returns list of tokens from repository`() = runTest {
++        val result = getMcpTokensUseCase().first()
++        assertTrue(result is Result.Success)
++        val tokens = (result as Result.Success).data
++        assertEquals(1, tokens.size)
++        assertEquals("Claude Desktop", tokens.first().name)
++    }
++
++    @Test
++    fun `CreateMcpTokenUseCase succeeds and returns created token`() = runTest {
++        val result = createMcpTokenUseCase("Cursor")
++        assertTrue(result is Result.Success)
++        val created = (result as Result.Success).data
++        assertEquals("Cursor", created.name)
++        assertEquals("raw_secret_token_123", created.rawToken)
++    }
++
++    @Test
++    fun `CreateMcpTokenUseCase propagates repository error`() = runTest {
++        fakeRepository.shouldReturnError = true
++        val result = createMcpTokenUseCase("Error Token")
++        assertTrue(result is Result.Error)
++        assertEquals(AppError.Network, (result as Result.Error).error)
++    }
++
++    @Test
++    fun `DeleteMcpTokenUseCase succeeds when deleting valid token`() = runTest {
++        val result = deleteMcpTokenUseCase("token-1")
++        assertTrue(result is Result.Success)
++    }
++
++    @Test
++    fun `RegenerateMcpTokenUseCase succeeds and returns new created token`() = runTest {
++        val result = regenerateMcpTokenUseCase("token-1")
++        assertTrue(result is Result.Success)
++        val created = (result as Result.Success).data
++        assertEquals("token-1", created.id)
++        assertEquals("raw_regenerated_token_456", created.rawToken)
++    }
++
++    private class FakeMcpRepository : McpRepository {
++        var shouldReturnError = false
++
++        override fun getMcpConnectionDetails(): Flow<Result<McpConnectionDetails>> {
++            return flowOf(
++                Result.Success(
++                    McpConnectionDetails(
++                        mcpUrl = "https://api.awan.app/mcp",
++                        clientId = "client-123",
++                    ),
++                ),
++            )
++        }
++
++        override fun getMcpTokens(): Flow<Result<List<McpToken>>> {
++            return flowOf(
++                Result.Success(
++                    listOf(
++                        McpToken(
++                            id = "token-1",
++                            name = "Claude Desktop",
++                            maskedToken = "••••••••abc123",
++                            createdAt = "2026-08-11T00:00:00Z",
++                        ),
++                    ),
++                ),
++            )
++        }
++
++        override suspend fun createMcpToken(name: String): Result<CreatedMcpToken> {
++            if (shouldReturnError) return Result.Error(AppError.Network)
++            return Result.Success(
++                CreatedMcpToken(
++                    id = "token-new",
++                    name = name,
++                    rawToken = "raw_secret_token_123",
++                    maskedToken = "••••••••token_123",
++                    createdAt = "2026-08-11T00:00:00Z",
++                ),
++            )
++        }
++
++        override suspend fun deleteMcpToken(id: String): Result<Unit> {
++            if (shouldReturnError) return Result.Error(AppError.Network)
++            return Result.Success(Unit)
++        }
++
++        override suspend fun regenerateMcpToken(id: String): Result<CreatedMcpToken> {
++            if (shouldReturnError) return Result.Error(AppError.Network)
++            return Result.Success(
++                CreatedMcpToken(
++                    id = id,
++                    name = "Regenerated Token",
++                    rawToken = "raw_regenerated_token_456",
++                    maskedToken = "••••••••token_456",
++                    createdAt = "2026-08-11T00:00:00Z",
++                ),
++            )
++        }
++    }
++}
+diff --git a/core/network/src/main/kotlin/com/awan/app/core/network/api/McpApiService.kt b/core/network/src/main/kotlin/com/awan/app/core/network/api/McpApiService.kt
+new file mode 100644
+index 0000000..8034e34
+--- /dev/null
++++ b/core/network/src/main/kotlin/com/awan/app/core/network/api/McpApiService.kt
+@@ -0,0 +1,28 @@
++package com.awan.app.core.network.api
++
++import com.awan.app.core.network.dto.mcp.CreateMcpTokenRequestDto
++import com.awan.app.core.network.dto.mcp.CreatedMcpTokenResponseDto
++import com.awan.app.core.network.dto.mcp.McpConnectionDetailsDto
++import com.awan.app.core.network.dto.mcp.McpTokenResponseDto
++import retrofit2.http.Body
++import retrofit2.http.DELETE
++import retrofit2.http.GET
++import retrofit2.http.POST
++import retrofit2.http.Path
++
++interface McpApiService {
++    @GET("v1/mcp/settings/connection-details")
++    suspend fun getConnectionDetails(): McpConnectionDetailsDto
++
++    @GET("v1/mcp/tokens")
++    suspend fun getTokens(): List<McpTokenResponseDto>
++
++    @POST("v1/mcp/tokens")
++    suspend fun createToken(@Body request: CreateMcpTokenRequestDto): CreatedMcpTokenResponseDto
++
++    @DELETE("v1/mcp/tokens/{id}")
++    suspend fun deleteToken(@Path("id") id: String)
++
++    @POST("v1/mcp/tokens/{id}/regenerate")
++    suspend fun regenerateToken(@Path("id") id: String): CreatedMcpTokenResponseDto
++}
+diff --git a/core/network/src/main/kotlin/com/awan/app/core/network/di/NetworkModule.kt b/core/network/src/main/kotlin/com/awan/app/core/network/di/NetworkModule.kt
+index c9a0011..2ea5244 100644
+--- a/core/network/src/main/kotlin/com/awan/app/core/network/di/NetworkModule.kt
++++ b/core/network/src/main/kotlin/com/awan/app/core/network/di/NetworkModule.kt
+@@ -176,6 +176,11 @@ object NetworkModule {
+     fun providesGoalApiService(retrofit: Retrofit): GoalApiService =
+         retrofit.create(GoalApiService::class.java)
+ 
++    @Provides
++    @Singleton
++    fun providesMcpApiService(retrofit: Retrofit): com.awan.app.core.network.api.McpApiService =
++        retrofit.create(com.awan.app.core.network.api.McpApiService::class.java)
++
+     @Provides
+     @Singleton
+     fun providesDeviceIdProvider(
+diff --git a/core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/CreateMcpTokenRequestDto.kt b/core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/CreateMcpTokenRequestDto.kt
+new file mode 100644
+index 0000000..cace98e
+--- /dev/null
++++ b/core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/CreateMcpTokenRequestDto.kt
+@@ -0,0 +1,9 @@
++package com.awan.app.core.network.dto.mcp
++
++import kotlinx.serialization.SerialName
++import kotlinx.serialization.Serializable
++
++@Serializable
++data class CreateMcpTokenRequestDto(
++    @SerialName("name") val name: String,
++)
+diff --git a/core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/CreatedMcpTokenResponseDto.kt b/core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/CreatedMcpTokenResponseDto.kt
+new file mode 100644
+index 0000000..37af60f
+--- /dev/null
++++ b/core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/CreatedMcpTokenResponseDto.kt
+@@ -0,0 +1,13 @@
++package com.awan.app.core.network.dto.mcp
++
++import kotlinx.serialization.SerialName
++import kotlinx.serialization.Serializable
++
++@Serializable
++data class CreatedMcpTokenResponseDto(
++    @SerialName("id") val id: String,
++    @SerialName("name") val name: String,
++    @SerialName("rawToken") val rawToken: String,
++    @SerialName("maskedToken") val maskedToken: String,
++    @SerialName("createdAt") val createdAt: String,
++)
+diff --git a/core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/McpConnectionDetailsDto.kt b/core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/McpConnectionDetailsDto.kt
+new file mode 100644
+index 0000000..9ce2cec
+--- /dev/null
++++ b/core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/McpConnectionDetailsDto.kt
+@@ -0,0 +1,10 @@
++package com.awan.app.core.network.dto.mcp
++
++import kotlinx.serialization.SerialName
++import kotlinx.serialization.Serializable
++
++@Serializable
++data class McpConnectionDetailsDto(
++    @SerialName("mcpUrl") val mcpUrl: String,
++    @SerialName("clientId") val clientId: String,
++)
+diff --git a/core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/McpTokenResponseDto.kt b/core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/McpTokenResponseDto.kt
+new file mode 100644
+index 0000000..3ef767e
+--- /dev/null
++++ b/core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/McpTokenResponseDto.kt
+@@ -0,0 +1,13 @@
++package com.awan.app.core.network.dto.mcp
++
++import kotlinx.serialization.SerialName
++import kotlinx.serialization.Serializable
++
++@Serializable
++data class McpTokenResponseDto(
++    @SerialName("id") val id: String,
++    @SerialName("name") val name: String,
++    @SerialName("maskedToken") val maskedToken: String,
++    @SerialName("createdAt") val createdAt: String,
++    @SerialName("lastUsedAt") val lastUsedAt: String? = null,
++)
+diff --git a/docs/feature/mcp/2026-08-11-mcp-integration-plan.md b/docs/feature/mcp/2026-08-11-mcp-integration-plan.md
+new file mode 100644
+index 0000000..a1493fe
+--- /dev/null
++++ b/docs/feature/mcp/2026-08-11-mcp-integration-plan.md
+@@ -0,0 +1,520 @@
++# MCP Integration & Token Management Implementation Plan
++
++> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
++
++**Goal:** Add Model Context Protocol (MCP) integration to Awan, including MCP connection details, token management (Create, Delete, Regenerate) with one-time token reveal, and an interactive MCP setup info screen.
++
++**Architecture:** Now in Android (NiA) architecture with Clean Architecture (`presentation → domain ← data`). Retrofit API endpoints in `:core:network`, Room DAO & caching in `:core:database`, offline-first `McpRepositoryImpl` in `:core:data`, use cases in `:core:domain`, and MVI screens (`McpSettingsScreen`, `McpInfoScreen`) in `:feature:profile`.
++
++**Tech Stack:** Kotlin 2.4.0, Jetpack Compose BOM 2026.06.01, Compose Styles API, Navigation 3, Hilt DI, Retrofit + Kotlinx Serialization, Room database v2.
++
++---
++
++## Global Constraints
++
++- **Git & Branching:** Create feature branch `feature/AWAN-210-mcp-settings` from `origin/develop`.
++- **Clean Architecture:** ViewModels consume domain use cases ONLY (never repositories/DAOs directly). Repository interfaces live in `:core:domain`.
++- **Localization:** All user-facing strings must be in `strings.xml` (both English `res/values/` and Arabic `res/values-ar/`).
++- **Styling:** Jetpack Compose Styles API (`AwanTheme.colors`, `AwanTheme.styles`, `AwanTheme.spacing`), no hardcoded colors/dimensions.
++- **Security:** Raw token is displayed ONLY ONCE in a secure modal/sheet upon creation/regeneration with a Copy button and warning. Token list rows show obscured/masked tokens and copy is disabled after initial creation.
++
++---
++
++## Plan Overview & Subsystems
++
++```mermaid
++graph TD
++    A[SettingsCard in ProfileScreen] -->|Click MCP Settings| B[McpSettingsRouteScreen]
++    B -->|Click Info Icon| C[McpInfoRouteScreen]
++    B -->|Click Add Token| D[Create Token Dialog]
++    D -->|Submit| E[One-Time Reveal Sheet]
++    B -->|Click Regenerate| F[Regenerate Confirm Dialog]
++    F -->|Confirm| E
++    B -->|Click Delete| G[Delete Confirm Dialog]
++    
++    B --> H[McpSettingsViewModel]
++    H --> I[GetMcpConnectionDetailsUseCase]
++    H --> J[GetMcpTokensUseCase]
++    H --> K[CreateMcpTokenUseCase]
++    H --> L[DeleteMcpTokenUseCase]
++    H --> M[RegenerateMcpTokenUseCase]
++    
++    I & J & K & L & M --> N[McpRepository Contract]
++    N --> O[McpRepositoryImpl]
++    O --> P[McpApiService Retrofit]
++    O --> Q[McpTokenDao Room Database v2]
++```
++
++---
++
++## Task Decomposition
++
++### Task 1: Feature Branch Creation & Strings Setup
++
++**Files:**
++- Modify: `Z:\Business\Awan\Awan-Android\feature\profile\impl\src\main\res\values\strings.xml`
++- Modify: `Z:\Business\Awan\Awan-Android\feature\profile\impl\src\main\res\values-ar\strings.xml`
++
++**Interfaces:**
++- Consumes: User-approved feature branch `feature/AWAN-210-mcp-settings`.
++- Produces: String resources for MCP settings, token management, dialogs, copy feedback, and setup instructions in EN & AR.
++
++- [ ] **Step 1: Create git branch `feature/AWAN-210-mcp-settings` from `origin/develop`**
++
++```bash
++git checkout -b feature/AWAN-210-mcp-settings origin/develop
++```
++
++- [ ] **Step 2: Add MCP String resources in `res/values/strings.xml`**
++
++```xml
++<!-- MCP Settings Strings -->
++<string name="profile_mcp_title">MCP Integration</string>
++<string name="profile_mcp_subtitle">Connect AI assistants (Claude, Cursor) via Model Context Protocol</string>
++<string name="profile_mcp_connection_title">Connection Details</string>
++<string name="profile_mcp_url_label">MCP Server URL</string>
++<string name="profile_mcp_client_id_label">OAuth Client ID</string>
++<string name="profile_mcp_tokens_title">API Tokens</string>
++<string name="profile_mcp_add_token">Add New Token</string>
++<string name="profile_mcp_token_name_hint">Token Name (e.g. Claude Desktop)</string>
++<string name="profile_mcp_token_obscured_notice">Token key is hidden for security</string>
++<string name="profile_mcp_token_copy_disabled">Token can only be copied when initially created</string>
++<string name="profile_mcp_token_created_banner_title">Token Created Successfully!</string>
++<string name="profile_mcp_token_created_banner_warning">Make sure to copy your personal access token now. You won’t be able to see it again!</string>
++<string name="profile_mcp_token_copy">Copy Token</string>
++<string name="profile_mcp_token_copied">Token copied to clipboard</string>
++<string name="profile_mcp_token_delete_confirm_title">Delete Token?</string>
++<string name="profile_mcp_token_delete_confirm_body">Are you sure you want to delete this MCP token? AI assistants using this token will lose access immediately.</string>
++<string name="profile_mcp_token_regenerate_confirm_title">Regenerate Token?</string>
++<string name="profile_mcp_token_regenerate_confirm_body">Regenerating this token will revoke the existing key. Any connected agent will need the new token.</string>
++<string name="profile_mcp_info_title">How to Connect your AI Assistant</string>
++<string name="profile_mcp_info_step1">1. Copy the MCP Server URL and Client ID above.</string>
++<string name="profile_mcp_info_step2">2. Create an API Token and copy the key immediately.</string>
++<string name="profile_mcp_info_step3">3. Paste the configuration into your assistant (e.g. claude_desktop_config.json).</string>
++```
++
++- [ ] **Step 3: Add corresponding Arabic strings in `res/values-ar/strings.xml`**
++
++```xml
++<string name="profile_mcp_title">تكامل MCP</string>
++<string name="profile_mcp_subtitle">ربط المساعدين الذكيين (Claude, Cursor) عبر بروتوكول MCP</string>
++<string name="profile_mcp_connection_title">تفاصيل الاتصال</string>
++<string name="profile_mcp_url_label">رابط خادم MCP</string>
++<string name="profile_mcp_client_id_label">معرف العميل (Client ID)</string>
++<string name="profile_mcp_tokens_title">رموز الوصول (Tokens)</string>
++<string name="profile_mcp_add_token">إضافة رمز جديد</string>
++<string name="profile_mcp_token_name_hint">اسم الرمز (مثال: Claude Desktop)</string>
++<string name="profile_mcp_token_obscured_notice">تم إخفاء المفتاح لأسباب أمنية</string>
++<string name="profile_mcp_token_copy_disabled">يمكن نسخ الرمز فقط عند إنشائه لأول مرة</string>
++<string name="profile_mcp_token_created_banner_title">تم إنشاء الرمز بنجاح!</string>
++<string name="profile_mcp_token_created_banner_warning">احرص على نسخ رمز الوصول الخاص بك الآن. لن تتمكن من رؤيته مرة أخرى!</string>
++<string name="profile_mcp_token_copy">نسخ الرمز</string>
++<string name="profile_mcp_token_copied">تم نسخ الرمز إلى الحافظة</string>
++<string name="profile_mcp_token_delete_confirm_title">حذف الرمز؟</string>
++<string name="profile_mcp_token_delete_confirm_body">هل أنت تأكد من حذف رمز MCP هذا؟ سيفقد المساعد الذكي الوصول فوراً.</string>
++<string name="profile_mcp_token_regenerate_confirm_title">إعادة إنشاء الرمز؟</string>
++<string name="profile_mcp_token_regenerate_confirm_body">إعادة إنشاء الرمز ستلغي المفتاح الحالي. ستحتاج إلى تحديثه في المساعد الذكي.</string>
++<string name="profile_mcp_info_title">كيفية ربط مساعدك الذكي</string>
++<string name="profile_mcp_info_step1">1. انسخ رابط خادم MCP ومعرف العميل أعلاه.</string>
++<string name="profile_mcp_info_step2">2. أنشئ رمز وصول واحفظ المفتاح فوراً.</string>
++<string name="profile_mcp_info_step3">3. قم بتضمين الإعدادات في ملف التكوين (مثل claude_desktop_config.json).</string>
++```
++
++- [ ] **Step 4: Commit Task 1**
++
++```bash
++git add feature/profile/impl/src/main/res/values/strings.xml feature/profile/impl/src/main/res/values-ar/strings.xml
++git commit -m "AWAN-210: Add localized string resources for MCP settings and token management"
++```
++
++---
++
++### Task 2: Core Domain Layer (`:core:domain`)
++
++**Files:**
++- Create: `core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/model/McpConnectionDetails.kt`
++- Create: `core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/model/McpToken.kt`
++- Create: `core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/model/CreatedMcpToken.kt`
++- Create: `core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/repository/McpRepository.kt`
++- Create: `core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/GetMcpConnectionDetailsUseCase.kt`
++- Create: `core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/GetMcpTokensUseCase.kt`
++- Create: `core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/CreateMcpTokenUseCase.kt`
++- Create: `core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/DeleteMcpTokenUseCase.kt`
++- Create: `core/domain/src/main/kotlin/com/awan/app/core/domain/mcp/usecase/RegenerateMcpTokenUseCase.kt`
++- Test: `core/domain/src/test/kotlin/com/awan/app/core/domain/mcp/usecase/McpUseCasesTest.kt`
++
++**Interfaces:**
++- Consumes: `:core:common` (`Result`, `AppError`).
++- Produces: `McpRepository` contract and use cases consumed by `McpSettingsViewModel`.
++
++- [ ] **Step 1: Write Unit Test for Use Cases**
++
++```kotlin
++class McpUseCasesTest {
++    private val fakeRepository = FakeMcpRepository()
++    private val getTokensUseCase = GetMcpTokensUseCase(fakeRepository)
++    private val createTokenUseCase = CreateMcpTokenUseCase(fakeRepository)
++
++    @Test
++    fun `createMcpToken returns created token`() = runTest {
++        val result = createTokenUseCase("Claude Desktop")
++        assertThat(result).isInstanceOf<Result.Success<CreatedMcpToken>>()
++    }
++}
++```
++
++- [ ] **Step 2: Create Domain Models & Repository Interface**
++
++```kotlin
++data class McpConnectionDetails(
++    val mcpUrl: String,
++    val clientId: String
++)
++
++data class McpToken(
++    val id: String,
++    val name: String,
++    val maskedToken: String,
++    val createdAt: String,
++    val lastUsedAt: String? = null
++)
++
++data class CreatedMcpToken(
++    val id: String,
++    val name: String,
++    val rawToken: String,
++    val maskedToken: String,
++    val createdAt: String
++)
++
++interface McpRepository {
++    fun getMcpConnectionDetails(): Flow<Result<McpConnectionDetails>>
++    fun getMcpTokens(): Flow<Result<List<McpToken>>>
++    suspend fun createMcpToken(name: String): Result<CreatedMcpToken>
++    suspend fun deleteMcpToken(id: String): Result<Unit>
++    suspend fun regenerateMcpToken(id: String): Result<CreatedMcpToken>
++}
++```
++
++- [ ] **Step 3: Create Use Cases**
++
++```kotlin
++class GetMcpConnectionDetailsUseCase @Inject constructor(
++    private val repository: McpRepository
++) {
++    operator fun invoke(): Flow<Result<McpConnectionDetails>> = repository.getMcpConnectionDetails()
++}
++
++class GetMcpTokensUseCase @Inject constructor(
++    private val repository: McpRepository
++) {
++    operator fun invoke(): Flow<Result<List<McpToken>>> = repository.getMcpTokens()
++}
++
++class CreateMcpTokenUseCase @Inject constructor(
++    private val repository: McpRepository
++) {
++    suspend operator fun invoke(name: String): Result<CreatedMcpToken> = repository.createMcpToken(name)
++}
++
++class DeleteMcpTokenUseCase @Inject constructor(
++    private val repository: McpRepository
++) {
++    suspend operator fun invoke(id: String): Result<Unit> = repository.deleteMcpToken(id)
++}
++
++class RegenerateMcpTokenUseCase @Inject constructor(
++    private val repository: McpRepository
++) {
++    suspend operator fun invoke(id: String): Result<CreatedMcpToken> = repository.regenerateMcpToken(id)
++}
++```
++
++- [ ] **Step 4: Verify Unit Tests Pass**
++
++```bash
++./gradlew :core:domain:testDebugUnitTest
++```
++
++- [ ] **Step 5: Commit Task 2**
++
++```bash
++git add core/domain/
++git commit -m "AWAN-210: Add MCP domain models, repository contract, and use cases"
++```
++
++---
++
++### Task 3: Core Network & Database Layer (`:core:network`, `:core:database`, `:core:data`)
++
++**Files:**
++- Create: `core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/McpConnectionDetailsDto.kt`
++- Create: `core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/McpTokenResponseDto.kt`
++- Create: `core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/CreateMcpTokenRequestDto.kt`
++- Create: `core/network/src/main/kotlin/com/awan/app/core/network/dto/mcp/CreatedMcpTokenResponseDto.kt`
++- Create: `core/network/src/main/kotlin/com/awan/app/core/network/api/McpApiService.kt`
++- Create: `core/database/src/main/kotlin/com/awan/app/core/database/model/McpTokenEntity.kt`
++- Create: `core/database/src/main/kotlin/com/awan/app/core/database/dao/McpTokenDao.kt`
++- Modify: `core/database/src/main/kotlin/com/awan/app/core/database/AwanDatabase.kt` (v1 -> v2 migration)
++- Create: `core/data/src/main/kotlin/com/awan/app/core/data/mcp/repository/McpRepositoryImpl.kt`
++- Create: `core/data/src/main/kotlin/com/awan/app/core/data/mcp/di/McpDataModule.kt`
++- Test: `core/data/src/test/kotlin/com/awan/app/core/data/mcp/McpRepositoryImplTest.kt`
++
++**Interfaces:**
++- Consumes: `:core:network`, `:core:database`.
++- Produces: `McpRepositoryImpl` bound to `McpRepository` via Hilt `@Binds`.
++
++- [ ] **Step 1: Create Network DTOs & McpApiService Interface**
++
++```kotlin
++@Serializable
++data class McpConnectionDetailsDto(
++    @SerialName("mcpUrl") val mcpUrl: String,
++    @SerialName("clientId") val clientId: String
++)
++
++@Serializable
++data class McpTokenResponseDto(
++    @SerialName("id") val id: String,
++    @SerialName("name") val name: String,
++    @SerialName("maskedToken") val maskedToken: String,
++    @SerialName("createdAt") val createdAt: String,
++    @SerialName("lastUsedAt") val lastUsedAt: String? = null
++)
++
++@Serializable
++data class CreateMcpTokenRequestDto(
++    @SerialName("name") val name: String
++)
++
++@Serializable
++data class CreatedMcpTokenResponseDto(
++    @SerialName("id") val id: String,
++    @SerialName("name") val name: String,
++    @SerialName("rawToken") val rawToken: String,
++    @SerialName("maskedToken") val maskedToken: String,
++    @SerialName("createdAt") val createdAt: String
++)
++
++interface McpApiService {
++    @GET("v1/mcp/settings/connection-details")
++    suspend fun getConnectionDetails(): McpConnectionDetailsDto
++
++    @GET("v1/mcp/tokens")
++    suspend fun getTokens(): List<McpTokenResponseDto>
++
++    @POST("v1/mcp/tokens")
++    suspend fun createToken(@Body request: CreateMcpTokenRequestDto): CreatedMcpTokenResponseDto
++
++    @DELETE("v1/mcp/tokens/{id}")
++    suspend fun deleteToken(@Path("id") id: String)
++
++    @POST("v1/mcp/tokens/{id}/regenerate")
++    suspend fun regenerateToken(@Path("id") id: String): CreatedMcpTokenResponseDto
++}
++```
++
++- [ ] **Step 2: Create Database Entity & DAO**
++
++```kotlin
++@Entity(tableName = "mcp_tokens")
++data class McpTokenEntity(
++    @PrimaryKey val id: String,
++    val name: String,
++    val maskedToken: String,
++    val createdAt: String,
++    val lastUsedAt: String? = null
++)
++
++@Dao
++interface McpTokenDao {
++    @Query("SELECT * FROM mcp_tokens ORDER BY createdAt DESC")
++    fun getMcpTokens(): Flow<List<McpTokenEntity>>
++
++    @Upsert
++    suspend fun upsertMcpTokens(tokens: List<McpTokenEntity>)
++
++    @Query("DELETE FROM mcp_tokens WHERE id = :id")
++    suspend fun deleteMcpToken(id: String)
++
++    @Query("DELETE FROM mcp_tokens")
++    suspend fun clearAll()
++}
++```
++
++- [ ] **Step 3: Update AwanDatabase & Migration v1 -> v2**
++
++```kotlin
++val MIGRATION_1_2 = object : Migration(1, 2) {
++    override fun migrate(db: SupportSQLiteDatabase) {
++        db.execSQL(
++            """
++            CREATE TABLE IF NOT EXISTS `mcp_tokens` (
++                `id` TEXT NOT NULL,
++                `name` TEXT NOT NULL,
++                `maskedToken` TEXT NOT NULL,
++                `createdAt` TEXT NOT NULL,
++                `lastUsedAt` TEXT,
++                PRIMARY KEY(`id`)
++            )
++            """.trimIndent()
++        )
++    }
++}
++```
++
++- [ ] **Step 4: Implement McpRepositoryImpl with Offline-First DAO + Remote Sync & Network Error Handling**
++
++- [ ] **Step 5: Verify Repository Unit Tests**
++
++```bash
++./gradlew :core:data:testDebugUnitTest
++```
++
++- [ ] **Step 6: Commit Task 3**
++
++```bash
++git add core/network/ core/database/ core/data/
++git commit -m "AWAN-210: Add MCP network DTOs, Room entity/DAO, Room migration v1->v2, and McpRepositoryImpl"
++```
++
++---
++
++### Task 4: UI Presentation Layer (`:feature:profile`)
++
++**Files:**
++- Create: `feature/profile/api/src/main/java/com/awan/feature/profile/api/McpSettingsRoute.kt`
++- Create: `feature/profile/api/src/main/java/com/awan/feature/profile/api/McpInfoRoute.kt`
++- Create: `feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsState.kt`
++- Create: `feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsAction.kt`
++- Create: `feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsEvent.kt`
++- Create: `feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsViewModel.kt`
++- Create: `feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/McpSettingsScreen.kt`
++- Create: `feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/McpInfoScreen.kt`
++- Create: `feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/components/CreatedTokenModal.kt`
++- Test: `feature/profile/impl/src/test/java/com/awan/feature/profile/impl/presentation/McpSettingsViewModelTest.kt`
++
++**Interfaces:**
++- Consumes: `:core:domain` use cases (`GetMcpConnectionDetailsUseCase`, `GetMcpTokensUseCase`, `CreateMcpTokenUseCase`, `DeleteMcpTokenUseCase`, `RegenerateMcpTokenUseCase`).
++- Produces: `McpSettingsScreen` UI and `McpInfoScreen` UI.
++
++- [ ] **Step 1: Create Routes in `:feature:profile:api`**
++
++```kotlin
++@Serializable
++data object McpSettingsRoute : Route
++
++@Serializable
++data object McpInfoRoute : Route
++```
++
++- [ ] **Step 2: Create ViewModel, State, Action & Event**
++
++- State holds `connectionDetails`, `tokens`, `createdToken` (non-null triggers modal), `isLoading`, `isCreating`, `userMessage`.
++- ViewModel manages creating, deleting, regenerating tokens and exposing UI state.
++
++- [ ] **Step 3: Write ViewModel Unit Test**
++
++```bash
++./gradlew :feature:profile:impl:testDebugUnitTest --tests "com.awan.feature.profile.impl.presentation.McpSettingsViewModelTest"
++```
++
++- [ ] **Step 4: Build `CreatedTokenModal` (One-Time Reveal Sheet/Dialog)**
++- Monospaced text box displaying raw token.
++- Copy button with clipboard manager toast/snackbar.
++- High-visibility security warning notice banner.
++
++- [ ] **Step 5: Build `McpSettingsScreen` & `McpInfoScreen` Composables**
++- Jetpack Compose Styles API (`AwanTheme`, `AwanCard`, `AwanButton`, `AwanText`, `AwanTextField`).
++- Info button in top bar navigating to `McpInfoRoute`.
++
++- [ ] **Step 6: Commit Task 4**
++
++```bash
++git add feature/profile/
++git commit -m "AWAN-210: Add MCP settings state, ViewModel, McpSettingsScreen, McpInfoScreen, and CreatedTokenModal"
++```
++
++---
++
++### Task 5: Navigation Wiring & Profile Integration
++
++**Files:**
++- Modify: `feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/components/SettingsCard.kt`
++- Modify: `feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/ProfileEntryProvider.kt`
++- Modify: `app/src/main/java/com/awan/app/AwanApp.kt`
++
++**Interfaces:**
++- Consumes: `McpSettingsRoute`, `McpInfoRoute`, `profileEntry`.
++- Produces: Complete end-to-end user navigation flow from Profile -> SettingsCard -> MCP Settings -> MCP Info.
++
++- [ ] **Step 1: Add "MCP Integration" row in `SettingsCard.kt`**
++
++```kotlin
++PreferenceRow(
++    icon = Icons.Default.VpnKey, // or Key/Extension
++    title = stringResource(ProfileR.string.profile_mcp_title),
++    onClick = { onSettingsClick("mcp") },
++    showDivider = true,
++    iconColor = AwanTheme.colors.primary
++)
++```
++
++- [ ] **Step 2: Wire `McpSettingsRoute` and `McpInfoRoute` entries in `ProfileEntryProvider.kt`**
++
++```kotlin
++entry<McpSettingsRoute> {
++    McpSettingsRouteScreen(
++        onNavigateToInfo = { navigator.navigate(McpInfoRoute) },
++        onBack = onBack
++    )
++}
++
++entry<McpInfoRoute> {
++    McpInfoRouteScreen(
++        onBack = onBack
++    )
++}
++```
++
++- [ ] **Step 3: Update `AwanApp.kt` `profileEntry` handler**
++
++```kotlin
++onNavigateToMcpSettings = { navigator.navigate(McpSettingsRoute) }
++```
++
++- [ ] **Step 4: Verify Full App Build & Unit Tests**
++
++```bash
++./gradlew assembleDebug testDebugUnitTest
++```
++
++- [ ] **Step 5: Commit Task 5**
++
++```bash
++git add feature/profile/ app/
++git commit -m "AWAN-210: Integrate MCP Settings and Info screen navigation into Profile module and AwanApp"
++```
++
++---
++
++## Verification Plan
++
++### Automated Tests
++- Unit Tests for Domain Use Cases: `./gradlew :core:domain:testDebugUnitTest`
++- Unit Tests for Repository & Data Layer: `./gradlew :core:data:testDebugUnitTest`
++- Unit Tests for McpSettingsViewModel: `./gradlew :feature:profile:impl:testDebugUnitTest`
++- Full project clean build & unit tests: `./gradlew assembleDebug testDebugUnitTest`
++
++### Manual Verification
++1. Launch app and navigate to **Profile** tab.
++2. Verify "MCP Integration" item appears under **Settings**.
++3. Click "MCP Integration" and verify navigation to `McpSettingsScreen`.
++4. Verify MCP Server URL (`mcpUrl`) and Client ID (`clientId`) display correctly with copy buttons.
++5. Click **Info Icon** in top bar, verify navigation to `McpInfoScreen` with step-by-step setup guides.
++6. Return to MCP Settings, click **Add New Token**, type token name "Claude Desktop".
++7. Verify **One-Time Token Modal** appears displaying the raw token, Copy button, and security warning banner.
++8. Copy token and close modal. Verify token appears in token list as obscured (`••••••••token_suffix`).
++9. Verify token list row Copy button is disabled/greyed out with prompt explaining copy is only available during creation.
++10. Click **Regenerate**, confirm dialog, verify new raw token modal appears.
++11. Click **Delete**, confirm dialog, verify token is removed from list.
+diff --git a/feature/profile/api/src/main/java/com/awan/feature/profile/api/McpInfoRoute.kt b/feature/profile/api/src/main/java/com/awan/feature/profile/api/McpInfoRoute.kt
+new file mode 100644
+index 0000000..adecf9a
+--- /dev/null
++++ b/feature/profile/api/src/main/java/com/awan/feature/profile/api/McpInfoRoute.kt
+@@ -0,0 +1,7 @@
++package com.awan.feature.profile.api
++
++import com.awan.core.navigation.Route
++import kotlinx.serialization.Serializable
++
++@Serializable
++data object McpInfoRoute : Route
+diff --git a/feature/profile/api/src/main/java/com/awan/feature/profile/api/McpSettingsRoute.kt b/feature/profile/api/src/main/java/com/awan/feature/profile/api/McpSettingsRoute.kt
+new file mode 100644
+index 0000000..e978685
+--- /dev/null
++++ b/feature/profile/api/src/main/java/com/awan/feature/profile/api/McpSettingsRoute.kt
+@@ -0,0 +1,7 @@
++package com.awan.feature.profile.api
++
++import com.awan.core.navigation.Route
++import kotlinx.serialization.Serializable
++
++@Serializable
++data object McpSettingsRoute : Route
+diff --git a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/McpInfoRouteScreen.kt b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/McpInfoRouteScreen.kt
+new file mode 100644
+index 0000000..8d4ae14
+--- /dev/null
++++ b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/McpInfoRouteScreen.kt
+@@ -0,0 +1,13 @@
++package com.awan.feature.profile.impl.navigation
++
++import androidx.compose.runtime.Composable
++import com.awan.feature.profile.impl.ui.McpInfoScreen
++
++@Composable
++fun McpInfoRouteScreen(
++    onBack: () -> Unit,
++) {
++    McpInfoScreen(
++        onBackClick = onBack
++    )
++}
+diff --git a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/McpSettingsRouteScreen.kt b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/McpSettingsRouteScreen.kt
+new file mode 100644
+index 0000000..0a9adbc
+--- /dev/null
++++ b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/McpSettingsRouteScreen.kt
+@@ -0,0 +1,24 @@
++package com.awan.feature.profile.impl.navigation
++
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.getValue
++import androidx.hilt.navigation.compose.hiltViewModel
++import androidx.lifecycle.compose.collectAsStateWithLifecycle
++import com.awan.feature.profile.impl.presentation.McpSettingsViewModel
++import com.awan.feature.profile.impl.ui.McpSettingsScreen
++
++@Composable
++fun McpSettingsRouteScreen(
++    viewModel: McpSettingsViewModel = hiltViewModel(),
++    onNavigateToInfo: () -> Unit,
++    onBack: () -> Unit,
++) {
++    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
++
++    McpSettingsScreen(
++        uiState = uiState,
++        onAction = viewModel::onAction,
++        onInfoClick = onNavigateToInfo,
++        onBackClick = onBack,
++    )
++}
+diff --git a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/ProfileEntryProvider.kt b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/ProfileEntryProvider.kt
+index cda412e..33029b9 100644
+--- a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/ProfileEntryProvider.kt
++++ b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/ProfileEntryProvider.kt
+@@ -1,19 +1,19 @@
+ package com.awan.feature.profile.impl.navigation
+ 
+-import androidx.compose.runtime.Composable
+-import androidx.compose.runtime.getValue
+-import androidx.hilt.navigation.compose.hiltViewModel
+-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+ import androidx.navigation3.runtime.EntryProviderScope
+ import com.awan.core.navigation.Route
+ import com.awan.feature.profile.api.DailyZonesRoute
+ import com.awan.feature.profile.api.EditRoutineRoute
++import com.awan.feature.profile.api.McpInfoRoute
++import com.awan.feature.profile.api.McpSettingsRoute
+ import com.awan.feature.profile.api.ProfileRoute
+ 
+ fun EntryProviderScope<Route>.profileEntry(
+     onNavigateToDailyZones: () -> Unit,
+     onNavigateToEditRoutine: (String?) -> Unit,
+     onNavigateToInventory: () -> Unit,
++    onNavigateToMcpSettings: () -> Unit,
++    onNavigateToMcpInfo: () -> Unit,
+     onLogout: () -> Unit,
+     onBack: () -> Unit,
+ ) {
+@@ -21,6 +21,7 @@ fun EntryProviderScope<Route>.profileEntry(
+         ProfileRouteScreen(
+             onDailyZonesClick = onNavigateToDailyZones,
+             onInventoryClick = onNavigateToInventory,
++            onNavigateToMcpSettings = onNavigateToMcpSettings,
+             onLogout = onLogout
+         )
+     }
+@@ -39,4 +40,17 @@ fun EntryProviderScope<Route>.profileEntry(
+             onBack = onBack
+         )
+     }
++
++    entry<McpSettingsRoute> {
++        McpSettingsRouteScreen(
++            onNavigateToInfo = onNavigateToMcpInfo,
++            onBack = onBack
++        )
++    }
++
++    entry<McpInfoRoute> {
++        McpInfoRouteScreen(
++            onBack = onBack
++        )
++    }
+ }
+diff --git a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/ProfileRouteScreen.kt b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/ProfileRouteScreen.kt
+index 3e0db73..03fa4aa 100644
+--- a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/ProfileRouteScreen.kt
++++ b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/navigation/ProfileRouteScreen.kt
+@@ -12,6 +12,7 @@ fun ProfileRouteScreen(
+     viewModel: ProfileViewModel = hiltViewModel(),
+     onDailyZonesClick: () -> Unit,
+     onInventoryClick: () -> Unit,
++    onNavigateToMcpSettings: () -> Unit,
+     onLogout: () -> Unit,
+ ) {
+     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+@@ -22,7 +23,11 @@ fun ProfileRouteScreen(
+         onAction = viewModel::onAction,
+         onDailyZonesClick = onDailyZonesClick,
+         onInventoryClick = onInventoryClick,
+-        onSettingsClick = { },
++        onSettingsClick = { settingKey ->
++            if (settingKey == "mcp") {
++                onNavigateToMcpSettings()
++            }
++        },
+         onLogout = onLogout,
+     )
+ }
+diff --git a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsAction.kt b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsAction.kt
+new file mode 100644
+index 0000000..744ac75
+--- /dev/null
++++ b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsAction.kt
+@@ -0,0 +1,10 @@
++package com.awan.feature.profile.impl.presentation
++
++sealed interface McpSettingsAction {
++    data class CreateToken(val name: String) : McpSettingsAction
++    data class DeleteToken(val id: String) : McpSettingsAction
++    data class RegenerateToken(val id: String) : McpSettingsAction
++    data object DismissCreatedModal : McpSettingsAction
++    data object DismissError : McpSettingsAction
++    data object Refresh : McpSettingsAction
++}
+diff --git a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsEvent.kt b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsEvent.kt
+new file mode 100644
+index 0000000..cdc461a
+--- /dev/null
++++ b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsEvent.kt
+@@ -0,0 +1,11 @@
++package com.awan.feature.profile.impl.presentation
++
++import com.awan.app.core.common.text.UiText
++import com.awan.app.core.domain.mcp.model.CreatedMcpToken
++
++sealed interface McpSettingsEvent {
++    data class TokenCreated(val token: CreatedMcpToken) : McpSettingsEvent
++    data object TokenDeleted : McpSettingsEvent
++    data class TokenRegenerated(val token: CreatedMcpToken) : McpSettingsEvent
++    data class Error(val message: UiText) : McpSettingsEvent
++}
+diff --git a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsState.kt b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsState.kt
+new file mode 100644
+index 0000000..6816efb
+--- /dev/null
++++ b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsState.kt
+@@ -0,0 +1,16 @@
++package com.awan.feature.profile.impl.presentation
++
++import com.awan.app.core.common.text.UiText
++import com.awan.app.core.domain.mcp.model.CreatedMcpToken
++import com.awan.app.core.domain.mcp.model.McpConnectionDetails
++import com.awan.app.core.domain.mcp.model.McpToken
++
++data class McpSettingsState(
++    val connectionDetails: McpConnectionDetails? = null,
++    val tokens: List<McpToken> = emptyList(),
++    val createdToken: CreatedMcpToken? = null,
++    val isLoading: Boolean = false,
++    val isCreating: Boolean = false,
++    val userMessage: UiText? = null,
++    val error: UiText? = null,
++)
+diff --git a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsViewModel.kt b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsViewModel.kt
+new file mode 100644
+index 0000000..f4a8929
+--- /dev/null
++++ b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/presentation/McpSettingsViewModel.kt
+@@ -0,0 +1,151 @@
++package com.awan.feature.profile.impl.presentation
++
++import androidx.lifecycle.ViewModel
++import androidx.lifecycle.viewModelScope
++import com.awan.app.core.common.result.Result
++import com.awan.app.core.domain.mcp.usecase.CreateMcpTokenUseCase
++import com.awan.app.core.domain.mcp.usecase.DeleteMcpTokenUseCase
++import com.awan.app.core.domain.mcp.usecase.GetMcpConnectionDetailsUseCase
++import com.awan.app.core.domain.mcp.usecase.GetMcpTokensUseCase
++import com.awan.app.core.domain.mcp.usecase.RegenerateMcpTokenUseCase
++import com.awan.feature.profile.impl.helpers.ProfileErrorMapper
++import dagger.hilt.android.lifecycle.HiltViewModel
++import kotlinx.coroutines.channels.Channel
++import kotlinx.coroutines.flow.Flow
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.StateFlow
++import kotlinx.coroutines.flow.asStateFlow
++import kotlinx.coroutines.flow.receiveAsFlow
++import kotlinx.coroutines.flow.update
++import kotlinx.coroutines.launch
++import javax.inject.Inject
++
++@HiltViewModel
++class McpSettingsViewModel @Inject constructor(
++    private val getMcpConnectionDetailsUseCase: GetMcpConnectionDetailsUseCase,
++    private val getMcpTokensUseCase: GetMcpTokensUseCase,
++    private val createMcpTokenUseCase: CreateMcpTokenUseCase,
++    private val deleteMcpTokenUseCase: DeleteMcpTokenUseCase,
++    private val regenerateMcpTokenUseCase: RegenerateMcpTokenUseCase,
++) : ViewModel() {
++
++    private val _uiState = MutableStateFlow(McpSettingsState())
++    val uiState: StateFlow<McpSettingsState> = _uiState.asStateFlow()
++
++    private val _events = Channel<McpSettingsEvent>(Channel.BUFFERED)
++    val events: Flow<McpSettingsEvent> = _events.receiveAsFlow()
++
++    init {
++        loadData()
++    }
++
++    fun onAction(action: McpSettingsAction) {
++        when (action) {
++            is McpSettingsAction.CreateToken -> createToken(action.name)
++            is McpSettingsAction.DeleteToken -> deleteToken(action.id)
++            is McpSettingsAction.RegenerateToken -> regenerateToken(action.id)
++            McpSettingsAction.DismissCreatedModal -> _uiState.update { it.copy(createdToken = null) }
++            McpSettingsAction.DismissError -> _uiState.update { it.copy(error = null) }
++            McpSettingsAction.Refresh -> loadData()
++        }
++    }
++
++    private fun loadData() {
++        viewModelScope.launch {
++            _uiState.update { it.copy(isLoading = true, error = null) }
++            getMcpConnectionDetailsUseCase().collect { result ->
++                when (result) {
++                    is Result.Success -> {
++                        _uiState.update { it.copy(connectionDetails = result.data, isLoading = false) }
++                    }
++                    is Result.Error -> {
++                        val uiError = ProfileErrorMapper.mapToUiText(result.error)
++                        _uiState.update { it.copy(error = uiError, isLoading = false) }
++                    }
++                    Result.Loading -> {
++                        _uiState.update { it.copy(isLoading = true) }
++                    }
++                }
++            }
++        }
++
++        viewModelScope.launch {
++            getMcpTokensUseCase().collect { result ->
++                when (result) {
++                    is Result.Success -> {
++                        _uiState.update { it.copy(tokens = result.data) }
++                    }
++                    is Result.Error -> {
++                        val uiError = ProfileErrorMapper.mapToUiText(result.error)
++                        _uiState.update { it.copy(error = uiError) }
++                    }
++                    Result.Loading -> Unit
++                }
++            }
++        }
++    }
++
++    private fun createToken(name: String) {
++        if (name.isBlank()) return
++        viewModelScope.launch {
++            _uiState.update { it.copy(isCreating = true, error = null) }
++            when (val result = createMcpTokenUseCase(name)) {
++                is Result.Success -> {
++                    val created = result.data
++                    _uiState.update { state ->
++                        state.copy(
++                            isCreating = false,
++                            createdToken = created,
++                        )
++                    }
++                    _events.send(McpSettingsEvent.TokenCreated(created))
++                }
++                is Result.Error -> {
++                    val uiError = ProfileErrorMapper.mapToUiText(result.error)
++                    _uiState.update { it.copy(isCreating = false, error = uiError) }
++                    _events.send(McpSettingsEvent.Error(uiError))
++                }
++                Result.Loading -> Unit
++            }
++        }
++    }
++
++    private fun deleteToken(id: String) {
++        viewModelScope.launch {
++            when (val result = deleteMcpTokenUseCase(id)) {
++                is Result.Success -> {
++                    _uiState.update { state ->
++                        state.copy(tokens = state.tokens.filterNot { it.id == id })
++                    }
++                    _events.send(McpSettingsEvent.TokenDeleted)
++                }
++                is Result.Error -> {
++                    val uiError = ProfileErrorMapper.mapToUiText(result.error)
++                    _uiState.update { it.copy(error = uiError) }
++                    _events.send(McpSettingsEvent.Error(uiError))
++                }
++                Result.Loading -> Unit
++            }
++        }
++    }
++
++    private fun regenerateToken(id: String) {
++        viewModelScope.launch {
++            when (val result = regenerateMcpTokenUseCase(id)) {
++                is Result.Success -> {
++                    val regenerated = result.data
++                    _uiState.update { state ->
++                        state.copy(createdToken = regenerated)
++                    }
++                    _events.send(McpSettingsEvent.TokenRegenerated(regenerated))
++                }
++                is Result.Error -> {
++                    val uiError = ProfileErrorMapper.mapToUiText(result.error)
++                    _uiState.update { it.copy(error = uiError) }
++                    _events.send(McpSettingsEvent.Error(uiError))
++                }
++                Result.Loading -> Unit
++            }
++        }
++    }
++}
+diff --git a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/McpInfoScreen.kt b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/McpInfoScreen.kt
+new file mode 100644
+index 0000000..9bfecf8
+--- /dev/null
++++ b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/McpInfoScreen.kt
+@@ -0,0 +1,228 @@
++package com.awan.feature.profile.impl.ui
++
++import android.content.ClipData
++import android.content.ClipboardManager
++import android.content.Context
++import android.widget.Toast
++import androidx.compose.foundation.background
++import androidx.compose.foundation.border
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.PaddingValues
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.layout.size
++import androidx.compose.foundation.layout.statusBarsPadding
++import androidx.compose.foundation.rememberScrollState
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.foundation.verticalScroll
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.ContentCopy
++import androidx.compose.material3.Icon
++import androidx.compose.material3.IconButton
++import androidx.compose.material3.Scaffold
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.platform.LocalContext
++import androidx.compose.ui.res.stringResource
++import androidx.compose.ui.text.font.FontFamily
++import androidx.compose.ui.unit.dp
++import com.awan.app.core.designsystem.AwanBackButton
++import com.awan.app.core.designsystem.AwanCard
++import com.awan.app.core.designsystem.AwanText
++import com.awan.app.core.designsystem.AwanTheme
++import com.awan.feature.profile.impl.R as ProfileR
++
++@Composable
++fun McpInfoScreen(
++    onBackClick: () -> Unit,
++    modifier: Modifier = Modifier,
++) {
++    val context = LocalContext.current
++    val copiedToastMessage = stringResource(ProfileR.string.profile_mcp_token_copied)
++
++    val claudeSnippet = """
++        {
++          "mcpServers": {
++            "awan": {
++              "command": "npx",
++              "args": [
++                "-y",
++                "@awan/mcp-server",
++                "--url", "https://mcp.awan.app/v1",
++                "--token", "YOUR_API_TOKEN"
++              ]
++            }
++          }
++        }
++    """.trimIndent()
++
++    val cursorSnippet = """
++        {
++          "mcp": {
++            "servers": {
++              "awan": {
++                "url": "https://mcp.awan.app/v1",
++                "headers": {
++                  "Authorization": "Bearer YOUR_API_TOKEN"
++                }
++              }
++            }
++          }
++        }
++    """.trimIndent()
++
++    Scaffold(
++        topBar = {
++            Row(
++                modifier = Modifier
++                    .fillMaxWidth()
++                    .statusBarsPadding()
++                    .padding(horizontal = 16.dp, vertical = 12.dp),
++                horizontalArrangement = Arrangement.spacedBy(16.dp),
++                verticalAlignment = Alignment.CenterVertically
++            ) {
++                AwanBackButton(onClick = onBackClick)
++                AwanText(
++                    text = stringResource(ProfileR.string.profile_mcp_info_title),
++                    style = AwanTheme.styles.titleText
++                )
++            }
++        },
++        containerColor = AwanTheme.colors.background,
++        modifier = modifier
++    ) { paddingValues ->
++        Column(
++            modifier = Modifier
++                .fillMaxSize()
++                .padding(paddingValues)
++                .verticalScroll(rememberScrollState())
++                .padding(horizontal = 20.dp, vertical = 16.dp),
++            verticalArrangement = Arrangement.spacedBy(16.dp)
++        ) {
++            // Setup steps card
++            AwanCard(
++                modifier = Modifier.fillMaxWidth(),
++                contentPadding = PaddingValues(AwanTheme.spacing.md)
++            ) {
++                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
++                    AwanText(
++                        text = "Setup Instructions",
++                        style = AwanTheme.styles.headingText
++                    )
++                    AwanText(
++                        text = stringResource(ProfileR.string.profile_mcp_info_step1),
++                        style = AwanTheme.styles.bodyText
++                    )
++                    AwanText(
++                        text = stringResource(ProfileR.string.profile_mcp_info_step2),
++                        style = AwanTheme.styles.bodyText
++                    )
++                    AwanText(
++                        text = stringResource(ProfileR.string.profile_mcp_info_step3),
++                        style = AwanTheme.styles.bodyText
++                    )
++                }
++            }
++
++            // Claude Desktop Guide
++            AwanCard(
++                modifier = Modifier.fillMaxWidth(),
++                contentPadding = PaddingValues(AwanTheme.spacing.md)
++            ) {
++                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
++                    Row(
++                        modifier = Modifier.fillMaxWidth(),
++                        horizontalArrangement = Arrangement.SpaceBetween,
++                        verticalAlignment = Alignment.CenterVertically
++                    ) {
++                        AwanText(
++                            text = "Claude Desktop (claude_desktop_config.json)",
++                            style = AwanTheme.styles.headingText
++                        )
++                        IconButton(
++                            onClick = {
++                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
++                                clipboard.setPrimaryClip(ClipData.newPlainText("Claude Config", claudeSnippet))
++                                Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
++                            },
++                            modifier = Modifier.size(28.dp)
++                        ) {
++                            Icon(
++                                imageVector = Icons.Default.ContentCopy,
++                                contentDescription = "Copy Claude Snippet",
++                                tint = AwanTheme.colors.sky,
++                                modifier = Modifier.size(16.dp)
++                            )
++                        }
++                    }
++                    Box(
++                        modifier = Modifier
++                            .fillMaxWidth()
++                            .clip(RoundedCornerShape(8.dp))
++                            .background(AwanTheme.colors.disabledSurface)
++                            .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(8.dp))
++                            .padding(12.dp)
++                    ) {
++                        AwanText(
++                            text = claudeSnippet,
++                            style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) }
++                        )
++                    }
++                }
++            }
++
++            // Cursor Guide
++            AwanCard(
++                modifier = Modifier.fillMaxWidth(),
++                contentPadding = PaddingValues(AwanTheme.spacing.md)
++            ) {
++                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
++                    Row(
++                        modifier = Modifier.fillMaxWidth(),
++                        horizontalArrangement = Arrangement.SpaceBetween,
++                        verticalAlignment = Alignment.CenterVertically
++                    ) {
++                        AwanText(
++                            text = "Cursor IDE Setup",
++                            style = AwanTheme.styles.headingText
++                        )
++                        IconButton(
++                            onClick = {
++                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
++                                clipboard.setPrimaryClip(ClipData.newPlainText("Cursor Config", cursorSnippet))
++                                Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
++                            },
++                            modifier = Modifier.size(28.dp)
++                        ) {
++                            Icon(
++                                imageVector = Icons.Default.ContentCopy,
++                                contentDescription = "Copy Cursor Snippet",
++                                tint = AwanTheme.colors.sky,
++                                modifier = Modifier.size(16.dp)
++                            )
++                        }
++                    }
++                    Box(
++                        modifier = Modifier
++                            .fillMaxWidth()
++                            .clip(RoundedCornerShape(8.dp))
++                            .background(AwanTheme.colors.disabledSurface)
++                            .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(8.dp))
++                            .padding(12.dp)
++                    ) {
++                        AwanText(
++                            text = cursorSnippet,
++                            style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) }
++                        )
++                    }
++                }
++            }
++        }
++    }
++}
+diff --git a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/McpSettingsScreen.kt b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/McpSettingsScreen.kt
+new file mode 100644
+index 0000000..6ff1aab
+--- /dev/null
++++ b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/McpSettingsScreen.kt
+@@ -0,0 +1,459 @@
++package com.awan.feature.profile.impl.ui
++
++import android.content.ClipData
++import android.content.ClipboardManager
++import android.content.Context
++import android.widget.Toast
++import androidx.compose.foundation.background
++import androidx.compose.foundation.border
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.PaddingValues
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.layout.size
++import androidx.compose.foundation.layout.statusBarsPadding
++import androidx.compose.foundation.rememberScrollState
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.foundation.verticalScroll
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.Add
++import androidx.compose.material.icons.filled.ContentCopy
++import androidx.compose.material.icons.filled.Delete
++import androidx.compose.material.icons.filled.Info
++import androidx.compose.material.icons.filled.Refresh
++import androidx.compose.material3.CircularProgressIndicator
++import androidx.compose.material3.Icon
++import androidx.compose.material3.IconButton
++import androidx.compose.material3.Scaffold
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.platform.LocalContext
++import androidx.compose.ui.res.stringResource
++import androidx.compose.ui.text.font.FontFamily
++import androidx.compose.ui.unit.dp
++import androidx.compose.ui.window.Dialog
++import com.awan.app.core.designsystem.AwanBackButton
++import com.awan.app.core.designsystem.AwanButton
++import com.awan.app.core.designsystem.AwanButtonVariant
++import com.awan.app.core.designsystem.AwanCard
++import com.awan.app.core.designsystem.AwanDialog
++import com.awan.app.core.designsystem.AwanErrorSnackbar
++import com.awan.app.core.designsystem.AwanText
++import com.awan.app.core.designsystem.AwanTextField
++import com.awan.app.core.designsystem.AwanTheme
++import com.awan.app.core.domain.mcp.model.McpToken
++import com.awan.feature.profile.impl.R as ProfileR
++import com.awan.feature.profile.impl.presentation.McpSettingsAction
++import com.awan.feature.profile.impl.presentation.McpSettingsState
++import com.awan.feature.profile.impl.ui.components.CreatedTokenModal
++
++@Composable
++fun McpSettingsScreen(
++    uiState: McpSettingsState,
++    onAction: (McpSettingsAction) -> Unit,
++    onInfoClick: () -> Unit,
++    onBackClick: () -> Unit,
++    modifier: Modifier = Modifier,
++) {
++    val context = LocalContext.current
++    val copiedToastMessage = stringResource(ProfileR.string.profile_mcp_token_copied)
++    var showAddTokenDialog by remember { mutableStateOf(false) }
++    var newTokenName by remember { mutableStateOf("") }
++    var deletingToken by remember { mutableStateOf<McpToken?>(null) }
++    var regeneratingToken by remember { mutableStateOf<McpToken?>(null) }
++
++    if (uiState.createdToken != null) {
++        CreatedTokenModal(
++            createdToken = uiState.createdToken,
++            onDismiss = { onAction(McpSettingsAction.DismissCreatedModal) }
++        )
++    }
++
++    if (showAddTokenDialog) {
++        Dialog(onDismissRequest = { showAddTokenDialog = false }) {
++            AwanCard(
++                modifier = Modifier
++                    .fillMaxWidth()
++                    .padding(AwanTheme.spacing.md),
++                contentPadding = PaddingValues(AwanTheme.spacing.xl)
++            ) {
++                Column(
++                    verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)
++                ) {
++                    AwanText(
++                        text = stringResource(ProfileR.string.profile_mcp_add_token),
++                        style = AwanTheme.styles.titleText
++                    )
++                    AwanTextField(
++                        value = newTokenName,
++                        onValueChange = { newTokenName = it },
++                        placeholder = stringResource(ProfileR.string.profile_mcp_token_name_hint),
++                        modifier = Modifier.fillMaxWidth()
++                    )
++                    Row(
++                        modifier = Modifier.fillMaxWidth(),
++                        horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)
++                    ) {
++                        AwanButton(
++                            onClick = {
++                                showAddTokenDialog = false
++                                newTokenName = ""
++                            },
++                            modifier = Modifier.weight(1f),
++                            variant = AwanButtonVariant.Quiet
++                        ) {
++                            AwanText(stringResource(ProfileR.string.profile_cancel))
++                        }
++                        AwanButton(
++                            onClick = {
++                                if (newTokenName.isNotBlank()) {
++                                    onAction(McpSettingsAction.CreateToken(newTokenName))
++                                    showAddTokenDialog = false
++                                    newTokenName = ""
++                                }
++                            },
++                            modifier = Modifier.weight(1f),
++                            enabled = newTokenName.isNotBlank() && !uiState.isCreating
++                        ) {
++                            if (uiState.isCreating) {
++                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = AwanTheme.colors.surface)
++                            } else {
++                                AwanText(stringResource(ProfileR.string.profile_mcp_add_token))
++                            }
++                        }
++                    }
++                }
++            }
++        }
++    }
++
++    if (deletingToken != null) {
++        AwanDialog(
++            title = stringResource(ProfileR.string.profile_mcp_token_delete_confirm_title),
++            body = stringResource(ProfileR.string.profile_mcp_token_delete_confirm_body),
++            primaryLabel = stringResource(ProfileR.string.profile_routine_delete),
++            primaryVariant = AwanButtonVariant.Destructive,
++            onPrimary = {
++                onAction(McpSettingsAction.DeleteToken(deletingToken!!.id))
++                deletingToken = null
++            },
++            secondaryLabel = stringResource(ProfileR.string.profile_cancel),
++            onSecondary = { deletingToken = null },
++            onDismiss = { deletingToken = null }
++        )
++    }
++
++    if (regeneratingToken != null) {
++        AwanDialog(
++            title = stringResource(ProfileR.string.profile_mcp_token_regenerate_confirm_title),
++            body = stringResource(ProfileR.string.profile_mcp_token_regenerate_confirm_body),
++            primaryLabel = stringResource(ProfileR.string.profile_zone_confirm),
++            primaryVariant = AwanButtonVariant.Primary,
++            onPrimary = {
++                onAction(McpSettingsAction.RegenerateToken(regeneratingToken!!.id))
++                regeneratingToken = null
++            },
++            secondaryLabel = stringResource(ProfileR.string.profile_cancel),
++            onSecondary = { regeneratingToken = null },
++            onDismiss = { regeneratingToken = null }
++        )
++    }
++
++    Scaffold(
++        topBar = {
++            Row(
++                modifier = Modifier
++                    .fillMaxWidth()
++                    .statusBarsPadding()
++                    .padding(horizontal = 16.dp, vertical = 12.dp),
++                horizontalArrangement = Arrangement.SpaceBetween,
++                verticalAlignment = Alignment.CenterVertically
++            ) {
++                AwanBackButton(onClick = onBackClick)
++                AwanText(
++                    text = stringResource(ProfileR.string.profile_mcp_title),
++                    style = AwanTheme.styles.titleText
++                )
++                IconButton(onClick = onInfoClick) {
++                    Icon(
++                        imageVector = Icons.Default.Info,
++                        contentDescription = "MCP Setup Info",
++                        tint = AwanTheme.colors.sky
++                    )
++                }
++            }
++        },
++        containerColor = AwanTheme.colors.background,
++        modifier = modifier
++    ) { paddingValues ->
++        Box(
++            modifier = Modifier
++                .fillMaxSize()
++                .padding(paddingValues)
++        ) {
++            Column(
++                modifier = Modifier
++                    .fillMaxSize()
++                    .verticalScroll(rememberScrollState())
++                    .padding(horizontal = 20.dp, vertical = 16.dp),
++                verticalArrangement = Arrangement.spacedBy(16.dp)
++            ) {
++                // Connection Details Card
++                AwanCard(
++                    modifier = Modifier.fillMaxWidth(),
++                    contentPadding = PaddingValues(AwanTheme.spacing.md)
++                ) {
++                    Column(
++                        verticalArrangement = Arrangement.spacedBy(12.dp)
++                    ) {
++                        AwanText(
++                            text = stringResource(ProfileR.string.profile_mcp_connection_title),
++                            style = AwanTheme.styles.headingText
++                        )
++
++                        val details = uiState.connectionDetails
++                        val mcpUrl = details?.mcpUrl ?: "https://mcp.awan.app/v1"
++                        val clientId = details?.clientId ?: "awan-android-client"
++
++                        // MCP URL Row
++                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
++                            AwanText(
++                                text = stringResource(ProfileR.string.profile_mcp_url_label),
++                                style = AwanTheme.styles.captionText
++                            )
++                            Row(
++                                modifier = Modifier
++                                    .fillMaxWidth()
++                                    .clip(RoundedCornerShape(8.dp))
++                                    .background(AwanTheme.colors.disabledSurface)
++                                    .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(8.dp))
++                                    .padding(horizontal = 12.dp, vertical = 8.dp),
++                                horizontalArrangement = Arrangement.SpaceBetween,
++                                verticalAlignment = Alignment.CenterVertically
++                            ) {
++                                AwanText(
++                                    text = mcpUrl,
++                                    style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) },
++                                    modifier = Modifier.weight(1f)
++                                )
++                                IconButton(
++                                    onClick = {
++                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
++                                        clipboard.setPrimaryClip(ClipData.newPlainText("MCP URL", mcpUrl))
++                                        Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
++                                    },
++                                    modifier = Modifier.size(28.dp)
++                                ) {
++                                    Icon(
++                                        imageVector = Icons.Default.ContentCopy,
++                                        contentDescription = "Copy URL",
++                                        tint = AwanTheme.colors.textSecondary,
++                                        modifier = Modifier.size(16.dp)
++                                    )
++                                }
++                            }
++                        }
++
++                        // Client ID Row
++                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
++                            AwanText(
++                                text = stringResource(ProfileR.string.profile_mcp_client_id_label),
++                                style = AwanTheme.styles.captionText
++                            )
++                            Row(
++                                modifier = Modifier
++                                    .fillMaxWidth()
++                                    .clip(RoundedCornerShape(8.dp))
++                                    .background(AwanTheme.colors.disabledSurface)
++                                    .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(8.dp))
++                                    .padding(horizontal = 12.dp, vertical = 8.dp),
++                                horizontalArrangement = Arrangement.SpaceBetween,
++                                verticalAlignment = Alignment.CenterVertically
++                            ) {
++                                AwanText(
++                                    text = clientId,
++                                    style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) },
++                                    modifier = Modifier.weight(1f)
++                                )
++                                IconButton(
++                                    onClick = {
++                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
++                                        clipboard.setPrimaryClip(ClipData.newPlainText("Client ID", clientId))
++                                        Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
++                                    },
++                                    modifier = Modifier.size(28.dp)
++                                ) {
++                                    Icon(
++                                        imageVector = Icons.Default.ContentCopy,
++                                        contentDescription = "Copy Client ID",
++                                        tint = AwanTheme.colors.textSecondary,
++                                        modifier = Modifier.size(16.dp)
++                                    )
++                                }
++                            }
++                        }
++                    }
++                }
++
++                // Tokens Card
++                AwanCard(
++                    modifier = Modifier.fillMaxWidth(),
++                    contentPadding = PaddingValues(AwanTheme.spacing.md)
++                ) {
++                    Column(
++                        verticalArrangement = Arrangement.spacedBy(12.dp)
++                    ) {
++                        Row(
++                            modifier = Modifier.fillMaxWidth(),
++                            horizontalArrangement = Arrangement.SpaceBetween,
++                            verticalAlignment = Alignment.CenterVertically
++                        ) {
++                            AwanText(
++                                text = stringResource(ProfileR.string.profile_mcp_tokens_title),
++                                style = AwanTheme.styles.headingText
++                            )
++                            AwanButton(
++                                onClick = { showAddTokenDialog = true },
++                                variant = AwanButtonVariant.Quiet
++                            ) {
++                                Row(
++                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
++                                    verticalAlignment = Alignment.CenterVertically
++                                ) {
++                                    Icon(
++                                        imageVector = Icons.Default.Add,
++                                        contentDescription = null,
++                                        modifier = Modifier.size(16.dp)
++                                    )
++                                    AwanText(stringResource(ProfileR.string.profile_mcp_add_token))
++                                }
++                            }
++                        }
++
++                        if (uiState.tokens.isEmpty()) {
++                            Box(
++                                modifier = Modifier
++                                    .fillMaxWidth()
++                                    .padding(vertical = 16.dp),
++                                contentAlignment = Alignment.Center
++                            ) {
++                                AwanText(
++                                    text = "No tokens added yet",
++                                    style = AwanTheme.styles.bodySecondaryText
++                                )
++                            }
++                        } else {
++                            uiState.tokens.forEach { token ->
++                                TokenItemRow(
++                                    token = token,
++                                    onRegenerate = { regeneratingToken = token },
++                                    onDelete = { deletingToken = token }
++                                )
++                            }
++                        }
++
++                        // Security notice
++                        AwanText(
++                            text = stringResource(ProfileR.string.profile_mcp_token_obscured_notice) + ". " +
++                                    stringResource(ProfileR.string.profile_mcp_token_copy_disabled),
++                            style = AwanTheme.styles.captionText,
++                            modifier = Modifier.padding(top = 4.dp)
++                        )
++                    }
++                }
++            }
++
++            if (uiState.error != null) {
++                Box(
++                    modifier = Modifier
++                        .fillMaxSize()
++                        .padding(20.dp),
++                    contentAlignment = Alignment.BottomCenter
++                ) {
++                    AwanErrorSnackbar(
++                        message = uiState.error.asString(),
++                        onDismiss = { onAction(McpSettingsAction.DismissError) }
++                    )
++                }
++            }
++        }
++    }
++}
++
++@Composable
++private fun TokenItemRow(
++    token: McpToken,
++    onRegenerate: () -> Unit,
++    onDelete: () -> Unit,
++    modifier: Modifier = Modifier,
++) {
++    Box(
++        modifier = modifier
++            .fillMaxWidth()
++            .clip(RoundedCornerShape(12.dp))
++            .background(AwanTheme.colors.disabledSurface)
++            .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(12.dp))
++            .padding(12.dp)
++    ) {
++        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
++            Row(
++                modifier = Modifier.fillMaxWidth(),
++                horizontalArrangement = Arrangement.SpaceBetween,
++                verticalAlignment = Alignment.CenterVertically
++            ) {
++                AwanText(
++                    text = token.name,
++                    style = AwanTheme.styles.bodyText
++                )
++                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
++                    IconButton(
++                        onClick = onRegenerate,
++                        modifier = Modifier.size(32.dp)
++                    ) {
++                        Icon(
++                            imageVector = Icons.Default.Refresh,
++                            contentDescription = "Regenerate Token",
++                            tint = AwanTheme.colors.sky,
++                            modifier = Modifier.size(18.dp)
++                        )
++                    }
++                    IconButton(
++                        onClick = onDelete,
++                        modifier = Modifier.size(32.dp)
++                    ) {
++                        Icon(
++                            imageVector = Icons.Default.Delete,
++                            contentDescription = "Delete Token",
++                            tint = AwanTheme.colors.destructive,
++                            modifier = Modifier.size(18.dp)
++                        )
++                    }
++                }
++            }
++            Row(
++                modifier = Modifier.fillMaxWidth(),
++                horizontalArrangement = Arrangement.SpaceBetween,
++                verticalAlignment = Alignment.CenterVertically
++            ) {
++                AwanText(
++                    text = token.maskedToken,
++                    style = AwanTheme.styles.captionText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) }
++                )
++                AwanText(
++                    text = token.createdAt,
++                    style = AwanTheme.styles.captionText
++                )
++            }
++        }
++    }
++}
+diff --git a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/components/CreatedTokenModal.kt b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/components/CreatedTokenModal.kt
+new file mode 100644
+index 0000000..bff02c0
+--- /dev/null
++++ b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/components/CreatedTokenModal.kt
+@@ -0,0 +1,149 @@
++package com.awan.feature.profile.impl.ui.components
++
++import android.content.ClipData
++import android.content.ClipboardManager
++import android.content.Context
++import android.widget.Toast
++import androidx.compose.foundation.background
++import androidx.compose.foundation.border
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.PaddingValues
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.layout.size
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.ContentCopy
++import androidx.compose.material.icons.filled.Warning
++import androidx.compose.material3.Icon
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.platform.LocalContext
++import androidx.compose.ui.res.stringResource
++import androidx.compose.ui.text.font.FontFamily
++import androidx.compose.ui.unit.dp
++import androidx.compose.ui.window.Dialog
++import com.awan.app.core.designsystem.AwanButton
++import com.awan.app.core.designsystem.AwanButtonVariant
++import com.awan.app.core.designsystem.AwanCard
++import com.awan.app.core.designsystem.AwanText
++import com.awan.app.core.designsystem.AwanTheme
++import com.awan.app.core.domain.mcp.model.CreatedMcpToken
++import com.awan.feature.profile.impl.R as ProfileR
++
++@Composable
++fun CreatedTokenModal(
++    createdToken: CreatedMcpToken,
++    onDismiss: () -> Unit,
++    modifier: Modifier = Modifier,
++) {
++    val context = LocalContext.current
++    val copiedToastMessage = stringResource(ProfileR.string.profile_mcp_token_copied)
++    var copied by remember { mutableStateOf(false) }
++
++    Dialog(onDismissRequest = onDismiss) {
++        AwanCard(
++            modifier = modifier
++                .fillMaxWidth()
++                .padding(AwanTheme.spacing.md),
++            contentPadding = PaddingValues(AwanTheme.spacing.xl)
++        ) {
++            Column(
++                horizontalAlignment = Alignment.CenterHorizontally,
++                verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)
++            ) {
++                AwanText(
++                    text = stringResource(ProfileR.string.profile_mcp_token_created_banner_title),
++                    style = AwanTheme.styles.titleText
++                )
++
++                Box(
++                    modifier = Modifier
++                        .fillMaxWidth()
++                        .clip(RoundedCornerShape(12.dp))
++                        .background(AwanTheme.colors.destructive.copy(alpha = 0.1f))
++                        .border(1.dp, AwanTheme.colors.destructive, RoundedCornerShape(12.dp))
++                        .padding(AwanTheme.spacing.md)
++                ) {
++                    Row(
++                        horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
++                        verticalAlignment = Alignment.Top
++                    ) {
++                        Icon(
++                            imageVector = Icons.Default.Warning,
++                            contentDescription = null,
++                            tint = AwanTheme.colors.destructive,
++                            modifier = Modifier.size(20.dp)
++                        )
++                        AwanText(
++                            text = stringResource(ProfileR.string.profile_mcp_token_created_banner_warning),
++                            style = AwanTheme.styles.bodySecondaryText.let { it.copy(color = AwanTheme.colors.destructive) }
++                        )
++                    }
++                }
++
++                Box(
++                    modifier = Modifier
++                        .fillMaxWidth()
++                        .clip(RoundedCornerShape(12.dp))
++                        .background(AwanTheme.colors.disabledSurface)
++                        .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(12.dp))
++                        .padding(AwanTheme.spacing.md),
++                    contentAlignment = Alignment.Center
++                ) {
++                    AwanText(
++                        text = createdToken.rawToken,
++                        style = AwanTheme.styles.bodyText.let { it.copy(textStyle = it.textStyle.copy(fontFamily = FontFamily.Monospace)) },
++                    )
++                }
++
++                AwanButton(
++                    onClick = {
++                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
++                        val clip = ClipData.newPlainText("MCP Token", createdToken.rawToken)
++                        clipboard.setPrimaryClip(clip)
++                        copied = true
++                        Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
++                    },
++                    modifier = Modifier.fillMaxWidth(),
++                    variant = AwanButtonVariant.Secondary
++                ) {
++                    Row(
++                        horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
++                        verticalAlignment = Alignment.CenterVertically
++                    ) {
++                        Icon(
++                            imageVector = Icons.Default.ContentCopy,
++                            contentDescription = null,
++                            modifier = Modifier.size(16.dp)
++                        )
++                        AwanText(
++                            text = if (copied) {
++                                stringResource(ProfileR.string.profile_mcp_token_copied)
++                            } else {
++                                stringResource(ProfileR.string.profile_mcp_token_copy)
++                            }
++                        )
++                    }
++                }
++
++                AwanButton(
++                    onClick = onDismiss,
++                    modifier = Modifier.fillMaxWidth(),
++                    variant = AwanButtonVariant.Primary
++                ) {
++                    AwanText(stringResource(ProfileR.string.profile_close))
++                }
++            }
++        }
++    }
++}
+diff --git a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/components/SettingsCard.kt b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/components/SettingsCard.kt
+index a37d896..ae33358 100644
+--- a/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/components/SettingsCard.kt
++++ b/feature/profile/impl/src/main/java/com/awan/feature/profile/impl/ui/components/SettingsCard.kt
+@@ -45,6 +45,13 @@ fun SettingsCard(
+                 showDivider = true,
+                 iconColor = AwanTheme.colors.sky
+             )
++            PreferenceRow(
++                icon = Icons.Default.VpnKey,
++                title = stringResource(ProfileR.string.profile_mcp_title),
++                onClick = { onSettingsClick("mcp") },
++                showDivider = true,
++                iconColor = AwanTheme.colors.sky
++            )
+             PreferenceRow(
+                 icon = Icons.AutoMirrored.Filled.Logout,
+                 title = stringResource(ProfileR.string.profile_logout),
+diff --git a/feature/profile/impl/src/main/res/values-ar/strings.xml b/feature/profile/impl/src/main/res/values-ar/strings.xml
+index 8a385cb..7527c67 100644
+--- a/feature/profile/impl/src/main/res/values-ar/strings.xml
++++ b/feature/profile/impl/src/main/res/values-ar/strings.xml
+@@ -184,4 +184,28 @@
+     <string name="profile_day_friday_short">ج</string>
+     <string name="profile_day_saturday_short">س</string>
+     <string name="profile_day_sunday_short">ح</string>
++
++    <!-- MCP Settings Strings -->
++    <string name="profile_mcp_title">تكامل MCP</string>
++    <string name="profile_mcp_subtitle">ربط المساعدين الذكيين (Claude, Cursor) عبر بروتوكول MCP</string>
++    <string name="profile_mcp_connection_title">تفاصيل الاتصال</string>
++    <string name="profile_mcp_url_label">رابط خادم MCP</string>
++    <string name="profile_mcp_client_id_label">معرف العميل (Client ID)</string>
++    <string name="profile_mcp_tokens_title">رموز الوصول (Tokens)</string>
++    <string name="profile_mcp_add_token">إضافة رمز جديد</string>
++    <string name="profile_mcp_token_name_hint">اسم الرمز (مثال: Claude Desktop)</string>
++    <string name="profile_mcp_token_obscured_notice">تم إخفاء المفتاح لأسباب أمنية</string>
++    <string name="profile_mcp_token_copy_disabled">يمكن نسخ الرمز فقط عند إنشائه لأول مرة</string>
++    <string name="profile_mcp_token_created_banner_title">تم إنشاء الرمز بنجاح!</string>
++    <string name="profile_mcp_token_created_banner_warning">احرص على نسخ رمز الوصول الخاص بك الآن. لن تتمكن من رؤيته مرة أخرى!</string>
++    <string name="profile_mcp_token_copy">نسخ الرمز</string>
++    <string name="profile_mcp_token_copied">تم نسخ الرمز إلى الحافظة</string>
++    <string name="profile_mcp_token_delete_confirm_title">حذف الرمز؟</string>
++    <string name="profile_mcp_token_delete_confirm_body">هل أنت تأكد من حذف رمز MCP هذا؟ سيفقد المساعد الذكي الوصول فوراً.</string>
++    <string name="profile_mcp_token_regenerate_confirm_title">إعادة إنشاء الرمز؟</string>
++    <string name="profile_mcp_token_regenerate_confirm_body">إعادة إنشاء الرمز ستلغي المفتاح الحالي. ستحتاج إلى تحديثه في المساعد الذكي.</string>
++    <string name="profile_mcp_info_title">كيفية ربط مساعدك الذكي</string>
++    <string name="profile_mcp_info_step1">1. انسخ رابط خادم MCP ومعرف العميل أعلاه.</string>
++    <string name="profile_mcp_info_step2">2. أنشئ رمز وصول واحفظ المفتاح فوراً.</string>
++    <string name="profile_mcp_info_step3">3. قم بتضمين الإعدادات في ملف التكوين (مثل claude_desktop_config.json).</string>
+ </resources>
+diff --git a/feature/profile/impl/src/main/res/values/strings.xml b/feature/profile/impl/src/main/res/values/strings.xml
+index 6f43778..9770cd0 100644
+--- a/feature/profile/impl/src/main/res/values/strings.xml
++++ b/feature/profile/impl/src/main/res/values/strings.xml
+@@ -184,4 +184,28 @@
+     <string name="profile_day_friday_short">Fri</string>
+     <string name="profile_day_saturday_short">Sat</string>
+     <string name="profile_day_sunday_short">Sun</string>
++
++    <!-- MCP Settings Strings -->
++    <string name="profile_mcp_title">MCP Integration</string>
++    <string name="profile_mcp_subtitle">Connect AI assistants (Claude, Cursor) via Model Context Protocol</string>
++    <string name="profile_mcp_connection_title">Connection Details</string>
++    <string name="profile_mcp_url_label">MCP Server URL</string>
++    <string name="profile_mcp_client_id_label">OAuth Client ID</string>
++    <string name="profile_mcp_tokens_title">API Tokens</string>
++    <string name="profile_mcp_add_token">Add New Token</string>
++    <string name="profile_mcp_token_name_hint">Token Name (e.g. Claude Desktop)</string>
++    <string name="profile_mcp_token_obscured_notice">Token key is hidden for security</string>
++    <string name="profile_mcp_token_copy_disabled">Token can only be copied when initially created</string>
++    <string name="profile_mcp_token_created_banner_title">Token Created Successfully!</string>
++    <string name="profile_mcp_token_created_banner_warning">Make sure to copy your personal access token now. You won\'t be able to see it again!</string>
++    <string name="profile_mcp_token_copy">Copy Token</string>
++    <string name="profile_mcp_token_copied">Token copied to clipboard</string>
++    <string name="profile_mcp_token_delete_confirm_title">Delete Token?</string>
++    <string name="profile_mcp_token_delete_confirm_body">Are you sure you want to delete this MCP token? AI assistants using this token will lose access immediately.</string>
++    <string name="profile_mcp_token_regenerate_confirm_title">Regenerate Token?</string>
++    <string name="profile_mcp_token_regenerate_confirm_body">Regenerating this token will revoke the existing key. Any connected agent will need the new token.</string>
++    <string name="profile_mcp_info_title">How to Connect your AI Assistant</string>
++    <string name="profile_mcp_info_step1">1. Copy the MCP Server URL and Client ID above.</string>
++    <string name="profile_mcp_info_step2">2. Create an API Token and copy the key immediately.</string>
++    <string name="profile_mcp_info_step3">3. Paste the configuration into your assistant (e.g. claude_desktop_config.json).</string>
+ </resources>
+diff --git a/feature/profile/impl/src/test/java/com/awan/feature/profile/impl/presentation/McpSettingsViewModelTest.kt b/feature/profile/impl/src/test/java/com/awan/feature/profile/impl/presentation/McpSettingsViewModelTest.kt
+new file mode 100644
+index 0000000..261d7b6
+--- /dev/null
++++ b/feature/profile/impl/src/test/java/com/awan/feature/profile/impl/presentation/McpSettingsViewModelTest.kt
+@@ -0,0 +1,163 @@
++package com.awan.feature.profile.impl.presentation
++
++import com.awan.app.core.common.result.Result
++import com.awan.app.core.domain.mcp.model.CreatedMcpToken
++import com.awan.app.core.domain.mcp.model.McpConnectionDetails
++import com.awan.app.core.domain.mcp.model.McpToken
++import com.awan.app.core.domain.mcp.repository.McpRepository
++import com.awan.app.core.domain.mcp.usecase.CreateMcpTokenUseCase
++import com.awan.app.core.domain.mcp.usecase.DeleteMcpTokenUseCase
++import com.awan.app.core.domain.mcp.usecase.GetMcpConnectionDetailsUseCase
++import com.awan.app.core.domain.mcp.usecase.GetMcpTokensUseCase
++import com.awan.app.core.domain.mcp.usecase.RegenerateMcpTokenUseCase
++import kotlinx.coroutines.Dispatchers
++import kotlinx.coroutines.ExperimentalCoroutinesApi
++import kotlinx.coroutines.flow.Flow
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.flowOf
++import kotlinx.coroutines.flow.toList
++import kotlinx.coroutines.launch
++import kotlinx.coroutines.test.UnconfinedTestDispatcher
++import kotlinx.coroutines.test.resetMain
++import kotlinx.coroutines.test.runTest
++import kotlinx.coroutines.test.setMain
++import org.junit.After
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertNotNull
++import org.junit.Assert.assertNull
++import org.junit.Before
++import org.junit.Test
++
++@OptIn(ExperimentalCoroutinesApi::class)
++class McpSettingsViewModelTest {
++
++    private val testDispatcher = UnconfinedTestDispatcher()
++
++    private lateinit var fakeRepository: FakeMcpRepository
++    private lateinit var viewModel: McpSettingsViewModel
++
++    @Before
++    fun setUp() {
++        Dispatchers.setMain(testDispatcher)
++        fakeRepository = FakeMcpRepository()
++        viewModel = McpSettingsViewModel(
++            getMcpConnectionDetailsUseCase = GetMcpConnectionDetailsUseCase(fakeRepository),
++            getMcpTokensUseCase = GetMcpTokensUseCase(fakeRepository),
++            createMcpTokenUseCase = CreateMcpTokenUseCase(fakeRepository),
++            deleteMcpTokenUseCase = DeleteMcpTokenUseCase(fakeRepository),
++            regenerateMcpTokenUseCase = RegenerateMcpTokenUseCase(fakeRepository),
++        )
++    }
++
++    @After
++    fun tearDown() = Dispatchers.resetMain()
++
++    @Test
++    fun `initial state loads connection details and tokens`() = runTest(testDispatcher) {
++        val state = viewModel.uiState.value
++        assertNotNull(state.connectionDetails)
++        assertEquals("https://mcp.awan.app/v1", state.connectionDetails?.mcpUrl)
++        assertEquals(1, state.tokens.size)
++        assertEquals("Claude Desktop", state.tokens.first().name)
++    }
++
++    @Test
++    fun `CreateToken action creates token, sets createdToken, and emits TokenCreated event`() = runTest(testDispatcher) {
++        val events = mutableListOf<McpSettingsEvent>()
++        val job = launch { viewModel.events.toList(events) }
++
++        viewModel.onAction(McpSettingsAction.CreateToken("Cursor"))
++
++        val state = viewModel.uiState.value
++        assertNotNull(state.createdToken)
++        assertEquals("Cursor", state.createdToken?.name)
++        assertEquals("raw_secret_cursor_key", state.createdToken?.rawToken)
++        assertEquals(1, events.size)
++        assert(events.first() is McpSettingsEvent.TokenCreated)
++
++        job.cancel()
++    }
++
++    @Test
++    fun `DeleteToken action removes token from state and emits TokenDeleted event`() = runTest(testDispatcher) {
++        val events = mutableListOf<McpSettingsEvent>()
++        val job = launch { viewModel.events.toList(events) }
++
++        viewModel.onAction(McpSettingsAction.DeleteToken("token-1"))
++
++        val state = viewModel.uiState.value
++        assertEquals(0, state.tokens.size)
++        assertEquals(1, events.size)
++        assert(events.first() is McpSettingsEvent.TokenDeleted)
++
++        job.cancel()
++    }
++
++    @Test
++    fun `RegenerateToken action sets new createdToken and emits TokenRegenerated event`() = runTest(testDispatcher) {
++        val events = mutableListOf<McpSettingsEvent>()
++        val job = launch { viewModel.events.toList(events) }
++
++        viewModel.onAction(McpSettingsAction.RegenerateToken("token-1"))
++
++        val state = viewModel.uiState.value
++        assertNotNull(state.createdToken)
++        assertEquals("raw_regenerated_token-1", state.createdToken?.rawToken)
++        assertEquals(1, events.size)
++        assert(events.first() is McpSettingsEvent.TokenRegenerated)
++
++        job.cancel()
++    }
++
++    @Test
++    fun `DismissCreatedModal clears createdToken in state`() = runTest(testDispatcher) {
++        viewModel.onAction(McpSettingsAction.CreateToken("Test"))
++        assertNotNull(viewModel.uiState.value.createdToken)
++
++        viewModel.onAction(McpSettingsAction.DismissCreatedModal)
++        assertNull(viewModel.uiState.value.createdToken)
++    }
++
++    private class FakeMcpRepository : McpRepository {
++        private val tokensList = mutableListOf(
++            McpToken("token-1", "Claude Desktop", "••••••••abcd", "2026-08-11T00:00:00Z")
++        )
++        private val tokensFlow = MutableStateFlow<Result<List<McpToken>>>(Result.Success(tokensList))
++
++        override fun getMcpConnectionDetails(): Flow<Result<McpConnectionDetails>> {
++            return flowOf(Result.Success(McpConnectionDetails("https://mcp.awan.app/v1", "awan-android-client")))
++        }
++
++        override fun getMcpTokens(): Flow<Result<List<McpToken>>> = tokensFlow
++
++        override suspend fun createMcpToken(name: String): Result<CreatedMcpToken> {
++            val created = CreatedMcpToken(
++                id = "token-${System.currentTimeMillis()}",
++                name = name,
++                rawToken = "raw_secret_${name.lowercase()}_key",
++                maskedToken = "••••••••secret",
++                createdAt = "2026-08-11T00:00:00Z"
++            )
++            tokensList.add(McpToken(created.id, created.name, created.maskedToken, created.createdAt))
++            tokensFlow.value = Result.Success(tokensList.toList())
++            return Result.Success(created)
++        }
++
++        override suspend fun deleteMcpToken(id: String): Result<Unit> {
++            tokensList.removeAll { it.id == id }
++            tokensFlow.value = Result.Success(tokensList.toList())
++            return Result.Success(Unit)
++        }
++
++        override suspend fun regenerateMcpToken(id: String): Result<CreatedMcpToken> {
++            val created = CreatedMcpToken(
++                id = id,
++                name = "Regenerated",
++                rawToken = "raw_regenerated_$id",
++                maskedToken = "••••••••regen",
++                createdAt = "2026-08-11T00:00:00Z"
++            )
++            return Result.Success(created)
++        }
++    }
++}
