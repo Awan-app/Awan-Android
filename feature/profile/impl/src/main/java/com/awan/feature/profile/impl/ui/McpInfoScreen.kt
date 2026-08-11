@@ -106,6 +106,102 @@ fun McpInfoScreen(
                 .padding(horizontal = AwanTheme.spacing.lg, vertical = AwanTheme.spacing.md),
             verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)
         ) {
+            // Connection Details Card
+            AwanCard(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(AwanTheme.spacing.md)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
+                    AwanText(
+                        text = stringResource(ProfileR.string.profile_mcp_connection_title),
+                        style = AwanTheme.styles.headingText
+                    )
+
+                    val mcpUrl = "https://backend-production-c701.up.railway.app/api/v1/mcp"
+                    val clientId = "awan-android-client"
+
+                    // MCP Server URL Row
+                    Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
+                        AwanText(
+                            text = stringResource(ProfileR.string.profile_mcp_url_label),
+                            style = AwanTheme.styles.captionText
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(AwanTheme.spacing.xs))
+                                .background(AwanTheme.colors.disabledSurface)
+                                .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
+                                .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            SelectionContainer {
+                                AwanText(
+                                    text = mcpUrl,
+                                    style = AwanTheme.styles.bodyText,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString(mcpUrl))
+                                    Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = stringResource(ProfileR.string.profile_mcp_cd_copy_url),
+                                    tint = AwanTheme.colors.sky,
+                                    modifier = Modifier.size(AwanTheme.spacing.md)
+                                )
+                            }
+                        }
+                    }
+
+                    // OAuth Client ID Row
+                    Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
+                        AwanText(
+                            text = stringResource(ProfileR.string.profile_mcp_client_id_label),
+                            style = AwanTheme.styles.captionText
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(AwanTheme.spacing.xs))
+                                .background(AwanTheme.colors.disabledSurface)
+                                .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(AwanTheme.spacing.xs))
+                                .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            SelectionContainer {
+                                AwanText(
+                                    text = clientId,
+                                    style = AwanTheme.styles.bodyText,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString(clientId))
+                                    Toast.makeText(context, copiedToastMessage, Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = stringResource(ProfileR.string.profile_mcp_cd_copy_client_id),
+                                    tint = AwanTheme.colors.sky,
+                                    modifier = Modifier.size(AwanTheme.spacing.md)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // Setup steps card
             AwanCard(
                 modifier = Modifier.fillMaxWidth(),
