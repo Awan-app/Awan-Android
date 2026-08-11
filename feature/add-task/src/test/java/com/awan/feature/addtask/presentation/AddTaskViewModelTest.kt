@@ -44,6 +44,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -129,6 +130,8 @@ class AddTaskViewModelTest {
         val continueCalls = mutableListOf<Pair<String?, String>>()
         val confirmCalls = mutableListOf<String>()
 
+        override fun observeGoals(): Flow<List<Goal>> = flowOf(emptyList())
+
         override suspend fun getGoals(): Result<List<Goal>> = Result.Success(emptyList())
 
         override suspend fun continueDecomposition(
@@ -147,6 +150,15 @@ class AddTaskViewModelTest {
         override suspend fun createGoal(title: String, description: String?, targetDate: String?): Result<Goal> = error("not used")
         override suspend fun getInboxGoal(): Result<Goal> = error("not used")
         override suspend fun getGoal(goalId: String): Result<Goal> = error("not used")
+
+        override suspend fun updateGoal(
+            goalId: String,
+            title: String?,
+            description: String?,
+            status: String?,
+            targetDate: String?
+        ): Result<Goal> = error("not used")
+
         override suspend fun deleteGoal(goalId: String): Result<Unit> = error("not used")
         override suspend fun getDecompositionTranscript(sessionId: String): Result<com.awan.app.core.model.GoalDecompositionTranscript> = error("not used")
         override suspend fun cancelDecomposition(sessionId: String): Result<Unit> = error("not used")

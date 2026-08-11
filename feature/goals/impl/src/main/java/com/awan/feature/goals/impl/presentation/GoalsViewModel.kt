@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.goal.usecase.GetGoalsUseCase
+import com.awan.app.core.domain.goal.usecase.ObserveGoalsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class GoalsViewModel @Inject constructor(
     private val getGoalsUseCase: GetGoalsUseCase,
+    private val observeGoalsUseCase: ObserveGoalsUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(GoalsState())
@@ -26,13 +28,14 @@ class GoalsViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     init {
-        loadGoals()
+        observeGoals()
+        refreshGoals()
     }
 
     fun onAction(action: GoalsAction) {
         when (action) {
             is GoalsAction.SearchQueryChanged -> _state.update { it.copy(searchQuery = action.query) }
-            GoalsAction.RetryClicked -> loadGoals()
+            GoalsAction.RetryClicked -> refreshGoals()
             is GoalsAction.GoalClicked -> {
                 viewModelScope.launch {
                     _events.send(GoalsEvent.NavigateToGoalDetails(action.goalId))
@@ -43,7 +46,15 @@ class GoalsViewModel @Inject constructor(
         }
     }
 
-    private fun loadGoals() {
+    private fun observeGoals() {
+        viewModelScope.launch {
+            observeGoalsUseCase().collect { goals ->
+                _state.update { it.copy(goals = goals) }
+            }
+        }
+    }
+
+    private fun refreshGoals() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, isError = false) }
 
@@ -53,16 +64,13 @@ class GoalsViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             isError = false,
-                            goals = result.data,
                         )
                     }
                 }
                 is Result.Error -> {
                     _state.update { it.copy(isLoading = false, isError = true) }
                 }
-                Result.Loading -> {
-                    // Handled before invoke
-                }
+                Result.Loading -> {}
             }
         }
     }

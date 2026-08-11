@@ -27,7 +27,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,12 +47,11 @@ import com.awan.feature.goals.impl.R
 import com.awan.feature.goals.impl.presentation.GoalDetailsAction
 import com.awan.feature.goals.impl.presentation.GoalDetailsEvent
 import com.awan.feature.goals.impl.presentation.GoalDetailsState
+import com.awan.feature.goals.impl.ui.components.GoalEditSheet
 import com.awan.feature.goals.impl.ui.components.goalAccentColor
 import com.composables.icons.lucide.Calendar
-import com.composables.icons.lucide.Link
 import com.composables.icons.lucide.Lucide
-import com.composables.icons.lucide.Plus
-import com.composables.icons.lucide.Tag
+import com.composables.icons.lucide.Pencil
 import com.composables.icons.lucide.Trash2
 import kotlinx.coroutines.flow.Flow
 
@@ -61,7 +61,6 @@ fun GoalDetailsScreen(
     events: Flow<GoalDetailsEvent>,
     onAction: (GoalDetailsAction) -> Unit,
     onNavigateBack: () -> Unit,
-    onOpenAddTask: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val colors = AwanTheme.colors
@@ -69,7 +68,6 @@ fun GoalDetailsScreen(
     ObserveAsEvents(events) { event ->
         when (event) {
             GoalDetailsEvent.NavigateBack -> onNavigateBack()
-            is GoalDetailsEvent.OpenAddTask -> onOpenAddTask(event.goalId)
         }
     }
 
@@ -78,8 +76,7 @@ fun GoalDetailsScreen(
             GoalDetailsTopBar(
                 title = state.goal?.title ?: "",
                 onBack = { onAction(GoalDetailsAction.Back) },
-                onDeleteClick = { onAction(GoalDetailsAction.DeleteClicked) },
-                onAddTaskClick = { onAction(GoalDetailsAction.AddTaskClicked) }
+                onEditClick = { onAction(GoalDetailsAction.EditClicked) }
             )
         },
         containerColor = colors.background,
@@ -94,16 +91,31 @@ fun GoalDetailsScreen(
                     )
                 }
                 state.goal != null -> {
-                    GoalDetailsContent(goal = state.goal)
+                    GoalDetailsContent(
+                        goal = state.goal,
+                        isDeleting = state.isDeleting,
+                        onDeleteClick = { onAction(GoalDetailsAction.DeleteClicked) }
+                    )
                 }
                 state.error != null -> {
                     AwanText(
-                        text = state.error,
+                        text = state.error.asString(),
                         modifier = Modifier.align(Alignment.Center),
                         style = AwanTheme.typography.body
                     )
                 }
             }
+        }
+
+        if (state.showEditSheet && state.goal != null) {
+            GoalEditSheet(
+                goal = state.goal,
+                isSaving = state.isUpdating,
+                onDismiss = { onAction(GoalDetailsAction.EditDismissed) },
+                onConfirm = { title, description, status, targetDate ->
+                    onAction(GoalDetailsAction.GoalUpdated(title, description, status, targetDate))
+                }
+            )
         }
     }
 }
@@ -112,94 +124,55 @@ fun GoalDetailsScreen(
 private fun GoalDetailsTopBar(
     title: String,
     onBack: () -> Unit,
-    onDeleteClick: () -> Unit,
-    onAddTaskClick: () -> Unit,
+    onEditClick: () -> Unit
 ) {
     val colors = AwanTheme.colors
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    listOf(colors.backgroundStart, colors.background)
-                )
-            )
+            .background(colors.background)
             .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(140.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            AwanCloudsHorizon(
-                modifier = Modifier.fillMaxSize()
-            )
-            AwanMascot(
-                expression = MascotExpression.Curious,
-                width = 110.dp,
-                blinkEnabled = true
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+            AwanBackButton(onClick = onBack)
+            Spacer(modifier = Modifier.width(12.dp))
+            AwanText(
+                text = title,
+                style = AwanTheme.typography.title.copy(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.ink
+                ),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                AwanBackButton(onClick = onBack)
-                Spacer(modifier = Modifier.width(12.dp))
-                AwanText(
-                    text = title,
-                    style = AwanTheme.typography.title.copy(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.ink
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+        AwanIconButton(
+            onClick = onEditClick,
+            contentDescription = "Edit Goal",
+            icon = {
+                Icon(
+                    imageVector = Lucide.Pencil,
+                    contentDescription = null,
+                    tint = colors.sky,
+                    modifier = Modifier.size(20.dp)
                 )
             }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AwanIconButton(
-                    onClick = onAddTaskClick,
-                    contentDescription = "Add Task",
-                    icon = {
-                        Icon(
-                            imageVector = Lucide.Plus,
-                            contentDescription = null,
-                            tint = colors.sky,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                )
-
-                AwanIconButton(
-                    onClick = onDeleteClick,
-                    contentDescription = "Delete Goal",
-                    icon = {
-                        Icon(
-                            imageVector = Lucide.Trash2,
-                            contentDescription = null,
-                            tint = colors.destructive,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                )
-            }
-        }
+        )
     }
 }
 
 @Composable
 private fun GoalDetailsContent(
-    goal: Goal
+    goal: Goal,
+    isDeleting: Boolean,
+    onDeleteClick: () -> Unit
 ) {
-    val accentColor = goalAccentColor(0) // Default for now
+    val accentColor = goalAccentColor(goal.id.hashCode())
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -225,6 +198,19 @@ private fun GoalDetailsContent(
                 isLast = index == goal.tasks.lastIndex,
                 accentColor = accentColor
             )
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(24.dp))
+            AwanButton(
+                onClick = onDeleteClick,
+                modifier = Modifier.fillMaxWidth(),
+                variant = AwanButtonVariant.Destructive,
+                isLoading = isDeleting,
+                icon = Lucide.Trash2
+            ) {
+                AwanText(text = "Remove Goal")
+            }
         }
         
         item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -262,7 +248,7 @@ private fun GoalHeaderCard(goal: Goal) {
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     AwanText(
-                        text = stringResource(R.string.goals_status_active),
+                        text = goal.status.name,
                         style = AwanTheme.typography.caption.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -388,8 +374,10 @@ private fun GoalTasksHeader(goal: Goal) {
                     color = colors.ink
                 )
             )
-            val independent = stringResource(R.string.goals_independent_count, 1) // TODO: real logic
-            val dependent = stringResource(R.string.goals_dependent_count, goal.totalTasks - 1)
+            val dependentCount = goal.tasks.count { it.dependsOnTaskIds.isNotEmpty() }
+            val independentCount = goal.totalTasks - dependentCount
+            val independent = stringResource(R.string.goals_independent_count, independentCount)
+            val dependent = stringResource(R.string.goals_dependent_count, dependentCount)
             AwanText(
                 text = stringResource(R.string.goals_tasks_summary_format, independent, dependent),
                 style = AwanTheme.typography.caption.copy(
@@ -434,7 +422,18 @@ private fun GoalTaskTimelineItem(
         // Timeline Column
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(32.dp)
+            modifier = Modifier
+                .width(32.dp)
+                .drawBehind {
+                    if (!isLast) {
+                        drawLine(
+                            color = colors.line,
+                            start = Offset(size.width / 2, 32.dp.toPx()),
+                            end = Offset(size.width / 2, size.height),
+                            strokeWidth = 2.dp.toPx()
+                        )
+                    }
+                }
         ) {
             Box(
                 modifier = Modifier
@@ -450,15 +449,6 @@ private fun GoalTaskTimelineItem(
                         fontWeight = FontWeight.Bold,
                         color = if (isCompleted) Color.White else colors.textSecondary
                     )
-                )
-            }
-            
-            if (!isLast) {
-                Box(
-                    modifier = Modifier
-                        .width(2.dp)
-                        .height(60.dp) // Adjust based on content
-                        .background(colors.line)
                 )
             }
         }

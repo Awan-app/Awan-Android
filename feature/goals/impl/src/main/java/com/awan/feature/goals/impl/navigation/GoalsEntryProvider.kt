@@ -61,7 +61,6 @@ import com.composables.icons.lucide.Target
 fun EntryProviderScope<Route>.goalsEntry(
     onNavigateToGoalDetails: (String) -> Unit = {},
     onBack: () -> Unit = {},
-    onOpenAddTask: (String) -> Unit = {},
 ) {
     entry<GoalsRoute> {
         GoalsRouteScreen(
@@ -81,8 +80,7 @@ fun EntryProviderScope<Route>.goalsEntry(
             state = state,
             events = viewModel.events,
             onAction = viewModel::onAction,
-            onNavigateBack = onBack,
-            onOpenAddTask = onOpenAddTask
+            onNavigateBack = onBack
         )
     }
 }

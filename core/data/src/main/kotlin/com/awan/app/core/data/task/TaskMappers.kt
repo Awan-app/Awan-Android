@@ -69,7 +69,9 @@ internal fun TaskInfoResponse.toTaskModel(): Task = Task(
     category = category?.toModel(),
 )
 
-internal fun com.awan.app.core.database.model.TaskEntity.toTaskModel(): Task = Task(
+internal fun com.awan.app.core.database.model.TaskEntity.toTaskModel(
+    dependsOnTaskIds: List<String> = emptyList()
+): Task = Task(
     id = id,
     title = title,
     description = description,
@@ -79,7 +81,7 @@ internal fun com.awan.app.core.database.model.TaskEntity.toTaskModel(): Task = T
     estimatedPoints = estimatedPoints,
     allowTaskSplitting = allowTaskSplitting,
     goalId = goalId,
-    dependsOnTaskIds = emptyList(), // Dependencies are stored separately in Room
+    dependsOnTaskIds = dependsOnTaskIds,
 )
 
 internal fun TaskProposalResponse.toModel(): TaskProposals = TaskProposals(
@@ -207,6 +209,16 @@ internal fun TaskInfoResponse.toEntity(
     categoryId = categoryId,
     expiryTime = expiryTime,
 )
+
+internal fun TaskInfoResponse.toDependencyEntities(): List<com.awan.app.core.database.model.TaskDependencyEntity> {
+    return dependsOnTaskIds?.map { prerequisiteId ->
+        com.awan.app.core.database.model.TaskDependencyEntity(
+            taskId = id,
+            dependsOnTaskId = prerequisiteId
+        )
+    } ?: emptyList()
+}
+
 
 internal fun com.awan.app.core.network.dto.session.SessionDto.toEntity(
     taskId: String,

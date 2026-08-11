@@ -51,6 +51,9 @@ interface TaskDao {
     @Query("SELECT dependsOnTaskId FROM task_dependencies WHERE taskId = :taskId")
     fun observeDependsOnIds(taskId: String): Flow<List<String>>
 
+    @Query("SELECT dependsOnTaskId FROM task_dependencies WHERE taskId = :taskId")
+    fun getDependsOnIds(taskId: String): List<String>
+
     /** Returns IDs of all tasks that depend on [taskId] (blocked by this task). */
     @Query("SELECT taskId FROM task_dependencies WHERE dependsOnTaskId = :taskId")
     fun observeDependentIds(taskId: String): Flow<List<String>>

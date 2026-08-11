@@ -18,14 +18,20 @@ import com.awan.app.core.model.ProposedGoalSession
 import com.awan.app.core.network.dto.GoalDecomposeRequest
 import com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest
 import com.awan.app.core.network.dto.goal.CreateGoalRequest
+import com.awan.app.core.network.dto.goal.UpdateGoalRequest
 import com.awan.app.core.network.dto.goal.ProposedGoalSessionDto
 import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.data.sync.SyncTtl
 import com.awan.app.core.database.model.GoalEntity
+import com.awan.app.core.database.model.TaskDependencyEntity
+import com.awan.app.core.data.task.toDependencyEntities
 import com.awan.app.core.data.task.toEntity
 import com.awan.app.core.data.task.toTaskModel
 import com.awan.app.core.common.result.suspendOnSuccess
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -44,6 +50,17 @@ class GoalRepositoryImpl @Inject constructor(
     private val connectivityMonitor: NetworkConnectivityMonitor,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : GoalRepository {
+
+    override fun observeGoals(): Flow<List<Goal>> {
+        return goalDao.observeAllGoals().map { entities ->
+            entities.map { entity ->
+                val tasks = taskDao.getTasksByGoal(entity.id).map { taskEntity ->
+                    taskEntity.toTaskModel(dependsOnTaskIds = taskDao.getDependsOnIds(taskEntity.id))
+                }
+                entity.toModel().copy(tasks = tasks)
+            }
+        }
+    }
 
     override suspend fun getGoals(): Result<List<Goal>> = withContext(ioDispatcher) {
         if (connectivityMonitor.isCurrentlyOnline()) {
@@ -87,6 +104,37 @@ class GoalRepositoryImpl @Inject constructor(
         } ?: Result.Error(AppError.NotFound)
     }
 
+    override suspend fun updateGoal(
+        goalId: String,
+        title: String?,
+        description: String?,
+        status: String?,
+        targetDate: String?,
+    ): Result<Goal> = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return@withContext Result.Error(AppError.Network)
+        }
+
+        // Restriction: Inbox cannot be edited
+        val existing = goalDao.getGoal(goalId)
+        if (existing?.isInbox == true) {
+            return@withContext Result.Error(AppError.Unknown(Throwable("Inbox goal cannot be edited")))
+        }
+
+        remoteDataSource.updateGoal(
+            goalId = goalId,
+            request = UpdateGoalRequest(
+                title = title,
+                description = description,
+                status = status,
+                targetDate = targetDate,
+            ),
+        ).map { dto ->
+            syncGoal(dto)
+            dto.toEntity().toModelWithTasks()
+        }
+    }
+
     override suspend fun deleteGoal(goalId: String): Result<Unit> = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) {
             return@withContext Result.Error(AppError.Network)
@@ -127,25 +175,27 @@ class GoalRepositoryImpl @Inject constructor(
     }
 
     private suspend fun GoalEntity.toModelWithTasks(): Goal {
-        val tasks = taskDao.getTasksByGoal(id).map { it.toTaskModel() }
+        val tasks = taskDao.getTasksByGoal(id).map { taskEntity ->
+            taskEntity.toTaskModel(dependsOnTaskIds = taskDao.getDependsOnIds(taskEntity.id))
+        }
         return toModel().copy(tasks = tasks)
     }
 
     private suspend fun syncGoal(dto: GoalInfoResponse) {
         val expiry = SyncTtl.computeExpiry(SyncTtl.GOALS_TTL_MS)
         goalDao.upsertGoal(dto.toEntity().copy(expiryTime = expiry))
-        if (dto.tasks.isNotEmpty()) {
-            taskDao.upsertTasks(dto.tasks.map { it.toEntity(expiryTime = expiry) })
-        }
+        val entities = dto.tasks.map { it.toEntity(expiryTime = expiry) }
+        val dependencies = dto.tasks.flatMap { it.toDependencyEntities() }
+        taskDao.replaceTasksForGoal(dto.id, entities, dependencies)
     }
 
     private suspend fun syncGoals(dtos: List<GoalInfoResponse>) {
         val expiry = SyncTtl.computeExpiry(SyncTtl.GOALS_TTL_MS)
         goalDao.upsertGoals(dtos.map { it.toEntity().copy(expiryTime = expiry) })
         dtos.forEach { dto ->
-            if (dto.tasks.isNotEmpty()) {
-                taskDao.upsertTasks(dto.tasks.map { it.toEntity(expiryTime = expiry) })
-            }
+            val entities = dto.tasks.map { it.toEntity(expiryTime = expiry) }
+            val dependencies = dto.tasks.flatMap { it.toDependencyEntities() }
+            taskDao.replaceTasksForGoal(dto.id, entities, dependencies)
         }
     }
 

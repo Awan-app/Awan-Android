@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -88,7 +89,13 @@ internal fun GoalsSearchBar(
                     ),
                     cursorBrush = SolidColor(colors.sky),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            // The parent usually handles onQueryChange, but if there's a specific search action 
+                            // we could trigger it here. For now, just clearing focus is standard.
+                        }
+                    )
                 )
             }
         }

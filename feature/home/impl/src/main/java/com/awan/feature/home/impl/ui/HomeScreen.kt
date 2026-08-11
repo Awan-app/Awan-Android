@@ -53,12 +53,6 @@ import com.awan.feature.home.impl.R
 import com.awan.feature.home.impl.ui.components.SessionTaskDetailDialog
 import java.time.LocalDate
 
-private sealed interface TimelineContentState {
-    data object Loading : TimelineContentState
-    data class Error(val message: UiText) : TimelineContentState
-    data object Ready : TimelineContentState
-}
-
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,

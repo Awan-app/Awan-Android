@@ -246,7 +246,6 @@ fun AwanApp(
             goalsEntry(
                 onNavigateToGoalDetails = { id -> navigator.navigate(com.awan.feature.goals.api.GoalDetailsRoute(id)) },
                 onBack = { navigator.goBack() },
-                onOpenAddTask = { _ -> showAddTask = true }
             )
             aiTasksEntry(onBack = { navigator.goBack() })
             inventoryEntry(onBack = { navigator.goBack() })
