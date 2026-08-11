@@ -179,6 +179,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun providesDeviceTokenApiService(retrofit: Retrofit): com.awan.app.core.network.api.DeviceTokenApiService =
+        retrofit.create(com.awan.app.core.network.api.DeviceTokenApiService::class.java)
+        
+    @Provides
+    @Singleton
     fun providesMcpApiService(retrofit: Retrofit): McpApiService =
         retrofit.create(McpApiService::class.java)
 

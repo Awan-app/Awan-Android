@@ -77,7 +77,9 @@ dependencies {
     implementation(project(":core:navigation"))
     implementation(project(":feature:splash:api"))
 
-
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
     // Compose (platform managed by awan.android.compose convention plugin)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
@@ -90,6 +92,7 @@ dependencies {
     // Lifecycle
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.appcompat)
 
     // Navigation 3

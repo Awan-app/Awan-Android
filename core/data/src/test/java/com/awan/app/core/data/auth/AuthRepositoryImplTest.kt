@@ -38,11 +38,18 @@ class AuthRepositoryImplTest {
         fakeDeviceIdProvider = object : DeviceIdProvider {
             override fun getDeviceId(): String = "test-device-id-123"
         }
+        val fakeDeviceTokenRepository = object : com.awan.app.core.domain.devicetoken.repository.DeviceTokenRepository {
+            override suspend fun registerDeviceToken(fcmToken: String?): Result<Unit> = Result.Success(Unit)
+            override suspend fun removeDeviceToken(): Result<Unit> = Result.Success(Unit)
+            override suspend fun saveLocalFcmToken(token: String) {}
+            override suspend fun getLocalFcmToken(): String? = "fake-fcm-token"
+        }
         repository = AuthRepositoryImpl(
             remoteDataSource = fakeRemoteDataSource,
             authTokenProvider = fakeAuthTokenProvider,
             deviceIdProvider = fakeDeviceIdProvider,
             localDataCleaner = fakeLocalDataCleaner,
+            deviceTokenRepository = fakeDeviceTokenRepository,
         )
     }
 
@@ -163,6 +170,13 @@ class AuthRepositoryImplTest {
             savedUserId = null
             isLoggedInState = false
         }
+        var savedFcmToken: String? = null
+
+        override suspend fun saveFcmToken(token: String) {
+            savedFcmToken = token
+        }
+        override suspend fun getFcmToken(): String? = savedFcmToken
+
         override fun notifySessionExpired() {}
     }
 
