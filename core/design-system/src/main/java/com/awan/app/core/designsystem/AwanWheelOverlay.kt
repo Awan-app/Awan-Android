@@ -2,6 +2,7 @@ package com.awan.app.core.designsystem
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -94,10 +95,12 @@ private fun landingRotation(current: Float, index: Int, count: Int): Float {
 }
 
 private const val SCRIM_ALPHA = 0.85f
-private const val FREE_TURN_MILLIS = 650
-private const val LANDING_MILLIS = 2_400
-private const val LANDING_TURNS = 4
+private const val FREE_TURN_MILLIS = 750
+private const val LANDING_MILLIS = 4_200
+private const val LANDING_TURNS = 5
 private const val POINTER_ANGLE_DEG = -90f
+
+private val SmoothLandingEasing = CubicBezierEasing(0.05f, 0.70f, 0.10f, 1.00f)
 
 @Immutable
 data class WheelSpotlightConfig(
@@ -179,7 +182,7 @@ fun AwanWheelOverlay(
                 } else {
                     rotation.animateTo(
                         targetValue = target,
-                        animationSpec = tween(LANDING_MILLIS, easing = LinearOutSlowInEasing),
+                        animationSpec = tween(LANDING_MILLIS, easing = SmoothLandingEasing),
                     )
                 }
                 landed = true
@@ -200,7 +203,7 @@ fun AwanWheelOverlay(
                 if (!reduced) {
                     rotation.animateTo(
                         targetValue = rotation.value + 360f,
-                        animationSpec = tween(LANDING_MILLIS, easing = LinearOutSlowInEasing),
+                        animationSpec = tween(LANDING_MILLIS, easing = SmoothLandingEasing),
                     )
                 }
                 landed = landing != null
