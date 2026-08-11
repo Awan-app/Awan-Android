@@ -231,10 +231,22 @@ fun AwanWheelOverlay(
         label = "winningHighlightAlpha",
     )
 
+    val currentScrimAlpha by animateFloatAsState(
+        targetValue = if (inMotion && !reduced) 0.96f else SCRIM_ALPHA,
+        animationSpec = tween(SPOTLIGHT_CONFIG.darknessFadeMillis, easing = LinearOutSlowInEasing),
+        label = "wheelScrimAlpha",
+    )
+
+    val headerFadeAlpha by animateFloatAsState(
+        targetValue = if (inMotion && !reduced) 0.25f else 1f,
+        animationSpec = tween(SPOTLIGHT_CONFIG.darknessFadeMillis, easing = LinearOutSlowInEasing),
+        label = "wheelHeaderFadeAlpha",
+    )
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = SCRIM_ALPHA))
+            .background(Color(0xFF04060A).copy(alpha = currentScrimAlpha))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -283,13 +295,13 @@ fun AwanWheelOverlay(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp),
             ) {
-                // Header Titles
+                // Header Titles (Dims during spin to focus 100% on illuminated wheel segment)
                 AwanText(
                     text = stringResource(R.string.ds_wheel_title),
                     style = AwanTheme.typography.title.copy(
                         fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
+                        color = Color.White.copy(alpha = headerFadeAlpha),
                         textAlign = TextAlign.Center,
                     ),
                 )
@@ -304,7 +316,7 @@ fun AwanWheelOverlay(
                     style = AwanTheme.typography.heading.copy(
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.85f),
+                        color = Color.White.copy(alpha = 0.85f * headerFadeAlpha),
                         textAlign = TextAlign.Center,
                     ),
                 )
@@ -352,7 +364,7 @@ fun AwanWheelOverlay(
                         style = AwanTheme.typography.heading.copy(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
+                            color = Color.White.copy(alpha = headerFadeAlpha),
                             textAlign = TextAlign.Center,
                         ),
                     )
@@ -676,111 +688,60 @@ private fun WheelCanvas(
                 }
             }
 
-            // 3. Realistic Volumetric Flashlight Beam & Pitch Stage Darkness Effect
+            // 3. Senior UI/UX Circular Stage Spotlight Disc & Dark Stage Overlay
             if (darknessAlpha > 0.001f) {
-                val spotlightCenter = Offset(centerOffset.x, centerOffset.y - wheelRadius * 0.58f)
-                val flashlightSource = Offset(centerOffset.x, centerOffset.y - outerRadius + 4.dp.toPx())
+                val spotlightCenter = Offset(centerOffset.x, centerOffset.y - wheelRadius * 0.60f)
+                val spotlightRadius = wheelRadius * 0.64f
 
-                // 5-Stop Pitch Dark Stage Mask with silky feathered soft-blur cutout over active segment
+                // Pitch Dark Stage Mask: Hides all inactive segments in deep stage darkness
                 drawCircle(
                     brush = Brush.radialGradient(
                         colorStops = arrayOf(
-                            0.00f to Color.Transparent,
-                            0.35f to Color.Transparent,
-                            0.55f to Color.Black.copy(alpha = 0.35f * darknessAlpha),
-                            0.78f to Color.Black.copy(alpha = 0.78f * darknessAlpha),
-                            1.00f to Color.Black.copy(alpha = 0.98f * darknessAlpha),
+                            0.00f to Color.Transparent,                                      // Active segment 100% illuminated & clear
+                            0.40f to Color.Transparent,                                      // Full wedge item visibility
+                            0.58f to Color.Black.copy(alpha = 0.45f * darknessAlpha),         // Feathered soft-blur edge
+                            0.78f to Color.Black.copy(alpha = 0.85f * darknessAlpha),         // Outer dark stage transition
+                            1.00f to Color.Black.copy(alpha = 0.98f * darknessAlpha),         // Deep pitch dark stage mask
                         ),
                         center = spotlightCenter,
-                        radius = wheelRadius * SPOTLIGHT_CONFIG.spotlightRadiusRatio,
+                        radius = spotlightRadius,
                     ),
-                    radius = outerRadius + 12.dp.toPx(),
+                    radius = outerRadius + 20.dp.toPx(),
                     center = centerOffset,
                 )
 
-                // Realistic Volumetric Flashlight Beam emitting from Pointer Tip
+                // Pure Circular Stage Light Aperture & Soft Warm Glow
                 if (spotlightAlpha > 0.001f) {
-                    // 1. Smooth Curvy Volumetric Light Cone with Parabolic Bezier Edges
-                    val beamPath = Path().apply {
-                        moveTo(flashlightSource.x, flashlightSource.y)
-                        // Left curved edge expanding outward
-                        quadraticTo(
-                            centerOffset.x - wheelRadius * 0.15f, centerOffset.y - wheelRadius * 0.40f,
-                            centerOffset.x - wheelRadius * 0.42f, centerOffset.y - wheelRadius * 0.05f
-                        )
-                        // Curved bottom arc across target segment
-                        quadraticTo(
-                            centerOffset.x, centerOffset.y + wheelRadius * 0.05f,
-                            centerOffset.x + wheelRadius * 0.42f, centerOffset.y - wheelRadius * 0.05f
-                        )
-                        // Right curved edge returning smoothly to flashlight bulb source
-                        quadraticTo(
-                            centerOffset.x + wheelRadius * 0.15f, centerOffset.y - wheelRadius * 0.40f,
-                            flashlightSource.x, flashlightSource.y
-                        )
-                        close()
-                    }
-
-                    // Strong Multi-Stop Distance Falloff Gradient (Inverse-Square Optical Decay)
-                    drawPath(
-                        path = beamPath,
-                        brush = Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0.00f to Color(0xFFFFFFFF).copy(alpha = 0.90f * spotlightAlpha), // Intense white bulb tip
-                                0.15f to Color(0xFFFFF9DB).copy(alpha = 0.70f * spotlightAlpha), // Hotspot beam core
-                                0.40f to Color(0xFFFFEC99).copy(alpha = 0.45f * spotlightAlpha), // Mid-distance warm beam
-                                0.70f to Color(0xFFFFD43B).copy(alpha = 0.20f * spotlightAlpha), // Fading far distance light
-                                1.00f to Color.Transparent,                                       // Dissipates smoothly into darkness
-                            ),
-                            startY = flashlightSource.y,
-                            endY = centerOffset.y + wheelRadius * 0.10f,
-                        ),
-                    )
-
-                    // 2. High-Intensity Feathered Hot-Spot Disc on Target Segment (No Strokes, Pure Soft Blur)
+                    // 1. High-Intensity Radial Hotspot Core (Pure Soft Radial Light)
                     drawCircle(
                         brush = Brush.radialGradient(
                             colorStops = arrayOf(
-                                0.00f to Color(0xFFFFFFFF).copy(alpha = 0.65f * spotlightAlpha), // Pure white center hotspot
-                                0.35f to Color(0xFFFFF4B8).copy(alpha = 0.45f * spotlightAlpha), // Warm inner glow
-                                0.70f to Color(0xFFFFC700).copy(alpha = 0.15f * spotlightAlpha), // Soft outer halo
+                                0.00f to Color(0xFFFFFFFF).copy(alpha = 0.50f * spotlightAlpha), // White core light
+                                0.40f to Color(0xFFFFF7D6).copy(alpha = 0.30f * spotlightAlpha), // Warm golden aura
+                                0.75f to Color(0xFFFFD700).copy(alpha = 0.10f * spotlightAlpha), // Outer ambient halo
                                 1.00f to Color.Transparent,
                             ),
                             center = spotlightCenter,
-                            radius = wheelRadius * 0.52f,
+                            radius = spotlightRadius * 1.15f,
                         ),
-                        radius = wheelRadius * 0.52f,
+                        radius = spotlightRadius * 1.15f,
                         center = spotlightCenter,
                     )
 
-                    // 3. Ambient Outer Soft Light Bloom
+                    // 2. Soft Golden Circular Lens Rim Highlight
                     drawCircle(
                         brush = Brush.radialGradient(
                             colorStops = arrayOf(
-                                0.00f to Color(0xFFFFEC99).copy(alpha = 0.30f * spotlightAlpha),
-                                0.60f to Color(0xFFFFD43B).copy(alpha = 0.10f * spotlightAlpha),
+                                0.00f to Color(0xFFFFEC99).copy(alpha = 0.55f * spotlightAlpha),
+                                0.50f to Color(0xFFFFD43B).copy(alpha = 0.20f * spotlightAlpha),
                                 1.00f to Color.Transparent,
                             ),
                             center = spotlightCenter,
-                            radius = wheelRadius * 0.70f,
+                            radius = spotlightRadius * 0.95f,
                         ),
-                        radius = wheelRadius * 0.70f,
+                        radius = spotlightRadius * 0.95f,
                         center = spotlightCenter,
-                    )
-
-                    // 4. Optical Flashlight Lens Bulb Glow at Pointer Tip
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colorStops = arrayOf(
-                                0.00f to Color.White.copy(alpha = 0.98f * spotlightAlpha),
-                                0.40f to Color(0xFFFFF3A8).copy(alpha = 0.70f * spotlightAlpha),
-                                1.00f to Color.Transparent,
-                            ),
-                            center = flashlightSource,
-                            radius = 16.dp.toPx(),
-                        ),
-                        radius = 16.dp.toPx(),
-                        center = flashlightSource,
+                        style = Stroke(width = 3.dp.toPx()),
                     )
                 }
             }
