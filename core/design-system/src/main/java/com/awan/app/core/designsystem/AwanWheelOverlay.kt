@@ -101,11 +101,11 @@ private const val POINTER_ANGLE_DEG = -90f
 
 @Immutable
 data class WheelSpotlightConfig(
-    val darknessIntensity: Float = 0.88f,
-    val spotlightRadiusRatio: Float = 0.78f,
-    val flashlightBeamAlpha: Float = 0.55f,
-    val darknessFadeMillis: Int = 400,
-    val spotlightFadeMillis: Int = 300,
+    val darknessIntensity: Float = 0.98f,
+    val spotlightRadiusRatio: Float = 0.65f,
+    val flashlightBeamAlpha: Float = 0.75f,
+    val darknessFadeMillis: Int = 350,
+    val spotlightFadeMillis: Int = 250,
     val winnerPulseDurationMillis: Int = 800,
 )
 
@@ -332,8 +332,11 @@ fun AwanWheelOverlay(
                         },
                     )
 
-                    // White Pointer Pin at Top (-90°)
-                    WheelPointer(recoilDegrees = pointerRecoil.value)
+                    // White Pointer Pin at Top (-90°) with active Flashlight Lens
+                    WheelPointer(
+                        recoilDegrees = pointerRecoil.value,
+                        isSpotlightActive = inMotion && !reduced,
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -673,59 +676,78 @@ private fun WheelCanvas(
                 }
             }
 
-            // 3. Stage Darkness Mask & Flashlight Beam Effect
+            // 3. Realistic Volumetric Flashlight Beam & Pitch Stage Darkness Effect
             if (darknessAlpha > 0.001f) {
-                val spotlightCenter = Offset(centerOffset.x, centerOffset.y - wheelRadius * 0.62f)
+                val spotlightCenter = Offset(centerOffset.x, centerOffset.y - wheelRadius * 0.58f)
+                val flashlightSource = Offset(centerOffset.x, centerOffset.y - outerRadius + 4.dp.toPx())
 
-                // Dark Stage Mask with soft feathered spotlight cutout over active pointer target
+                // Pitch Dark Stage Mask: Hides all inactive segments in deep pitch darkness
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.55f * darknessAlpha),
-                            Color.Black.copy(alpha = 0.94f * darknessAlpha),
+                            Color.Black.copy(alpha = 0.70f * darknessAlpha),
+                            Color.Black.copy(alpha = 0.98f * darknessAlpha),
                         ),
                         center = spotlightCenter,
                         radius = wheelRadius * SPOTLIGHT_CONFIG.spotlightRadiusRatio,
                     ),
-                    radius = outerRadius,
+                    radius = outerRadius + 8.dp.toPx(),
                     center = centerOffset,
                 )
 
-                // Flashlight Beam emitting from top pointer pin (-90°)
+                // Realistic Volumetric Flashlight Beam emitting from Pointer Tip
                 if (spotlightAlpha > 0.001f) {
+                    // 1. Triangular Volumetric Cone Beam
                     val beamPath = Path().apply {
-                        moveTo(centerOffset.x, centerOffset.y - outerRadius)
-                        lineTo(centerOffset.x - wheelRadius * 0.45f, centerOffset.y - wheelRadius * 0.2f)
-                        lineTo(centerOffset.x + wheelRadius * 0.45f, centerOffset.y - wheelRadius * 0.2f)
+                        moveTo(flashlightSource.x, flashlightSource.y)
+                        lineTo(centerOffset.x - wheelRadius * 0.38f, centerOffset.y - wheelRadius * 0.15f)
+                        lineTo(centerOffset.x + wheelRadius * 0.38f, centerOffset.y - wheelRadius * 0.15f)
                         close()
                     }
                     drawPath(
                         path = beamPath,
                         brush = Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFFFFF8D6).copy(alpha = SPOTLIGHT_CONFIG.flashlightBeamAlpha * spotlightAlpha),
-                                Color(0xFFFFD700).copy(alpha = 0.25f * spotlightAlpha),
+                                Color(0xFFFFFEE0).copy(alpha = 0.85f * spotlightAlpha), // Hotspot bulb source
+                                Color(0xFFFFE680).copy(alpha = 0.45f * spotlightAlpha), // Warm cone beam
+                                Color(0xFFFFC700).copy(alpha = 0.15f * spotlightAlpha),
                                 Color.Transparent,
                             ),
-                            startY = centerOffset.y - outerRadius,
+                            startY = flashlightSource.y,
                             endY = centerOffset.y,
                         ),
                     )
 
-                    // Soft Golden Lens Glow Ring
+                    // 2. High-Intensity Radial Hot-Spot on the Target Segment
                     drawCircle(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                Color(0xFFFFE885).copy(alpha = 0.45f * spotlightAlpha),
-                                Color(0xFFFFB800).copy(alpha = 0.15f * spotlightAlpha),
+                                Color(0xFFFFFFFF).copy(alpha = 0.55f * spotlightAlpha), // Bright hot-spot core
+                                Color(0xFFFFF2A3).copy(alpha = 0.35f * spotlightAlpha), // Warm inner glow
+                                Color(0xFFFFB800).copy(alpha = 0.10f * spotlightAlpha),
                                 Color.Transparent,
                             ),
                             center = spotlightCenter,
-                            radius = wheelRadius * 0.45f,
+                            radius = wheelRadius * 0.48f,
                         ),
-                        radius = wheelRadius * 0.45f,
+                        radius = wheelRadius * 0.48f,
                         center = spotlightCenter,
+                    )
+
+                    // 3. Flashlight Lens Bulb Glow at Pointer Base
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.95f * spotlightAlpha),
+                                Color(0xFFFFD700).copy(alpha = 0.60f * spotlightAlpha),
+                                Color.Transparent,
+                            ),
+                            center = flashlightSource,
+                            radius = 14.dp.toPx(),
+                        ),
+                        radius = 14.dp.toPx(),
+                        center = flashlightSource,
                     )
                 }
             }
@@ -844,36 +866,68 @@ private fun CenterCapIcon(
 }
 
 /**
- * Clean White Top Pointer Pin (-90°).
+ * Clean 2D Pointer Pin with Flashlight Lens Tip pointing DOWN at the wheel (-90°).
  */
 @Composable
-private fun WheelPointer(recoilDegrees: Float) {
+private fun WheelPointer(
+    recoilDegrees: Float,
+    isSpotlightActive: Boolean,
+) {
     Box(
         modifier = Modifier
             .offset(y = (-4).dp)
             .rotate(recoilDegrees)
-            .size(28.dp),
+            .size(32.dp),
         contentAlignment = Alignment.TopCenter,
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
 
+            // Downward pointing arrow shape anchored to top rim
             val path = Path().apply {
-                moveTo(w / 2f, h)
-                lineTo(0f, 0f)
-                lineTo(w, 0f)
+                moveTo(w / 2f, h)         // Pointer tip pointing DOWN at active segment
+                lineTo(2.dp.toPx(), 0f)    // Top left corner
+                lineTo(w - 2.dp.toPx(), 0f) // Top right corner
                 close()
             }
 
             // Shadow
             drawPath(
                 path = path,
-                color = Color.Black.copy(alpha = 0.3f),
-                style = Stroke(width = 2.dp.toPx()),
+                color = Color.Black.copy(alpha = 0.35f),
             )
-            // White Pin Face
-            drawPath(path = path, color = Color.White)
+
+            // Pointer Body Metallic Gold Gradient
+            drawPath(
+                path = path,
+                brush = Brush.verticalGradient(
+                    listOf(Color(0xFFFFF8D6), Color(0xFFFFD700), Color(0xFFE6A100))
+                ),
+            )
+
+            // White Highlight Rim
+            drawPath(
+                path = path,
+                color = Color.White.copy(alpha = 0.85f),
+                style = Stroke(width = 1.5.dp.toPx()),
+            )
+
+            // Flashlight Lens Bulb at Pointer Tip pointing DOWN
+            val bulbColor = if (isSpotlightActive) Color(0xFFFFFEE0) else Color(0xFFFFE885)
+            drawCircle(
+                color = bulbColor,
+                radius = 3.5.dp.toPx(),
+                center = Offset(w / 2f, h - 3.dp.toPx()),
+            )
+
+            if (isSpotlightActive) {
+                drawCircle(
+                    color = Color.White,
+                    radius = 2.dp.toPx(),
+                    center = Offset(w / 2f, h - 3.dp.toPx()),
+                )
+            }
         }
     }
 }
