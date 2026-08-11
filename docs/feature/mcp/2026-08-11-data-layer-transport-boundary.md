@@ -24,3 +24,4 @@ Retrofit response types.
 
 - Retrofit is now internal to `:core:network`; the MCP repository uses an internal remote data source that owns the Retrofit service and shared `safeApiCall` mapping.
 - Verified with the full `:core:data:testDebugUnitTest` suite. `:app:assembleDebug` is blocked only because this new worktree excludes the existing local `app/google-services.json`.
+- Follow-up rollback keeps `AwanDatabase` at version 1, removes `MIGRATION_1_2`, deletes the v2 schema export, and regenerates schema version 1 with the MCP table.
