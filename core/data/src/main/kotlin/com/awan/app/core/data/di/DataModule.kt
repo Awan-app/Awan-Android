@@ -76,6 +76,9 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+import com.awan.app.core.data.devicetoken.remote.DeviceTokenRemoteDataSource
+import com.awan.app.core.data.devicetoken.remote.DeviceTokenRemoteDataSourceImpl
+
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class DataModule {
@@ -289,6 +292,12 @@ internal abstract class DataModule {
     abstract fun bindNetworkConnectivityMonitor(
         impl: NetworkConnectivityMonitorImpl,
     ): NetworkConnectivityMonitor
+
+    @Binds
+    @Singleton
+    abstract fun bindDeviceTokenRemoteDataSource(
+        impl: DeviceTokenRemoteDataSourceImpl,
+    ): DeviceTokenRemoteDataSource
 
     @Binds
     @Singleton

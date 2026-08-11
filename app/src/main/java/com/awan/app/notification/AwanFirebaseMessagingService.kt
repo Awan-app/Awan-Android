@@ -124,10 +124,10 @@ class AwanFirebaseMessagingService : FirebaseMessagingService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                CHANNEL_NAME,
+                getString(R.string.app_notification_channel_name),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notifications for sessions and daily spin reminders"
+                description = getString(R.string.app_notification_channel_description)
             }
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
@@ -136,7 +136,6 @@ class AwanFirebaseMessagingService : FirebaseMessagingService() {
 
     companion object {
         const val CHANNEL_ID = "awan_push_notifications"
-        const val CHANNEL_NAME = "Awan Notifications"
         const val EXTRA_NOTIFICATION_TYPE = "extra_notification_type"
         const val EXTRA_SESSION_ID = "extra_session_id"
         private const val NOTIFICATION_REQUEST_CODE = 1001

@@ -1,9 +1,9 @@
 package com.awan.app.core.data.devicetoken
 
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.data.devicetoken.remote.DeviceTokenRemoteDataSource
 import com.awan.app.core.data.devicetoken.repository.DeviceTokenRepositoryImpl
 import com.awan.app.core.datastore.auth.AuthTokenProvider
-import com.awan.app.core.network.api.DeviceTokenApiService
 import com.awan.app.core.network.device.DeviceIdProvider
 import com.awan.app.core.network.dto.devicetoken.DeviceTokenResponse
 import com.awan.app.core.network.dto.devicetoken.RegisterDeviceTokenRequest
@@ -18,7 +18,7 @@ import org.junit.Test
 
 class DeviceTokenRepositoryImplTest {
 
-    private lateinit var fakeApiService: FakeDeviceTokenApiService
+    private lateinit var fakeRemoteDataSource: FakeDeviceTokenRemoteDataSource
     private lateinit var fakeAuthTokenProvider: FakeAuthTokenProvider
     private lateinit var fakeDeviceIdProvider: DeviceIdProvider
     private lateinit var repository: DeviceTokenRepositoryImpl
@@ -27,13 +27,13 @@ class DeviceTokenRepositoryImplTest {
 
     @Before
     fun setUp() {
-        fakeApiService = FakeDeviceTokenApiService()
+        fakeRemoteDataSource = FakeDeviceTokenRemoteDataSource()
         fakeAuthTokenProvider = FakeAuthTokenProvider()
         fakeDeviceIdProvider = object : DeviceIdProvider {
             override fun getDeviceId(): String = "test-device-id-123"
         }
         repository = DeviceTokenRepositoryImpl(
-            deviceTokenApiService = fakeApiService,
+            remoteDataSource = fakeRemoteDataSource,
             deviceIdProvider = fakeDeviceIdProvider,
             authTokenProvider = fakeAuthTokenProvider,
             ioDispatcher = testDispatcher,
@@ -41,48 +41,47 @@ class DeviceTokenRepositoryImplTest {
     }
 
     @Test
-    fun `registerDeviceToken saves token and calls backend service`() = runTest {
+    fun `registerDeviceToken saves token and calls remote data source`() = runTest {
         val fcmToken = "test-fcm-token-456"
 
         val result = repository.registerDeviceToken(fcmToken)
 
         assertTrue(result is Result.Success)
         assertEquals(fcmToken, fakeAuthTokenProvider.getFcmToken())
-        assertEquals("test-device-id-123", fakeApiService.registeredRequest?.deviceId)
-        assertEquals(fcmToken, fakeApiService.registeredRequest?.fcmToken)
+        assertEquals("test-device-id-123", fakeRemoteDataSource.registeredRequest?.deviceId)
+        assertEquals(fcmToken, fakeRemoteDataSource.registeredRequest?.fcmToken)
     }
 
     @Test
-    fun `removeDeviceToken calls backend service with deviceId`() = runTest {
+    fun `removeDeviceToken calls remote data source with deviceId`() = runTest {
         val result = repository.removeDeviceToken()
 
         assertTrue(result is Result.Success)
-        assertEquals("test-device-id-123", fakeApiService.removedDeviceId)
+        assertEquals("test-device-id-123", fakeRemoteDataSource.removedDeviceId)
     }
 }
 
-private class FakeDeviceTokenApiService : DeviceTokenApiService {
+private class FakeDeviceTokenRemoteDataSource : DeviceTokenRemoteDataSource {
     var registeredRequest: RegisterDeviceTokenRequest? = null
     var removedDeviceId: String? = null
 
-    override suspend fun registerDeviceToken(request: RegisterDeviceTokenRequest): DeviceTokenResponse {
+    override suspend fun registerDeviceToken(request: RegisterDeviceTokenRequest): Result<DeviceTokenResponse> {
         registeredRequest = request
-        return DeviceTokenResponse(
-            id = "token-row-id-1",
-            deviceId = request.deviceId,
-            deviceType = request.deviceType,
-            createdAt = "2026-08-11T00:00:00Z",
-            updatedAt = "2026-08-11T00:00:00Z",
+        return Result.Success(
+            DeviceTokenResponse(
+                id = "token-row-id-1",
+                deviceId = request.deviceId,
+                deviceType = request.deviceType,
+                createdAt = "2026-08-11T00:00:00Z",
+                updatedAt = "2026-08-11T00:00:00Z",
+            )
         )
     }
 
-    override suspend fun getUserDevices(): List<DeviceTokenResponse> = emptyList()
-
-    override suspend fun removeDeviceToken(deviceId: String) {
+    override suspend fun removeDeviceToken(deviceId: String): Result<Unit> {
         removedDeviceId = deviceId
+        return Result.Success(Unit)
     }
-
-    override suspend fun removeAllDeviceTokens() {}
 }
 
 private class FakeAuthTokenProvider : AuthTokenProvider {
