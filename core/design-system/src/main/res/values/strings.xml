@@ -31,7 +31,14 @@
 
     <!-- Daily wheel -->
     <string name="ds_wheel_badge">Daily gift — free spin available</string>
-    <string name="ds_wheel_title">Daily gift</string>
+    <string name="ds_wheel_title">Daily Gift</string>
+    <string name="ds_wheel_subtitle_available">Spin the wheel and reveal your reward</string>
+    <string name="ds_wheel_subtitle_claimed">Come back tomorrow for another gift</string>
+    <string name="ds_wheel_claimed_title">Today\'s gift is claimed</string>
+    <string name="ds_wheel_todays_reward">Today\'s reward</string>
+    <string name="ds_wheel_see_you_tomorrow">See you tomorrow!</string>
+    <string name="ds_wheel_you_won_headline">You won!</string>
+    <string name="ds_wheel_awesome">Awesome!</string>
     <string name="ds_wheel_tap_to_spin">Tap the wheel to spin</string>
     <string name="ds_wheel_spinning">Spinning…</string>
     <string name="ds_wheel_won_coins">You won %1$d points!</string>

@@ -100,6 +100,14 @@ class EncryptedTokenStorage @Inject constructor(
         if (_isLoggedIn.value) _sessionExpired.trySend(Unit)
     }
 
+    override suspend fun saveFcmToken(token: String): Unit = withContext(ioDispatcher) {
+        sharedPreferences.edit().putString(KEY_FCM_TOKEN, token).apply()
+    }
+
+    override suspend fun getFcmToken(): String? = withContext(ioDispatcher) {
+        sharedPreferences.getString(KEY_FCM_TOKEN, null)
+    }
+
     private companion object {
         const val PREFS_FILE_NAME = "awan_auth_tokens_secure"
         const val KEY_ACCESS_TOKEN = "access_token"
@@ -107,5 +115,6 @@ class EncryptedTokenStorage @Inject constructor(
         const val KEY_USER_ID = "user_id"
         const val KEY_USER_EMAIL = "user_email"
         const val KEY_IS_LOGGED_IN = "is_logged_in"
+        const val KEY_FCM_TOKEN = "fcm_token"
     }
 }

@@ -12,5 +12,7 @@
     <string name="navigation_add_task">أضف مهمة</string>
     <string name="app_offline_banner_text">أنت غير متصل بالإنترنت. تعديل البيانات والمزامنة غير متاحة.</string>
     <string name="app_offline_lock_explanation">هذا الإجراء يتطلب اتصالات بالإنترنت.</string>
+    <string name="app_notification_channel_name">إشعارات أوان</string>
+    <string name="app_notification_channel_description">إشعارات الجلسات وتذكيرات العجلة اليومية</string>
 </resources>
 

@@ -133,6 +133,35 @@ class OnboardingViewModelTest {
         assertEquals(2, categoryRepository.callCount)
     }
 
+    /**
+     * `isSubmittingTask` only disables the buttons from the next frame, and `EnableNotifications`
+     * never sets it — so a second tap lands while the first submit is still suspended, reads
+     * `isBackendOnboarded` before the first has set it, and onboards the account twice.
+     */
+    @Test
+    fun `a second submit while one is in flight is dropped rather than onboarding twice`() =
+        runTest(testDispatcher) {
+            val vm = viewModel(FakeCategoryRepository(loadDelayMillis = 1_000))
+
+            vm.onAction(OnboardingAction.SkipSetup)
+            vm.onAction(OnboardingAction.SkipSetup)
+            advanceUntilIdle()
+
+            assertEquals(1, repository.callCount)
+        }
+
+    @Test
+    fun `a submit that has finished does not block the next one`() = runTest(testDispatcher) {
+        repository.failWith = AppError.Network
+
+        viewModel.onAction(OnboardingAction.SkipSetup)
+        advanceUntilIdle()
+        viewModel.onAction(OnboardingAction.SkipSetup)
+        advanceUntilIdle()
+
+        assertEquals(2, repository.callCount)
+    }
+
     @Test
     fun `continue on the name step is gated on a non-blank first name`() = runTest(testDispatcher) {
         assertFalse(viewModel.state.value.canContinueName)

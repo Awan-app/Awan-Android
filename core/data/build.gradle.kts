@@ -20,6 +20,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
+    implementation(libs.retrofit)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

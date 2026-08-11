@@ -12,6 +12,7 @@ import com.awan.app.core.network.device.DeviceIdProvider
 import com.awan.app.core.network.dto.auth.FirebaseAuthRequest
 import com.awan.app.core.network.dto.auth.LogoutRequest
 import com.awan.app.core.network.dto.auth.RefreshTokenRequest
+import com.awan.app.core.domain.devicetoken.repository.DeviceTokenRepository
 import com.awan.app.core.network.dto.auth.RequestOtpRequest
 import com.awan.app.core.network.dto.auth.VerifyOtpRequest
 import kotlinx.coroutines.flow.Flow
@@ -22,6 +23,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val authTokenProvider: AuthTokenProvider,
     private val deviceIdProvider: DeviceIdProvider,
     private val localDataCleaner: LocalDataCleaner,
+    private val deviceTokenRepository: DeviceTokenRepository,
 ) : AuthRepository {
 
     override suspend fun requestOtp(email: String): Result<Unit> =
@@ -49,6 +51,8 @@ class AuthRepositoryImpl @Inject constructor(
                 email = userDto?.email ?: email,
             )
             authTokenProvider.setLoggedIn(true)
+            // Register FCM device token with backend after successful login
+            deviceTokenRepository.registerDeviceToken()
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -95,6 +99,8 @@ class AuthRepositoryImpl @Inject constructor(
                 email = userDto?.email,
             )
             authTokenProvider.setLoggedIn(true)
+            // Register FCM device token with backend after successful login
+            deviceTokenRepository.registerDeviceToken()
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -136,6 +142,9 @@ class AuthRepositoryImpl @Inject constructor(
         val accessToken = authTokenProvider.getAccessToken()
 
         if (accessToken != null) {
+            // Remove device token from backend before sign-out
+            deviceTokenRepository.removeDeviceToken()
+
             remoteDataSource.logout(
                 bearerToken = "Bearer $accessToken",
                 request = LogoutRequest(deviceId = deviceIdProvider.getDeviceId()),
