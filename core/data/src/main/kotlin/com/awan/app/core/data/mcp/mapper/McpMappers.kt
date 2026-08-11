@@ -1,22 +1,31 @@
 package com.awan.app.core.data.mcp.mapper
 
 import com.awan.app.core.database.model.McpTokenEntity
+import com.awan.app.core.domain.mcp.model.CreatedMcpToken
 import com.awan.app.core.domain.mcp.model.McpToken
-import com.awan.app.core.network.dto.mcp.CreatedMcpTokenResponseDto
-import com.awan.app.core.network.dto.mcp.McpTokenResponseDto
+import com.awan.app.core.network.dto.mcp.ApiKeyResponseDto
+import com.awan.app.core.network.dto.mcp.ApiKeySummaryDto
 
-fun McpTokenResponseDto.toEntity(): McpTokenEntity = McpTokenEntity(
+fun ApiKeySummaryDto.toEntity(): McpTokenEntity = McpTokenEntity(
     id = id,
     name = name,
-    maskedToken = maskedToken,
+    maskedToken = keyPrefix,
     createdAt = createdAt,
-    lastUsedAt = lastUsedAt,
+    lastUsedAt = null,
 )
 
-fun CreatedMcpTokenResponseDto.toEntity(): McpTokenEntity = McpTokenEntity(
+fun ApiKeyResponseDto.toDomain(): CreatedMcpToken = CreatedMcpToken(
     id = id,
     name = name,
-    maskedToken = maskedToken,
+    rawToken = keyValue,
+    maskedToken = if (keyValue.length >= 12) keyValue.take(12) + "..." else keyValue,
+    createdAt = createdAt,
+)
+
+fun ApiKeyResponseDto.toEntity(): McpTokenEntity = McpTokenEntity(
+    id = id,
+    name = name,
+    maskedToken = if (keyValue.length >= 12) keyValue.take(12) + "..." else keyValue,
     createdAt = createdAt,
     lastUsedAt = null,
 )
@@ -28,3 +37,4 @@ fun McpTokenEntity.toDomain(): McpToken = McpToken(
     createdAt = createdAt,
     lastUsedAt = lastUsedAt,
 )
+

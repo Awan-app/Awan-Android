@@ -13,15 +13,17 @@ import com.awan.app.core.domain.mcp.model.McpToken
 import com.awan.app.core.domain.mcp.repository.McpRepository
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.network.api.McpApiService
-import com.awan.app.core.network.dto.mcp.CreateMcpTokenRequestDto
+import com.awan.app.core.network.dto.mcp.CreateApiKeyRequestDto
 import com.awan.app.core.network.error.safeApiCall
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import retrofit2.HttpException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,26 +36,25 @@ class McpRepositoryImpl @Inject constructor(
 ) : McpRepository {
 
     override fun getMcpConnectionDetails(): Flow<Result<McpConnectionDetails>> = flow {
-        if (!connectivityMonitor.isCurrentlyOnline()) {
-            emit(Result.Error(AppError.Network))
-            return@flow
-        }
-        val result = safeApiCall(ioDispatcher) {
-            val dto = mcpApiService.getConnectionDetails()
-            McpConnectionDetails(
-                mcpUrl = dto.mcpUrl,
-                clientId = dto.clientId,
+        emit(
+            Result.Success(
+                McpConnectionDetails(
+                    mcpUrl = "https://backend-production-c701.up.railway.app/api/v1/mcp",
+                    clientId = "awan-android-client",
+                )
             )
-        }
-        emit(result)
+        )
     }.flowOn(ioDispatcher)
 
     override fun getMcpTokens(): Flow<Result<List<McpToken>>> = flow {
         if (connectivityMonitor.isCurrentlyOnline()) {
             try {
-                val dtos = mcpApiService.getTokens()
-                val entities = dtos.map { it.toEntity() }
-                mcpTokenDao.replaceMcpTokens(entities)
+                val response = mcpApiService.getApiKeys()
+                if (response.isSuccessful) {
+                    val dtos = response.body().orEmpty()
+                    val entities = dtos.map { it.toEntity() }
+                    mcpTokenDao.replaceMcpTokens(entities)
+                }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 // If network sync fails, fallback to Room cached tokens
@@ -71,14 +72,10 @@ class McpRepositoryImpl @Inject constructor(
             return Result.Error(AppError.Network)
         }
         return safeApiCall(ioDispatcher) {
-            val dto = mcpApiService.createToken(CreateMcpTokenRequestDto(name = name))
-            val createdToken = CreatedMcpToken(
-                id = dto.id,
-                name = dto.name,
-                rawToken = dto.rawToken,
-                maskedToken = dto.maskedToken,
-                createdAt = dto.createdAt,
-            )
+            val response = mcpApiService.createApiKey(CreateApiKeyRequestDto(name = name))
+            if (!response.isSuccessful) throw HttpException(response)
+            val dto = response.body() ?: throw IllegalStateException("Empty response body")
+            val createdToken = dto.toDomain()
             try {
                 mcpTokenDao.upsertMcpTokens(listOf(dto.toEntity()))
             } catch (e: Exception) {
@@ -94,7 +91,8 @@ class McpRepositoryImpl @Inject constructor(
             return Result.Error(AppError.Network)
         }
         val result = safeApiCall(ioDispatcher) {
-            mcpApiService.deleteToken(id)
+            val response = mcpApiService.revokeApiKey(id)
+            if (!response.isSuccessful) throw HttpException(response)
         }
         if (result is Result.Success) {
             try {
@@ -110,16 +108,21 @@ class McpRepositoryImpl @Inject constructor(
         if (!connectivityMonitor.isCurrentlyOnline()) {
             return Result.Error(AppError.Network)
         }
+        val existingTokenName = mcpTokenDao.getMcpTokens().first().find { it.id == id }?.name ?: "MCP Token"
         return safeApiCall(ioDispatcher) {
-            val dto = mcpApiService.regenerateToken(id)
-            val createdToken = CreatedMcpToken(
-                id = dto.id,
-                name = dto.name,
-                rawToken = dto.rawToken,
-                maskedToken = dto.maskedToken,
-                createdAt = dto.createdAt,
-            )
+            val createResponse = mcpApiService.createApiKey(CreateApiKeyRequestDto(name = existingTokenName))
+            if (!createResponse.isSuccessful) throw HttpException(createResponse)
+            val dto = createResponse.body() ?: throw IllegalStateException("Empty response body")
+            val createdToken = dto.toDomain()
+
             try {
+                mcpApiService.revokeApiKey(id)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
+
+            try {
+                mcpTokenDao.deleteMcpToken(id)
                 mcpTokenDao.upsertMcpTokens(listOf(dto.toEntity()))
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
@@ -129,3 +132,4 @@ class McpRepositoryImpl @Inject constructor(
         }
     }
 }
+
