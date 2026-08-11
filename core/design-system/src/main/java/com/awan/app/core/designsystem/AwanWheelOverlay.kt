@@ -6,6 +6,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
@@ -97,6 +98,18 @@ private const val FREE_TURN_MILLIS = 650
 private const val LANDING_MILLIS = 2_400
 private const val LANDING_TURNS = 4
 private const val POINTER_ANGLE_DEG = -90f
+
+@Immutable
+data class WheelSpotlightConfig(
+    val darknessIntensity: Float = 0.88f,
+    val spotlightRadiusRatio: Float = 0.78f,
+    val flashlightBeamAlpha: Float = 0.55f,
+    val darknessFadeMillis: Int = 400,
+    val spotlightFadeMillis: Int = 300,
+    val winnerPulseDurationMillis: Int = 800,
+)
+
+private val SPOTLIGHT_CONFIG = WheelSpotlightConfig()
 
 private val WheelCanvasSize = 310.dp
 
@@ -200,6 +213,24 @@ fun AwanWheelOverlay(
     val inMotion = isSpinning || (isWin && !showResult)
     val isAlreadyClaimedSession = !canSpin && !isSpinning && landingSegmentId == null
 
+    val darknessAlpha by animateFloatAsState(
+        targetValue = if (inMotion && !reduced) SPOTLIGHT_CONFIG.darknessIntensity else 0f,
+        animationSpec = tween(SPOTLIGHT_CONFIG.darknessFadeMillis, easing = LinearOutSlowInEasing),
+        label = "wheelDarknessAlpha",
+    )
+
+    val spotlightAlpha by animateFloatAsState(
+        targetValue = if (inMotion && !reduced) 1f else 0f,
+        animationSpec = tween(SPOTLIGHT_CONFIG.spotlightFadeMillis, easing = LinearOutSlowInEasing),
+        label = "wheelSpotlightAlpha",
+    )
+
+    val winningHighlightAlpha by animateFloatAsState(
+        targetValue = if (landed && isWin) 1f else 0f,
+        animationSpec = tween(SPOTLIGHT_CONFIG.winnerPulseDurationMillis, easing = LinearOutSlowInEasing),
+        label = "winningHighlightAlpha",
+    )
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -292,6 +323,9 @@ fun AwanWheelOverlay(
                         isSpinning = isSpinning,
                         showResult = showResult,
                         enabled = canSpin && !isSpinning && landingSegmentId == null,
+                        darknessAlpha = darknessAlpha,
+                        spotlightAlpha = spotlightAlpha,
+                        winningHighlightAlpha = winningHighlightAlpha,
                         onSpin = {
                             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                             onSpin()
@@ -497,6 +531,9 @@ private fun WheelCanvas(
     isSpinning: Boolean,
     showResult: Boolean,
     enabled: Boolean,
+    darknessAlpha: Float,
+    spotlightAlpha: Float,
+    winningHighlightAlpha: Float,
     onSpin: () -> Unit,
 ) {
     val colors = AwanTheme.colors
@@ -636,7 +673,82 @@ private fun WheelCanvas(
                 }
             }
 
-            // 3. Center Cap Outer Ring
+            // 3. Stage Darkness Mask & Flashlight Beam Effect
+            if (darknessAlpha > 0.001f) {
+                val spotlightCenter = Offset(centerOffset.x, centerOffset.y - wheelRadius * 0.62f)
+
+                // Dark Stage Mask with soft feathered spotlight cutout over active pointer target
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.55f * darknessAlpha),
+                            Color.Black.copy(alpha = 0.94f * darknessAlpha),
+                        ),
+                        center = spotlightCenter,
+                        radius = wheelRadius * SPOTLIGHT_CONFIG.spotlightRadiusRatio,
+                    ),
+                    radius = outerRadius,
+                    center = centerOffset,
+                )
+
+                // Flashlight Beam emitting from top pointer pin (-90°)
+                if (spotlightAlpha > 0.001f) {
+                    val beamPath = Path().apply {
+                        moveTo(centerOffset.x, centerOffset.y - outerRadius)
+                        lineTo(centerOffset.x - wheelRadius * 0.45f, centerOffset.y - wheelRadius * 0.2f)
+                        lineTo(centerOffset.x + wheelRadius * 0.45f, centerOffset.y - wheelRadius * 0.2f)
+                        close()
+                    }
+                    drawPath(
+                        path = beamPath,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFFFFF8D6).copy(alpha = SPOTLIGHT_CONFIG.flashlightBeamAlpha * spotlightAlpha),
+                                Color(0xFFFFD700).copy(alpha = 0.25f * spotlightAlpha),
+                                Color.Transparent,
+                            ),
+                            startY = centerOffset.y - outerRadius,
+                            endY = centerOffset.y,
+                        ),
+                    )
+
+                    // Soft Golden Lens Glow Ring
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color(0xFFFFE885).copy(alpha = 0.45f * spotlightAlpha),
+                                Color(0xFFFFB800).copy(alpha = 0.15f * spotlightAlpha),
+                                Color.Transparent,
+                            ),
+                            center = spotlightCenter,
+                            radius = wheelRadius * 0.45f,
+                        ),
+                        radius = wheelRadius * 0.45f,
+                        center = spotlightCenter,
+                    )
+                }
+            }
+
+            // 4. Winning Segment Highlight Pulse when wheel lands
+            if (winningHighlightAlpha > 0.001f) {
+                val winningCenter = Offset(centerOffset.x, centerOffset.y - wheelRadius * 0.62f)
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            colors.pointsIcon.copy(alpha = 0.45f * winningHighlightAlpha),
+                            colors.pointsSurface.copy(alpha = 0.25f * winningHighlightAlpha),
+                            Color.Transparent,
+                        ),
+                        center = winningCenter,
+                        radius = wheelRadius * 0.5f,
+                    ),
+                    radius = wheelRadius * 0.5f,
+                    center = winningCenter,
+                )
+            }
+
+            // 5. Center Cap Outer Ring
             drawCircle(
                 brush = Brush.verticalGradient(listOf(goldOuterBorder, colors.streakIcon)),
                 radius = hubRadius + 3.dp.toPx(),
