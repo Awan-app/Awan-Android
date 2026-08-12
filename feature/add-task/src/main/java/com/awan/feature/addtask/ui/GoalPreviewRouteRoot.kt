@@ -9,9 +9,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.ComponentActivity
+import com.awan.app.core.designsystem.AwanActionSheet
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanConfirmDialog
-import com.awan.app.core.designsystem.AwanDialog
 import com.awan.app.core.designsystem.ObserveAsEvents
 import com.awan.app.core.designsystem.rememberSpeechRecognizer
 import com.awan.feature.addtask.R
@@ -70,7 +70,7 @@ fun GoalPreviewRouteRoot(
     }
 
     if (state.showGoalSaveChoice) {
-        AwanDialog(
+        AwanActionSheet(
             title = stringResource(R.string.add_task_goal_save_choice_title),
             body = stringResource(R.string.add_task_goal_save_choice_body),
             primaryLabel = stringResource(R.string.add_task_goal_save_choice_add_tasks),
