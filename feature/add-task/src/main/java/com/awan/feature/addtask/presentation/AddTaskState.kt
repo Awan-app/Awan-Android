@@ -81,6 +81,7 @@ data class AddTaskState(
     val isCelebrating: Boolean = false,
     /** Non-null once the task exists: the sheet stops being a form and becomes a receipt. */
     val confirmation: TaskConfirmation? = null,
+    val showGoalSaveChoice: Boolean = false,
     val showDiscardConfirm: Boolean = false,
     @StringRes val errorMessage: Int? = null,
     val hasRequestedMicPermission: Boolean = false,

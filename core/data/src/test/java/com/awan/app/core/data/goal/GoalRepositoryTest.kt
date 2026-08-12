@@ -15,6 +15,7 @@ import com.awan.app.core.network.api.GoalApiService
 import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.GoalStatusDto
 import com.awan.app.core.network.dto.PageResponse
+import com.awan.app.core.model.ProposedTask
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -64,8 +66,13 @@ class GoalRepositoryTest {
     private open class FakeGoalRemoteDataSource(
         var response: Result<List<GoalInfoResponse>> = Result.Success(emptyList()),
     ) : GoalRemoteDataSource {
+        var lastCreateRequest: com.awan.app.core.network.dto.goal.CreateGoalRequest? = null
+
         override suspend fun getGoals(): Result<List<GoalInfoResponse>> = response
-        override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
+        override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): Result<GoalInfoResponse> {
+            lastCreateRequest = request
+            return Result.Success(GoalInfoResponse(id = "goal-created", title = request.title))
+        }
         override suspend fun getInboxGoal(): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun getGoal(goalId: String, expand: Boolean): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
@@ -220,6 +227,39 @@ class GoalRepositoryTest {
 
         assertTrue(result is Result.Success)
         assertEquals(0, (result as Result.Success).data.size)
+    }
+
+    @Test
+    fun repositoryMapsEveryProposedTaskToLiveCreateRequest() = runTest(testDispatcher) {
+        val remote = FakeGoalRemoteDataSource()
+        val onlineMonitor = object : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
+            override val isOnline: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.flowOf(true)
+            override fun isCurrentlyOnline(): Boolean = true
+        }
+        val repository = GoalRepositoryImpl(
+            remoteDataSource = remote,
+            goalDao = FakeGoalDao(),
+            connectivityMonitor = onlineMonitor,
+        )
+
+        val result = repository.createGoal(
+            title = "Goal",
+            description = "Description",
+            targetDate = "2026-09-01",
+            tasks = listOf(ProposedTask("Task A", estimatedDuration = null, estimatedPoints = null)),
+        )
+
+        assertTrue(result is Result.Success)
+        val request = checkNotNull(remote.lastCreateRequest)
+        assertEquals("Goal", request.title)
+        assertEquals("Description", request.description)
+        assertEquals("2026-09-01", request.targetDate)
+        assertEquals(1, request.tasks.size)
+        assertEquals("proposal-task-0", request.tasks.single().tempId)
+        assertEquals("Task A", request.tasks.single().title)
+        assertEquals(30, request.tasks.single().estimatedDuration)
+        assertFalse(request.tasks.single().mandatory)
+        assertEquals(0, request.tasks.single().estimatedPoints)
     }
 
     @Test(expected = CancellationException::class)

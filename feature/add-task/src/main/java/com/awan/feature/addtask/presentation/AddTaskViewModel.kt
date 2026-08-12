@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
-import com.awan.app.core.domain.goal.usecase.ConfirmGoalDecompositionUseCase
+import com.awan.app.core.domain.goal.usecase.SaveGoalProposalUseCase
 import com.awan.app.core.domain.goal.usecase.ContinueGoalDecompositionUseCase
 import com.awan.app.core.domain.zones.usecase.GetZonesForDateUseCase
 import com.awan.app.core.domain.profile.usecase.GetUserDataUseCase
@@ -43,7 +43,7 @@ class AddTaskViewModel @Inject constructor(
     private val getZonesForDate: GetZonesForDateUseCase,
     private val createTask: CreateTaskUseCase,
     private val continueGoalDecomposition: ContinueGoalDecompositionUseCase,
-    private val confirmGoalDecomposition: ConfirmGoalDecompositionUseCase,
+    private val saveGoalProposal: SaveGoalProposalUseCase,
     private val getUserDataUseCase: GetUserDataUseCase,
     private val setMicPermissionRequestedUseCase: SetMicPermissionRequestedUseCase,
     private val clock: Clock,
@@ -97,6 +97,9 @@ class AddTaskViewModel @Inject constructor(
             AddTaskAction.Submit -> submit()
             is AddTaskAction.GoalOptionSelected -> selectGoalOption(action.option)
             AddTaskAction.AcceptGoalProposal -> acceptGoalProposal()
+            AddTaskAction.SaveGoalAsDraft -> saveGoal(addTasks = false)
+            AddTaskAction.AddGoalTasks -> saveGoal(addTasks = true)
+            AddTaskAction.GoalSaveChoiceDismissed -> _state.update { it.copy(showGoalSaveChoice = false) }
             AddTaskAction.DismissRequested -> requestDismiss()
             AddTaskAction.DiscardConfirmed -> discard()
             AddTaskAction.DiscardCancelled -> _state.update { it.copy(showDiscardConfirm = false) }
@@ -422,13 +425,20 @@ class AddTaskViewModel @Inject constructor(
     private fun acceptGoalProposal() {
         val current = _state.value
         if (!current.canAcceptGoal || current.isSubmitting) return
-        val sessionId = current.goalSessionId ?: return
+        _state.update { it.copy(showGoalSaveChoice = true, errorMessage = null) }
+    }
 
-        _state.update { it.copy(isSubmitting = true, errorMessage = null) }
+    private fun saveGoal(addTasks: Boolean) {
+        val current = _state.value
+        if (!current.canAcceptGoal || current.isSubmitting) return
+        val sessionId = current.goalSessionId ?: return
+        val proposal = (current.goalStep as? GoalStep.Preview)?.proposal ?: return
+
+        _state.update { it.copy(showGoalSaveChoice = false, isSubmitting = true, errorMessage = null) }
 
         val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
-                when (val result = confirmGoalDecomposition(sessionId)) {
+                when (val result = saveGoalProposal(sessionId, proposal, addTasks)) {
                     is Result.Success -> close(AddTaskEvent.GoalCreated(result.data.title))
                     is Result.Error -> _state.update {
                         it.copy(

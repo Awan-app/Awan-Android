@@ -72,6 +72,7 @@ fun GoalPreviewScreen(
     isPermissionError: Boolean = false,
 ) {
     val focusManager = LocalFocusManager.current
+    val previewHorizontalPadding = AwanTheme.spacing.sm
 
     Column(
         modifier = modifier
@@ -83,7 +84,7 @@ fun GoalPreviewScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
+                .padding(horizontal = previewHorizontalPadding, vertical = AwanTheme.spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -127,7 +128,7 @@ fun GoalPreviewScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(horizontal = AwanTheme.spacing.md),
+                .padding(horizontal = previewHorizontalPadding),
             verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
         ) {
             if (replyBlocks.isNotEmpty()) {
@@ -207,7 +208,7 @@ fun GoalPreviewScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
-                    horizontal = AwanTheme.spacing.md,
+                    horizontal = previewHorizontalPadding,
                     vertical = AwanTheme.spacing.sm,
                 ),
             verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),

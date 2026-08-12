@@ -11,6 +11,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.ComponentActivity
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanConfirmDialog
+import com.awan.app.core.designsystem.AwanDialog
 import com.awan.app.core.designsystem.ObserveAsEvents
 import com.awan.app.core.designsystem.rememberSpeechRecognizer
 import com.awan.feature.addtask.R
@@ -65,6 +66,18 @@ fun GoalPreviewRouteRoot(
             onConfirm = { viewModel.onAction(AddTaskAction.DiscardConfirmed) },
             dismissLabel = stringResource(R.string.add_task_discard_cancel),
             onDismiss = { viewModel.onAction(AddTaskAction.DiscardCancelled) },
+        )
+    }
+
+    if (state.showGoalSaveChoice) {
+        AwanDialog(
+            title = stringResource(R.string.add_task_goal_save_choice_title),
+            body = stringResource(R.string.add_task_goal_save_choice_body),
+            primaryLabel = stringResource(R.string.add_task_goal_save_choice_add_tasks),
+            onPrimary = { viewModel.onAction(AddTaskAction.AddGoalTasks) },
+            secondaryLabel = stringResource(R.string.add_task_goal_save_choice_draft),
+            onSecondary = { viewModel.onAction(AddTaskAction.SaveGoalAsDraft) },
+            onDismiss = { viewModel.onAction(AddTaskAction.GoalSaveChoiceDismissed) },
         )
     }
 

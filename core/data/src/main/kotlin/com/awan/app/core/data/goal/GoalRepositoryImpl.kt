@@ -16,9 +16,11 @@ import com.awan.app.core.model.GoalDecompositionReply
 import com.awan.app.core.model.GoalDecompositionTranscript
 import com.awan.app.core.model.GoalScheduleProposal
 import com.awan.app.core.model.ProposedGoalSession
+import com.awan.app.core.model.ProposedTask
 import com.awan.app.core.network.dto.GoalDecomposeRequest
 import com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest
 import com.awan.app.core.network.dto.goal.CreateGoalRequest
+import com.awan.app.core.network.dto.goal.CreateGoalTaskDto
 import com.awan.app.core.network.dto.goal.UpdateGoalRequest
 import com.awan.app.core.network.dto.goal.ProposedGoalSessionDto
 import com.awan.app.core.network.dto.GoalInfoResponse
@@ -120,12 +122,27 @@ class GoalRepositoryImpl @Inject constructor(
         title: String,
         description: String?,
         targetDate: String?,
+        tasks: List<ProposedTask>,
     ): Result<Goal> = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) {
             return@withContext Result.Error(AppError.Network)
         }
         remoteDataSource.createGoal(
-            CreateGoalRequest(title = title, description = description, targetDate = targetDate),
+            CreateGoalRequest(
+                title = title,
+                description = description,
+                targetDate = targetDate,
+                tasks = tasks.mapIndexed { index, task ->
+                    CreateGoalTaskDto(
+                        tempId = "proposal-task-$index",
+                        title = task.title,
+                        estimatedDuration = task.estimatedDuration?.takeIf { it > 0 } ?: 30,
+                        mandatory = false,
+                        estimatedPoints = task.estimatedPoints ?: 0,
+                        allowTaskSplitting = false,
+                    )
+                },
+            ),
         ).map { dto ->
             syncGoal(dto)
             dto.toEntity().toModelWithTasks()
