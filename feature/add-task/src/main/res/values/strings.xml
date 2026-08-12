@@ -72,6 +72,8 @@
     <string name="add_task_goal_writing_continue">Continue</string>
 
     <string name="add_task_goal_preview_title">Goal Plan</string>
+    <string name="add_task_goal_preview_read_more">Read more</string>
+    <string name="add_task_goal_preview_show_less">Show less</string>
     <string name="add_task_goal_preview_close">Close goal preview</string>
     <string name="add_task_goal_preview_accept_action">Accept goal plan</string>
     <string name="add_task_goal_preview_accept">Accept goal</string>

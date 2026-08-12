@@ -72,6 +72,8 @@
     <string name="add_task_goal_writing_continue">متابعة</string>
 
     <string name="add_task_goal_preview_title">خطة الهدف</string>
+    <string name="add_task_goal_preview_read_more">عرض المزيد</string>
+    <string name="add_task_goal_preview_show_less">عرض أقل</string>
     <string name="add_task_goal_preview_close">إغلاق معاينة الهدف</string>
     <string name="add_task_goal_preview_accept_action">قبول خطة الهدف</string>
     <string name="add_task_goal_preview_accept">اعتماد الهدف</string>
