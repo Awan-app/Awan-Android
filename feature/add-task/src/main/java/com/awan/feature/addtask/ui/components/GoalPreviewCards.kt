@@ -133,8 +133,11 @@ private fun GoalPreviewTaskRow(index: Int, task: ProposedTask) {
         }
 
         AwanText(
-            text = stringResource(R.string.add_task_goal_preview_task_item_title, index, task.title),
-            style = AwanTheme.styles.bodyText,
+            text = task.title,
+            style = AwanTheme.typography.body.copy(
+                color = AwanTheme.colors.textPrimary,
+                fontWeight = FontWeight.SemiBold,
+            ),
             modifier = Modifier.weight(1f),
         )
 
@@ -182,7 +185,7 @@ private fun GoalPreviewCardsLightPreview() {
                 text = "Here is your dinner party plan with four clear tasks, all leading up to Saturday evening.",
                 expanded = false,
                 expandLabel = "Read more",
-                collapseLabel = "Read less",
+                collapseLabel = "Show less",
                 onToggleExpanded = {},
             )
             GoalPreviewProposalCard(previewProposal)
@@ -202,7 +205,7 @@ private fun GoalPreviewCardsDarkPreview() {
                 text = "Here is your dinner party plan with four clear tasks, all leading up to Saturday evening.",
                 expanded = false,
                 expandLabel = "Read more",
-                collapseLabel = "Read less",
+                collapseLabel = "Show less",
                 onToggleExpanded = {},
             )
             GoalPreviewProposalCard(previewProposal)
