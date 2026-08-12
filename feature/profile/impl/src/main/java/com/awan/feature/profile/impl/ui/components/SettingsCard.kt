@@ -46,6 +46,13 @@ fun SettingsCard(
                 iconColor = AwanTheme.colors.sky
             )
             PreferenceRow(
+                icon = Icons.Default.VpnKey,
+                title = stringResource(ProfileR.string.profile_mcp_title),
+                onClick = { onSettingsClick("mcp") },
+                showDivider = true,
+                iconColor = AwanTheme.colors.sky
+            )
+            PreferenceRow(
                 icon = Icons.AutoMirrored.Filled.Logout,
                 title = stringResource(ProfileR.string.profile_logout),
                 onClick = onLogoutClick,

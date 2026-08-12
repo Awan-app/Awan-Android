@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import com.awan.app.core.database.dao.CachedScheduleDateDao
 import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
+import com.awan.app.core.database.dao.McpTokenDao
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.dao.StoreDao
 import com.awan.app.core.database.dao.TaskDao
@@ -16,6 +17,7 @@ import com.awan.app.core.database.model.CachedScheduleDateEntity
 import com.awan.app.core.database.model.CategoryEntity
 import com.awan.app.core.database.model.EquippedItemEntity
 import com.awan.app.core.database.model.GoalEntity
+import com.awan.app.core.database.model.McpTokenEntity
 import com.awan.app.core.database.model.OwnedItemEntity
 import com.awan.app.core.database.model.SessionEntity
 import com.awan.app.core.database.model.StoreItemEntity
@@ -52,6 +54,7 @@ import com.awan.app.core.database.model.ZoneEntity
         StoreItemEntity::class,
         OwnedItemEntity::class,
         EquippedItemEntity::class,
+        McpTokenEntity::class,
     ],
     version = 1,
     exportSchema = true,
@@ -77,4 +80,6 @@ abstract class AwanDatabase : RoomDatabase() {
     abstract fun cachedScheduleDateDao(): CachedScheduleDateDao
 
     abstract fun storeDao(): StoreDao
+
+    abstract fun mcpTokenDao(): McpTokenDao
 }

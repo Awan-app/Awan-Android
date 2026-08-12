@@ -87,14 +87,16 @@ fun AwanCard(
         }
     ) { measurables, constraints ->
         // Face is measured first. Coerce constraints to be valid.
-        val minW = constraints.minWidth.coerceIn(0, constraints.maxWidth)
-        val minH = constraints.minHeight.coerceIn(0, constraints.maxHeight)
+        val safeMaxWidth = constraints.maxWidth.coerceAtLeast(0)
+        val safeMaxHeight = constraints.maxHeight.coerceAtLeast(0)
+        val minW = constraints.minWidth.coerceIn(0, safeMaxWidth)
+        val minH = constraints.minHeight.coerceIn(0, safeMaxHeight)
 
         val safeConstraints = Constraints(
             minWidth = minW,
-            maxWidth = constraints.maxWidth,
+            maxWidth = maxOf(safeMaxWidth, minW),
             minHeight = minH,
-            maxHeight = constraints.maxHeight
+            maxHeight = maxOf(safeMaxHeight, minH)
         )
 
         val facePlaceable = measurables[1].measure(safeConstraints)
