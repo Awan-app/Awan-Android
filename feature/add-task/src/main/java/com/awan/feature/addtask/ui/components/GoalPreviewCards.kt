@@ -122,8 +122,7 @@ private fun GoalPreviewTaskRow(index: Int, task: ProposedTask) {
         Box(
             modifier = Modifier
                 .size(AwanTheme.spacing.md)
-                .background(AwanTheme.colors.sky, AwanTheme.shapes.pill)
-                .semantics { contentDescription = index.toString() },
+                .background(AwanTheme.colors.sky, AwanTheme.shapes.pill),
             contentAlignment = Alignment.Center,
         ) {
             AwanText(
@@ -184,8 +183,8 @@ private fun GoalPreviewCardsLightPreview() {
             GoalPreviewSummaryCard(
                 text = "Here is your dinner party plan with four clear tasks, all leading up to Saturday evening.",
                 expanded = false,
-                expandLabel = "Read more",
-                collapseLabel = "Show less",
+                expandLabel = stringResource(R.string.add_task_goal_preview_read_more),
+                collapseLabel = stringResource(R.string.add_task_goal_preview_show_less),
                 onToggleExpanded = {},
             )
             GoalPreviewProposalCard(previewProposal)
@@ -204,8 +203,8 @@ private fun GoalPreviewCardsDarkPreview() {
             GoalPreviewSummaryCard(
                 text = "Here is your dinner party plan with four clear tasks, all leading up to Saturday evening.",
                 expanded = false,
-                expandLabel = "Read more",
-                collapseLabel = "Show less",
+                expandLabel = stringResource(R.string.add_task_goal_preview_read_more),
+                collapseLabel = stringResource(R.string.add_task_goal_preview_show_less),
                 onToggleExpanded = {},
             )
             GoalPreviewProposalCard(previewProposal)
