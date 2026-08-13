@@ -30,7 +30,7 @@ object CalendarDateMapper {
         val count = if (offset + yearMonth.lengthOfMonth() > 35) 42 else 35
         return (0 until count).map { index ->
             val date = start.plusDays(index.toLong())
-            DayState(date, date.month == yearMonth.month && date.year == yearMonth.year, date == today, date == selectedDate, date in streakDates, date in goalDates)
+            DayState(date, date.month == yearMonth.month && date.year == yearMonth.year, date == today, date == selectedDate, date in streakDates, date in goalDates && !date.isBefore(today))
         }
     }
 

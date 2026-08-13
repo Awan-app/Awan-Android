@@ -552,7 +552,8 @@ private fun DeadlineShaderHost(
             .size(size)
             .clip(CircleShape)
             // Intentionally transparent — swap for shader draw here later.
-            .background(Color.Transparent),
+            .background(Color.Transparent)
+            .testTag("calendar_day_deadline_shader"),
     )
 }
 
@@ -569,7 +570,8 @@ private fun FireBadge(
         modifier = modifier
             .size(16.dp)
             .clip(CircleShape)
-            .background(tint.copy(alpha = 0.18f)),
+            .background(tint.copy(alpha = 0.18f))
+            .testTag("calendar_day_streak_badge"),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -592,10 +594,12 @@ private fun DayCell(
     // Tuning constants — local to this composable so they can be adjusted
     // independently without touching callers.
     // -----------------------------------------------------------------------
-    /** Diameter of the primary "today" circle and the streak-fire host. */
+    /** Diameter of the primary "today" circle. */
     val dayCellCircleSize = 36.dp
+    /** Size of the fire host icon for streak days so the flame is visible around the number circle. */
+    val fireHostSize = 48.dp
     /** Diameter of the anchored number circle inside the fire host (streak days). */
-    val fireNumberCircleSize = 20.dp
+    val fireNumberCircleSize = 36.dp
     /**
      * Normalized anchor within the fire-host bounding box (0=left/top, 1=right/bottom).
      * Adjust these two values to reposition the number circle when the Lottie asset lands.
@@ -675,7 +679,8 @@ private fun DayCell(
                         modifier = Modifier
                             .size(dayCellCircleSize)
                             .clip(CircleShape)
-                            .background(colors.sky),
+                            .background(colors.sky)
+                            .testTag("calendar_day_today_primary"),
                     )
                     // Shader host (transparent seam)
                     DeadlineShaderHost(size = dayCellCircleSize)
@@ -687,7 +692,7 @@ private fun DayCell(
                     )
                     // Independent fire badge at top-right above shader layer
                     FireBadge(
-                        tint = colors.sky,
+                        tint = colors.streakIcon,
                         modifier = Modifier.align(Alignment.TopEnd),
                     )
                 }
@@ -699,7 +704,7 @@ private fun DayCell(
             // ------------------------------------------------------------------
             dayState.isToday && dayState.isStreakDay -> {
                 Box(
-                    modifier = Modifier.size(dayCellCircleSize),
+                    modifier = Modifier.size(fireHostSize),
                     contentAlignment = Alignment.Center,
                 ) {
                     // Fire host tinted with primary color (placeholder for Lottie)
@@ -707,7 +712,9 @@ private fun DayCell(
                         painter = painterResource(id = R.drawable.ic_flame_filled),
                         contentDescription = null,
                         tint = colors.sky,
-                        modifier = Modifier.size(dayCellCircleSize),
+                        modifier = Modifier
+                            .size(fireHostSize)
+                            .testTag("calendar_day_streak_fire"),
                     )
                     // Anchored fire-surface number circle — position is tunable via anchor constants
                     Box(
@@ -720,12 +727,13 @@ private fun DayCell(
                                 )
                             )
                             .clip(CircleShape)
-                            .background(colors.streakSurface),
+                            .background(colors.streakSurface)
+                            .testTag("calendar_day_streak_number"),
                         contentAlignment = Alignment.Center,
                     ) {
                         AwanText(
                             text = dayNumber,
-                            style = AwanTextStyle(bodyTextStyle.copy(fontSize = 9.sp), colors.streakIcon),
+                            style = AwanTextStyle(bodyTextStyle, colors.streakIcon),
                             modifier = Modifier.semantics { contentDescription = dateDescription },
                         )
                     }
@@ -746,7 +754,8 @@ private fun DayCell(
                         modifier = Modifier
                             .size(dayCellCircleSize)
                             .clip(CircleShape)
-                            .background(colors.sky),
+                            .background(colors.sky)
+                            .testTag("calendar_day_today_primary"),
                     )
                     // Shader host (transparent seam)
                     DeadlineShaderHost(size = dayCellCircleSize)
@@ -768,7 +777,8 @@ private fun DayCell(
                     modifier = Modifier
                         .size(dayCellCircleSize)
                         .clip(CircleShape)
-                        .background(colors.sky),
+                        .background(colors.sky)
+                        .testTag("calendar_day_today_primary"),
                     contentAlignment = Alignment.Center,
                 ) {
                     AwanText(
@@ -785,7 +795,7 @@ private fun DayCell(
             // ------------------------------------------------------------------
             dayState.isStreakDay -> {
                 Box(
-                    modifier = Modifier.size(dayCellCircleSize),
+                    modifier = Modifier.size(fireHostSize),
                     contentAlignment = Alignment.Center,
                 ) {
                     // Static fire placeholder (Lottie will replace only this host later)
@@ -793,7 +803,9 @@ private fun DayCell(
                         painter = painterResource(id = R.drawable.ic_flame_filled),
                         contentDescription = null,
                         tint = colors.zoneSun,
-                        modifier = Modifier.size(dayCellCircleSize),
+                        modifier = Modifier
+                            .size(fireHostSize)
+                            .testTag("calendar_day_streak_fire"),
                     )
                     // Anchored fire-surface number circle
                     Box(
@@ -806,12 +818,13 @@ private fun DayCell(
                                 )
                             )
                             .clip(CircleShape)
-                            .background(colors.streakSurface),
+                            .background(colors.streakSurface)
+                            .testTag("calendar_day_streak_number"),
                         contentAlignment = Alignment.Center,
                     ) {
                         AwanText(
                             text = dayNumber,
-                            style = AwanTextStyle(bodyTextStyle.copy(fontSize = 9.sp), colors.streakIcon),
+                            style = AwanTextStyle(bodyTextStyle, colors.streakIcon),
                             modifier = Modifier.semantics { contentDescription = dateDescription },
                         )
                     }
