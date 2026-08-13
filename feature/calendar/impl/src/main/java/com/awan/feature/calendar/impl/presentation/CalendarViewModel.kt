@@ -32,6 +32,7 @@ class CalendarViewModel @Inject constructor(
     private val events = Channel<CalendarEvent>(Channel.BUFFERED)
     val event = events.receiveAsFlow()
     private var todayActivityJob: Job? = null
+    private var todayActivityGeneration: Long = 0L
 
     init {
         viewModelScope.launch {
@@ -69,6 +70,7 @@ class CalendarViewModel @Inject constructor(
     }
 
     private fun loadTodayActivity(today: LocalDate) {
+        val generation = ++todayActivityGeneration
         _state.update { current ->
             current.copy(
                 isTodayActive = false,
@@ -82,10 +84,10 @@ class CalendarViewModel @Inject constructor(
         todayActivityJob?.cancel()
         todayActivityJob = viewModelScope.launch {
             val result = getActivityDatesUseCase(startDate = today, endDate = today)
-            if (_state.value.today != today) return@launch
+            if (_state.value.today != today || todayActivityGeneration != generation) return@launch
             val active = result is Result.Success && result.data.contains(today)
             _state.update { current ->
-                if (current.today != today) current else {
+                if (current.today != today || todayActivityGeneration != generation) current else {
                     current.copy(
                         isTodayActive = active,
                         streakHeaderState = CalendarStreakHeaderState.from(

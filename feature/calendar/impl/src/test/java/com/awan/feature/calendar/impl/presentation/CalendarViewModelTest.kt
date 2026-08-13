@@ -244,6 +244,64 @@ class CalendarViewModelTest {
         }
     }
 
+    @Test
+    fun nonCooperativeOlderSameDayActivityQueryCompletionCannotOverwriteNewerRequest() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val fakeCalendarRepository = FakeCalendarRepository()
+            val fakeGamificationRepository = FakeGamificationRepository()
+            val getActivityDatesUseCase = GetActivityDatesUseCase(fakeGamificationRepository)
+            val observeGamificationProgressUseCase = ObserveGamificationProgressUseCase(fakeGamificationRepository)
+
+            val today = LocalDate.now()
+            var request1Handled = false
+            val request1Completer = CompletableDeferred<Result<Set<LocalDate>>>()
+
+            fakeGamificationRepository.getActivityDatesHandler = { start, end ->
+                kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                    if (!request1Handled) {
+                        request1Handled = true
+                        try {
+                            request1Completer.await()
+                        } catch (e: Throwable) {
+                            // Ignore cancellation
+                        }
+                        Result.Success(setOf(today))
+                    } else {
+                        Result.Error(AppError.Network)
+                    }
+                }
+            }
+
+            val viewModel = CalendarViewModel(fakeCalendarRepository, getActivityDatesUseCase, observeGamificationProgressUseCase)
+            advanceUntilIdle()
+
+            // Trigger Request 1 (will suspend waiting for request1Completer)
+            fakeGamificationRepository.progressFlow.value = GamificationProgress(points = 100, streak = 3, maxStreak = 10)
+            testScheduler.runCurrent()
+
+            // Trigger Request 2 (will complete immediately with Error)
+            fakeGamificationRepository.progressFlow.value = GamificationProgress(points = 105, streak = 3, maxStreak = 10)
+            advanceUntilIdle()
+
+            val stateAfterRequest2 = viewModel.state.value
+            assertFalse(stateAfterRequest2.isTodayActive)
+            assertEquals(CalendarStreakHeaderState.Protect, stateAfterRequest2.streakHeaderState)
+
+            // Now Request 1 finishes with Success despite being cancelled
+            request1Completer.complete(Result.Success(setOf(today)))
+            advanceUntilIdle()
+
+            // Non-cooperative Request 1 must NOT overwrite state to Celebrate
+            val finalState = viewModel.state.value
+            assertFalse(finalState.isTodayActive)
+            assertEquals(CalendarStreakHeaderState.Protect, finalState.streakHeaderState)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     private class FakeCalendarRepository : CalendarRepository {
         private val calendarFlow = MutableStateFlow<CalendarSnapshot?>(null)
 
