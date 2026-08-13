@@ -295,6 +295,8 @@ private class FakeZoneDao : ZoneDao {
     override suspend fun deleteZonesForOverride(overrideId: String) {}
     override fun observeEffectiveZonesForDate(date: String, dayOfWeek: String): Flow<List<ZoneEntity>> =
         flowOf(emptyList())
+
+    override fun observeAllZones(): Flow<List<ZoneEntity>> = flowOf(emptyList())
 }
 
 private class FakeTemplateDao : TemplateDao {
@@ -303,6 +305,7 @@ private class FakeTemplateDao : TemplateDao {
     override suspend fun upsertTemplate(template: TemplateEntity) { upserted += template }
     override suspend fun upsertTemplates(templates: List<TemplateEntity>) { upserted += templates }
     override fun observeAllTemplates(): Flow<List<TemplateEntity>> = flowOf(emptyList())
+    override fun observeAllDayAssignments(): Flow<List<TemplateDayOfWeekEntity>> = flowOf(emptyList())
     override fun observeTemplate(templateId: String): Flow<TemplateEntity?> = MutableStateFlow(null)
     override suspend fun getTemplate(templateId: String): TemplateEntity? = null
     override suspend fun deleteTemplate(templateId: String) {}

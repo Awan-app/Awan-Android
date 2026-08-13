@@ -43,6 +43,7 @@ class TemplateRepositoryImplTest {
         override suspend fun upsertTemplate(template: TemplateEntity) {}
         override suspend fun upsertTemplates(templates: List<TemplateEntity>) {}
         override fun observeAllTemplates(): Flow<List<TemplateEntity>> = flowOf(emptyList())
+        override fun observeAllDayAssignments(): Flow<List<TemplateDayOfWeekEntity>> = flowOf(emptyList())
         override fun observeTemplate(templateId: String): Flow<TemplateEntity?> = flowOf(null)
         override suspend fun getTemplate(templateId: String): TemplateEntity? = null
         override suspend fun deleteTemplate(templateId: String) {}
@@ -65,6 +66,7 @@ class TemplateRepositoryImplTest {
         override suspend fun deleteZonesForTemplate(templateId: String) {}
         override suspend fun deleteZonesForOverride(overrideId: String) {}
         override fun observeEffectiveZonesForDate(date: String, dayOfWeek: String) = kotlinx.coroutines.flow.flowOf(emptyList<com.awan.app.core.database.model.ZoneEntity>())
+        override fun observeAllZones(): Flow<List<ZoneEntity>> = flowOf(emptyList())
     }
 
     private val onlineMonitor = object : NetworkConnectivityMonitor {
