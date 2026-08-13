@@ -2,8 +2,10 @@ package com.awan.feature.calendar.impl.presentation
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -13,7 +15,6 @@ import com.awan.app.core.designsystem.AwanTheme
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -196,12 +197,12 @@ class CalendarScreenTest {
 
     /**
      * Plain / missed day — a past non-streak day with no deadline.
-     * The day number must be present via the cell tag; no decoration tags
-     * (today_primary, streak_fire, streak_number, deadline_shader) are rendered.
+     * The day number is displayed bound to plainDay cell; no decoration tags are rendered.
      */
     @Test
     fun dayCell_plainMissed_showsNumberAndNoDecoration() {
         val today = LocalDate.of(2026, 8, 13)
+        val plainDay = today.minusDays(5)
         composeRule.setContent {
             AwanTheme {
                 CalendarScreen(
@@ -212,20 +213,52 @@ class CalendarScreenTest {
             }
         }
 
-        // The plain day cell is tappable and visible.
-        val plainDay = today.minusDays(5)
+        // Cell container is displayed
         composeRule.onNodeWithTag("calendar_day_$plainDay").assertIsDisplayed()
-        // No streak, deadline, or badge decorations on the grid (today itself still shows
-        // today_primary but plain/missed days contribute none of the streak or deadline tags).
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_fire").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_number").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_deadline_shader").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_badge").fetchSemanticsNodes().size)
+
+        // Day number is displayed bound to plainDay cell
+        composeRule.onNode(
+            hasTestTag("calendar_day_${plainDay}_number") and
+            hasText(plainDay.dayOfMonth.toString()) and
+            hasAnyAncestor(hasTestTag("calendar_day_$plainDay"))
+        ).assertIsDisplayed()
+
+        // No decorations bound to plainDay cell
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${plainDay}_today_primary") and
+                hasAnyAncestor(hasTestTag("calendar_day_$plainDay"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${plainDay}_streak_fire") and
+                hasAnyAncestor(hasTestTag("calendar_day_$plainDay"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${plainDay}_streak_number") and
+                hasAnyAncestor(hasTestTag("calendar_day_$plainDay"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${plainDay}_deadline_shader") and
+                hasAnyAncestor(hasTestTag("calendar_day_$plainDay"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${plainDay}_streak_badge") and
+                hasAnyAncestor(hasTestTag("calendar_day_$plainDay"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
     }
 
     /**
      * Today (no streak, no deadline) — primary sky circle is shown, number is
-     * displayed inside it, and no streak/shader tags are present.
+     * displayed inside it, and no streak/shader tags are present on today.
      */
     @Test
     fun dayCell_today_showsPrimaryCircleAndNumber() {
@@ -241,22 +274,55 @@ class CalendarScreenTest {
         }
 
         composeRule.onNodeWithTag("calendar_day_$today").assertIsDisplayed()
-        composeRule.onNodeWithTag("calendar_day_today_primary").assertIsDisplayed()
-        // No streak or deadline decorations expected
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_fire").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_number").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_deadline_shader").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_badge").fetchSemanticsNodes().size)
+
+        // Day number is displayed bound to today cell
+        composeRule.onNode(
+            hasTestTag("calendar_day_${today}_number") and
+            hasText(today.dayOfMonth.toString()) and
+            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+        ).assertIsDisplayed()
+
+        // Primary sky circle decoration is displayed bound to today cell
+        composeRule.onNode(
+            hasTestTag("calendar_day_${today}_today_primary") and
+            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+        ).assertIsDisplayed()
+
+        // Unexpected decorations absent on today cell
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${today}_streak_fire") and
+                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${today}_streak_number") and
+                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${today}_deadline_shader") and
+                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${today}_streak_badge") and
+                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
     }
 
     /**
      * Streak day (not today, no deadline) — static fire host and the
-     * fire-surface number circle are both shown; no today-primary or shader.
+     * fire-surface number circle are both shown bound to the streak day; no today-primary or shader.
      */
     @Test
     fun dayCell_streak_showsFireHostAndNumberCircle() {
         val today = LocalDate.of(2026, 8, 13)
-        val yesterdayStreak = today.minusDays(1) // past streak day, not today
+        val yesterdayStreak = today.minusDays(1)
         composeRule.setContent {
             AwanTheme {
                 CalendarScreen(
@@ -271,12 +337,43 @@ class CalendarScreenTest {
         }
 
         composeRule.onNodeWithTag("calendar_day_$yesterdayStreak").assertIsDisplayed()
-        composeRule.onNodeWithTag("calendar_day_streak_fire").assertIsDisplayed()
-        composeRule.onNodeWithTag("calendar_day_streak_number").assertIsDisplayed()
-        // The full grid also renders today (with today_primary) — we only verify that
-        // no deadline shader is rendered on the grid, and no badge appears.
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_deadline_shader").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_badge").fetchSemanticsNodes().size)
+
+        // Day number bound to streak cell
+        composeRule.onNode(
+            hasTestTag("calendar_day_${yesterdayStreak}_number") and
+            hasText(yesterdayStreak.dayOfMonth.toString()) and
+            hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak"))
+        ).assertIsDisplayed()
+
+        // Fire host and number circle bound to streak cell
+        composeRule.onNode(
+            hasTestTag("calendar_day_${yesterdayStreak}_streak_fire") and
+            hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak"))
+        ).assertIsDisplayed()
+        composeRule.onNode(
+            hasTestTag("calendar_day_${yesterdayStreak}_streak_number") and
+            hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak"))
+        ).assertIsDisplayed()
+
+        // Unexpected decorations absent on streak cell
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${yesterdayStreak}_today_primary") and
+                hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${yesterdayStreak}_deadline_shader") and
+                hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${yesterdayStreak}_streak_badge") and
+                hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
     }
 
     /**
@@ -301,17 +398,50 @@ class CalendarScreenTest {
         }
 
         composeRule.onNodeWithTag("calendar_day_$deadlineDay").assertIsDisplayed()
-        composeRule.onNodeWithTag("calendar_day_deadline_shader").assertIsDisplayed()
-        // The full grid also renders today (with today_primary) — we only verify that
-        // no streak decorations appear anywhere.
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_fire").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_number").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_badge").fetchSemanticsNodes().size)
+
+        // Day number bound to deadline cell
+        composeRule.onNode(
+            hasTestTag("calendar_day_${deadlineDay}_number") and
+            hasText(deadlineDay.dayOfMonth.toString()) and
+            hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay"))
+        ).assertIsDisplayed()
+
+        // Circular shader host bound to deadline cell
+        composeRule.onNode(
+            hasTestTag("calendar_day_${deadlineDay}_deadline_shader") and
+            hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay"))
+        ).assertIsDisplayed()
+
+        // Unexpected decorations absent on deadline cell
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${deadlineDay}_today_primary") and
+                hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${deadlineDay}_streak_fire") and
+                hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${deadlineDay}_streak_number") and
+                hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${deadlineDay}_streak_badge") and
+                hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
     }
 
     /**
      * Today + deadline (no streak) — primary circle, circular shader host, and
-     * number are all present; no fire host or streak badge.
+     * number are all present bound to today; no fire host or streak badge.
      */
     @Test
     fun dayCell_todayWithDeadline_showsPrimaryCircleShaderAndNumber() {
@@ -330,17 +460,48 @@ class CalendarScreenTest {
         }
 
         composeRule.onNodeWithTag("calendar_day_$today").assertIsDisplayed()
-        composeRule.onNodeWithTag("calendar_day_today_primary").assertIsDisplayed()
-        composeRule.onNodeWithTag("calendar_day_deadline_shader").assertIsDisplayed()
-        // No streak decorations
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_fire").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_number").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_badge").fetchSemanticsNodes().size)
+
+        // Day number bound to today cell
+        composeRule.onNode(
+            hasTestTag("calendar_day_${today}_number") and
+            hasText(today.dayOfMonth.toString()) and
+            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+        ).assertIsDisplayed()
+
+        // Primary circle and shader host bound to today cell
+        composeRule.onNode(
+            hasTestTag("calendar_day_${today}_today_primary") and
+            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+        ).assertIsDisplayed()
+        composeRule.onNode(
+            hasTestTag("calendar_day_${today}_deadline_shader") and
+            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+        ).assertIsDisplayed()
+
+        // Streak decorations absent on today cell
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${today}_streak_fire") and
+                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${today}_streak_number") and
+                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${today}_streak_badge") and
+                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
     }
 
     /**
      * Today + streak (no deadline) — primary-tinted fire host and anchored
-     * number circle are present; no deadline shader or fire badge.
+     * number circle are present bound to today; no deadline shader or fire badge.
      */
     @Test
     fun dayCell_todayWithStreak_showsTintedFireHostAndAnchoredNumberCircle() {
@@ -359,19 +520,48 @@ class CalendarScreenTest {
         }
 
         composeRule.onNodeWithTag("calendar_day_$today").assertIsDisplayed()
-        // Fire host (primary-tinted)
-        composeRule.onNodeWithTag("calendar_day_streak_fire").assertIsDisplayed()
-        // Anchored number circle inside the fire host
-        composeRule.onNodeWithTag("calendar_day_streak_number").assertIsDisplayed()
-        // No plain today_primary or shader in this branch
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_today_primary").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_deadline_shader").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_badge").fetchSemanticsNodes().size)
+
+        // Day number bound to today cell
+        composeRule.onNode(
+            hasTestTag("calendar_day_${today}_number") and
+            hasText(today.dayOfMonth.toString()) and
+            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+        ).assertIsDisplayed()
+
+        // Fire host and number circle bound to today cell
+        composeRule.onNode(
+            hasTestTag("calendar_day_${today}_streak_fire") and
+            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+        ).assertIsDisplayed()
+        composeRule.onNode(
+            hasTestTag("calendar_day_${today}_streak_number") and
+            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+        ).assertIsDisplayed()
+
+        // Unexpected decorations absent on today cell
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${today}_today_primary") and
+                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${today}_deadline_shader") and
+                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${today}_streak_badge") and
+                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
     }
 
     /**
      * Today + streak + deadline — primary circle, circular shader host, number,
-     * AND top-right fire badge are all present.
+     * AND top-right fire badge are all present bound to today.
      */
     @Test
     fun dayCell_todayWithStreakAndDeadline_showsAllFourElements() {
@@ -391,12 +581,41 @@ class CalendarScreenTest {
         }
 
         composeRule.onNodeWithTag("calendar_day_$today").assertIsDisplayed()
-        composeRule.onNodeWithTag("calendar_day_today_primary").assertIsDisplayed()
-        composeRule.onNodeWithTag("calendar_day_deadline_shader").assertIsDisplayed()
-        composeRule.onNodeWithTag("calendar_day_streak_badge").assertIsDisplayed()
-        // Fire host/number circle are NOT in this branch (badge replaces them at top-right)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_fire").fetchSemanticsNodes().size)
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_number").fetchSemanticsNodes().size)
+
+        // Day number bound to today cell
+        composeRule.onNode(
+            hasTestTag("calendar_day_${today}_number") and
+            hasText(today.dayOfMonth.toString()) and
+            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+        ).assertIsDisplayed()
+
+        // Primary circle, deadline shader, and top-right fire badge bound to today cell
+        composeRule.onNode(
+            hasTestTag("calendar_day_${today}_today_primary") and
+            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+        ).assertIsDisplayed()
+        composeRule.onNode(
+            hasTestTag("calendar_day_${today}_deadline_shader") and
+            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+        ).assertIsDisplayed()
+        composeRule.onNode(
+            hasTestTag("calendar_day_${today}_streak_badge") and
+            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+        ).assertIsDisplayed()
+
+        // Full fire host and number circle absent (badge replaces them)
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${today}_streak_fire") and
+                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${today}_streak_number") and
+                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            ).fetchSemanticsNodes().isEmpty()
+        )
     }
 
     // =========================================================================
@@ -406,7 +625,6 @@ class CalendarScreenTest {
     /**
      * A goal date that has already passed must NOT render a deadline shader,
      * while a future goal date on the same screen still does.
-     * `buildMonthDays` guards hasDeadline with `!date.isBefore(today)`.
      */
     @Test
     fun dayCell_pastDeadlineIsAbsentWhileFutureDeadlineIsPresent() {
@@ -426,17 +644,25 @@ class CalendarScreenTest {
             }
         }
 
-        // Future deadline cell must have the shader host — confirms guard passes it through
+        // Future deadline cell displays its date-scoped shader host
         composeRule.onNodeWithTag("calendar_day_$futureDeadline").assertIsDisplayed()
-        // Past deadline cell must be visible (rendered as plain/missed day)
+        composeRule.onNode(
+            hasTestTag("calendar_day_${futureDeadline}_deadline_shader") and
+            hasAnyAncestor(hasTestTag("calendar_day_$futureDeadline"))
+        ).assertIsDisplayed()
+
+        // Past deadline cell displays its number but no deadline shader host
         composeRule.onNodeWithTag("calendar_day_$pastDeadline").assertIsDisplayed()
-        // Exactly one shader node in the tree: the future deadline.
-        // If the past deadline leaked through, this count would be ≥ 2.
-        val shaderNodes = composeRule.onAllNodesWithTag("calendar_day_deadline_shader").fetchSemanticsNodes()
-        assertEquals(
-            "Expected exactly one deadline shader (future only); past deadline guard may have failed",
-            1,
-            shaderNodes.size,
+        composeRule.onNode(
+            hasTestTag("calendar_day_${pastDeadline}_number") and
+            hasText(pastDeadline.dayOfMonth.toString()) and
+            hasAnyAncestor(hasTestTag("calendar_day_$pastDeadline"))
+        ).assertIsDisplayed()
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${pastDeadline}_deadline_shader") and
+                hasAnyAncestor(hasTestTag("calendar_day_$pastDeadline"))
+            ).fetchSemanticsNodes().isEmpty()
         )
     }
 
@@ -445,9 +671,7 @@ class CalendarScreenTest {
     // =========================================================================
 
     /**
-     * The calendar must NOT render a selected-date outline for any day — the
-     * selection ring was removed in the Task 1 refactor. Tapping a day must
-     * still dispatch CalendarAction.SelectDate(date).
+     * Tapping a day dispatches CalendarAction.SelectDate(date).
      */
     @Test
     fun selectingADayDispatchesItsDate() {
@@ -481,32 +705,42 @@ class CalendarScreenTest {
     }
 
     /**
-     * No selected-date outline tag is rendered anywhere in the calendar grid.
-     * The implementation uses no outline/ring node — verifying its absence
-     * confirms the design spec was met.
+     * No selected-date outline marker is rendered for the selected day.
+     * Verified via target-day semantic seam: the selected day's date-scoped
+     * visual children include its number and no selection-outline marker.
      */
     @Test
     fun noSelectedDateOutlineIsRendered() {
         val today = LocalDate.of(2026, 8, 13)
-        val otherDay = today.plusDays(3)
+        val selectedDay = today.plusDays(3)
         composeRule.setContent {
             AwanTheme {
                 CalendarScreen(
-                    // Select a non-today day so we can confirm no ring appears for it
-                    state = stateWithDays(today = today, selectedDate = otherDay),
+                    state = stateWithDays(today = today, selectedDate = selectedDay),
                     onAction = {},
                     onBack = {},
                 )
             }
         }
 
-        // There is no "selected_outline" or equivalent tag anywhere in the tree
-        assertEquals(
-            0,
-            composeRule.onAllNodesWithTag("calendar_day_selected_outline").fetchSemanticsNodes().size,
+        // Selected day cell container is displayed
+        composeRule.onNodeWithTag("calendar_day_$selectedDay").assertIsDisplayed()
+
+        // Day number for selected date is present as a date-scoped child
+        composeRule.onNode(
+            hasTestTag("calendar_day_${selectedDay}_number") and
+            hasText(selectedDay.dayOfMonth.toString()) and
+            hasAnyAncestor(hasTestTag("calendar_day_$selectedDay"))
+        ).assertIsDisplayed()
+
+        // No selection outline tag or marker exists among selectedDay's date-scoped visual children
+        assertTrue(
+            composeRule.onAllNodes(
+                (hasTestTag("calendar_day_${selectedDay}_outline") or
+                 hasTestTag("calendar_day_${selectedDay}_selection_outline") or
+                 hasTestTag("calendar_day_selected_outline")) and
+                hasAnyAncestor(hasTestTag("calendar_day_$selectedDay"))
+            ).fetchSemanticsNodes().isEmpty()
         )
-        // Both the currently-selected day and today cells are visible without outlines
-        composeRule.onNodeWithTag("calendar_day_$otherDay").assertIsDisplayed()
-        composeRule.onNodeWithTag("calendar_day_$today").assertIsDisplayed()
     }
 }
