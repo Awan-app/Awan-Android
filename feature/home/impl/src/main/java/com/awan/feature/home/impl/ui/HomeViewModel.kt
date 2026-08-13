@@ -696,7 +696,6 @@ class HomeViewModel @Inject constructor(
             val dialogState = state.selectedSessionDetailState ?: return@update state
             val detail = dialogState.detail ?: return@update state
             val duration = calculateDurationMinutes(detail.session.start, detail.session.end)
-                ?: detail.task.estimatedDuration ?: 30
 
             state.copy(
                 selectedSessionDetailState = dialogState.copy(
