@@ -38,7 +38,21 @@ class CalendarViewModel @Inject constructor(
         viewModelScope.launch {
             // Same source as the home header, so the two can never disagree.
             observeGamificationProgressUseCase().collect { progress ->
-                _state.update { it.copy(streak = progress.streak) }
+                val updatedStreak = progress.streak.coerceAtLeast(0)
+                val updatedMaxStreak = progress.maxStreak.coerceAtLeast(0)
+                _state.update { current ->
+                    current.copy(
+                        streak = updatedStreak,
+                        maxStreak = updatedMaxStreak,
+                        isTodayActive = false,
+                        streakHeaderState = CalendarStreakHeaderState.from(
+                            streak = updatedStreak,
+                            maxStreak = updatedMaxStreak,
+                            isTodayActive = false,
+                        ),
+                    )
+                }
+                loadTodayActivity(_state.value.today)
             }
         }
         refresh()
@@ -50,6 +64,36 @@ class CalendarViewModel @Inject constructor(
         CalendarAction.PreviousMonth -> changeMonth(-1)
         CalendarAction.NextMonth -> changeMonth(1)
         CalendarAction.Refresh -> refresh()
+    }
+
+    private fun loadTodayActivity(today: LocalDate) {
+        _state.update { current ->
+            current.copy(
+                isTodayActive = false,
+                streakHeaderState = CalendarStreakHeaderState.from(
+                    streak = current.streak,
+                    maxStreak = current.maxStreak,
+                    isTodayActive = false,
+                ),
+            )
+        }
+        viewModelScope.launch {
+            val result = getActivityDatesUseCase(startDate = today, endDate = today)
+            if (_state.value.today != today) return@launch
+            val active = result is Result.Success && result.data.contains(today)
+            _state.update { current ->
+                if (current.today != today) current else {
+                    current.copy(
+                        isTodayActive = active,
+                        streakHeaderState = CalendarStreakHeaderState.from(
+                            streak = current.streak,
+                            maxStreak = current.maxStreak,
+                            isTodayActive = active,
+                        ),
+                    )
+                }
+            }
+        }
     }
 
     private fun selectDate(date: LocalDate) {
@@ -84,6 +128,8 @@ class CalendarViewModel @Inject constructor(
         val zone = CalendarDateMapper.parseZoneIdOrDefault(snapshot.user.timezone)
         val today = LocalDate.now(zone)
         val current = _state.value
+        val dayChanged = today != current.today
+
         val selected = if (current.selectedDate == current.today) today else current.selectedDate
         val month = if (current.currentYearMonth == YearMonth.from(current.today)) YearMonth.from(today) else current.currentYearMonth
         val goals = CalendarDateMapper.filterAndSortUpcomingGoals(snapshot.goals, today)
@@ -94,10 +140,21 @@ class CalendarViewModel @Inject constructor(
             CalendarDateMapper.calculateStreakDates(streakCount, today)
         }
 
+        val preservedMaxStreak = current.maxStreak
+        val isTodayActive = if (dayChanged) false else current.isTodayActive
+        val headerState = CalendarStreakHeaderState.from(
+            streak = streakCount,
+            maxStreak = preservedMaxStreak,
+            isTodayActive = isTodayActive,
+        )
+
         _state.value = CalendarUiState(
             isLoading = false,
             errorMessage = null,
             streak = streakCount,
+            maxStreak = preservedMaxStreak,
+            isTodayActive = isTodayActive,
+            streakHeaderState = headerState,
             timezone = zone,
             today = today,
             selectedDate = selected,
@@ -106,6 +163,10 @@ class CalendarViewModel @Inject constructor(
             upcomingGoals = goals,
             monthDays = CalendarDateMapper.buildMonthDays(month, today, selected, streakDates, goals.map { it.targetDate }.toSet()),
         )
+
+        if (dayChanged) {
+            loadTodayActivity(today)
+        }
     }
 
     private fun changeMonth(delta: Long) {
@@ -155,6 +216,9 @@ class CalendarViewModel @Inject constructor(
                 isLoading = true,
                 errorMessage = null,
                 streak = 0,
+                maxStreak = 0,
+                isTodayActive = false,
+                streakHeaderState = CalendarStreakHeaderState.Start,
                 timezone = zone,
                 today = today,
                 selectedDate = today,
@@ -168,4 +232,3 @@ class CalendarViewModel @Inject constructor(
 }
 
 sealed interface CalendarEvent { data class DateSelected(val date: LocalDate) : CalendarEvent }
-
