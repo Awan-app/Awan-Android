@@ -7,6 +7,7 @@ import com.awan.app.core.model.GoalDecompositionTranscript
 import com.awan.app.core.model.GoalScheduleProposal
 import com.awan.app.core.model.ProposedGoalSession
 import com.awan.app.core.model.ProposedTask
+import com.awan.app.core.model.Task
 import kotlinx.coroutines.flow.Flow
 
 interface GoalRepository {
@@ -19,6 +20,10 @@ interface GoalRepository {
         targetDate: String?,
         tasks: List<ProposedTask> = emptyList(),
     ): Result<Goal>
+    suspend fun addTasksToGoal(
+        goalId: String,
+        tasks: List<ProposedTask>,
+    ): Result<List<Task>>
     suspend fun getInboxGoal(): Result<Goal>
     suspend fun getGoal(goalId: String): Result<Goal>
     suspend fun updateGoal(
@@ -40,4 +45,3 @@ interface GoalRepository {
     suspend fun proposeGoalSchedule(goalId: String): Result<GoalScheduleProposal>
     suspend fun confirmGoalSchedule(goalId: String, sessions: List<ProposedGoalSession>): Result<Unit>
 }
-

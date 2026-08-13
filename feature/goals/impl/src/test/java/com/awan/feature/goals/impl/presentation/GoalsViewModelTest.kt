@@ -74,6 +74,10 @@ class GoalsViewModelTest {
             targetDate: String?,
             tasks: List<com.awan.app.core.model.ProposedTask>,
         ): Result<Goal> = error("Not implemented")
+        override suspend fun addTasksToGoal(
+            goalId: String,
+            tasks: List<com.awan.app.core.model.ProposedTask>,
+        ): Result<List<com.awan.app.core.model.Task>> = error("Not implemented")
         override suspend fun getInboxGoal(): Result<Goal> = error("Not implemented")
         override suspend fun getGoal(goalId: String): Result<Goal> = error("Not implemented")
         override suspend fun updateGoal(

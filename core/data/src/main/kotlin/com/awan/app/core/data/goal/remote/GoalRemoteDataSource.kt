@@ -7,7 +7,9 @@ import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse
 import com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest
 import com.awan.app.core.network.dto.goal.CreateGoalRequest
+import com.awan.app.core.network.dto.goal.BulkCreateGoalTasksRequest
 import com.awan.app.core.network.dto.goal.UpdateGoalRequest
+import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.goal.GoalDecompositionTranscriptResponse
 import com.awan.app.core.network.dto.goal.ScheduleGoalRequest
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
@@ -15,6 +17,7 @@ import com.awan.app.core.network.dto.task.TaskScheduleResponse
 interface GoalRemoteDataSource {
     suspend fun getGoals(): Result<List<GoalInfoResponse>>
     suspend fun createGoal(request: CreateGoalRequest): Result<GoalInfoResponse>
+    suspend fun addTasksToGoal(goalId: String, request: BulkCreateGoalTasksRequest): Result<List<TaskInfoResponse>>
     suspend fun getInboxGoal(): Result<GoalInfoResponse>
     suspend fun getGoal(goalId: String, expand: Boolean = false): Result<GoalInfoResponse>
     suspend fun updateGoal(goalId: String, request: UpdateGoalRequest): Result<GoalInfoResponse>
@@ -27,4 +30,3 @@ interface GoalRemoteDataSource {
     suspend fun proposeGoalSchedule(goalId: String): Result<AiGoalScheduleProposalResponse>
     suspend fun confirmGoalSchedule(request: ConfirmAiScheduleRequest): Result<Unit>
 }
-

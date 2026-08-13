@@ -133,9 +133,13 @@ class AddTaskViewModelTest {
     private class FakeGoalRepository : GoalRepository {
         var nextContinueReply: Result<GoalDecompositionReply>? = null
         var nextCreateResult: Result<Goal>? = null
+        var nextAddTasksResult: Result<List<Task>>? = null
 
         val continueCalls = mutableListOf<Pair<String?, String>>()
         val createTaskCalls = mutableListOf<List<ProposedTask>>()
+        val addTasksCalls = mutableListOf<Pair<String, List<ProposedTask>>>()
+        val deleteGoalCalls = mutableListOf<String>()
+        val cancelCalls = mutableListOf<String>()
 
         override fun observeGoals(): Flow<List<Goal>> = flowOf(emptyList())
 
@@ -162,8 +166,16 @@ class AddTaskViewModelTest {
             createTaskCalls += tasks
             return nextCreateResult ?: Result.Success(Goal(id = "g-created", title = title, description = description, emoji = ""))
         }
+        override suspend fun addTasksToGoal(
+            goalId: String,
+            tasks: List<ProposedTask>,
+        ): Result<List<Task>> {
+            addTasksCalls += goalId to tasks
+            return nextAddTasksResult ?: Result.Success(emptyList())
+        }
         override suspend fun getInboxGoal(): Result<Goal> = error("not used")
         override suspend fun getGoal(goalId: String): Result<Goal> = error("not used")
+<<<<<<< HEAD
 
         override suspend fun updateGoal(
             goalId: String,
@@ -177,8 +189,17 @@ class AddTaskViewModelTest {
 
         override fun observeGoal(goalId: String): Flow<Goal?> = flowOf(null)
 
+=======
+        override suspend fun deleteGoal(goalId: String): Result<Unit> {
+            deleteGoalCalls += goalId
+            return Result.Success(Unit)
+        }
+>>>>>>> 99c21bd6 (AWAN-83: use goal task bulk endpoint)
         override suspend fun getDecompositionTranscript(sessionId: String): Result<com.awan.app.core.model.GoalDecompositionTranscript> = error("not used")
-        override suspend fun cancelDecomposition(sessionId: String): Result<Unit> = Result.Success(Unit)
+        override suspend fun cancelDecomposition(sessionId: String): Result<Unit> {
+            cancelCalls += sessionId
+            return Result.Success(Unit)
+        }
         override suspend fun scheduleGoal(goalId: String): Result<Unit> = error("not used")
         override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.model.GoalScheduleProposal> = error("not used")
         override suspend fun confirmGoalSchedule(goalId: String, sessions: List<com.awan.app.core.model.ProposedGoalSession>): Result<Unit> = error("not used")
@@ -1284,16 +1305,54 @@ class AddTaskViewModelTest {
             customViewModel.onAction(AddTaskAction.AddGoalTasks)
             customViewModel.onAction(AddTaskAction.AddGoalTasks)
 
-            assertEquals(listOf(proposal.tasks), goalRepository.createTaskCalls)
+            assertEquals(listOf(emptyList<ProposedTask>()), goalRepository.createTaskCalls)
             assertTrue(customViewModel.state.value.isSubmitting)
 
             val createdGoal = Goal(id = "g-1", title = "Goal Title", description = null, emoji = "🎯")
             createGate.complete(Result.Success(createdGoal))
 
+<<<<<<< HEAD
             assertEquals(AddTaskEvent.GoalCreated("Goal Title"), events.first())
             advanceUntilIdle()
+=======
+            assertEquals(listOf("g-1" to proposal.tasks), goalRepository.addTasksCalls)
+            assertEquals(AddTaskEvent.GoalCreated("Goal Title"), customViewModel.events.first())
+>>>>>>> 99c21bd6 (AWAN-83: use goal task bulk endpoint)
         }
 
+    @Test
+    fun `bulk task failure rolls back the goal and keeps the preview retryable`() = runTest(testDispatcher) {
+        val proposal = GoalProposal(
+            title = "Goal Title",
+            description = null,
+            targetDate = null,
+            tasks = listOf(ProposedTask("Task 1", 30, 5)),
+        )
+        goalRepository.nextContinueReply = Result.Success(
+            GoalDecompositionReply(
+                sessionId = "sess-fail-bulk",
+                blocks = listOf(GoalDecompositionBlock.Proposal(proposal)),
+                hasProposal = true,
+            ),
+        )
+        goalRepository.nextAddTasksResult = Result.Error(AppError.Network)
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+        viewModel.onAction(AddTaskAction.InputChanged("Goal"))
+        viewModel.onAction(AddTaskAction.Submit)
+        viewModel.onAction(AddTaskAction.AcceptGoalProposal)
+        viewModel.onAction(AddTaskAction.AddGoalTasks)
+
+        assertEquals(listOf(emptyList<ProposedTask>()), goalRepository.createTaskCalls)
+        assertEquals(listOf("g-created" to proposal.tasks), goalRepository.addTasksCalls)
+        assertEquals(listOf("g-created"), goalRepository.deleteGoalCalls)
+        assertEquals(GoalStep.Preview(proposal), viewModel.state.value.goalStep)
+        assertFalse(viewModel.state.value.isSubmitting)
+        assertEquals(R.string.add_task_error_goal_confirm_failed, viewModel.state.value.errorMessage)
+        assertTrue(goalRepository.cancelCalls.isEmpty())
+
+    }
     @Test
     fun `invalid MCQ option selection is ignored`() = runTest(testDispatcher) {
         val initialReply = GoalDecompositionReply(

@@ -6,9 +6,13 @@ import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.result.map
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
+import com.awan.app.core.data.task.toEntity
+import com.awan.app.core.data.task.toTaskModel
+import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
 import com.awan.app.core.database.dao.TaskDao
-import com.awan.app.core.database.dao.CategoryDao
+import com.awan.app.core.database.model.CategoryEntity
+import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.domain.goal.repository.GoalRepository
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.model.Goal
@@ -17,9 +21,12 @@ import com.awan.app.core.model.GoalDecompositionTranscript
 import com.awan.app.core.model.GoalScheduleProposal
 import com.awan.app.core.model.ProposedGoalSession
 import com.awan.app.core.model.ProposedTask
+import com.awan.app.core.model.Task
 import com.awan.app.core.network.dto.GoalDecomposeRequest
 import com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest
 import com.awan.app.core.network.dto.goal.CreateGoalRequest
+import com.awan.app.core.network.dto.goal.BulkCreateGoalTaskDto
+import com.awan.app.core.network.dto.goal.BulkCreateGoalTasksRequest
 import com.awan.app.core.network.dto.goal.CreateGoalTaskDto
 import com.awan.app.core.network.dto.goal.UpdateGoalRequest
 import com.awan.app.core.network.dto.goal.ProposedGoalSessionDto
@@ -146,6 +153,40 @@ class GoalRepositoryImpl @Inject constructor(
         ).map { dto ->
             syncGoal(dto)
             dto.toEntity().toModelWithTasks()
+        }
+    }
+
+    override suspend fun addTasksToGoal(
+        goalId: String,
+        tasks: List<ProposedTask>,
+    ): Result<List<Task>> {
+        if (!connectivityMonitor.isCurrentlyOnline()) return Result.Error(AppError.Network)
+        val request = BulkCreateGoalTasksRequest(
+            tasks = tasks.mapIndexed { index, task ->
+                BulkCreateGoalTaskDto(
+                    tempId = "proposal-task-$index",
+                    title = task.title,
+                    estimatedDuration = task.estimatedDuration?.takeIf { it > 0 } ?: 30,
+                    mandatory = false,
+                    estimatedPoints = task.estimatedPoints ?: 0,
+                    dependsOnRefs = emptyList(),
+                )
+            },
+        )
+        return remoteDataSource.addTasksToGoal(goalId, request).map { responses ->
+            val categories = responses.mapNotNull { dto ->
+                dto.category?.let { CategoryEntity(id = it.id, name = it.name) }
+            }.distinctBy { it.id }
+            if (categories.isNotEmpty()) categoryDao.upsertCategories(categories)
+            taskDao.upsertTasks(responses.map { it.toEntity(goalId = goalId) })
+            taskDao.upsertDependencies(
+                responses.flatMap { dto ->
+                    dto.dependsOnTaskIds.orEmpty().map { dependencyId ->
+                        TaskDependencyEntity(taskId = dto.id, dependsOnTaskId = dependencyId)
+                    }
+                },
+            )
+            responses.map { it.copy(goalId = goalId).toTaskModel() }
         }
     }
 

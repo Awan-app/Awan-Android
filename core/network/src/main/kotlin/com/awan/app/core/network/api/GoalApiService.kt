@@ -5,11 +5,13 @@ import com.awan.app.core.network.dto.GoalDecomposeResponse
 import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.PageResponse
 import com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse
+import com.awan.app.core.network.dto.goal.BulkCreateGoalTasksRequest
 import com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest
 import com.awan.app.core.network.dto.goal.CreateGoalRequest
 import com.awan.app.core.network.dto.goal.GoalDecompositionTranscriptResponse
 import com.awan.app.core.network.dto.goal.ScheduleGoalRequest
 import com.awan.app.core.network.dto.goal.UpdateGoalRequest
+import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import kotlinx.serialization.json.JsonObject
 import retrofit2.http.Body
@@ -33,6 +35,11 @@ interface GoalApiService {
         @Body request: CreateGoalRequest,
     ): GoalInfoResponse
 
+    @POST("v1/goals/{goalId}/tasks/bulk")
+    suspend fun addTasksToGoal(
+        @Path("goalId") goalId: String,
+        @Body request: BulkCreateGoalTasksRequest,
+    ): List<TaskInfoResponse>
     @GET("v1/goals/inbox")
     suspend fun getInboxGoal(): GoalInfoResponse
 
@@ -95,4 +102,3 @@ interface GoalApiService {
         @Body request: ConfirmAiScheduleRequest,
     )
 }
-

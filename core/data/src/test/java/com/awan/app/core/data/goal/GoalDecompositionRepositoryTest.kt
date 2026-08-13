@@ -63,6 +63,7 @@ class GoalDecompositionRepositoryTest {
         ): PageResponse<GoalInfoResponse> = error("Not implemented")
 
         override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): GoalInfoResponse = error("Not implemented")
+        override suspend fun addTasksToGoal(goalId: String, request: com.awan.app.core.network.dto.goal.BulkCreateGoalTasksRequest): List<com.awan.app.core.network.dto.task.TaskInfoResponse> = error("Not implemented")
         override suspend fun getInboxGoal(): GoalInfoResponse = error("Not implemented")
         override suspend fun getGoal(goalId: String, expand: Boolean): GoalInfoResponse = error("Not implemented")
         override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest): GoalInfoResponse = error("Not implemented")
@@ -189,6 +190,7 @@ class GoalDecompositionRepositoryTest {
     private open class FakeGoalRemoteDataSource : GoalRemoteDataSource {
         override suspend fun getGoals(): Result<List<GoalInfoResponse>> = Result.Success(emptyList())
         override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
+        override suspend fun addTasksToGoal(goalId: String, request: com.awan.app.core.network.dto.goal.BulkCreateGoalTasksRequest): Result<List<com.awan.app.core.network.dto.task.TaskInfoResponse>> = error("Not implemented")
         override suspend fun getInboxGoal(): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun getGoal(goalId: String, expand: Boolean): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
@@ -210,6 +212,7 @@ class GoalDecompositionRepositoryTest {
             override suspend fun continueDecomposition(request: GoalDecomposeRequest): Result<GoalDecomposeResponse> =
                 expectedError
         }
+<<<<<<< HEAD
         val repository = GoalRepositoryImpl(
             remoteDataSource = fakeDs,
             goalDao = noOpGoalDao,
@@ -218,6 +221,9 @@ class GoalDecompositionRepositoryTest {
             connectivityMonitor = onlineMonitor,
             ioDispatcher = testDispatcher
         )
+=======
+        val repository = GoalRepositoryImpl(fakeDs, noOpGoalDao, onlineMonitor, TestCategoryDao(), TestTaskDao())
+>>>>>>> 99c21bd6 (AWAN-83: use goal task bulk endpoint)
         val result = repository.continueDecomposition(sessionId = null, message = "Test")
 
         assertEquals(expectedError, result)
@@ -231,6 +237,7 @@ class GoalDecompositionRepositoryTest {
             override suspend fun confirmDecomposition(sessionId: String): Result<GoalInfoResponse> =
                 expectedError
         }
+<<<<<<< HEAD
         val repository = GoalRepositoryImpl(
             remoteDataSource = fakeDs,
             goalDao = noOpGoalDao,
@@ -239,6 +246,9 @@ class GoalDecompositionRepositoryTest {
             connectivityMonitor = onlineMonitor,
             ioDispatcher = testDispatcher
         )
+=======
+        val repository = GoalRepositoryImpl(fakeDs, noOpGoalDao, onlineMonitor, TestCategoryDao(), TestTaskDao())
+>>>>>>> 99c21bd6 (AWAN-83: use goal task bulk endpoint)
 
         val result = repository.confirmDecomposition(sessionId = "sess-x")
 

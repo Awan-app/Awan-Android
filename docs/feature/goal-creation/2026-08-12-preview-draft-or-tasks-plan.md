@@ -6,14 +6,14 @@ After AI decomposition, let the user save only the goal or save the goal with al
 
 ## Backend contract
 
-- Draft and Add to tasks both use `POST /v1/goals`.
-- Draft sends no tasks.
-- Add to tasks sends every proposal task with a unique `tempId`.
+- Draft uses `POST /v1/goals` with no tasks.
+- Add to tasks first uses `POST /v1/goals` with no tasks, then `POST /v1/goals/{goalId}/tasks/bulk` with every proposal task and a unique `tempId`.
+- If bulk creation fails, the newly-created goal is deleted and the preview remains retryable.
 - The AI decomposition session is cancelled after successful creation as best-effort cleanup.
 
 ## UI
 
-- The existing preview check action opens a two-action `AwanDialog`.
+- The existing preview check action opens a two-action `AwanActionSheet` bottom sheet.
 - Draft and Add tasks share the existing loading/error/event path.
 - Preview list/footer horizontal padding matches the top-button row at `AwanTheme.spacing.sm`.
 

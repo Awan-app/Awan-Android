@@ -10,7 +10,9 @@ import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse
 import com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest
 import com.awan.app.core.network.dto.goal.CreateGoalRequest
+import com.awan.app.core.network.dto.goal.BulkCreateGoalTasksRequest
 import com.awan.app.core.network.dto.goal.UpdateGoalRequest
+import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.goal.GoalDecompositionTranscriptResponse
 import com.awan.app.core.network.dto.goal.ScheduleGoalRequest
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
@@ -35,6 +37,12 @@ class GoalRemoteDataSourceImpl @Inject constructor(
             goalApiService.createGoal(request)
         }
 
+    override suspend fun addTasksToGoal(
+        goalId: String,
+        request: BulkCreateGoalTasksRequest,
+    ): Result<List<TaskInfoResponse>> = safeApiCall(dispatcher = ioDispatcher, json = json) {
+        goalApiService.addTasksToGoal(goalId, request)
+    }
     override suspend fun getInboxGoal(): Result<GoalInfoResponse> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             goalApiService.getInboxGoal()
@@ -99,4 +107,3 @@ class GoalRemoteDataSourceImpl @Inject constructor(
             goalApiService.confirmGoalSchedule(request)
         }
 }
-
