@@ -222,4 +222,6 @@
     <string name="profile_mcp_cd_copy_snippet">Copy Configuration Snippet</string>
     <string name="profile_mcp_cd_delete_token">Delete Token %1$s</string>
     <string name="profile_mcp_cd_regenerate_token">Regenerate Token %1$s</string>
+    <string name="profile_routine_apply_to_today_only">Apply to Today Only</string>
+    <string name="profile_routine_has_routine">Has routine</string>
 </resources>

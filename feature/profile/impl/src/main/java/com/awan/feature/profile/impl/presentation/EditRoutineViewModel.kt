@@ -3,15 +3,18 @@ package com.awan.feature.profile.impl.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.common.result.map
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.category.usecase.CreateCategoryUseCase
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
+import com.awan.app.core.domain.zones.usecase.CreateOverrideUseCase
 import com.awan.app.core.domain.zones.usecase.CreateWeeklyTemplateUseCase
 import com.awan.app.core.domain.zones.usecase.DeleteWeeklyTemplateUseCase
 import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplateUseCase
 import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplatesUseCase
+import com.awan.app.core.domain.zones.usecase.UpdateOverrideZonesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateWeeklyTemplateUseCase
 import com.awan.feature.profile.impl.R
@@ -26,6 +29,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 @HiltViewModel
@@ -38,6 +42,7 @@ class EditRoutineViewModel @Inject constructor(
     private val updateWeeklyTemplateUseCase: UpdateWeeklyTemplateUseCase,
     private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase,
     private val deleteWeeklyTemplateUseCase: DeleteWeeklyTemplateUseCase,
+    private val createOverrideUseCase: CreateOverrideUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditRoutineState())
@@ -48,7 +53,7 @@ class EditRoutineViewModel @Inject constructor(
 
     fun onAction(action: EditRoutineAction) {
         when (action) {
-            is EditRoutineAction.LoadTemplate -> loadTemplate(action.templateId)
+            is EditRoutineAction.LoadTemplate -> loadTemplate(action.templateId, action.date)
             is EditRoutineAction.NameChange -> onNameChange(action.name)
             is EditRoutineAction.ToggleDay -> toggleDay(action.day)
             is EditRoutineAction.AddZone -> addZone(action.zone)
@@ -56,14 +61,29 @@ class EditRoutineViewModel @Inject constructor(
             is EditRoutineAction.DeleteZone -> deleteZone(action.zone)
             is EditRoutineAction.ReorderZones -> reorderZones(action.from, action.to)
             is EditRoutineAction.CreateCategory -> createCategory(action.name)
+            is EditRoutineAction.ToggleTodayOnly -> _uiState.update { it.copy(isTodayOnly = action.isTodayOnly) }
+            is EditRoutineAction.DateChange -> onDateChange(action.date)
             EditRoutineAction.SaveRoutine -> saveRoutine()
             EditRoutineAction.DeleteRoutine -> deleteRoutine()
         }
     }
 
-    private fun loadTemplate(templateId: String?) {
+    private fun onDateChange(date: String) {
+        val parsedDate = runCatching { LocalDate.parse(date) }.getOrNull() ?: return
+        val dayOfWeek = DailyZonesHelper.getCurrentDay(parsedDate)
+        _uiState.update { 
+            it.copy(
+                date = date, 
+                selectedDays = setOf(dayOfWeek),
+                validationError = null, 
+                error = null
+            )
+        }
+    }
+
+    private fun loadTemplate(templateId: String?, date: String?) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, templateId = templateId) }
+            _uiState.update { it.copy(isLoading = true, templateId = templateId, date = date) }
 
             // 1. Fetch ALL templates, categories
             val templatesDeferred = async { getWeeklyTemplatesUseCase() }
@@ -81,6 +101,15 @@ class EditRoutineViewModel @Inject constructor(
                 .flatMap { it.daysOfWeek }
                 .toSet()
 
+            // If date is provided, and we are in creation mode, automatically select that day of week
+            val initialSelectedDays = if (templateId == null && date != null) {
+                runCatching { LocalDate.parse(date) }.getOrNull()?.let {
+                    setOf(DailyZonesHelper.getCurrentDay(it))
+                } ?: emptySet()
+            } else {
+                emptySet()
+            }
+
             if (templateId == null) {
                 // CREATE MODE: Clear everything but keep track of other routines' days
                 _uiState.update { 
@@ -88,7 +117,7 @@ class EditRoutineViewModel @Inject constructor(
                         isLoading = false,
                         templateId = null,
                         name = "",
-                        selectedDays = emptySet(),
+                        selectedDays = initialSelectedDays,
                         assignedDays = otherAssigned,
                         zones = emptyList(),
                         availableCategories = categories
@@ -235,7 +264,13 @@ class EditRoutineViewModel @Inject constructor(
             val templateId = state.templateId
 
             if (templateId == null) {
-                when (val result = createWeeklyTemplateUseCase(state.name, state.selectedDays.toList(), state.zones)) {
+                val result = if (state.isTodayOnly && state.date != null) {
+                    createOverrideUseCase(state.date, state.zones, state.name).map { Unit }
+                } else {
+                    createWeeklyTemplateUseCase(state.name, state.selectedDays.toList(), state.zones).map { Unit }
+                }
+
+                when (result) {
                     is Result.Success -> {
                         _uiState.update { it.copy(isSaving = false) }
                         _events.send(EditRoutineEvent.SaveSuccess)

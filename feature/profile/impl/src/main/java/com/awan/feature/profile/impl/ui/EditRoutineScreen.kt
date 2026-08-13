@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -38,6 +39,9 @@ import com.awan.feature.profile.impl.presentation.EditRoutineState
 import com.awan.feature.profile.impl.ui.components.DailyZoneReorderList
 import com.awan.feature.profile.impl.ui.components.DaySelector
 import com.awan.feature.profile.impl.ui.components.ZoneEditSheet
+import com.composables.icons.lucide.Calendar
+import com.composables.icons.lucide.Lucide
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +56,7 @@ fun EditRoutineScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showZoneDeleteConfirm by remember { mutableStateOf<DailyZone?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.validationError, uiState.error) {
         val error = (uiState.validationError ?: uiState.error)?.asString(context)
@@ -144,6 +149,19 @@ fun EditRoutineScreen(
         )
     }
 
+    if (showDatePicker) {
+        AwanDatePickerDialog(
+            initialDate = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now()),
+            confirmLabel = stringResource(R.string.profile_ok),
+            cancelLabel = stringResource(R.string.profile_cancel),
+            onDismiss = { showDatePicker = false },
+            onConfirm = { date ->
+                onAction(EditRoutineAction.DateChange(date.toString()))
+                showDatePicker = false
+            }
+        )
+    }
+
     Scaffold(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
@@ -189,10 +207,10 @@ fun EditRoutineScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = AwanTheme.colors.background)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
-        containerColor = AwanTheme.colors.background,
+        containerColor = Color.Transparent,
         bottomBar = {
             Box(modifier = Modifier.padding(20.dp).navigationBarsPadding()) {
                 AwanButton(
@@ -204,7 +222,12 @@ fun EditRoutineScreen(
                     AwanText(text = stringResource(R.string.profile_routine_save))
                 }
             }
-        }
+        },
+        modifier = Modifier.background(
+            Brush.verticalGradient(
+                listOf(AwanTheme.colors.backgroundStart, AwanTheme.colors.background)
+            )
+        )
     ) { padding ->
         Column(
             modifier = Modifier
@@ -215,35 +238,95 @@ fun EditRoutineScreen(
             verticalArrangement = Arrangement.spacedBy(28.dp)
         ) {
             // Routine Name
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                AwanText(
-                    text = stringResource(R.string.profile_routine_name),
-                    style = AwanTheme.styles.bodyText.copy(
-                        textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
+            AwanCard(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AwanText(
+                        text = stringResource(R.string.profile_routine_name),
+                        style = AwanTheme.styles.bodyText.copy(
+                            textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
+                        )
                     )
-                )
-                AwanTextField(
-                    value = uiState.name,
-                    onValueChange = { onAction(EditRoutineAction.NameChange(it)) },
-                    placeholder = stringResource(R.string.profile_routine_name_placeholder),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                    AwanTextField(
+                        value = uiState.name,
+                        onValueChange = { onAction(EditRoutineAction.NameChange(it)) },
+                        placeholder = stringResource(R.string.profile_routine_name_placeholder),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            // Apply to Today Only (Checkbox) - Only show in creation mode
+            if (uiState.templateId == null) {
+                AwanCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(12.dp),
+                    onClick = { if (uiState.date != null) onAction(EditRoutineAction.ToggleTodayOnly(!uiState.isTodayOnly)) }
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Checkbox(
+                            checked = uiState.isTodayOnly,
+                            onCheckedChange = { onAction(EditRoutineAction.ToggleTodayOnly(it)) },
+                            enabled = uiState.date != null,
+                            colors = CheckboxDefaults.colors(checkedColor = AwanTheme.colors.sky)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            AwanText(
+                                text = stringResource(R.string.profile_routine_apply_to_today_only),
+                                style = AwanTheme.styles.bodyText.copy(
+                                    textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
+                                )
+                            )
+                            if (uiState.date != null) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    modifier = Modifier.clickable { showDatePicker = true }
+                                ) {
+                                    AwanText(
+                                        text = uiState.date!!,
+                                        style = AwanTheme.styles.captionText.copy(color = AwanTheme.colors.sky)
+                                    )
+                                    Icon(
+                                        imageVector = Lucide.Calendar,
+                                        contentDescription = null,
+                                        tint = AwanTheme.colors.sky,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             // Days Selection
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                AwanText(
-                    text = stringResource(R.string.profile_routine_apply_to_days),
-                    style = AwanTheme.styles.bodyText.copy(
-                        textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
-                    )
-                )
-                DaySelector(
-                    selectedDays = uiState.selectedDays,
-                    assignedDays = uiState.assignedDays,
-                    onDaySelected = { onAction(EditRoutineAction.ToggleDay(it)) },
-                    showTodayIndicator = false // Don't show "today" dot in routine creator
-                )
+            if (!uiState.isTodayOnly) {
+                AwanCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        AwanText(
+                            text = stringResource(R.string.profile_routine_apply_to_days),
+                            style = AwanTheme.styles.bodyText.copy(
+                                textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
+                            )
+                        )
+                        DaySelector(
+                            selectedDays = uiState.selectedDays,
+                            assignedDays = uiState.assignedDays,
+                            onDaySelected = { onAction(EditRoutineAction.ToggleDay(it)) },
+                            showTodayIndicator = false // Don't show "today" dot in routine creator
+                        )
+                    }
+                }
             }
 
             // Zones
