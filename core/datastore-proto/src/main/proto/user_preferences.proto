@@ -47,5 +47,5 @@ message UserPreferences {
   // Tracks whether the RECORD_AUDIO permission was requested on this device.
   bool mic_permission_requested = 7;
 
-  DarkThemeConfigProto dark_theme_config = 8;
+  optional DarkThemeConfigProto dark_theme_config = 8;
 }

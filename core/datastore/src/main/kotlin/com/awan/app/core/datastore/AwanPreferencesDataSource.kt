@@ -66,13 +66,22 @@ class AwanPreferencesDataSource @Inject constructor(
     }
 
     private fun UserPreferences.toData() = UserPreferencesData(
-        darkThemeConfig = when (darkThemeConfig) {
-            null,
-            DarkThemeConfigProto.DARK_THEME_CONFIG_FOLLOW_SYSTEM,
-            DarkThemeConfigProto.UNRECOGNIZED,
-            -> DarkThemeConfig.FOLLOW_SYSTEM
-            DarkThemeConfigProto.DARK_THEME_CONFIG_LIGHT -> DarkThemeConfig.LIGHT
-            DarkThemeConfigProto.DARK_THEME_CONFIG_DARK -> DarkThemeConfig.DARK
+        darkThemeConfig = if (hasDarkThemeConfig()) {
+            when (darkThemeConfig) {
+                DarkThemeConfigProto.DARK_THEME_CONFIG_FOLLOW_SYSTEM -> DarkThemeConfig.FOLLOW_SYSTEM
+                DarkThemeConfigProto.DARK_THEME_CONFIG_LIGHT -> DarkThemeConfig.LIGHT
+                DarkThemeConfigProto.DARK_THEME_CONFIG_DARK -> DarkThemeConfig.DARK
+                else -> DarkThemeConfig.FOLLOW_SYSTEM
+            }
+        } else {
+            // Legacy migration: old users had a boolean 'dark_theme_enabled'.
+            // If they are existing users (onboarding completed), we preserve their choice.
+            // New users (onboarding not completed) default to FOLLOW_SYSTEM.
+            when {
+                darkThemeEnabled -> DarkThemeConfig.DARK
+                onboardingCompleted -> DarkThemeConfig.LIGHT
+                else -> DarkThemeConfig.FOLLOW_SYSTEM
+            }
         },
         useDynamicColor = useDynamicColor,
         onboardingCompleted = onboardingCompleted,
