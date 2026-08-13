@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -1636,3 +1637,12 @@ private data class StatusChipStyle(
     val fg: Color,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
 )
+
+private fun LazyListState.centeredItemIndex(): Int {
+    val info = layoutInfo
+    val visibleItems = info.visibleItemsInfo
+    if (visibleItems.isEmpty()) return firstVisibleItemIndex
+    val mid = (info.viewportStartOffset + info.viewportEndOffset) / 2
+    return visibleItems.minByOrNull { kotlin.math.abs((it.offset + it.size / 2) - mid) }?.index
+        ?: firstVisibleItemIndex
+}
