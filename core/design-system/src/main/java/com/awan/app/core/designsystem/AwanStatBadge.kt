@@ -30,6 +30,28 @@ private val BadgeShape = RoundedCornerShape(12.dp)
 private const val PULSE_SCALE = 1.18f
 
 /**
+  * Formats a point integer value to a compact abbreviated string (e.g., 999, 1k, 1.2k, 10.5k, 1M).
+  */
+fun formatAbbreviatedPoints(points: Int): String {
+    if (points < 0) return "-${formatAbbreviatedPoints(-points)}"
+    return when {
+        points >= 1_000_000_000 -> formatDecimal(points / 1_000_000_000.0) + "B"
+        points >= 1_000_000 -> formatDecimal(points / 1_000_000.0) + "M"
+        points >= 1_000 -> formatDecimal(points / 1_000.0) + "k"
+        else -> points.toString()
+    }
+}
+
+private fun formatDecimal(value: Double): String {
+    val rounded = Math.round(value * 10.0) / 10.0
+    return if (rounded % 1.0 == 0.0) {
+        rounded.toLong().toString()
+    } else {
+        String.format(java.util.Locale.US, "%.1f", rounded)
+    }
+}
+
+/**
  * The streak badge in the home header. Reads its colours from the theme's streak tokens so it
  * matches the streak line on the calendar.
  */
@@ -40,7 +62,7 @@ fun AwanStreakBadge(
 ) {
     AwanStatBadge(
         icon = Lucide.Flame,
-        value = streakCount,
+        text = streakCount.toString(),
         surface = AwanTheme.colors.streakSurface,
         accent = AwanTheme.colors.streakIcon,
         modifier = modifier,
@@ -60,6 +82,7 @@ fun AwanPointsBadge(
     modifier: Modifier = Modifier,
 ) {
     val anchors = LocalRewardAnchors.current
+    val currentPoints = anchors.animatedPoints ?: pointsCount
     val scale by animateFloatAsState(
         targetValue = if (anchors.pointsPulse) PULSE_SCALE else 1f,
         animationSpec = AwanTheme.motion.playful.spec(),
@@ -67,7 +90,7 @@ fun AwanPointsBadge(
     )
     AwanStatBadge(
         icon = Lucide.Coins,
-        value = anchors.animatedPoints ?: pointsCount,
+        text = formatAbbreviatedPoints(currentPoints),
         surface = AwanTheme.colors.pointsSurface,
         accent = AwanTheme.colors.pointsIcon,
         modifier = modifier.scale(scale),
@@ -77,7 +100,7 @@ fun AwanPointsBadge(
 @Composable
 private fun AwanStatBadge(
     icon: ImageVector,
-    value: Int,
+    text: String,
     surface: Color,
     accent: Color,
     modifier: Modifier = Modifier,
@@ -99,7 +122,7 @@ private fun AwanStatBadge(
             )
             Spacer(modifier = Modifier.width(4.dp))
             AwanText(
-                text = value.toString(),
+                text = text,
                 style = AwanTheme.typography.heading.copy(
                     fontSize = 13.5.sp,
                     fontWeight = FontWeight.ExtraBold,
