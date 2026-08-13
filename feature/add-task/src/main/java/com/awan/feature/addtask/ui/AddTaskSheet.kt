@@ -44,6 +44,7 @@ import com.awan.app.core.designsystem.AwanConfirmDialog
 import com.awan.app.core.designsystem.AwanDatePickerDialog
 import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanMicButton
+import com.awan.app.core.designsystem.AwanSegmentedControl
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
@@ -63,7 +64,6 @@ import com.awan.feature.addtask.presentation.AddTaskState
 import com.awan.feature.addtask.presentation.AddTaskViewModel
 import com.awan.feature.addtask.presentation.GoalStep
 import com.awan.feature.addtask.presentation.TaskConfirmation
-import com.awan.feature.addtask.ui.components.AddTaskModeSelector
 import com.awan.feature.addtask.ui.components.AiToggle
 import com.awan.feature.addtask.ui.components.GoalFormContent
 import com.awan.feature.addtask.ui.components.ImageAttachment
@@ -253,9 +253,18 @@ private fun AddTaskSheetContent(
         ) {
             if (state.showsModeSelector) {
                 CascadeItem(0, Modifier.fillMaxWidth()) {
-                    AddTaskModeSelector(
+                    AwanSegmentedControl(
+                        options = AddTaskMode.entries,
                         selected = state.mode,
                         onSelect = { onAction(AddTaskAction.ModeChanged(it)) },
+                        label = { mode ->
+                            stringResource(
+                                when (mode) {
+                                    AddTaskMode.TASK -> R.string.add_task_mode_task
+                                    AddTaskMode.GOAL -> R.string.add_task_mode_goal
+                                },
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
