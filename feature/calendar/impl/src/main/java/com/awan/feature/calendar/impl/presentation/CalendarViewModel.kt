@@ -31,9 +31,16 @@ class CalendarViewModel @Inject constructor(
     private val events = Channel<CalendarEvent>(Channel.BUFFERED)
     val event = events.receiveAsFlow()
 
+    private var lastSnapshot: CalendarSnapshot? = null
+
     init {
         viewModelScope.launch {
-            repository.observeCalendar().collect { snapshot -> snapshot?.let(::render) }
+            repository.observeCalendar().collect { snapshot -> 
+                snapshot?.let { 
+                    lastSnapshot = it
+                    render(it) 
+                } 
+            }
         }
         viewModelScope.launch {
             // Same source as the home header, so the two can never disagree.
@@ -42,7 +49,6 @@ class CalendarViewModel @Inject constructor(
             }
         }
         refresh()
-        loadActivityDates(_state.value.currentYearMonth)
     }
 
     fun onAction(action: CalendarAction) = when (action) {
@@ -54,6 +60,10 @@ class CalendarViewModel @Inject constructor(
 
     private fun selectDate(date: LocalDate) {
         _state.update { current ->
+            val routineDates = lastSnapshot?.let { 
+                CalendarDateMapper.calculateRoutineDates(current.currentYearMonth, it.templates, it.overrides)
+            } ?: emptySet()
+
             current.copy(
                 selectedDate = date,
                 monthDays = CalendarDateMapper.buildMonthDays(
@@ -62,6 +72,7 @@ class CalendarViewModel @Inject constructor(
                     selectedDate = date,
                     streakDates = current.streakDates,
                     goalDates = current.upcomingGoals.map { it.targetDate }.toSet(),
+                    routineDates = routineDates,
                 ),
             )
         }
@@ -94,6 +105,8 @@ class CalendarViewModel @Inject constructor(
             CalendarDateMapper.calculateStreakDates(streakCount, today)
         }
 
+        val routineDates = CalendarDateMapper.calculateRoutineDates(month, snapshot.templates, snapshot.overrides)
+
         _state.value = CalendarUiState(
             isLoading = false,
             errorMessage = null,
@@ -104,14 +117,37 @@ class CalendarViewModel @Inject constructor(
             currentYearMonth = month,
             streakDates = streakDates,
             upcomingGoals = goals,
-            monthDays = CalendarDateMapper.buildMonthDays(month, today, selected, streakDates, goals.map { it.targetDate }.toSet()),
+            monthDays = CalendarDateMapper.buildMonthDays(
+                yearMonth = month, 
+                today = today, 
+                selectedDate = selected, 
+                streakDates = streakDates, 
+                goalDates = goals.map { it.targetDate }.toSet(),
+                routineDates = routineDates,
+            ),
         )
+        
+        loadActivityDates(month)
     }
 
     private fun changeMonth(delta: Long) {
         _state.update { state ->
             val month = state.currentYearMonth.plusMonths(delta)
-            state.copy(currentYearMonth = month, monthDays = CalendarDateMapper.buildMonthDays(month, state.today, state.selectedDate, state.streakDates, state.upcomingGoals.map { it.targetDate }.toSet()))
+            val routineDates = lastSnapshot?.let { 
+                CalendarDateMapper.calculateRoutineDates(month, it.templates, it.overrides)
+            } ?: emptySet()
+
+            state.copy(
+                currentYearMonth = month, 
+                monthDays = CalendarDateMapper.buildMonthDays(
+                    yearMonth = month, 
+                    today = state.today, 
+                    selectedDate = state.selectedDate, 
+                    streakDates = state.streakDates, 
+                    goalDates = state.upcomingGoals.map { it.targetDate }.toSet(),
+                    routineDates = routineDates,
+                )
+            )
         }
         loadActivityDates(_state.value.currentYearMonth)
     }
@@ -133,6 +169,10 @@ class CalendarViewModel @Inject constructor(
         if (result !is Result.Success) return@launch
 
         _state.update { state ->
+            val routineDates = lastSnapshot?.let { 
+                CalendarDateMapper.calculateRoutineDates(state.currentYearMonth, it.templates, it.overrides)
+            } ?: emptySet()
+
             state.copy(
                 streakDates = result.data,
                 monthDays = CalendarDateMapper.buildMonthDays(
@@ -141,6 +181,7 @@ class CalendarViewModel @Inject constructor(
                     selectedDate = state.selectedDate,
                     streakDates = result.data,
                     goalDates = state.upcomingGoals.map { it.targetDate }.toSet(),
+                    routineDates = routineDates,
                 ),
             )
         }
@@ -161,11 +202,10 @@ class CalendarViewModel @Inject constructor(
                 currentYearMonth = month,
                 streakDates = emptySet(),
                 upcomingGoals = emptyList(),
-                monthDays = CalendarDateMapper.buildMonthDays(month, today, today, emptySet(), emptySet()),
+                monthDays = CalendarDateMapper.buildMonthDays(month, today, today, emptySet(), emptySet(), emptySet()),
             )
         }
     }
 }
 
 sealed interface CalendarEvent { data class DateSelected(val date: LocalDate) : CalendarEvent }
-

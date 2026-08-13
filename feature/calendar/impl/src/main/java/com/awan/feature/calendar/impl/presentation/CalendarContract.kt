@@ -31,6 +31,7 @@ data class DayState(
     val isSelected: Boolean,
     val isStreakDay: Boolean,
     val hasDeadline: Boolean,
+    val hasRoutine: Boolean = false,
 )
 
 sealed interface CalendarAction {

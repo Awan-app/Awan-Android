@@ -17,6 +17,7 @@
     <string name="calendar_streak_day">streak day</string>
     <string name="calendar_has_deadline">has deadline</string>
     <string name="calendar_back">Back</string>
+    <string name="calendar_has_routine">has routine</string>
     <string name="calendar_weekday_sun">Su</string>
     <string name="calendar_weekday_mon">Mo</string>
     <string name="calendar_weekday_tue">Tu</string>
