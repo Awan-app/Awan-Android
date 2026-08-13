@@ -898,3 +898,12 @@ Verify:
 4. Color tokens use `zoneSun`, `zoneCoral`, `zoneTangerine`, and `sky`.
 5. Visual mapping uses private `CalendarStreakHeaderVisual` data class instead of generic tuple or `AwanSurface`.
 6. No production code changes outside `:feature:calendar:impl`.
+
+## Implementation notes (what actually differed)
+
+- Product scope stayed as approved: server-backed four-state Calendar header (Start, Restart, Protect, Celebrate); insights/reports and animation assets/dependencies remain deferred.
+- Existing GamificationProgress plus a today-only GetActivityDatesUseCase query drive the state; current CalendarSnapshot preserves maxStreak because CalendarUser has none.
+- The static header became AwanCard state variants with explicit fallback icon seams for future per-state animations; existing unreferenced impl/ui/CalendarScreen.kt was deleted.
+- Verification passed: :feature:calendar:impl:testDebugUnitTest, :feature:calendar:impl:compileDebugKotlin, :feature:calendar:impl:compileDebugAndroidTestKotlin, and :feature:calendar:impl:lintDebug.
+- Connected execution could not run tests: Android blocked test APK installation with INSTALL_FAILED_USER_RESTRICTED: Install canceled by user (0 tests ran); this is an environment/device permission restriction, not a code failure.
+- App assemble is still not a valid gate in this worktree because app/google-services.json is absent.
