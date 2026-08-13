@@ -41,19 +41,23 @@ class SessionNotificationPoster @Inject constructor(
         }
     }
 
-    fun cancel(notificationId: Int) = manager.cancel(notificationId)
-
-    fun cancelAllFor(sessionId: String) = NotificationIds.allFor(sessionId).forEach(::cancel)
+    fun cancel(notificationId: Int) = manager.cancel(SESSION_TAG, notificationId)
 
     /**
-     * Ids currently showing in the tray. The scheduler diffs this against the plan, which is how a
-     * deleted or rescheduled session loses its notification without anything being persisted.
+     * Ids of the session notifications currently showing. The scheduler diffs this against the plan,
+     * which is how a deleted or rescheduled session loses its notification without anything being
+     * persisted.
+     *
+     * Matching on the tag rather than on a list of known session ids is what makes deletion work: a
+     * session removed from Room contributes no id to compare against, so an id-based filter would
+     * leave its notification stranded on screen forever. The tag also keeps the reward notification
+     * from being swept up as collateral.
      */
-    fun postedIds(): Set<Int> = runCatching {
-        manager.activeNotifications.map { it.id }.toSet()
+    fun postedSessionIds(): Set<Int> = runCatching {
+        manager.activeNotifications.filter { it.tag == SESSION_TAG }.map { it.id }.toSet()
     }.getOrElse {
-        // Some OEM builds throw here rather than returning empty. Nothing to reconcile against is
-        // recoverable; crashing an alarm receiver is not.
+        // Some OEM builds throw here rather than returning empty. Having nothing to reconcile
+        // against is recoverable; crashing an alarm receiver is not.
         Log.w(TAG, "Could not read active notifications", it)
         emptySet()
     }
@@ -214,6 +218,7 @@ class SessionNotificationPoster @Inject constructor(
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setContentIntent(launchIntent()),
+            tag = REMOTE_TAG,
             toastTitle = title,
             toastMessage = body,
         )
@@ -232,6 +237,7 @@ class SessionNotificationPoster @Inject constructor(
     private fun notify(
         id: Int,
         builder: NotificationCompat.Builder,
+        tag: String = SESSION_TAG,
         toastTitle: String? = null,
         toastMessage: String? = null,
     ) {
@@ -240,7 +246,7 @@ class SessionNotificationPoster @Inject constructor(
             return
         }
         try {
-            manager.notify(id, builder.build())
+            manager.notify(tag, id, builder.build())
         } catch (e: SecurityException) {
             // POST_NOTIFICATIONS revoked between the check above and here.
             Log.w(TAG, "Missing POST_NOTIFICATIONS; dropped notification $id", e)
@@ -272,6 +278,12 @@ class SessionNotificationPoster @Inject constructor(
     private companion object {
         const val TAG = "AwanNotifications"
         const val LAUNCH_REQUEST_CODE = 2001
+
+        /** Marks the notifications the scheduler owns and may cancel during reconciliation. */
+        const val SESSION_TAG = "awan-session"
+
+        /** Deliberately a different tag, so reconciliation never cancels a reward notification. */
+        const val REMOTE_TAG = "awan-remote"
 
         /** Remote payloads share one id: the newest reward replaces the last rather than stacking. */
         const val REMOTE_NOTIFICATION_ID = 9001

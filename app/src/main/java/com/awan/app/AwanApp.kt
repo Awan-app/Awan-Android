@@ -74,6 +74,7 @@ import com.awan.feature.profile.api.DailyZonesRoute
 import com.awan.feature.profile.api.EditRoutineRoute
 import com.awan.feature.profile.api.McpInfoRoute
 import com.awan.feature.profile.api.McpSettingsRoute
+import com.awan.feature.profile.api.NotificationSettingsRoute
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.splash.api.SplashRoute
 import com.awan.feature.splash.impl.navigation.splashEntry
@@ -272,6 +273,7 @@ fun AwanApp(
                 onNavigateToInventory = { navigator.navigate(InventoryRoute) },
                 onNavigateToMcpSettings = { navigator.navigate(McpSettingsRoute) },
                 onNavigateToMcpInfo = { navigator.navigate(McpInfoRoute) },
+                onNavigateToNotificationSettings = { navigator.navigate(NotificationSettingsRoute) },
             )
             goalPreviewEntry(
                 onBack = { navigator.goBack() },

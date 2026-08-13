@@ -63,27 +63,32 @@ class SessionNotificationScheduler @Inject constructor(
             val sessions = getUpcomingSessions(today, today.plusDays(LOOKAHEAD_DAYS))
 
             val plan = SessionNotificationPlanner.plan(sessions, preferences, now)
-            val (due, upcoming) = plan.partition { SessionNotificationPlanner.isDue(it, now) }
+
+            val due = plan.filter { SessionNotificationPlanner.isDue(it, now) }
+            val next = SessionNotificationPlanner.nextAfter(plan, now)
 
             due.forEach { poster.post(it, now) }
-            cancelStale(due, sessions.map { it.id }.toSet())
-            scheduleNext(upcoming.firstOrNull(), now)
+            cancelStale(due)
+            scheduleNext(next, now)
         }
     }
 
     /**
-     * Drops anything showing that the plan no longer produced.
+     * Drops anything showing that the plan no longer justifies.
      *
      * This is what makes "delete a session and its reminder disappears" true: the session is gone
-     * from Room, so it is gone from the plan, so its id is not in [due], so the posted notification
-     * is cancelled. Same for a session that was completed, cancelled, or moved out of its window.
+     * from Room, so it produces no event, so its notification id is not in [due] and gets cancelled.
+     * Same for a session that was completed, cancelled, or moved out of its window.
+     *
+     * Deliberately driven by what is on screen rather than by the sessions Room still knows about —
+     * a deleted session contributes nothing to compare against, so anything keyed off the surviving
+     * rows would strand exactly the notification this is meant to clear.
      */
-    private fun cancelStale(due: List<SessionNotificationEvent>, knownSessionIds: Set<String>) {
+    private fun cancelStale(due: List<SessionNotificationEvent>) {
         val shouldBeShowing = due.map { NotificationIds.forEvent(it) }.toSet()
-        val posted = poster.postedIds()
-        // Only ids this engine owns, so an FCM reward notification is never collateral.
-        val ownedIds = knownSessionIds.flatMap { NotificationIds.allFor(it) }.toSet() + shouldBeShowing
-        posted.filter { it in ownedIds && it !in shouldBeShowing }.forEach(poster::cancel)
+        poster.postedSessionIds()
+            .filterNot { it in shouldBeShowing }
+            .forEach(poster::cancel)
     }
 
     private fun scheduleNext(next: SessionNotificationEvent?, now: LocalDateTime) {

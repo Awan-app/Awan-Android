@@ -143,6 +143,46 @@ class SessionNotificationPlannerTest {
     }
 
     @Test
+    fun `a session that already ended plans no live tick`() {
+        // Otherwise the tick sits a minute in the future forever, is never due, and the scheduler
+        // burns an exact alarm every minute on a session that is over.
+        val session = session(start = now.minusHours(2), end = now.minusMinutes(1))
+
+        val plan = SessionNotificationPlanner.plan(listOf(session), preferences, now)
+
+        assertTrue(plan.none { it is SessionNotificationEvent.Live })
+    }
+
+    @Test
+    fun `the next alarm is never set for a moment that has already passed`() {
+        // A plan legitimately holds past events. Picking one as the next alarm would fire it at
+        // once, find it still not due, and reschedule it forever.
+        val sessions = listOf(
+            session(id = "over", start = now.minusHours(3), end = now.minusHours(2)),
+            session(id = "running", start = now.minusMinutes(5), end = now.plusMinutes(25)),
+            session(id = "soon", start = now.plusMinutes(3), end = now.plusMinutes(60)),
+            session(id = "later", start = now.plusHours(6), end = now.plusHours(7)),
+        )
+        val plan = SessionNotificationPlanner.plan(sessions, preferences, now)
+
+        // Guard the premise: this plan really does contain the stranded past events.
+        assertTrue(plan.any { !SessionNotificationPlanner.isDue(it, now) && !it.at.isAfter(now) })
+
+        val next = SessionNotificationPlanner.nextAfter(plan, now)
+
+        assertTrue("next alarm is in the past: $next", next!!.at.isAfter(now))
+        assertEquals(plan.filter { it.at.isAfter(now) }.minOf { it.at }, next.at)
+    }
+
+    @Test
+    fun `there is no next alarm when nothing remains`() {
+        val over = session(id = "over", start = now.minusHours(3), end = now.minusHours(2))
+        val plan = SessionNotificationPlanner.plan(listOf(over), preferences, now)
+
+        assertEquals(null, SessionNotificationPlanner.nextAfter(plan, now))
+    }
+
+    @Test
     fun `a live event before the session starts waits for the start`() {
         val session = session(start = now.plusMinutes(30))
 

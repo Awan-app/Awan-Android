@@ -40,6 +40,17 @@ object SessionNotificationPlanner {
         sessions.flatMap { eventsFor(it, preferences, now) }.sortedBy { it.at }
 
     /**
+     * The event the next alarm should be set for.
+     *
+     * Strictly in the future, never merely "not due". A plan legitimately contains events whose
+     * moment has passed without being due — this morning's reminders, after a reboot at noon. Taking
+     * the first non-due event instead would set an alarm for a time already gone, which fires at
+     * once, is still not due, and reschedules itself forever.
+     */
+    fun nextAfter(plan: List<SessionNotificationEvent>, now: LocalDateTime): SessionNotificationEvent? =
+        plan.filter { it.at.isAfter(now) }.minByOrNull { it.at }
+
+    /**
      * True when [event] should be showing right now. Past events outside their grace window are
      * deliberately not replayed — after a reboot at noon, this morning's reminders are noise.
      */
@@ -78,7 +89,10 @@ object SessionNotificationPlanner {
             }
         }
 
-        if (preferences.sessionLiveActivityEnabled) {
+        // Only while there is still session left to show. Without the end check a finished session
+        // keeps producing a tick a minute into the future, and since that tick is never due, the
+        // scheduler burns an exact alarm every minute on a session that is over.
+        if (preferences.sessionLiveActivityEnabled && now.isBefore(session.end)) {
             events += SessionNotificationEvent.Live(nextLiveMoment(session, now), session)
         }
 

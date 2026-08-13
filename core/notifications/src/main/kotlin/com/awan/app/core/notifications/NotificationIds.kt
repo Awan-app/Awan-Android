@@ -5,9 +5,9 @@ import com.awan.app.core.notifications.model.SessionNotificationEvent
 /**
  * Notification ids are derived from the session id, never allocated.
  *
- * That is what lets the scheduler reconcile: it can look at what is currently posted, work out which
- * session each notification belongs to, and cancel the ones the schedule no longer justifies —
- * without persisting a ledger that `replaceSessionsForDates` would wipe on the next sync.
+ * That is what lets the scheduler reconcile: it rebuilds the ids the plan justifies and cancels every
+ * posted session notification outside that set — without persisting a ledger that
+ * `replaceSessionsForDates` would wipe on the next sync.
  */
 object NotificationIds {
 
@@ -26,9 +26,6 @@ object NotificationIds {
     fun live(sessionId: String): Int = id(sessionId, LIVE_TAG)
 
     fun ended(sessionId: String): Int = id(sessionId, ENDED_TAG)
-
-    /** Every id this engine owns, for the session whose notifications must all disappear. */
-    fun allFor(sessionId: String): List<Int> = listOf(reminder(sessionId), live(sessionId), ended(sessionId))
 
     private fun id(sessionId: String, tag: String): Int = "$tag:$sessionId".hashCode()
 }
