@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.Flow
  * correctly: points before streak for a session, and a single payout for a spin. Re-sorting here
  * would only risk shuffling one action's rewards in front of an earlier action's.
  */
+import kotlinx.coroutines.delay
+
 @Composable
 fun RewardOverlayHost(
     rewardEvents: Flow<RewardEvent>,
@@ -40,7 +42,23 @@ fun RewardOverlayHost(
 
     LaunchedEffect(showing, queue.size) {
         if (showing == null && queue.isNotEmpty()) {
-            showing = queue.removeAt(0)
+            delay(150L)
+            if (queue.firstOrNull() is RewardEvent.Points) {
+                val pointsList = mutableListOf<RewardEvent.Points>()
+                while (queue.isNotEmpty() && queue.first() is RewardEvent.Points) {
+                    pointsList.add(queue.removeAt(0) as RewardEvent.Points)
+                }
+                val totalAmount = pointsList.sumOf { it.amount }
+                val totalCombo = pointsList.sumOf { it.comboCount }
+                val lastNewTotal = pointsList.last().newTotal
+                showing = RewardEvent.Points(
+                    amount = totalAmount,
+                    newTotal = lastNewTotal,
+                    comboCount = totalCombo,
+                )
+            } else if (queue.isNotEmpty()) {
+                showing = queue.removeAt(0)
+            }
         }
     }
 
@@ -52,6 +70,7 @@ fun RewardOverlayHost(
         is RewardEvent.Points -> PointsFlightOverlay(
             amount = event.amount,
             newTotal = event.newTotal,
+            comboCount = event.comboCount,
             originBounds = anchors.lastTapOrigin,
             targetBounds = anchors.pointsBadge,
             onFinished = finish,

@@ -11,6 +11,7 @@ sealed interface RewardEvent {
     data class Points(
         val amount: Int,
         val newTotal: Int,
+        val comboCount: Int = 1,
     ) : RewardEvent
 
     data class Streak(
