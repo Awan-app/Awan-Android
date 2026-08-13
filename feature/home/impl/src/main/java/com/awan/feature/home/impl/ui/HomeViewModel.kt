@@ -544,27 +544,22 @@ class HomeViewModel @Inject constructor(
             when (val result = getSessionDetailUseCase(sessionId)) {
                 is Result.Success -> {
                     _uiState.update { state ->
-                        val taskId = result.data.task.id
-                        val taskSessions = state.sessions.filter { it.taskId == taskId }.map { s ->
-                            val startDateTime = state.selectedDate.atStartOfDay().plusMinutes(s.startMinutes.toLong())
-                            val endDateTime = startDateTime.plusMinutes(s.durationMinutes.toLong())
-                            val isDone = s.status == com.awan.app.core.designsystem.TaskStatus.Completed
-                            com.awan.app.core.model.SessionDetailInfo(
-                                id = s.id,
-                                start = startDateTime,
-                                end = endDateTime,
-                                status = if (isDone) SessionStatus.COMPLETED else SessionStatus.SCHEDULED,
-                                locked = s.isFixed,
-                                zoneId = s.zoneId,
-                                taskId = taskId,
-                            )
-                        }
-                        val enrichedDetail = result.data.copy(relatedSessions = taskSessions)
+                        val startMin = result.data.session.start.hour * 60 + result.data.session.start.minute
+                        val endMin = result.data.session.end.hour * 60 + result.data.session.end.minute
+                        val duration = (endMin - startMin).coerceAtLeast(15)
+
                         state.copy(
                             selectedSessionDetailState = state.selectedSessionDetailState?.copy(
                                 isLoading = false,
-                                detail = enrichedDetail,
+                                detail = result.data,
                                 errorMessage = null,
+                                editTitle = result.data.task.title,
+                                editDescription = result.data.task.description ?: "",
+                                editStartMinutes = startMin,
+                                editEndMinutes = endMin,
+                                editDurationMinutes = duration,
+                                editZoneId = result.data.session.zoneId,
+                                availableZones = state.zones,
                             )
                         )
                     }
@@ -671,56 +666,105 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun startEditingSessionDetail() {
-        _uiState.update { state ->
-            val dialogState = state.selectedSessionDetailState ?: return@update state
-            val detail = dialogState.detail ?: return@update state
-            val duration = calculateDurationMinutes(detail.session.start, detail.session.end)
-                ?: detail.task.estimatedDuration ?: 30
+    private fun updateSessionTime(newStartMin: Int, newEndMin: Int, newDurationMin: Int) {
+        val dialogState = uiState.value.selectedSessionDetailState ?: return
+        val detail = dialogState.detail ?: return
+        val sessionId = detail.session.id
 
+        val baseDate = detail.session.start.toLocalDate()
+        val newStartDateTime = baseDate.atStartOfDay().plusMinutes(newStartMin.toLong())
+        val newEndDateTime = baseDate.atStartOfDay().plusMinutes(newEndMin.toLong())
+        val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
+
+        _uiState.update { state ->
+            val updatedDetail = state.selectedSessionDetailState?.detail?.let { d ->
+                d.copy(
+                    session = d.session.copy(
+                        start = newStartDateTime,
+                        end = newEndDateTime,
+                    )
+                )
+            }
+            val updatedSessions = state.sessions.map { s ->
+                if (s.id == sessionId) {
+                    s.copy(
+                        startMinutes = newStartMin,
+                        durationMinutes = newDurationMin,
+                    )
+                } else s
+            }
             state.copy(
-                selectedSessionDetailState = dialogState.copy(
-                    isEditing = true,
-                    editTitle = detail.task.title,
-                    editDescription = detail.task.description ?: "",
-                    editDurationMinutes = duration,
+                sessions = updatedSessions,
+                selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                    editStartMinutes = newStartMin,
+                    editEndMinutes = newEndMin,
+                    editDurationMinutes = newDurationMin,
+                    detail = updatedDetail,
                 )
             )
         }
-    }
 
-    fun cancelEditingSessionDetail() {
-        _uiState.update { state ->
-            val dialogState = state.selectedSessionDetailState ?: return@update state
-            state.copy(
-                selectedSessionDetailState = dialogState.copy(isEditing = false)
+        viewModelScope.launch {
+            moveSessionUseCase(
+                sessionId = sessionId,
+                startIso = newStartDateTime.format(dtFormatter),
+                endIso = newEndDateTime.format(dtFormatter),
             )
         }
     }
 
-    fun onEditTitleChanged(newTitle: String) {
+    fun onEditStartMinutesChanged(newStartMinutes: Int) {
+        val dialogState = uiState.value.selectedSessionDetailState ?: return
+        val clampedStart = newStartMinutes.coerceIn(0, 23 * 60 + 45)
+        val currentDuration = dialogState.editDurationMinutes
+        val newEnd = (clampedStart + currentDuration).coerceAtMost(24 * 60)
+        val actualDuration = (newEnd - clampedStart).coerceAtLeast(15)
+
         _uiState.update { state ->
-            val dialogState = state.selectedSessionDetailState ?: return@update state
-            state.copy(
-                selectedSessionDetailState = dialogState.copy(editTitle = newTitle)
+            val updated = state.selectedSessionDetailState?.copy(
+                editStartMinutes = clampedStart,
+                editEndMinutes = newEnd,
+                editDurationMinutes = actualDuration,
             )
+            state.copy(selectedSessionDetailState = updated)
         }
     }
 
-    fun onEditDescriptionChanged(newDesc: String) {
+    fun onEditEndMinutesChanged(newEndMinutes: Int) {
+        val dialogState = uiState.value.selectedSessionDetailState ?: return
+        val startMin = dialogState.editStartMinutes
+        val clampedEnd = newEndMinutes.coerceIn(startMin + 15, 24 * 60)
+        val newDuration = clampedEnd - startMin
+
         _uiState.update { state ->
-            val dialogState = state.selectedSessionDetailState ?: return@update state
-            state.copy(
-                selectedSessionDetailState = dialogState.copy(editDescription = newDesc)
+            val updated = state.selectedSessionDetailState?.copy(
+                editEndMinutes = clampedEnd,
+                editDurationMinutes = newDuration,
             )
+            state.copy(selectedSessionDetailState = updated)
         }
     }
 
     fun onEditDurationChanged(newDuration: Int) {
+        val dialogState = uiState.value.selectedSessionDetailState ?: return
+        val startMin = dialogState.editStartMinutes
+        val newEnd = (startMin + newDuration).coerceAtMost(24 * 60)
+        val actualDuration = (newEnd - startMin).coerceAtLeast(15)
+
+        _uiState.update { state ->
+            val updated = state.selectedSessionDetailState?.copy(
+                editEndMinutes = newEnd,
+                editDurationMinutes = actualDuration,
+            )
+            state.copy(selectedSessionDetailState = updated)
+        }
+    }
+
+    fun onEditZoneChanged(newZoneId: String) {
         _uiState.update { state ->
             val dialogState = state.selectedSessionDetailState ?: return@update state
             state.copy(
-                selectedSessionDetailState = dialogState.copy(editDurationMinutes = newDuration)
+                selectedSessionDetailState = dialogState.copy(editZoneId = newZoneId)
             )
         }
     }
@@ -730,7 +774,10 @@ class HomeViewModel @Inject constructor(
         val detail = dialogState.detail ?: return
         val sessionId = detail.session.id
         val taskId = detail.task.id
+        val startMin = dialogState.editStartMinutes
+        val endMin = dialogState.editEndMinutes
         val newDuration = dialogState.editDurationMinutes
+        val newZoneId = dialogState.editZoneId
 
         _uiState.update { state ->
             state.copy(
@@ -739,32 +786,37 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            // 1. Update task title & description
             val taskResult = updateTaskDetailUseCase(
                 taskId = taskId,
                 title = dialogState.editTitle,
                 description = dialogState.editDescription,
             )
 
-            // 2. Update specific session end time if duration changed
-            val currentDuration = calculateDurationMinutes(detail.session.start, detail.session.end)
-            var newEnd = detail.session.end
-            if (newDuration != currentDuration) {
-                newEnd = calculateEnd(detail.session.start, newDuration)
-                val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
-                moveSessionUseCase(
-                    sessionId = sessionId,
-                    startIso = detail.session.start.format(dtFormatter),
-                    endIso = newEnd.format(dtFormatter),
-                )
-            }
+            val baseDate = detail.session.start.toLocalDate()
+            val newStartDateTime = baseDate.atStartOfDay().plusMinutes(startMin.toLong())
+            val newEndDateTime = baseDate.atStartOfDay().plusMinutes(endMin.toLong())
+            val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
-            if (taskResult is Result.Success) {
+            val moveResult = moveSessionUseCase(
+                sessionId = sessionId,
+                startIso = newStartDateTime.format(dtFormatter),
+                endIso = newEndDateTime.format(dtFormatter),
+            )
+
+            if (taskResult is Result.Success && moveResult is Result.Success) {
                 _uiState.update { state ->
                     val updatedDetail = state.selectedSessionDetailState?.detail?.let { d ->
-                        val updatedSession = d.session.copy(end = newEnd)
+                        val updatedSession = d.session.copy(
+                            start = newStartDateTime,
+                            end = newEndDateTime,
+                            zoneId = newZoneId,
+                        )
                         val updatedRelatedSessions = d.relatedSessions.map { s ->
-                            if (s.id == sessionId) s.copy(end = newEnd) else s
+                            if (s.id == sessionId) s.copy(
+                                start = newStartDateTime,
+                                end = newEndDateTime,
+                                zoneId = newZoneId,
+                            ) else s
                         }
                         d.copy(
                             session = updatedSession,
@@ -776,12 +828,13 @@ class HomeViewModel @Inject constructor(
                         )
                     }
 
-                    // Update local schedule sessions: durationMinutes ONLY for this specific session!
                     val updatedSessions = state.sessions.map { s ->
                         if (s.id == sessionId) {
                             s.copy(
                                 taskTitle = dialogState.editTitle,
+                                startMinutes = startMin,
                                 durationMinutes = newDuration,
+                                zoneId = newZoneId ?: s.zoneId,
                             )
                         } else if (s.taskId == taskId) {
                             s.copy(taskTitle = dialogState.editTitle)
@@ -790,11 +843,7 @@ class HomeViewModel @Inject constructor(
 
                     state.copy(
                         sessions = updatedSessions,
-                        selectedSessionDetailState = state.selectedSessionDetailState?.copy(
-                            isEditing = false,
-                            isSaving = false,
-                            detail = updatedDetail,
-                        )
+                        selectedSessionDetailState = null,
                     )
                 }
             } else {
@@ -844,8 +893,6 @@ class HomeViewModel @Inject constructor(
         val dialogState = uiState.value.selectedSessionDetailState ?: return
         val detail = dialogState.detail ?: return
         val sessionId = detail.session.id
-        val taskId = detail.task.id
-        val deleteType = dialogState.deleteTargetType
 
         _uiState.update { state ->
             state.copy(
@@ -854,19 +901,11 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val result = if (deleteType == DeleteTargetType.SESSION) {
-                deleteSessionUseCase(sessionId)
-            } else {
-                deleteTaskUseCase(taskId)
-            }
+            val result = deleteSessionUseCase(sessionId)
 
             if (result is Result.Success) {
                 _uiState.update { state ->
-                    val updatedSessions = if (deleteType == DeleteTargetType.SESSION) {
-                        state.sessions.filterNot { it.id == sessionId }
-                    } else {
-                        state.sessions.filterNot { it.taskId == taskId }
-                    }
+                    val updatedSessions = state.sessions.filterNot { it.id == sessionId }
                     state.copy(
                         sessions = updatedSessions,
                         selectedSessionDetailState = null,

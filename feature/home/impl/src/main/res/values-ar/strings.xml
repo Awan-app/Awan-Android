@@ -78,4 +78,15 @@
     <string name="home_delete_option_task_title">حذف المهمة وجميع الجلسات</string>
     <string name="home_delete_option_task_subtitle">يحذف المهمة وجميع الجلسات المرتبطة بها نهائياً.</string>
     <string name="home_task_session_item">جلسة %1$d (%2$s - %3$s)</string>
+    <string name="home_edit_label_start_time">وقت البدء</string>
+    <string name="home_edit_label_end_time">وقت الانتهاء</string>
+    <string name="home_delete_session_confirm_title">حذف الجلسة؟</string>
+    <string name="home_delete_session_confirm_subtitle">سيتم حذف هذه الجلسة نهائياً من جدولك اليومي.</string>
+    <string name="home_go_to_goal">عرض الهدف</string>
+    <string name="home_action_confirm_close">تأكيد وإغلاق</string>
+    <string name="home_action_save_changes">حفظ التغييرات</string>
+    <string name="home_dismiss_warning_title">إغلاق تفاصيل الجلسة؟</string>
+    <string name="home_dismiss_warning_subtitle">لديك تعديلات على الجلسة. هل أنت تأكد من الإغلاق والخروج دون حفظ التغييرات؟</string>
+    <string name="home_dismiss_warning_keep_editing">متابعة التعديل</string>
+    <string name="home_dismiss_warning_close_anyway">تجاهل وإغلاق</string>
 </resources>
