@@ -103,6 +103,7 @@ fun HomeScreen(
                 subtitleText = uiState.subtitleText.asString(),
                 selectedDateText = uiState.selectedDateText.asString(),
                 isCollapsed = isHeaderCollapsed,
+                isToday = uiState.isToday,
                 totalSessionsCount = uiState.sessions.size,
                 completedSessionsCount = uiState.completedSessionsCount,
                 completedHours = uiState.completedHours,
