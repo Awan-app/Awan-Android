@@ -101,10 +101,16 @@ fun AwanButton(
     )
     val rimDepth = if (variant == AwanButtonVariant.Quiet) 0.dp else AwanButtonRimDepth
     val rimSide = if (variant == AwanButtonVariant.Quiet) 0.dp else AwanButtonRimSide
+    /**
+     * The sink has exactly one owner. It used to have two — a `pressed {}` transform in the face
+     * style for the finger, and this graphicsLayer for the latch — kept apart by a
+     * `latchedPressed && !isPressed` guard. On a tap that also selects, `isPressed` drops on the
+     * release frame while `latchedPressed` only arrives after the state round-trip, so for those
+     * frames neither owned the sink and the face sprang back to raised before dropping again.
+     */
     val effectivePressed = styleState.isPressed || latchedPressed
-    val latchedPressActive = latchedPressed && !styleState.isPressed
-    val latchedTranslationX = animateDpAsState(
-        targetValue = if (latchedPressActive) {
+    val pressTranslationX = animateDpAsState(
+        targetValue = if (effectivePressed) {
             buttonPressedTranslationX(LocalLayoutDirection.current)
         } else {
             0.dp
@@ -113,15 +119,15 @@ fun AwanButton(
             durationMillis = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
             easing = LinearOutSlowInEasing,
         ),
-        label = "AwanButtonLatchedTranslationX",
+        label = "AwanButtonPressTranslationX",
     ).value
-    val latchedTranslationY = animateDpAsState(
-        targetValue = if (latchedPressActive) AwanButtonRimDepth else 0.dp,
+    val pressTranslationY = animateDpAsState(
+        targetValue = if (effectivePressed) AwanButtonRimDepth else 0.dp,
         animationSpec = tween(
             durationMillis = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
             easing = LinearOutSlowInEasing,
         ),
-        label = "AwanButtonLatchedTranslationY",
+        label = "AwanButtonPressTranslationY",
     ).value
     // A chip's target is exactly the pill: face plus rim, with no dead margin around it.
     val minTouchSize = if (variant == AwanButtonVariant.Chip) AwanChipFaceHeight + AwanButtonRimDepth else 48.dp
@@ -194,8 +200,8 @@ fun AwanButton(
                         // leaving the face background behind — the button measured as latched but
                         // still showed its rim, reading as raised.
                         .graphicsLayer {
-                            translationX = latchedTranslationX.toPx()
-                            translationY = latchedTranslationY.toPx()
+                            translationX = pressTranslationX.toPx()
+                            translationY = pressTranslationY.toPx()
                         }
                         .styleable(styleState, faceStyle, style),
                     horizontalArrangement = Arrangement.Center,

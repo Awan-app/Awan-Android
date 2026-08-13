@@ -11,8 +11,11 @@ import androidx.compose.foundation.style.Style
 import androidx.compose.foundation.style.pressed
 import androidx.compose.foundation.style.styleable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -22,9 +25,14 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 private val TrackPadding = 4.dp
 private val SegmentGap = 4.dp
+
+/** Long enough for a state round-trip; short enough that a refused selection snaps back at once. */
+private val SelectionSettle = 250.milliseconds
 
 /**
  * A row of keys on a sunken track. The selected one is held down on its rim — the same latched
@@ -52,6 +60,21 @@ fun <T> AwanSegmentedControl(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    /**
+     * The tapped segment latches on the release frame instead of waiting for [selected] to come
+     * back through the state round-trip. Without this the finger lifts, the press sink releases,
+     * and the segment springs back to raised for the frames it takes the new selection to arrive.
+     */
+    var pending by remember { mutableStateOf<T?>(null) }
+    val shown = pending ?: selected
+
+    LaunchedEffect(pending, selected) {
+        // Cleared once the real state agrees, or abandoned if it never does — a rejected selection
+        // must not leave the control showing a choice that was refused.
+        if (pending != null && pending != selected) delay(SelectionSettle)
+        pending = null
+    }
+
     Row(
         modifier = modifier
             .clip(AwanTheme.shapes.button)
@@ -60,12 +83,17 @@ fun <T> AwanSegmentedControl(
         horizontalArrangement = Arrangement.spacedBy(SegmentGap),
     ) {
         options.forEach { option ->
-            val isSelected = option == selected
+            val isSelected = option == shown
             Segment(
                 text = label(option),
                 isSelected = isSelected,
                 enabled = enabled,
-                onClick = { if (!isSelected) onSelect(option) },
+                onClick = {
+                    if (!isSelected) {
+                        pending = option
+                        onSelect(option)
+                    }
+                },
                 modifier = Modifier.weight(1f),
             )
         }
