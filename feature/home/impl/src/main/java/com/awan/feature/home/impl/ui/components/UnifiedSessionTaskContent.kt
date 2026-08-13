@@ -527,7 +527,7 @@ private fun MainSessionTaskDetailView(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- Action Buttons Bar (Save Changes, Mark Done/Pending & Lock/Unlock using AwanButton design system) ---
+        // --- Action Buttons Bar (Save Changes & Lock/Unlock using AwanButton design system) ---
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -548,29 +548,6 @@ private fun MainSessionTaskDetailView(
             ) {
                 AwanText(
                     text = stringResource(R.string.home_action_save_changes),
-                    style = AwanTheme.typography.button.copy(
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                )
-            }
-
-            // Mark Done / Mark Pending Button
-            AwanButton(
-                onClick = onToggleStatus,
-                variant = if (isCompleted) AwanButtonVariant.Secondary else AwanButtonVariant.Primary,
-                icon = {
-                    Icon(
-                        imageVector = if (isCompleted) Icons.AutoMirrored.Filled.Undo else Icons.Default.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(15.dp),
-                    )
-                },
-                modifier = Modifier.weight(1f),
-            ) {
-                AwanText(
-                    text = if (isCompleted) stringResource(R.string.home_action_mark_pending)
-                    else stringResource(R.string.home_action_mark_done),
                     style = AwanTheme.typography.button.copy(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
