@@ -18,6 +18,7 @@ import com.awan.app.core.database.model.EquippedItemEntity
 import com.awan.app.core.database.model.GoalEntity
 import com.awan.app.core.database.model.OwnedItemEntity
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.UpcomingSessionRow
 import com.awan.app.core.database.model.StoreItemEntity
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
@@ -223,6 +224,8 @@ private class FakeSessionDao : SessionDao {
     override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<SessionEntity>> = flowOf(emptyList())
     override suspend fun getSessionsForDate(date: String): List<SessionEntity> = emptyList()
     override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = emptyList()
+    override fun observeUpcomingSessions(startDate: String, endDate: String): Flow<List<UpcomingSessionRow>> = flowOf(emptyList())
+    override suspend fun getUpcomingSessions(startDate: String, endDate: String): List<UpcomingSessionRow> = emptyList()
     override suspend fun getSession(id: String): SessionEntity? = null
     override suspend fun deleteSessionsForDates(dates: List<String>) { replacedDates += dates }
     override suspend fun deleteSession(id: String) {}

@@ -40,4 +40,19 @@ message UserPreferences {
 
   // Tracks whether the RECORD_AUDIO permission was requested on this device.
   bool mic_permission_requested = 7;
+
+  // Local notifications.
+  //
+  // Stored NEGATED on purpose: proto3 bools default to false, and every one of these must default
+  // to ON for a user who has never opened the settings screen. The flip happens once, in
+  // AwanPreferencesDataSource, so nothing above the datastore reads a double negative.
+  bool session_reminders_disabled        = 8;
+  bool session_live_activity_disabled    = 9;
+  bool session_end_notification_disabled = 10;
+  bool reward_notifications_disabled     = 11;
+
+  // 0 means "never set" — the mapper substitutes the default rather than firing a reminder at the
+  // exact moment the session starts.
+  int32 session_reminder_lead_minutes = 12;
+  int32 session_snooze_minutes        = 13;
 }

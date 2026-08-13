@@ -6,6 +6,7 @@ import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.datastore.UserPreferencesDataSource
 import com.awan.app.core.datastore.model.UserPreferencesData
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
+import com.awan.app.core.model.NotificationPreferences
 import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.domain.onboarding.model.DayBounds
 import com.awan.app.core.domain.profile.model.UserProfile
@@ -231,6 +232,7 @@ class OnboardingRepositoryImplTest {
         override suspend fun setLocale(locale: String) {}
         override suspend fun setDefaultRegion(region: String) {}
         override suspend fun setMicPermissionRequested(requested: Boolean) {}
+        override suspend fun setNotificationPreferences(preferences: NotificationPreferences) {}
     }
 
     private class FakeUserDao : com.awan.app.core.database.dao.UserDao {

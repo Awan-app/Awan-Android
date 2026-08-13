@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import com.awan.app.core.datastore.model.UserPreferencesData
 import com.awan.app.core.datastore.proto.UserPreferences
 import com.awan.app.core.datastore.proto.copy
+import com.awan.app.core.model.NotificationPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -55,6 +56,19 @@ class AwanPreferencesDataSource @Inject constructor(
         dataStore.updateData { it.copy { micPermissionRequested = requested } }
     }
 
+    override suspend fun setNotificationPreferences(preferences: NotificationPreferences) {
+        dataStore.updateData {
+            it.copy {
+                sessionRemindersDisabled = !preferences.sessionRemindersEnabled
+                sessionLiveActivityDisabled = !preferences.sessionLiveActivityEnabled
+                sessionEndNotificationDisabled = !preferences.sessionEndEnabled
+                rewardNotificationsDisabled = !preferences.rewardsEnabled
+                sessionReminderLeadMinutes = preferences.reminderLeadMinutes
+                sessionSnoozeMinutes = preferences.snoozeMinutes
+            }
+        }
+    }
+
     private fun UserPreferences.toData() = UserPreferencesData(
         darkThemeEnabled = darkThemeEnabled,
         useDynamicColor = useDynamicColor,
@@ -63,5 +77,23 @@ class AwanPreferencesDataSource @Inject constructor(
         locale = locale,
         defaultRegion = defaultRegion,
         micPermissionRequested = micPermissionRequested,
+        notificationPreferences = toNotificationPreferences(),
+    )
+
+    /**
+     * The one place the negated proto flags are flipped, and the one place a `0` minute value is
+     * read as "never set" rather than as "fire the reminder exactly when the session starts".
+     */
+    private fun UserPreferences.toNotificationPreferences() = NotificationPreferences(
+        sessionRemindersEnabled = !sessionRemindersDisabled,
+        sessionLiveActivityEnabled = !sessionLiveActivityDisabled,
+        sessionEndEnabled = !sessionEndNotificationDisabled,
+        rewardsEnabled = !rewardNotificationsDisabled,
+        reminderLeadMinutes = sessionReminderLeadMinutes
+            .takeIf { it > 0 }
+            ?: NotificationPreferences.DEFAULT_REMINDER_LEAD_MINUTES,
+        snoozeMinutes = sessionSnoozeMinutes
+            .takeIf { it > 0 }
+            ?: NotificationPreferences.DEFAULT_SNOOZE_MINUTES,
     )
 }
