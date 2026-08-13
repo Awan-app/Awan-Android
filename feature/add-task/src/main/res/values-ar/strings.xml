@@ -88,4 +88,9 @@
     <string name="add_task_error_goal_continuation_failed">تعذّر على أوان تقسيم هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
     <string name="add_task_error_goal_confirm_failed">تعذّر حفظ هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
 
+    <string name="add_task_goal_thinking_1">أقرأ هدفك…</string>
+    <string name="add_task_goal_thinking_2">أقسّمه إلى خطوات…</string>
+    <string name="add_task_goal_thinking_3">أقدّر مدة كل خطوة…</string>
+    <string name="add_task_goal_thinking_4">أوشكت على الانتهاء…</string>
+    <string name="add_task_goal_plan_ready">خطتك جاهزة!</string>
 </resources>

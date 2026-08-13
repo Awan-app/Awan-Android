@@ -75,6 +75,7 @@ import com.awan.feature.addtask.presentation.AddTaskMode
 import com.awan.feature.addtask.presentation.AddTaskPicker
 import com.awan.feature.addtask.presentation.AddTaskState
 import com.awan.feature.addtask.presentation.AddTaskViewModel
+import com.awan.feature.addtask.presentation.GoalPhase
 import com.awan.feature.addtask.presentation.GoalStep
 import com.awan.feature.addtask.presentation.TaskConfirmation
 import com.awan.feature.addtask.ui.components.AiToggle
@@ -83,11 +84,14 @@ import com.awan.feature.addtask.ui.components.ImageAttachment
 import com.awan.feature.addtask.ui.components.TaskAttributeChips
 import com.awan.feature.addtask.ui.components.TaskConfirmationPanel
 import com.awan.feature.addtask.ui.components.rememberTokenHighlight
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 private val MascotWidth = 108.dp
 private val SkyHeight = 116.dp
 private val DragHandleWidth = 36.dp
 private val DragHandleHeight = 4.dp
+private val PlanReadyDwell = 1000.milliseconds
 
 /**
  * Quick capture. Opened from the `+` in the bottom bar; it is deliberately not a navigation
@@ -125,8 +129,12 @@ fun AddTaskSheet(
         },
     )
 
-    LaunchedEffect(state.goalStep) {
-        if (state.goalStep is GoalStep.Preview) {
+    // The dwell is what lets the plan-ready beat be seen at all; without it the sheet leaves on the
+    // frame the proposal arrives. It also lets the sheet shrink to the small ready panel first,
+    // rather than growing to full preview height while it slides away.
+    LaunchedEffect(state.goalPhase) {
+        if (state.goalPhase == GoalPhase.PlanReady) {
+            delay(PlanReadyDwell)
             sheetState.hide()          // suspends until SheetValue.Hidden
             onDismiss()                // sets showAddTask = false
             onNavigateToGoalPreview()  // navigator.navigate(GoalPreviewRoute)
@@ -372,7 +380,11 @@ private fun SkyHeader(state: AddTaskState) {
             contentAlignment = Alignment.Center,
         ) {
             Crossfade(targetState = state.mascot, label = "addTaskMascot") { expression ->
-                AwanMascot(expression = expression, width = MascotWidth)
+                AwanMascot(
+                    expression = expression,
+                    width = MascotWidth,
+                    thinking = state.goalPhase == GoalPhase.Thinking,
+                )
             }
             Box(Modifier.size(MascotWidth)) {
                 SparkleBurst(celebrate = state.isCelebrating)

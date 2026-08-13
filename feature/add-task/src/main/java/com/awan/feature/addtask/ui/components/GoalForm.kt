@@ -51,6 +51,7 @@ import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskAction
 import com.awan.feature.addtask.presentation.AddTaskMode
 import com.awan.feature.addtask.presentation.AddTaskState
+import com.awan.feature.addtask.presentation.GoalPhase
 import com.awan.feature.addtask.presentation.GoalStep
 import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.Check
@@ -76,17 +77,21 @@ fun GoalFormContent(
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
     ) {
         AnimatedContent(
-            targetState = state.goalStep,
+            targetState = state.goalPhase to state.goalStep,
             // Keying on the class alone collapses two consecutive questions of the same kind into
             // one key, and AnimatedContent then runs no transition at all between them. Keying on
             // the question text distinguishes them; keying on the step itself would not work,
             // because selecting an option rewrites the step in place.
-            contentKey = { step ->
-                when (step) {
-                    GoalStep.Initial -> "initial"
-                    is GoalStep.MultipleChoice -> "mcq:${step.question}"
-                    is GoalStep.WritingQuestion -> "writing:${step.question}"
-                    is GoalStep.Preview -> "preview"
+            contentKey = { (phase, step) ->
+                when (phase) {
+                    GoalPhase.Thinking -> "thinking"
+                    GoalPhase.PlanReady -> "ready"
+                    GoalPhase.Editing -> when (step) {
+                        GoalStep.Initial -> "initial"
+                        is GoalStep.MultipleChoice -> "mcq:${step.question}"
+                        is GoalStep.WritingQuestion -> "writing:${step.question}"
+                        is GoalStep.Preview -> "preview"
+                    }
                 }
             },
             transitionSpec = {
@@ -104,46 +109,50 @@ fun GoalFormContent(
                 transform using SizeTransform { _, _ -> snap() }
             },
             label = "goalStepTransition",
-        ) { step ->
-            when (step) {
-                GoalStep.Initial -> InitialStepContent(
-                    state = state,
-                    onAction = onAction,
-                    isListening = isListening,
-                    onToggleMic = onToggleMic,
-                    speechError = speechError,
-                    isPermissionError = isPermissionError,
-                )
+        ) { (phase, step) ->
+            when {
+                phase != GoalPhase.Editing -> GoalThinkingPanel(ready = phase == GoalPhase.PlanReady)
 
-                is GoalStep.MultipleChoice -> MultipleChoiceStepContent(
-                    step = step,
-                    state = state,
-                    onAction = onAction,
-                    isListening = isListening,
-                    onToggleMic = onToggleMic,
-                    speechError = speechError,
-                    isPermissionError = isPermissionError,
-                )
+                else -> when (step) {
+                    GoalStep.Initial -> InitialStepContent(
+                        state = state,
+                        onAction = onAction,
+                        isListening = isListening,
+                        onToggleMic = onToggleMic,
+                        speechError = speechError,
+                        isPermissionError = isPermissionError,
+                    )
 
-                is GoalStep.WritingQuestion -> WritingStepContent(
-                    step = step,
-                    state = state,
-                    onAction = onAction,
-                    isListening = isListening,
-                    onToggleMic = onToggleMic,
-                    speechError = speechError,
-                    isPermissionError = isPermissionError,
-                )
+                    is GoalStep.MultipleChoice -> MultipleChoiceStepContent(
+                        step = step,
+                        state = state,
+                        onAction = onAction,
+                        isListening = isListening,
+                        onToggleMic = onToggleMic,
+                        speechError = speechError,
+                        isPermissionError = isPermissionError,
+                    )
 
-                is GoalStep.Preview -> PreviewStepContent(
-                    step = step,
-                    state = state,
-                    onAction = onAction,
-                    isListening = isListening,
-                    onToggleMic = onToggleMic,
-                    speechError = speechError,
-                    isPermissionError = isPermissionError,
-                )
+                    is GoalStep.WritingQuestion -> WritingStepContent(
+                        step = step,
+                        state = state,
+                        onAction = onAction,
+                        isListening = isListening,
+                        onToggleMic = onToggleMic,
+                        speechError = speechError,
+                        isPermissionError = isPermissionError,
+                    )
+
+                    is GoalStep.Preview -> PreviewStepContent(
+                        step = step,
+                        state = state,
+                        onAction = onAction,
+                        isListening = isListening,
+                        onToggleMic = onToggleMic,
+                        speechError = speechError,
+                        isPermissionError = isPermissionError,
+                    )
+                }
             }
         }
 

@@ -88,4 +88,9 @@
     <string name="add_task_error_goal_continuation_failed">Awan couldn\'t break down that goal. Check your connection and try again.</string>
     <string name="add_task_error_goal_confirm_failed">Couldn\'t save this goal. Check your connection and try again.</string>
 
+    <string name="add_task_goal_thinking_1">Reading your goal…</string>
+    <string name="add_task_goal_thinking_2">Breaking it into steps…</string>
+    <string name="add_task_goal_thinking_3">Sizing each piece…</string>
+    <string name="add_task_goal_thinking_4">Almost there…</string>
+    <string name="add_task_goal_plan_ready">Your plan is ready!</string>
 </resources>
