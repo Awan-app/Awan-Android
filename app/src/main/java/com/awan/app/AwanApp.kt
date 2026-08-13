@@ -203,65 +203,66 @@ fun AwanApp(
                 }
             }
 
-        val entryProvider = entryProvider {
-            splashEntry(
-                onNavigateToNext = { destination ->
-                    when (destination) {
-                        SplashDestination.Auth -> navigator.replaceAll(LoginRoute)
-                        SplashDestination.Onboarding -> navigator.replaceAll(OnboardingRoute)
-                        SplashDestination.Home -> navigator.replaceAll(HomeRoute())
-                        SplashDestination.Loading -> { /* Keep showing splash */ }
+            val entryProvider = entryProvider {
+                splashEntry(
+                    onNavigateToNext = { destination ->
+                        when (destination) {
+                            SplashDestination.Auth -> navigator.replaceAll(LoginRoute)
+                            SplashDestination.Onboarding -> navigator.replaceAll(OnboardingRoute)
+                            SplashDestination.Home -> navigator.replaceAll(HomeRoute())
+                            SplashDestination.Loading -> { /* Keep showing splash */ }
+                        }
                     }
-                }
-            )
-            authEntry(
-                onNavigateToOtp = { email -> navigator.navigate(OtpRoute(email)) },
-                onNavigateToHome = { navigator.replaceAll(HomeRoute()) },
-                onNavigateToOnboarding = { navigator.replaceAll(OnboardingRoute) },
-                onPopBackStack = { navigator.goBack() }
-            )
-            onboardingEntry(
-                onComplete = { navigator.replaceAll(HomeRoute()) },
-                onExit = { navigator.replaceAll(LoginRoute) }
-            )
-            marketplaceEntry(
-                onNavigateToHome = { navigator.navigate(HomeRoute()) }
-            )
-            homeEntry(
-                onLogout = { navigator.replaceAll(LoginRoute) },
-                onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
-                onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
-                onNavigateToAddTask = { _, _ ->
-                    showAddTask = true
-                },
-            )
+                )
+                authEntry(
+                    onNavigateToOtp = { email -> navigator.navigate(OtpRoute(email)) },
+                    onNavigateToHome = { navigator.replaceAll(HomeRoute()) },
+                    onNavigateToOnboarding = { navigator.replaceAll(OnboardingRoute) },
+                    onPopBackStack = { navigator.goBack() }
+                )
+                onboardingEntry(
+                    onComplete = { navigator.replaceAll(HomeRoute()) },
+                    onExit = { navigator.replaceAll(LoginRoute) }
+                )
+                marketplaceEntry(
+                    onNavigateToHome = { navigator.navigate(HomeRoute()) }
+                )
+                homeEntry(
+                    onLogout = { navigator.replaceAll(LoginRoute) },
+                    onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
+                    onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
+                    onNavigateToAddTask = { _, _ ->
+                        showAddTask = true
+                    },
+                )
 
-            calendarEntry(
-                onDateSelected = { date ->
-                    onSelectHomeDate?.invoke(date)
-                    navigator.goBack()
-                },
-                onBack = { navigator.goBack() },
-            )
-            chatEntry()
-            goalsEntry()
-            aiTasksEntry(onBack = { navigator.goBack() })
-            inventoryEntry(onBack = { navigator.goBack() })
-            profileEntry(
-                onNavigateToDailyZones = { navigator.navigate(DailyZonesRoute) },
-                onNavigateToEditRoutine = { templateId -> navigator.navigate(EditRoutineRoute(templateId)) },
-                onLogout = { navigator.replaceAll(LoginRoute) },
-                onBack = { navigator.goBack()},
-                onNavigateToInventory = { navigator.navigate(InventoryRoute) },
-                onNavigateToMcpSettings = { navigator.navigate(McpSettingsRoute) },
-                onNavigateToMcpInfo = { navigator.navigate(McpInfoRoute) },
-            )
-            goalPreviewEntry(
-                onBack = { navigator.goBack() },
-                onNavigateToGoals = { navigator.replaceAll(GoalsRoute) },
-            )
-        }
-
+                calendarEntry(
+                    onDateSelected = { date ->
+                        onSelectHomeDate?.invoke(date)
+                        navigator.goBack()
+                    },
+                    onBack = { navigator.goBack() },
+                )
+                chatEntry()
+                goalsEntry()
+                aiTasksEntry(onBack = { navigator.goBack() })
+                inventoryEntry(onBack = { navigator.goBack() })
+                profileEntry(
+                    onNavigateToDailyZones = { navigator.navigate(DailyZonesRoute) },
+                    onNavigateToEditRoutine = { templateId, date ->
+                        navigator.navigate(EditRoutineRoute(templateId = templateId, date = date))
+                    },
+                    onLogout = { navigator.replaceAll(LoginRoute) },
+                    onBack = { navigator.goBack() },
+                    onNavigateToInventory = { navigator.navigate(InventoryRoute) },
+                    onNavigateToMcpSettings = { navigator.navigate(McpSettingsRoute) },
+                    onNavigateToMcpInfo = { navigator.navigate(McpInfoRoute) },
+                )
+                goalPreviewEntry(
+                    onBack = { navigator.goBack() },
+                    onNavigateToGoals = { navigator.replaceAll(GoalsRoute) },
+                )
+            }
         BackHandler(
             enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack
         ) {
