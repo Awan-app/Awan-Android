@@ -1,14 +1,26 @@
 package com.awan.feature.addtask.ui
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
@@ -34,6 +46,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -150,10 +163,12 @@ fun AddTaskSheet(
         dragHandle = null,
         modifier = modifier,
     ) {
+        // No imePadding here: ModalBottomSheet's own root already applies it, and repeating it just
+        // makes the inset look like it is being paid twice.
         AddTaskSheetContent(
             state = state,
             onAction = viewModel::onAction,
-            modifier = Modifier.fillMaxWidth().imePadding(),
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 
@@ -240,67 +255,96 @@ private fun AddTaskSheetContent(
         onAction(action)
     }
 
-    Column(modifier = modifier) {
-        SkyHeader(state = state)
+    val isReduced = reducedMotion()
+    val standardMillis = AwanTheme.motion.standardMillis
+    val fastMillis = AwanTheme.motion.fastMillis
+    val bodySizeSpec = if (isReduced) snap() else AwanTheme.motion.settle.spec<IntSize>()
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = AwanTheme.spacing.lg)
-                .padding(top = AwanTheme.spacing.md, bottom = AwanTheme.spacing.xl),
-            verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
-        ) {
-            if (state.showsModeSelector) {
-                CascadeItem(0, Modifier.fillMaxWidth()) {
-                    AwanSegmentedControl(
-                        options = AddTaskMode.entries,
-                        selected = state.mode,
-                        onSelect = { onAction(AddTaskAction.ModeChanged(it)) },
-                        label = { mode ->
-                            stringResource(
-                                when (mode) {
-                                    AddTaskMode.TASK -> R.string.add_task_mode_task
-                                    AddTaskMode.GOAL -> R.string.add_task_mode_goal
-                                },
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
+    /**
+     * The cap is what stops the sheet flickering, and it is not cosmetic. `ModalBottomSheet`
+     * consumes `top = sheetState.offset` and then pays the top safeDrawing inset back out of the
+     * content, while its Expanded anchor is `fullHeight - contentHeight`. Any sheet tall enough to
+     * reach the status bar therefore feeds its own height into its own anchor with a loop gain of
+     * exactly one, and has no stable resting height at all. Staying clear of the inset keeps the
+     * loop open. `asPaddingValues()` reads the raw inset, blind to that consumption — which is why
+     * `statusBarsPadding()` cannot be used here.
+     */
+    BoxWithConstraints(modifier) {
+        val topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
 
-            val body = state.confirmation ?: state.mode
-            Crossfade(targetState = body, label = "addTaskBody") { target ->
-                when (target) {
-                    is TaskConfirmation -> TaskConfirmationPanel(
-                        confirmation = target,
-                        today = state.today,
-                        onDone = { onAction(AddTaskAction.DismissRequested) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+        Column(Modifier.heightIn(max = maxHeight - topInset - AwanTheme.spacing.sm)) {
+            SkyHeader(state = state)
 
-                    AddTaskMode.TASK -> TaskForm(
-                        state = state,
-                        onAction = handleAction,
-                        isListening = speechState.isListening,
-                        onToggleMic = toggleMic,
-                        speechError = speechState.errorMessage,
-                        isPermissionError = speechState.isPermissionError,
-                    )
-
-                    AddTaskMode.GOAL -> GoalFormContent(
-                        state = state,
-                        onAction = handleAction,
-                        isListening = speechState.isListening,
-                        onToggleMic = toggleMic,
-                        speechError = speechState.errorMessage,
-                        isPermissionError = speechState.isPermissionError,
-                    )
-
-                    else -> Unit
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .animateContentSize(animationSpec = bodySizeSpec)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = AwanTheme.spacing.lg)
+                    .padding(top = AwanTheme.spacing.md, bottom = AwanTheme.spacing.xl),
+                verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
+            ) {
+                if (state.showsModeSelector) {
+                    CascadeItem(0, Modifier.fillMaxWidth()) {
+                        AwanSegmentedControl(
+                            options = AddTaskMode.entries,
+                            selected = state.mode,
+                            onSelect = { onAction(AddTaskAction.ModeChanged(it)) },
+                            label = { mode ->
+                                stringResource(
+                                    when (mode) {
+                                        AddTaskMode.TASK -> R.string.add_task_mode_task
+                                        AddTaskMode.GOAL -> R.string.add_task_mode_goal
+                                    },
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
 
+                // Crossfade held both children and jumped to max(old, new); AnimatedContent with a
+                // snapping SizeTransform reports the incoming size at once and leaves the height to
+                // the animateContentSize above, so there is only ever one size authority.
+                val body = state.confirmation ?: state.mode
+                AnimatedContent(
+                    targetState = body,
+                    transitionSpec = {
+                        val enter = fadeIn(if (isReduced) snap() else tween(standardMillis))
+                        val exit = fadeOut(if (isReduced) snap() else tween(fastMillis))
+                        enter togetherWith exit using SizeTransform { _, _ -> snap() }
+                    },
+                    label = "addTaskBody",
+                ) { target ->
+                    when (target) {
+                        is TaskConfirmation -> TaskConfirmationPanel(
+                            confirmation = target,
+                            today = state.today,
+                            onDone = { onAction(AddTaskAction.DismissRequested) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        AddTaskMode.TASK -> TaskForm(
+                            state = state,
+                            onAction = handleAction,
+                            isListening = speechState.isListening,
+                            onToggleMic = toggleMic,
+                            speechError = speechState.errorMessage,
+                            isPermissionError = speechState.isPermissionError,
+                        )
+
+                        AddTaskMode.GOAL -> GoalFormContent(
+                            state = state,
+                            onAction = handleAction,
+                            isListening = speechState.isListening,
+                            onToggleMic = toggleMic,
+                            speechError = speechState.errorMessage,
+                            isPermissionError = speechState.isPermissionError,
+                        )
+
+                        else -> Unit
+                    }
+                }
             }
         }
     }

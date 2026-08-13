@@ -1,6 +1,7 @@
 package com.awan.feature.addtask.ui.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
@@ -76,9 +77,20 @@ fun GoalFormContent(
     ) {
         AnimatedContent(
             targetState = state.goalStep,
-            contentKey = { step -> step::class },
+            // Keying on the class alone collapses two consecutive questions of the same kind into
+            // one key, and AnimatedContent then runs no transition at all between them. Keying on
+            // the question text distinguishes them; keying on the step itself would not work,
+            // because selecting an option rewrites the step in place.
+            contentKey = { step ->
+                when (step) {
+                    GoalStep.Initial -> "initial"
+                    is GoalStep.MultipleChoice -> "mcq:${step.question}"
+                    is GoalStep.WritingQuestion -> "writing:${step.question}"
+                    is GoalStep.Preview -> "preview"
+                }
+            },
             transitionSpec = {
-                if (isReduced) {
+                val transform = if (isReduced) {
                     fadeIn(animationSpec = snap()) togetherWith fadeOut(animationSpec = snap())
                 } else {
                     (fadeIn(animationSpec = tween(standardMillis)) +
@@ -88,6 +100,8 @@ fun GoalFormContent(
                                 slideOutVertically(animationSpec = tween(fastMillis)) { -it / 8 }
                         )
                 }
+                // Height belongs to the sheet's single animateContentSize, not to this.
+                transform using SizeTransform { _, _ -> snap() }
             },
             label = "goalStepTransition",
         ) { step ->
