@@ -1,12 +1,7 @@
 package com.awan.feature.addtask.ui.components
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -44,11 +39,12 @@ import com.awan.app.core.designsystem.AwanAiAura
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
-import com.awan.app.core.designsystem.AwanIconButton
+import com.awan.app.core.designsystem.AwanMicButton
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.CascadeItem
+import com.awan.app.core.designsystem.rememberSpeechRecognizer
 import com.awan.app.core.designsystem.reducedMotion
 import com.awan.app.core.model.GoalDecompositionBlock
 import com.awan.app.core.model.GoalProposal
@@ -61,8 +57,6 @@ import com.awan.feature.addtask.presentation.GoalStep
 import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.Check
 import com.composables.icons.lucide.Lucide
-import com.composables.icons.lucide.Mic
-import com.composables.icons.lucide.MicOff
 import java.time.LocalDate
 
 @Composable
@@ -71,8 +65,10 @@ fun GoalForm(
     onAction: (AddTaskAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val currentInput by rememberUpdatedState(state.input)
     val speechState = rememberSpeechRecognizer(
         onTranscript = { transcript -> onAction(AddTaskAction.InputChanged(transcript)) },
+        currentText = { currentInput },
         hasRequestedMicPermission = state.hasRequestedMicPermission,
         onSetMicPermissionRequested = { requested ->
             onAction(AddTaskAction.SetMicPermissionRequested(requested))
@@ -233,9 +229,9 @@ private fun InitialStepContent(
                         singleLine = false,
                         isError = isPermissionError,
                         trailingContent = {
-                            GoalMicButton(
+                            AwanMicButton(
                                 isListening = isListening,
-                                onToggleMic = onToggleMic,
+                                onToggle = onToggleMic,
                                 enabled = !state.isSubmitting,
                             )
                         },
@@ -388,9 +384,9 @@ private fun MultipleChoiceStepContent(
                         singleLine = false,
                         isError = isPermissionError,
                         trailingContent = {
-                            GoalMicButton(
+                            AwanMicButton(
                                 isListening = isListening,
-                                onToggleMic = onToggleMic,
+                                onToggle = onToggleMic,
                                 enabled = !state.isSubmitting,
                             )
                         },
@@ -498,9 +494,9 @@ private fun WritingStepContent(
                         singleLine = false,
                         isError = isPermissionError,
                         trailingContent = {
-                            GoalMicButton(
+                            AwanMicButton(
                                 isListening = isListening,
-                                onToggleMic = onToggleMic,
+                                onToggle = onToggleMic,
                                 enabled = !state.isSubmitting,
                             )
                         },
@@ -604,9 +600,9 @@ private fun PreviewStepContent(
                         singleLine = false,
                         isError = isPermissionError,
                         trailingContent = {
-                            GoalMicButton(
+                            AwanMicButton(
                                 isListening = isListening,
-                                onToggleMic = onToggleMic,
+                                onToggle = onToggleMic,
                                 enabled = !state.isSubmitting,
                             )
                         },
@@ -745,52 +741,6 @@ private fun TaskProposalItem(index: Int, task: ProposedTask) {
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun GoalMicButton(
-    isListening: Boolean,
-    onToggleMic: () -> Unit,
-    enabled: Boolean = true,
-) {
-    val reduced = reducedMotion()
-    val shouldPulse = isListening && !reduced && enabled
-    val pulseScale by if (shouldPulse) {
-        val infiniteTransition = rememberInfiniteTransition(label = "micPulse")
-        infiniteTransition.animateFloat(
-            initialValue = 1.0f,
-            targetValue = 1.05f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(800, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-            label = "micPulseScale",
-        )
-    } else {
-        rememberUpdatedState(1.0f)
-    }
-
-    val desc = stringResource(
-        if (isListening) R.string.add_task_goal_mic_listening
-        else R.string.add_task_goal_mic_idle,
-    )
-
-    AwanIconButton(
-        onClick = onToggleMic,
-        contentDescription = desc,
-        enabled = enabled,
-        modifier = Modifier.graphicsLayer {
-            scaleX = pulseScale
-            scaleY = pulseScale
-        },
-    ) {
-        Icon(
-            imageVector = if (isListening) Lucide.MicOff else Lucide.Mic,
-            contentDescription = null,
-            tint = if (isListening) AwanTheme.colors.sky else AwanTheme.colors.textSecondary,
-            modifier = Modifier.size(20.dp),
-        )
     }
 }
 

@@ -47,4 +47,21 @@
     <string name="ds_wheel_collect">استلام</string>
     <string name="ds_wheel_close">إغلاق</string>
     <string name="ds_wheel_item_wedge">هدية</string>
+
+    <!-- Speech to text -->
+    <string name="ds_mic_idle">إملاء نصي</string>
+    <string name="ds_mic_listening">جارٍ الاستماع… انقر للإيقاف</string>
+    <string name="ds_speech_permission_denied">إذن الميكروفون مطلوب للتعرف على الصوت.</string>
+    <string name="ds_speech_unavailable">التعرف على الصوت غير متاح على هذا الجهاز.</string>
+    <string name="ds_speech_no_match">لم أتمكن من التقاط الصوت. حاول التحدث مجددًا.</string>
+    <string name="ds_speech_error">حدث خطأ أثناء التعرف على الصوت. يُرجى المحاولة مرة أخرى.</string>
+    <string name="ds_speech_language_unsupported">التعرف على الصوت لا يدعم لغة التطبيق على هذا الجهاز.</string>
+    <string name="ds_speech_rationale_title">هل تريد استخدام صوتك؟</string>
+    <string name="ds_speech_rationale_body">يحتاج أوان إلى الميكروفون لتتمكن من الإملاء بدلًا من الكتابة. لا يتم تسجيل أي صوت أو تخزينه.</string>
+    <string name="ds_speech_rationale_confirm">متابعة</string>
+    <string name="ds_speech_rationale_cancel">ليس الآن</string>
+    <string name="ds_speech_settings_dialog_title">إذن الميكروفون مطلوب</string>
+    <string name="ds_speech_settings_dialog_body">تم إيقاف إذن الميكروفون. يرجى تفعيله من إعدادات التطبيق لاستخدام الإملاء الصوتي.</string>
+    <string name="ds_speech_settings_dialog_confirm">فتح الإعدادات</string>
+    <string name="ds_speech_settings_dialog_cancel">إلغاء</string>
 </resources>

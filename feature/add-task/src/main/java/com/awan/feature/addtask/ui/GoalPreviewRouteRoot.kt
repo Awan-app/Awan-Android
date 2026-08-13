@@ -12,11 +12,11 @@ import androidx.activity.ComponentActivity
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanConfirmDialog
 import com.awan.app.core.designsystem.ObserveAsEvents
+import com.awan.app.core.designsystem.rememberSpeechRecognizer
 import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskAction
 import com.awan.feature.addtask.presentation.AddTaskEvent
 import com.awan.feature.addtask.presentation.AddTaskViewModel
-import com.awan.feature.addtask.ui.components.rememberSpeechRecognizer
 
 @Composable
 fun GoalPreviewRouteRoot(
@@ -43,6 +43,7 @@ fun GoalPreviewRouteRoot(
 
     val speechState = rememberSpeechRecognizer(
         onTranscript = { transcript -> viewModel.onAction(AddTaskAction.InputChanged(transcript)) },
+        currentText = { viewModel.state.value.input },
         hasRequestedMicPermission = state.hasRequestedMicPermission,
         onSetMicPermissionRequested = { requested ->
             viewModel.onAction(AddTaskAction.SetMicPermissionRequested(requested))

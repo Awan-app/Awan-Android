@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.platform.app.InstrumentationRegistry
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.R as DsR
 import com.awan.app.core.model.GoalDecompositionBlock
 import com.awan.app.core.model.GoalProposal
 import com.awan.app.core.model.ProposedTask
@@ -64,7 +65,7 @@ class GoalFormTest {
 
         composeTestRule.onNodeWithText(getString(R.string.add_task_goal_initial_title)).assertIsDisplayed()
         composeTestRule.onNodeWithText("Learn Spanish for trip").assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription(getString(R.string.add_task_goal_mic_idle)).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(getString(DsR.string.ds_mic_idle)).assertIsDisplayed()
 
         val submitNode = composeTestRule.onNodeWithText(getString(R.string.add_task_goal_submit_initial))
         submitNode.assertIsDisplayed().assertIsEnabled()
@@ -105,7 +106,7 @@ class GoalFormTest {
         // Assert custom field and idle mic are present
         val customFieldDesc = getString(R.string.add_task_goal_mcq_custom_description)
         composeTestRule.onNodeWithContentDescription(customFieldDesc).assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription(getString(R.string.add_task_goal_mic_idle)).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(getString(DsR.string.ds_mic_idle)).assertIsDisplayed()
 
         // Typing dispatches InputChanged
         composeTestRule.onNodeWithContentDescription(customFieldDesc).performTextInput("Custom input")
@@ -149,7 +150,7 @@ class GoalFormTest {
 
         composeTestRule.onNodeWithText("How many hours per week?").assertIsDisplayed()
         composeTestRule.onNodeWithText("3 hours").assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription(getString(R.string.add_task_goal_mic_idle)).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(getString(DsR.string.ds_mic_idle)).assertIsDisplayed()
 
         val continueNode = composeTestRule.onNodeWithText(getString(R.string.add_task_goal_writing_continue))
         continueNode.assertIsDisplayed().assertIsEnabled()
@@ -218,7 +219,7 @@ class GoalFormTest {
 
         composeTestRule.onNodeWithText(getString(R.string.add_task_goal_preview_accept)).assertIsDisplayed().assertIsEnabled()
         composeTestRule.onNodeWithText(getString(R.string.add_task_goal_preview_revision_submit)).assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription(getString(R.string.add_task_goal_mic_idle)).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(getString(DsR.string.ds_mic_idle)).assertIsDisplayed()
     }
 
     @Test
@@ -280,7 +281,7 @@ class GoalFormTest {
         }
 
         composeTestRule.onNodeWithText(getString(R.string.add_task_goal_submit_initial)).assertIsNotEnabled()
-        composeTestRule.onNodeWithContentDescription(getString(R.string.add_task_goal_mic_idle)).assertIsDisplayed().assertIsNotEnabled()
+        composeTestRule.onNodeWithContentDescription(getString(DsR.string.ds_mic_idle)).assertIsDisplayed().assertIsNotEnabled()
 
     }
 
