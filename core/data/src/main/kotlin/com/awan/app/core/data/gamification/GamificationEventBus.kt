@@ -41,6 +41,11 @@ class GamificationEventBus @Inject constructor(
         cacheProgress(progress)
     }
 
+    suspend fun updatePoints(newPoints: Int) {
+        _progress.update { it.copy(points = newPoints) }
+        cacheProgress(_progress.value)
+    }
+
     /** Seeds from cache without clobbering fresher numbers already published by an award. */
     fun seedProgressIfEmpty(progress: GamificationProgress) {
         _progress.update { current ->

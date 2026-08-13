@@ -28,11 +28,14 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+import com.awan.app.core.data.gamification.GamificationEventBus
+
 @Singleton
 class StoreRepositoryImpl @Inject constructor(
     private val remoteDataSource: StoreRemoteDataSource,
     private val storeDao: StoreDao,
     private val profileRepository: ProfileRepository,
+    private val gamificationEventBus: GamificationEventBus,
     private val connectivityMonitor: NetworkConnectivityMonitor,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : StoreRepository {
@@ -71,9 +74,13 @@ class StoreRepositoryImpl @Inject constructor(
             // Refresh inventory and profile
             val invResult = refreshInventory()
             if (invResult is Result.Error) return@withContext invResult
-            
+
             val profileResult = profileRepository.getProfile()
-            if (profileResult is Result.Error) return@withContext Result.Error(profileResult.error)
+            when (profileResult) {
+                is Result.Success -> profileResult.data.points?.let { gamificationEventBus.updatePoints(it) }
+                is Result.Error -> return@withContext Result.Error(profileResult.error)
+                Result.Loading -> Unit
+            }
         }
         result
     }

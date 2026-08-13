@@ -34,6 +34,7 @@ import com.awan.app.core.domain.home.usecase.UncompleteSessionUseCase
 import com.awan.app.core.domain.home.usecase.MoveSessionUseCase
 import com.awan.app.core.domain.home.usecase.UpdateSessionLockUseCase
 import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
+import com.awan.app.core.domain.profile.usecase.ObserveProfileUseCase
 import com.awan.feature.home.impl.ui.components.calculateDurationMinutes
 import com.awan.feature.home.impl.ui.components.calculateEnd
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -72,6 +73,7 @@ class HomeViewModel @Inject constructor(
     private val moveSessionUseCase: MoveSessionUseCase,
     private val updateSessionLockUseCase: UpdateSessionLockUseCase,
     private val getProfileUseCase: GetProfileUseCase,
+    private val observeProfileUseCase: ObserveProfileUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -84,6 +86,7 @@ class HomeViewModel @Inject constructor(
         updateCurrentTime()
         startClockTimer()
         loadUserProfile()
+        observeUserProfile()
         observeGamificationProgress()
         loadWheelAvailability()
         loadScheduleForDate(LocalDate.now())
@@ -104,6 +107,23 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 else -> Unit
+            }
+        }
+    }
+
+    private fun observeUserProfile() {
+        viewModelScope.launch {
+            observeProfileUseCase().collect { profile ->
+                if (profile != null) {
+                    val name = profile.firstName?.takeIf { it.isNotBlank() } ?: "User"
+                    _uiState.update { state ->
+                        state.copy(
+                            userName = name,
+                            streakCount = profile.streak ?: state.streakCount,
+                            pointsCount = profile.points ?: state.pointsCount,
+                        )
+                    }
+                }
             }
         }
     }
