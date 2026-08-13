@@ -14,13 +14,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.awan.app.core.designsystem.AwanSegmentedControl
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+
+private const val DISABLED_ALPHA = 0.45f
 
 /**
  * A settings row whose choices sit on their own line.
@@ -49,6 +53,9 @@ fun MinutesPreferenceRow(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Row(
+                // Only the header: AwanSegmentedControl draws its own disabled state, and dimming
+                // it again on top of that reads as muddy rather than as off.
+                modifier = Modifier.alpha(if (enabled) 1f else DISABLED_ALPHA),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
@@ -74,19 +81,16 @@ fun MinutesPreferenceRow(
                 )
             }
 
-            Row(
+            // One of a set, exactly what a segmented control is for: the chosen minute stays held
+            // down on its rim rather than being marked by a colour change.
+            AwanSegmentedControl(
+                options = choices,
+                selected = selected,
+                onSelect = onSelect,
+                label = label,
+                enabled = enabled,
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                choices.forEach { minutes ->
-                    MinutesOption(
-                        label = label(minutes),
-                        isSelected = minutes == selected,
-                        enabled = enabled,
-                        onClick = { onSelect(minutes) },
-                    )
-                }
-            }
+            )
         }
 
         if (showDivider) {

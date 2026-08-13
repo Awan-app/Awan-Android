@@ -39,9 +39,10 @@
     <string name="profile_notifications_live_activity">التقدّم المباشر أثناء الجلسة</string>
     <string name="profile_notifications_session_end">عند انتهاء الجلسة</string>
     <string name="profile_notifications_rewards">المكافآت والعجلة اليومية</string>
-    <string name="profile_notifications_reminder_lead">ذكّرني قبل</string>
-    <string name="profile_notifications_snooze_length">مدة التأجيل</string>
-    <string name="profile_notifications_minutes">%1$d دقيقة</string>
+    <string name="profile_notifications_reminder_lead">ذكّرني قبل (دقيقة)</string>
+    <string name="profile_notifications_snooze_length">مدة التأجيل (دقيقة)</string>
+    <!-- Segment label. The unit lives in the row title so four segments fit without wrapping. -->
+    <string name="profile_notifications_minutes">%1$d</string>
     <string name="profile_notifications_system_settings">إعدادات إشعارات النظام</string>
     <string name="profile_notifications_blocked_title">الإشعارات مغلقة</string>
     <string name="profile_notifications_blocked_body">لا يمكن لأوان تذكيرك بالجلسات حتى يتم السماح بالإشعارات لهذا التطبيق.</string>

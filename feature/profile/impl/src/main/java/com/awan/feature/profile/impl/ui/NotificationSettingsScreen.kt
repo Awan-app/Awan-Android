@@ -177,14 +177,22 @@ private fun SwitchRow(
     PreferenceRow(
         icon = icon,
         title = title,
-        onClick = null,
+        // The row is the control; a switch is a small target to ask someone to hit.
+        onClick = if (enabled) {
+            { onCheckedChange(!checked) }
+        } else {
+            null
+        },
         showDivider = showDivider,
         iconColor = iconColor,
     ) {
         Switch(
             checked = checked,
             enabled = enabled,
-            onCheckedChange = onCheckedChange,
+            // Null, not a second handler: the switch draws the state and lets the press fall through
+            // to the row, so a tap on the thumb toggles once and the row stays a single control for
+            // accessibility rather than two overlapping ones.
+            onCheckedChange = null,
             modifier = Modifier.padding(end = 12.dp),
         )
     }

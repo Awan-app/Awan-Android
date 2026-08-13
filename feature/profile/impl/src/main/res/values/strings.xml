@@ -39,9 +39,10 @@
     <string name="profile_notifications_live_activity">Live progress while running</string>
     <string name="profile_notifications_session_end">When a session ends</string>
     <string name="profile_notifications_rewards">Rewards and daily spin</string>
-    <string name="profile_notifications_reminder_lead">Remind me</string>
-    <string name="profile_notifications_snooze_length">Snooze by</string>
-    <string name="profile_notifications_minutes">%1$d min</string>
+    <string name="profile_notifications_reminder_lead">Remind me (min)</string>
+    <string name="profile_notifications_snooze_length">Snooze by (min)</string>
+    <!-- Segment label. The unit lives in the row title so four segments fit without wrapping. -->
+    <string name="profile_notifications_minutes">%1$d</string>
     <string name="profile_notifications_system_settings">System notification settings</string>
     <string name="profile_notifications_blocked_title">Notifications are turned off</string>
     <string name="profile_notifications_blocked_body">Awan cannot remind you about sessions until notifications are allowed for this app.</string>
