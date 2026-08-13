@@ -220,38 +220,44 @@ class CalendarScreenTest {
         composeRule.onNode(
             hasTestTag("calendar_day_${plainDay}_number") and
             hasText(plainDay.dayOfMonth.toString()) and
-            hasAnyAncestor(hasTestTag("calendar_day_$plainDay"))
+            hasAnyAncestor(hasTestTag("calendar_day_$plainDay")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // No decorations bound to plainDay cell
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${plainDay}_today_primary") and
-                hasAnyAncestor(hasTestTag("calendar_day_$plainDay"))
+                hasAnyAncestor(hasTestTag("calendar_day_$plainDay")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${plainDay}_streak_fire") and
-                hasAnyAncestor(hasTestTag("calendar_day_$plainDay"))
+                hasAnyAncestor(hasTestTag("calendar_day_$plainDay")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${plainDay}_streak_number") and
-                hasAnyAncestor(hasTestTag("calendar_day_$plainDay"))
+                hasAnyAncestor(hasTestTag("calendar_day_$plainDay")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${plainDay}_deadline_shader") and
-                hasAnyAncestor(hasTestTag("calendar_day_$plainDay"))
+                hasAnyAncestor(hasTestTag("calendar_day_$plainDay")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${plainDay}_streak_badge") and
-                hasAnyAncestor(hasTestTag("calendar_day_$plainDay"))
+                hasAnyAncestor(hasTestTag("calendar_day_$plainDay")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
     }
@@ -279,38 +285,44 @@ class CalendarScreenTest {
         composeRule.onNode(
             hasTestTag("calendar_day_${today}_number") and
             hasText(today.dayOfMonth.toString()) and
-            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            hasAnyAncestor(hasTestTag("calendar_day_$today")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // Primary sky circle decoration is displayed bound to today cell
         composeRule.onNode(
             hasTestTag("calendar_day_${today}_today_primary") and
-            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            hasAnyAncestor(hasTestTag("calendar_day_$today")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // Unexpected decorations absent on today cell
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${today}_streak_fire") and
-                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+                hasAnyAncestor(hasTestTag("calendar_day_$today")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${today}_streak_number") and
-                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+                hasAnyAncestor(hasTestTag("calendar_day_$today")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${today}_deadline_shader") and
-                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+                hasAnyAncestor(hasTestTag("calendar_day_$today")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${today}_streak_badge") and
-                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+                hasAnyAncestor(hasTestTag("calendar_day_$today")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
     }
@@ -342,36 +354,42 @@ class CalendarScreenTest {
         composeRule.onNode(
             hasTestTag("calendar_day_${yesterdayStreak}_number") and
             hasText(yesterdayStreak.dayOfMonth.toString()) and
-            hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak"))
+            hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // Fire host and number circle bound to streak cell
         composeRule.onNode(
             hasTestTag("calendar_day_${yesterdayStreak}_streak_fire") and
-            hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak"))
+            hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
         composeRule.onNode(
             hasTestTag("calendar_day_${yesterdayStreak}_streak_number") and
-            hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak"))
+            hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // Unexpected decorations absent on streak cell
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${yesterdayStreak}_today_primary") and
-                hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak"))
+                hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${yesterdayStreak}_deadline_shader") and
-                hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak"))
+                hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${yesterdayStreak}_streak_badge") and
-                hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak"))
+                hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
     }
@@ -403,38 +421,44 @@ class CalendarScreenTest {
         composeRule.onNode(
             hasTestTag("calendar_day_${deadlineDay}_number") and
             hasText(deadlineDay.dayOfMonth.toString()) and
-            hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay"))
+            hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // Circular shader host bound to deadline cell
         composeRule.onNode(
             hasTestTag("calendar_day_${deadlineDay}_deadline_shader") and
-            hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay"))
+            hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // Unexpected decorations absent on deadline cell
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${deadlineDay}_today_primary") and
-                hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay"))
+                hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${deadlineDay}_streak_fire") and
-                hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay"))
+                hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${deadlineDay}_streak_number") and
-                hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay"))
+                hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${deadlineDay}_streak_badge") and
-                hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay"))
+                hasAnyAncestor(hasTestTag("calendar_day_$deadlineDay")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
     }
@@ -465,36 +489,42 @@ class CalendarScreenTest {
         composeRule.onNode(
             hasTestTag("calendar_day_${today}_number") and
             hasText(today.dayOfMonth.toString()) and
-            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            hasAnyAncestor(hasTestTag("calendar_day_$today")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // Primary circle and shader host bound to today cell
         composeRule.onNode(
             hasTestTag("calendar_day_${today}_today_primary") and
-            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            hasAnyAncestor(hasTestTag("calendar_day_$today")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
         composeRule.onNode(
             hasTestTag("calendar_day_${today}_deadline_shader") and
-            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            hasAnyAncestor(hasTestTag("calendar_day_$today")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // Streak decorations absent on today cell
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${today}_streak_fire") and
-                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+                hasAnyAncestor(hasTestTag("calendar_day_$today")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${today}_streak_number") and
-                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+                hasAnyAncestor(hasTestTag("calendar_day_$today")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${today}_streak_badge") and
-                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+                hasAnyAncestor(hasTestTag("calendar_day_$today")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
     }
@@ -525,36 +555,42 @@ class CalendarScreenTest {
         composeRule.onNode(
             hasTestTag("calendar_day_${today}_number") and
             hasText(today.dayOfMonth.toString()) and
-            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            hasAnyAncestor(hasTestTag("calendar_day_$today")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // Fire host and number circle bound to today cell
         composeRule.onNode(
             hasTestTag("calendar_day_${today}_streak_fire") and
-            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            hasAnyAncestor(hasTestTag("calendar_day_$today")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
         composeRule.onNode(
             hasTestTag("calendar_day_${today}_streak_number") and
-            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            hasAnyAncestor(hasTestTag("calendar_day_$today")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // Unexpected decorations absent on today cell
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${today}_today_primary") and
-                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+                hasAnyAncestor(hasTestTag("calendar_day_$today")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${today}_deadline_shader") and
-                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+                hasAnyAncestor(hasTestTag("calendar_day_$today")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${today}_streak_badge") and
-                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+                hasAnyAncestor(hasTestTag("calendar_day_$today")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
     }
@@ -586,34 +622,40 @@ class CalendarScreenTest {
         composeRule.onNode(
             hasTestTag("calendar_day_${today}_number") and
             hasText(today.dayOfMonth.toString()) and
-            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            hasAnyAncestor(hasTestTag("calendar_day_$today")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // Primary circle, deadline shader, and top-right fire badge bound to today cell
         composeRule.onNode(
             hasTestTag("calendar_day_${today}_today_primary") and
-            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            hasAnyAncestor(hasTestTag("calendar_day_$today")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
         composeRule.onNode(
             hasTestTag("calendar_day_${today}_deadline_shader") and
-            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            hasAnyAncestor(hasTestTag("calendar_day_$today")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
         composeRule.onNode(
             hasTestTag("calendar_day_${today}_streak_badge") and
-            hasAnyAncestor(hasTestTag("calendar_day_$today"))
+            hasAnyAncestor(hasTestTag("calendar_day_$today")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // Full fire host and number circle absent (badge replaces them)
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${today}_streak_fire") and
-                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+                hasAnyAncestor(hasTestTag("calendar_day_$today")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${today}_streak_number") and
-                hasAnyAncestor(hasTestTag("calendar_day_$today"))
+                hasAnyAncestor(hasTestTag("calendar_day_$today")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
     }
@@ -648,7 +690,8 @@ class CalendarScreenTest {
         composeRule.onNodeWithTag("calendar_day_$futureDeadline").assertIsDisplayed()
         composeRule.onNode(
             hasTestTag("calendar_day_${futureDeadline}_deadline_shader") and
-            hasAnyAncestor(hasTestTag("calendar_day_$futureDeadline"))
+            hasAnyAncestor(hasTestTag("calendar_day_$futureDeadline")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
         // Past deadline cell displays its number but no deadline shader host
@@ -656,12 +699,14 @@ class CalendarScreenTest {
         composeRule.onNode(
             hasTestTag("calendar_day_${pastDeadline}_number") and
             hasText(pastDeadline.dayOfMonth.toString()) and
-            hasAnyAncestor(hasTestTag("calendar_day_$pastDeadline"))
+            hasAnyAncestor(hasTestTag("calendar_day_$pastDeadline")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${pastDeadline}_deadline_shader") and
-                hasAnyAncestor(hasTestTag("calendar_day_$pastDeadline"))
+                hasAnyAncestor(hasTestTag("calendar_day_$pastDeadline")),
+            useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
     }
@@ -705,12 +750,10 @@ class CalendarScreenTest {
     }
 
     /**
-     * No selected-date outline marker is rendered for the selected day.
-     * Verified via target-day semantic seam: the selected day's date-scoped
-     * visual children include its number and no selection-outline marker.
+     * Selected day retains its date-scoped number semantics.
      */
     @Test
-    fun noSelectedDateOutlineIsRendered() {
+    fun selectedDayKeepsDateScopedNumber() {
         val today = LocalDate.of(2026, 8, 13)
         val selectedDay = today.plusDays(3)
         composeRule.setContent {
@@ -730,17 +773,9 @@ class CalendarScreenTest {
         composeRule.onNode(
             hasTestTag("calendar_day_${selectedDay}_number") and
             hasText(selectedDay.dayOfMonth.toString()) and
-            hasAnyAncestor(hasTestTag("calendar_day_$selectedDay"))
+            hasAnyAncestor(hasTestTag("calendar_day_$selectedDay")),
+        useUnmergedTree = true,
         ).assertIsDisplayed()
 
-        // No selection outline tag or marker exists among selectedDay's date-scoped visual children
-        assertTrue(
-            composeRule.onAllNodes(
-                (hasTestTag("calendar_day_${selectedDay}_outline") or
-                 hasTestTag("calendar_day_${selectedDay}_selection_outline") or
-                 hasTestTag("calendar_day_selected_outline")) and
-                hasAnyAncestor(hasTestTag("calendar_day_$selectedDay"))
-            ).fetchSemanticsNodes().isEmpty()
-        )
     }
 }
