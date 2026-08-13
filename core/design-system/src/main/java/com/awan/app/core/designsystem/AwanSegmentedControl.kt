@@ -35,9 +35,9 @@ private val SegmentGap = 4.dp
 private val SelectionSettle = 250.milliseconds
 
 /**
- * A row of keys on a sunken track. The selected one is held down on its rim — the same latched
- * press [AwanDisclosure] uses — so the choice reads as a physical key that stays depressed rather
- * than a highlight that moved.
+ * A row of keys on a sunken track. The selected one is filled and loses its rim, so it reads as a
+ * key pressed flat into the track — while staying on the same line as the keys beside it, which a
+ * latched sink would not.
  *
  * Built on [AwanButton] rather than hand-rolled: the rim measure policy, the diagonal press sink
  * and its RTL mirroring, and the segment-tick haptic all come with the Chip variant for free.
@@ -127,8 +127,14 @@ private fun Segment(
         animationSpec = spec,
         label = "segmentEdge",
     )
+    /**
+     * The selected segment's rim is painted in the track colour, so the strip beneath its face
+     * vanishes into the track instead of reading as a shelf. Sinking the face onto a visible rim
+     * would say the same thing, but it also drops the face by the rim depth and leaves the chosen
+     * key sitting lower than the ones beside it.
+     */
     val rim by animateColorAsState(
-        targetValue = if (isSelected) colors.skyPressed else colors.line,
+        targetValue = if (isSelected) colors.disabledSurface else colors.line,
         animationSpec = spec,
         label = "segmentRim",
     )
@@ -164,7 +170,9 @@ private fun Segment(
         rimStyle = rimStyle,
         variant = AwanButtonVariant.Chip,
         enabled = enabled,
-        latchedPressed = isSelected,
+        // Deliberately not latched: every face stays on the same line, and selection is carried by
+        // the fill and the vanished rim. The latch is still what a finger gets on press.
+        latchedPressed = false,
     ) {
         // Chip's LocalContentColor is fixed to textSecondary, so the label carries its own colour.
         AwanText(text = text, style = AwanTheme.styles.buttonCompactText.copy(color = ink))

@@ -28,12 +28,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanBackButton
 import com.awan.app.core.designsystem.AwanCard
+import com.awan.app.core.designsystem.AwanChoiceRow
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.model.NotificationPreferences
 import com.awan.feature.profile.impl.presentation.NotificationSettingsAction
 import com.awan.feature.profile.impl.presentation.NotificationSettingsState
-import com.awan.feature.profile.impl.ui.components.MinutesPreferenceRow
 import com.awan.feature.profile.impl.ui.components.PreferenceRow
 import com.awan.feature.profile.impl.ui.components.SectionTitle
 import com.awan.feature.profile.impl.ui.components.SystemNotificationsDisabledCard
@@ -115,22 +115,22 @@ fun NotificationSettingsScreen(
             SectionTitle(stringResource(ProfileR.string.profile_notifications_section_timing))
             AwanCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp)) {
                 Column {
-                    MinutesPreferenceRow(
+                    AwanChoiceRow(
                         icon = Icons.Default.Alarm,
                         title = stringResource(ProfileR.string.profile_notifications_reminder_lead),
+                        options = NotificationPreferences.REMINDER_LEAD_CHOICES,
                         selected = uiState.preferences.reminderLeadMinutes,
-                        choices = NotificationPreferences.REMINDER_LEAD_CHOICES,
                         enabled = uiState.systemNotificationsEnabled &&
                             uiState.preferences.sessionRemindersEnabled,
                         label = { stringResource(ProfileR.string.profile_notifications_minutes, it) },
                         showDivider = true,
                         onSelect = { onAction(NotificationSettingsAction.SetReminderLead(it)) },
                     )
-                    MinutesPreferenceRow(
+                    AwanChoiceRow(
                         icon = Icons.Default.Snooze,
                         title = stringResource(ProfileR.string.profile_notifications_snooze_length),
+                        options = NotificationPreferences.SNOOZE_CHOICES,
                         selected = uiState.preferences.snoozeMinutes,
-                        choices = NotificationPreferences.SNOOZE_CHOICES,
                         enabled = uiState.systemNotificationsEnabled,
                         label = { stringResource(ProfileR.string.profile_notifications_minutes, it) },
                         onSelect = { onAction(NotificationSettingsAction.SetSnooze(it)) },
