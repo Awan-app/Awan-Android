@@ -5,7 +5,9 @@ import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.model.WeeklyTemplate
+import com.awan.app.core.domain.zones.usecase.GetOverridesUseCase
 import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplatesUseCase
+import com.awan.app.core.domain.zones.usecase.UpdateOverrideZonesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,9 +38,11 @@ class DailyZonesViewModelTest {
         categoryRepository = FakeCategoryRepository()
         viewModel = DailyZonesViewModel(
             getWeeklyTemplatesUseCase = GetWeeklyTemplatesUseCase(zonesRepository),
+            getOverridesUseCase = GetOverridesUseCase(zonesRepository),
             getCategoriesUseCase = GetCategoriesUseCase(categoryRepository),
             createCategoryUseCase = CreateCategoryUseCase(categoryRepository),
-            updateTemplateZonesUseCase = UpdateTemplateZonesUseCase(zonesRepository)
+            updateTemplateZonesUseCase = UpdateTemplateZonesUseCase(zonesRepository),
+            updateOverrideZonesUseCase = UpdateOverrideZonesUseCase(zonesRepository)
         )
     }
 
