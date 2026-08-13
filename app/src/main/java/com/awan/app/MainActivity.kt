@@ -30,6 +30,8 @@ import com.awan.app.core.data.sync.SyncWorker.Companion.schedulePeriodicSync
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.LocalRewardAnchors
 import com.awan.app.core.designsystem.RewardAnchors
+import com.awan.app.core.notifications.SessionNotificationScheduler
+import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import com.awan.feature.calendar.api.CalendarRoute
@@ -46,6 +48,9 @@ class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainActivityViewModel by viewModels()
 
+    @Inject
+    lateinit var notificationScheduler: SessionNotificationScheduler
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -54,6 +59,9 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Never assume the alarm fired: a force-stop, an OEM battery manager or a dropped
+                // exact alarm all leave the chain broken until something rebuilds it.
+                launch { notificationScheduler.rescheduleAll() }
                 launch {
                     viewModel.isOnline.collectLatest { online ->
                         isOnline = online

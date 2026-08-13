@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Channels -->
+    <string name="notifications_channel_session_reminders_name">Session reminders</string>
+    <string name="notifications_channel_session_reminders_description">A nudge shortly before a scheduled session starts.</string>
+    <string name="notifications_channel_session_live_name">Running session</string>
+    <string name="notifications_channel_session_live_description">Live progress while a session is running.</string>
+    <string name="notifications_channel_session_end_name">Finished sessions</string>
+    <string name="notifications_channel_session_end_description">A prompt when a session\'s time is up.</string>
+    <string name="notifications_channel_rewards_name">Rewards and daily spin</string>
+    <string name="notifications_channel_rewards_description">Points, streaks and the daily wheel.</string>
+
+    <!-- Content -->
+    <string name="notifications_time_range">%1$s – %2$s</string>
+
+    <plurals name="notifications_reminder_text">
+        <item quantity="one">Starts in %1$d minute · %2$s</item>
+        <item quantity="other">Starts in %1$d minutes · %2$s</item>
+    </plurals>
+
+    <string name="notifications_session_ended_title">Did you finish %1$s?</string>
+    <string name="notifications_session_ended_text">Your session just ended · %1$s</string>
+
+</resources>

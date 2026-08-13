@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Channels -->
+    <string name="notifications_channel_session_reminders_name">تذكيرات الجلسات</string>
+    <string name="notifications_channel_session_reminders_description">تنبيه قبل بدء الجلسة المجدولة بقليل.</string>
+    <string name="notifications_channel_session_live_name">جلسة جارية</string>
+    <string name="notifications_channel_session_live_description">تقدّم مباشر أثناء تشغيل الجلسة.</string>
+    <string name="notifications_channel_session_end_name">الجلسات المنتهية</string>
+    <string name="notifications_channel_session_end_description">تنبيه عند انتهاء وقت الجلسة.</string>
+    <string name="notifications_channel_rewards_name">المكافآت والعجلة اليومية</string>
+    <string name="notifications_channel_rewards_description">النقاط والسلاسل والعجلة اليومية.</string>
+
+    <!-- Content -->
+    <string name="notifications_time_range">%1$s – %2$s</string>
+
+    <plurals name="notifications_reminder_text">
+        <item quantity="zero">تبدأ خلال %1$d دقيقة · %2$s</item>
+        <item quantity="one">تبدأ خلال دقيقة واحدة · %2$s</item>
+        <item quantity="two">تبدأ خلال دقيقتين · %2$s</item>
+        <item quantity="few">تبدأ خلال %1$d دقائق · %2$s</item>
+        <item quantity="many">تبدأ خلال %1$d دقيقة · %2$s</item>
+        <item quantity="other">تبدأ خلال %1$d دقيقة · %2$s</item>
+    </plurals>
+
+    <string name="notifications_session_ended_title">هل أنهيت %1$s؟</string>
+    <string name="notifications_session_ended_text">انتهت جلستك للتو · %1$s</string>
+
+</resources>
