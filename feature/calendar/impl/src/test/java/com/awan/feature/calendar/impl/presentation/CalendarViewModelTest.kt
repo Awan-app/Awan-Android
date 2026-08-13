@@ -178,7 +178,7 @@ class CalendarViewModelTest {
             assertEquals(CalendarStreakHeaderState.Celebrate, initialState.streakHeaderState)
 
             // Later snapshot arrives with a different user streak (2)
-            val user = CalendarUser(id = "user1", streak = 2, timezone = "UTC")
+            val user = CalendarUser(id = "user1", streak = 2, timezone = java.time.ZoneId.systemDefault().id)
             fakeCalendarRepository.emitSnapshot(CalendarSnapshot(user = user, goals = emptyList()))
             advanceUntilIdle()
 
@@ -374,7 +374,7 @@ class CalendarViewModelTest {
             advanceUntilIdle()
 
             val today = viewModel.state.value.today
-            val user = CalendarUser(id = "user1", streak = 5, timezone = "UTC")
+            val user = CalendarUser(id = "user1", streak = 5, timezone = java.time.ZoneId.systemDefault().id)
             fakeCalendarRepository.emitSnapshot(CalendarSnapshot(user = user, goals = emptyList()))
             advanceUntilIdle()
 
