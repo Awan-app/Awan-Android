@@ -28,7 +28,8 @@ fun RoutinePicker(
     templates: List<WeeklyTemplate>,
     selectedTemplateId: String?,
     onTemplateSelected: (String) -> Unit,
-    onCreateRoutineClick: () -> Unit
+    onCreateRoutineClick: (String?, String?) -> Unit,
+    selectedDate: String? = null,
 ) {
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
@@ -76,7 +77,7 @@ fun RoutinePicker(
 
         item {
             AwanButton(
-                onClick = onCreateRoutineClick,
+                onClick = { onCreateRoutineClick(null, selectedDate) },
                 variant = AwanButtonVariant.Chip,
                 modifier = Modifier.wrapContentWidth()
             ) {

@@ -6,8 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.domain.zones.model.DailyZone
@@ -23,7 +23,7 @@ fun DailyZonesContent(
     dayColors: Map<DayOfWeek, Color>,
     onAction: (DailyZonesAction) -> Unit,
     onNavigateToRoutineDetails: (String) -> Unit,
-    onCreateRoutineClick: () -> Unit,
+    onCreateRoutineClick: (String?, String?) -> Unit,
     onAddZoneClick: () -> Unit,
     onEditZone: (DailyZone) -> Unit,
     padding: PaddingValues,
@@ -47,9 +47,13 @@ fun DailyZonesContent(
         }
 
         val currentTemplateId = uiState.currentTemplate?.id
+        val routineName = uiState.currentOverride?.name 
+            ?: uiState.currentTemplate?.name 
+            ?: stringResource(R.string.profile_routine_default_name)
+            
         RoutineSummaryCard(
             day = uiState.selectedDay,
-            templateName = uiState.currentTemplate?.name ?: stringResource(R.string.profile_routine_default_name),
+            templateName = routineName,
             zoneCount = uiState.selectedDayZones.size,
             onEditRoutineClick = if (!uiState.isLoading && currentTemplateId != null) {
                 { onNavigateToRoutineDetails(currentTemplateId) }
@@ -60,15 +64,15 @@ fun DailyZonesContent(
             templates = uiState.templates,
             selectedTemplateId = uiState.currentTemplate?.id,
             onTemplateSelected = { onAction(DailyZonesAction.SelectTemplate(it)) },
-            onCreateRoutineClick = onCreateRoutineClick
+            onCreateRoutineClick = onCreateRoutineClick,
+            selectedDate = uiState.selectedDate?.toString()
         )
 
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
             when {
                 uiState.isLoading -> {
                     Box(
-                        Modifier
-                            .fillMaxSize(),
+                        Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator(color = AwanTheme.colors.sky)
@@ -77,7 +81,7 @@ fun DailyZonesContent(
 
                 uiState.selectedDayZones.isEmpty() -> {
                     EmptyZonesState(
-                        hasTemplate = uiState.currentTemplate != null
+                        hasTemplate = uiState.currentTemplate != null || uiState.currentOverride != null
                     )
                 }
 
@@ -92,9 +96,11 @@ fun DailyZonesContent(
 
         DailyZonesBottomActions(
             hasTemplate = uiState.currentTemplate != null,
+            hasOverride = uiState.currentOverride != null,
             isSaving = uiState.isSaving,
             onAddZoneClick = onAddZoneClick,
-            onCreateRoutineClick = onCreateRoutineClick
+            onCreateRoutineClick = onCreateRoutineClick,
+            selectedDate = uiState.selectedDate?.toString()
         )
     }
 }

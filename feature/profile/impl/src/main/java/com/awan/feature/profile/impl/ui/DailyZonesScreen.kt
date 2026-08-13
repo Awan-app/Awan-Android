@@ -24,7 +24,7 @@ fun DailyZonesScreen(
     uiState: DailyZonesState,
     onAction: (DailyZonesAction) -> Unit,
     onNavigateToRoutineDetails: (String) -> Unit,
-    onCreateRoutineClick: () -> Unit,
+    onCreateRoutineClick: (String?, String?) -> Unit,
     onBackClick: () -> Unit,
 ) {
     var showAddZoneSheet by remember { mutableStateOf(false) }
