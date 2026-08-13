@@ -30,7 +30,7 @@ interface ZonesRepository {
     suspend fun updateTemplateZones(templateId: String, zones: List<DailyZone>): Result<List<DailyZone>>
 
     // Overrides
-    suspend fun createOverride(date: String, zones: List<DailyZone>): Result<TemplateOverride>
+    suspend fun createOverride(date: String, zones: List<DailyZone>, name: String? = null): Result<TemplateOverride>
     suspend fun getOverrides(): Result<List<TemplateOverride>>
     suspend fun getOverride(overrideId: String): Result<TemplateOverride>
     suspend fun updateOverride(overrideId: String, name: String?, date: String): Result<TemplateOverride>

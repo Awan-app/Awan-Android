@@ -46,6 +46,9 @@ interface TemplateDao {
     @Upsert
     suspend fun upsertDays(days: List<TemplateDayOfWeekEntity>)
 
+    @Query("SELECT * FROM template_days_of_week")
+    fun observeAllDayAssignments(): Flow<List<TemplateDayOfWeekEntity>>
+
     @Query("SELECT * FROM template_days_of_week WHERE templateId = :templateId")
     fun observeDaysForTemplate(templateId: String): Flow<List<TemplateDayOfWeekEntity>>
 
