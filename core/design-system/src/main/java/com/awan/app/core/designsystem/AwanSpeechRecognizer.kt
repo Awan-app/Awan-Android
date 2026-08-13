@@ -80,6 +80,14 @@ fun rememberSpeechRecognizer(
     val languageTag = LocalConfiguration.current.locales[0].toLanguageTag()
     val latestText by rememberUpdatedState(currentText)
 
+    // Resolved here rather than inside the listener: the recognizer's callbacks are not composable,
+    // and the activity's resources are not guaranteed to carry the app locale the composition does.
+    val unavailableText = stringResource(R.string.ds_speech_unavailable)
+    val noMatchText = stringResource(R.string.ds_speech_no_match)
+    val errorText = stringResource(R.string.ds_speech_error)
+    val languageUnsupportedText = stringResource(R.string.ds_speech_language_unsupported)
+    val permissionDeniedText = stringResource(R.string.ds_speech_permission_denied)
+
     fun stopInternal() {
         recognizer?.apply {
             stopListening()
@@ -90,7 +98,7 @@ fun rememberSpeechRecognizer(
 
     fun startListeningNow() {
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            errorMessage = context.resources.getString(R.string.ds_speech_unavailable)
+            errorMessage = unavailableText
             isPermissionError = false
             return
         }
@@ -132,14 +140,10 @@ fun rememberSpeechRecognizer(
                     }
                     SpeechRecognizer.ERROR_NO_MATCH,
                     SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
-                        errorMessage = context.resources.getString(R.string.ds_speech_no_match)
+                        errorMessage = noMatchText
                     }
                     else -> {
-                        errorMessage = if (isLanguageError(error)) {
-                            context.resources.getString(R.string.ds_speech_language_unsupported)
-                        } else {
-                            context.resources.getString(R.string.ds_speech_error)
-                        }
+                        errorMessage = if (isLanguageError(error)) languageUnsupportedText else errorText
                     }
                 }
             }
@@ -167,7 +171,7 @@ fun rememberSpeechRecognizer(
             activeRecognizer.startListening(intent)
         } catch (e: RuntimeException) {
             isListening = false
-            errorMessage = context.resources.getString(R.string.ds_speech_error)
+            errorMessage = errorText
         }
     }
 
@@ -191,7 +195,7 @@ fun rememberSpeechRecognizer(
                 errorMessage = null
             } else {
                 isPermissionError = true
-                errorMessage = context.resources.getString(R.string.ds_speech_permission_denied)
+                errorMessage = permissionDeniedText
             }
         }
     }
@@ -240,7 +244,7 @@ fun rememberSpeechRecognizer(
             onDismiss = {
                 showSettingsDialog = false
                 isPermissionError = true
-                errorMessage = context.resources.getString(R.string.ds_speech_permission_denied)
+                errorMessage = permissionDeniedText
             },
         )
     }

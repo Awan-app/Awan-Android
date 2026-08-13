@@ -336,3 +336,37 @@ Repro config that maximises the loop: short screen with a tall cutout — `adb s
 
 1. Write this plan to `docs/feature/add-task/2026-08-13-sheet-enhancements.md` per the repo's feature-plan rule, and append an `## Implementation notes (what actually differed)` section when the work lands.
 2. No Jira issue ID is known for this work. Search the `AWAN` project for a matching issue before the first commit; if there is no confident match, ask rather than guessing — the ID must appear in the branch name or commit message.
+
+---
+
+## Implementation notes (what actually differed)
+
+Jira: AWAN-176. Branch `feature/AWAN-176-add-task-sheet-enhancements`, five commits, one per part.
+
+### Verification status
+
+- `./gradlew assembleDebug` — passes.
+- `./gradlew :feature:add-task:testDebugUnitTest` — passes (`AddTaskViewModelTest`, 1626 lines, untouched; the new `goalPhase` is derived so no ViewModel behaviour changed).
+- `./gradlew lint` — no errors. Zero lint issues on any of the five new files.
+- String parity checked programmatically: `core/design-system` 51/51, `feature/add-task` 76/76, `feature/goals/impl` 31/31 between `values/` and `values-ar/`.
+- **Not yet run on a device.** Everything below the build is static verification. The flicker repro, the Arabic dictation check, the permission sequence and the thinking-state timing all still need the on-device passes described in the Verification section above.
+
+### Deviations from the plan
+
+1. **Two extra requirements landed mid-implementation** and are folded in above as §1e and Part 4: the in-app permission rationale dialog, and the goal thinking / plan-ready states.
+2. **`GoalForm` was deleted, not re-signatured.** Once the recognizer moved up to `AddTaskSheetContent`, the wrapper had no job left — `GoalFormContent` already took every speech parameter. `AddTaskSheet` calls `GoalFormContent` directly.
+3. **`AwanSegmentedControl` needed no new rim code at all.** `AwanButton(variant = Chip, latchedPressed = …)` already carries the face-first measure policy, the RTL-mirrored sink and the `SegmentTick` haptic, so the component is a track `Box` plus a `Row` of buttons with inline tint `Style`s. The plan's `trailing` slot was dropped: `GoalsTabRow` folds its count into the label string via the existing `goals_tab_badge_format`, so `label: (T) -> String` covers all three call sites.
+4. **The segment label carries its own colour.** `AwanButton` pins `LocalContentColor` to `buttonContentColor(variant, enabled)`, which for `Chip` is always `textSecondary` — the `contentColor()` in the inline `Style` does not reach the text. The selected segment's `onSky` label is passed explicitly on the `AwanText` style. Easy to reintroduce by "simplifying" that away.
+5. **`AwanSpeechRecognizer` resolves its strings at composable scope, not via `context.resources`.** The original used `context.resources.getString` inside the `RecognitionListener` callbacks; lint flagged it, and it is the same class of bug as the Arabic one — the activity's resources are not guaranteed to carry the app locale that the composition overrides. All six strings are hoisted into `val`s.
+6. **The design-system module gained `androidx.activity.compose`** for `rememberLauncherForActivityResult`, and its first `AndroidManifest.xml` (RECORD_AUDIO + the `RecognitionService` `<queries>` block). `feature/add-task`'s manifest existed only for that permission and is gone.
+7. **The plan's `LocalConfiguration` fix was kept as-is** even though the API is on the way out, because `MainActivity` already provides the app-locale override through exactly that composition local. Changing one without the other would silently reintroduce the bug.
+
+### Traps for whoever touches this next
+
+- **The height cap in `AddTaskSheetContent` is load-bearing, not styling.** Removing the `heightIn(max = maxHeight - topInset - sm)` restores the flicker. The loop is: `ModalBottomSheet.kt:338` consumes `top = sheetState.offset`, `:362` pays the top `safeDrawing` inset out of the content, and `:295-307` sets the Expanded anchor to `fullHeight - contentHeight`. While `offset < topInset` the gain is exactly +1 and there is no stable resting height. `asPaddingValues()` is used deliberately — it reads the raw inset and is blind to consumption, so `statusBarsPadding()` cannot substitute.
+- **`imePadding()` on the sheet content is not needed and never was.** M3's own root is `Box(Modifier.fillMaxSize().imePadding())` (`ModalBottomSheet.kt:186`) and it fully consumes the inset. The old call looked like a keyboard fix and misdirects debugging. Relatedly, the Activity's `adjustResize` does not apply here at all: the sheet's window forces `SOFT_INPUT_ADJUST_NOTHING` on API 30+ (`ModalBottomSheet.android.kt:586`).
+- **Exactly one thing may animate sheet height.** That is the `animateContentSize` on the scroll container. Both `AnimatedContent`s use `SizeTransform { _, _ -> snap() }` on purpose; giving either one a real size animation puts two springs on the same axis.
+- **`contentKey` must distinguish two consecutive questions of the same kind.** The old `{ it::class }` collapsed `MultipleChoice → MultipleChoice` into one key, so `AnimatedContent` ran no transition at all — that was the step-to-step snap, not a timing problem. Keying on the step object instead would be equally wrong: `AddTaskViewModel.kt:148` rewrites `selectedOption` in place, so every option tap would fire a full transition.
+- **`goalPhase` is derived, and safe only because of where it is read.** `GOAL && isSubmitting` means an in-flight decomposition *in the sheet*; `createDirectly` is TASK mode and `acceptGoalProposal` runs on `GoalPreviewRouteRoot`. If a third goal-mode submit path is ever added to the sheet, this needs revisiting.
+- **Navigation to the preview route now keys on `goalPhase`, not `goalStep`,** and waits `PlanReadyDwell` first. Reverting it to fire on `GoalStep.Preview` immediately removes the ready beat and brings back the old wart where the sheet grew to full preview height while sliding away.
+- Deleting `AddTaskModeSelector` also removed a latent RTL bug: it offset its thumb by a raw `halfWidth * slide` with no mirroring, so it slid the wrong way in Arabic. Do not resurrect that pattern.
