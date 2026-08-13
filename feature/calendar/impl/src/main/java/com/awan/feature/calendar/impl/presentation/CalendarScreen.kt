@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -22,7 +21,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,8 +31,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.style.Style
-import androidx.compose.foundation.style.styleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -48,19 +44,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -75,7 +68,6 @@ import com.composables.icons.lucide.ArrowRight
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.Lucide
-import com.awan.app.core.designsystem.AwanBackButton
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
@@ -529,63 +521,63 @@ private fun WeekRow(
     isReducedMotion: Boolean,
     onSelectDate: (LocalDate) -> Unit,
 ) {
-    val streakRuns = remember(rowDays) {
-        val runs = mutableListOf<IntRange>()
-        var start = -1
-        rowDays.forEachIndexed { i, day ->
-            if (day.isStreakDay) {
-                if (start == -1) start = i
-            } else {
-                if (start != -1) {
-                    runs.add(start until i)
-                    start = -1
-                }
-            }
-        }
-        if (start != -1) runs.add(start until rowDays.size)
-        runs
-    }
-
-    val streakSun = AwanTheme.colors.zoneSun
-    val streakCoral = AwanTheme.colors.zoneCoral
-    val streakBrush = Brush.horizontalGradient(listOf(streakSun, streakCoral))
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .drawBehind {
-                val cellWidth = size.width / 7f
-                // Top inset (2.dp + 2.dp = 4.dp) plus radius of 36.dp circle (18.dp) = 22.dp center
-                val centerY = 4.dp.toPx() + 18.dp.toPx()
-                val lineThickness = 34.dp.toPx()
-
-                streakRuns.forEach { run ->
-                    val startX = run.start * cellWidth + cellWidth / 2f
-                    val endX = run.endInclusive * cellWidth + cellWidth / 2f
-                    drawLine(
-                        brush = streakBrush,
-                        start = Offset(startX, centerY),
-                        end = Offset(endX, centerY),
-                        strokeWidth = lineThickness,
-                        cap = StrokeCap.Round,
-                    )
-                }
-            }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            rowDays.forEach { dayState ->
-                DayCell(
-                    dayState = dayState,
-                    isReducedMotion = isReducedMotion,
-                    onSelectDate = onSelectDate,
-                    modifier = Modifier.weight(1f),
-                )
-            }
+        rowDays.forEach { dayState ->
+            DayCell(
+                dayState = dayState,
+                isReducedMotion = isReducedMotion,
+                onSelectDate = onSelectDate,
+                modifier = Modifier.weight(1f),
+            )
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Shader seam — replace this composable's content with a real shader when the
+// Lottie/shader asset is available.  Size and shape are kept stable so callers
+// are not affected.  Currently renders nothing (fully transparent).
+// ---------------------------------------------------------------------------
+@Composable
+private fun DeadlineShaderHost(
+    size: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(CircleShape)
+            // Intentionally transparent — swap for shader draw here later.
+            .background(Color.Transparent),
+    )
+}
+
+// ---------------------------------------------------------------------------
+// Independent fire badge drawn at the cell's top-right corner above the shader
+// layer.  Used only for the today+streak+deadline combination.
+// ---------------------------------------------------------------------------
+@Composable
+private fun FireBadge(
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(16.dp)
+            .clip(CircleShape)
+            .background(tint.copy(alpha = 0.18f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_flame_filled),
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(11.dp),
+        )
     }
 }
 
@@ -596,6 +588,21 @@ private fun DayCell(
     onSelectDate: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // -----------------------------------------------------------------------
+    // Tuning constants — local to this composable so they can be adjusted
+    // independently without touching callers.
+    // -----------------------------------------------------------------------
+    /** Diameter of the primary "today" circle and the streak-fire host. */
+    val dayCellCircleSize = 36.dp
+    /** Diameter of the anchored number circle inside the fire host (streak days). */
+    val fireNumberCircleSize = 20.dp
+    /**
+     * Normalized anchor within the fire-host bounding box (0=left/top, 1=right/bottom).
+     * Adjust these two values to reposition the number circle when the Lottie asset lands.
+     */
+    val fireNumberAnchorX = 0.5f
+    val fireNumberAnchorY = 0.65f
+
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
@@ -606,11 +613,14 @@ private fun DayCell(
         label = "DayCellPressScale",
     )
 
+    val colors = AwanTheme.colors
+    val bodyTextStyle = AwanTheme.typography.body
+
     val textColor = when {
-        dayState.isToday -> AwanTheme.colors.onSky
-        dayState.isStreakDay -> Color.White
-        !dayState.isCurrentMonth -> AwanTheme.colors.meta
-        else -> AwanTheme.colors.textPrimary
+        dayState.isToday -> colors.onSky
+        dayState.isStreakDay -> colors.onSky
+        !dayState.isCurrentMonth -> colors.meta
+        else -> colors.textPrimary
     }
 
     val streakDayString = stringResource(R.string.calendar_streak_day)
@@ -648,71 +658,205 @@ private fun DayCell(
             .padding(vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        val bodyTextStyle = AwanTheme.typography.body
-        val selectionOutline = AwanTheme.colors.sky
-        val selectionModifier = if (dayState.isSelected && !dayState.isToday) {
-            Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(AwanTheme.colors.surface)
-                .drawBehind {
-                    drawCircle(color = selectionOutline, radius = size.minDimension / 2f, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx()))
-                }
-        } else {
-            Modifier.size(36.dp)
-        }
+        val dayNumber = dayState.date.dayOfMonth.toString()
 
-        Box(
-            modifier = selectionModifier,
-            contentAlignment = Alignment.Center,
-        ) {
-            if (dayState.isToday && dayState.isStreakDay) {
+        when {
+            // ------------------------------------------------------------------
+            // today + streak + deadline
+            // Primary circle + transparent shader host + number + fire badge
+            // ------------------------------------------------------------------
+            dayState.isToday && dayState.isStreakDay && dayState.hasDeadline -> {
                 Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(AwanTheme.colors.sky),
+                    modifier = Modifier.size(dayCellCircleSize),
                     contentAlignment = Alignment.Center,
                 ) {
+                    // Primary circle
+                    Box(
+                        modifier = Modifier
+                            .size(dayCellCircleSize)
+                            .clip(CircleShape)
+                            .background(colors.sky),
+                    )
+                    // Shader host (transparent seam)
+                    DeadlineShaderHost(size = dayCellCircleSize)
+                    // Day number
                     AwanText(
-                        text = dayState.date.dayOfMonth.toString(),
-                        style = AwanTextStyle(bodyTextStyle, AwanTheme.colors.onSky),
+                        text = dayNumber,
+                        style = AwanTextStyle(bodyTextStyle, colors.onSky),
+                        modifier = Modifier.semantics { contentDescription = dateDescription },
+                    )
+                    // Independent fire badge at top-right above shader layer
+                    FireBadge(
+                        tint = colors.sky,
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    )
+                }
+            }
+
+            // ------------------------------------------------------------------
+            // today + streak (no deadline)
+            // Primary-tinted fire host + anchored fire-surface number circle
+            // ------------------------------------------------------------------
+            dayState.isToday && dayState.isStreakDay -> {
+                Box(
+                    modifier = Modifier.size(dayCellCircleSize),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // Fire host tinted with primary color (placeholder for Lottie)
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_flame_filled),
+                        contentDescription = null,
+                        tint = colors.sky,
+                        modifier = Modifier.size(dayCellCircleSize),
+                    )
+                    // Anchored fire-surface number circle — position is tunable via anchor constants
+                    Box(
+                        modifier = Modifier
+                            .size(fireNumberCircleSize)
+                            .align(
+                                BiasAlignment(
+                                    horizontalBias = fireNumberAnchorX * 2f - 1f,
+                                    verticalBias = fireNumberAnchorY * 2f - 1f,
+                                )
+                            )
+                            .clip(CircleShape)
+                            .background(colors.streakSurface),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        AwanText(
+                            text = dayNumber,
+                            style = AwanTextStyle(bodyTextStyle.copy(fontSize = 9.sp), colors.streakIcon),
+                            modifier = Modifier.semantics { contentDescription = dateDescription },
+                        )
+                    }
+                }
+            }
+
+            // ------------------------------------------------------------------
+            // today + deadline (no streak)
+            // Primary circle + transparent shader host + number on top
+            // ------------------------------------------------------------------
+            dayState.isToday && dayState.hasDeadline -> {
+                Box(
+                    modifier = Modifier.size(dayCellCircleSize),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // Primary circle
+                    Box(
+                        modifier = Modifier
+                            .size(dayCellCircleSize)
+                            .clip(CircleShape)
+                            .background(colors.sky),
+                    )
+                    // Shader host (transparent seam)
+                    DeadlineShaderHost(size = dayCellCircleSize)
+                    // Day number on top
+                    AwanText(
+                        text = dayNumber,
+                        style = AwanTextStyle(bodyTextStyle, colors.onSky),
                         modifier = Modifier.semantics { contentDescription = dateDescription },
                     )
                 }
-            } else if (dayState.isToday) {
+            }
+
+            // ------------------------------------------------------------------
+            // today only (no streak, no deadline)
+            // 36.dp primary circle + number
+            // ------------------------------------------------------------------
+            dayState.isToday -> {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(dayCellCircleSize)
                         .clip(CircleShape)
-                        .background(AwanTheme.colors.sky),
+                        .background(colors.sky),
                     contentAlignment = Alignment.Center,
                 ) {
                     AwanText(
-                        text = dayState.date.dayOfMonth.toString(),
-                        style = AwanTextStyle(bodyTextStyle, AwanTheme.colors.onSky),
+                        text = dayNumber,
+                        style = AwanTextStyle(bodyTextStyle, colors.onSky),
                         modifier = Modifier.semantics { contentDescription = dateDescription },
                     )
                 }
-            } else {
-                AwanText(
-                    text = dayState.date.dayOfMonth.toString(),
-                    style = AwanTextStyle(bodyTextStyle, textColor),
-                    modifier = Modifier.semantics { contentDescription = dateDescription },
-                )
+            }
+
+            // ------------------------------------------------------------------
+            // streak day (not today, may or may not have deadline)
+            // Static fire host + anchored fire-surface number circle
+            // ------------------------------------------------------------------
+            dayState.isStreakDay -> {
+                Box(
+                    modifier = Modifier.size(dayCellCircleSize),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // Static fire placeholder (Lottie will replace only this host later)
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_flame_filled),
+                        contentDescription = null,
+                        tint = colors.zoneSun,
+                        modifier = Modifier.size(dayCellCircleSize),
+                    )
+                    // Anchored fire-surface number circle
+                    Box(
+                        modifier = Modifier
+                            .size(fireNumberCircleSize)
+                            .align(
+                                BiasAlignment(
+                                    horizontalBias = fireNumberAnchorX * 2f - 1f,
+                                    verticalBias = fireNumberAnchorY * 2f - 1f,
+                                )
+                            )
+                            .clip(CircleShape)
+                            .background(colors.streakSurface),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        AwanText(
+                            text = dayNumber,
+                            style = AwanTextStyle(bodyTextStyle.copy(fontSize = 9.sp), colors.streakIcon),
+                            modifier = Modifier.semantics { contentDescription = dateDescription },
+                        )
+                    }
+                }
+            }
+
+            // ------------------------------------------------------------------
+            // future/today deadline (non-streak, non-today) or plain past missed
+            // Deadline: transparent 36.dp shader host beneath number
+            // Plain/missed: number only
+            // ------------------------------------------------------------------
+            dayState.hasDeadline -> {
+                Box(
+                    modifier = Modifier.size(dayCellCircleSize),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // Transparent shader host — seam for future shader replacement
+                    DeadlineShaderHost(size = dayCellCircleSize)
+                    AwanText(
+                        text = dayNumber,
+                        style = AwanTextStyle(bodyTextStyle, textColor),
+                        modifier = Modifier.semantics { contentDescription = dateDescription },
+                    )
+                }
+            }
+
+            // ------------------------------------------------------------------
+            // Plain or missed day — number only
+            // ------------------------------------------------------------------
+            else -> {
+                Box(
+                    modifier = Modifier.size(dayCellCircleSize),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AwanText(
+                        text = dayNumber,
+                        style = AwanTextStyle(bodyTextStyle, textColor),
+                        modifier = Modifier.semantics { contentDescription = dateDescription },
+                    )
+                }
             }
         }
-        if (dayState.hasDeadline) {
-            Spacer(modifier = Modifier.height(2.dp))
-            Box(
-                modifier = Modifier
-                    .size(5.dp)
-                    .clip(CircleShape)
-                    .background(AwanTheme.colors.zoneCoral),
-            )
-        } else {
-            Spacer(modifier = Modifier.height(7.dp))
-        }
+
+        // Consistent bottom spacer replacing the old deadline dot
+        Spacer(modifier = Modifier.height(7.dp))
     }
 }
 
