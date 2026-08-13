@@ -5,6 +5,27 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 
+enum class CalendarStreakHeaderState {
+    Start,
+    Restart,
+    Protect,
+    Celebrate;
+
+    companion object {
+        fun from(streak: Int, maxStreak: Int, isTodayActive: Boolean): CalendarStreakHeaderState {
+            val clampedStreak = streak.coerceAtLeast(0)
+            val clampedMaxStreak = maxStreak.coerceAtLeast(0)
+            return when {
+                clampedStreak == 0 && clampedMaxStreak == 0 -> Start
+                clampedStreak == 0 -> Restart
+                isTodayActive -> Celebrate
+                else -> Protect
+            }
+        }
+    }
+}
+
+
 data class CalendarUiState(
     val isLoading: Boolean = true,
     @StringRes val errorMessage: Int? = null,
