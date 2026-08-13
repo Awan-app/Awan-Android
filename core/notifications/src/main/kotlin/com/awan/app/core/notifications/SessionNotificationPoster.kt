@@ -83,21 +83,58 @@ class SessionNotificationPoster @Inject constructor(
     }
 
     /**
-     * A plain ongoing notification. Phase 4 promotes it to a Live Update with a progress bar; the
-     * countdown here already comes from the system chronometer.
+     * The running-session "live activity".
+     *
+     * On Android 16+ `setRequestPromotedOngoing` plus [NotificationCompat.ProgressStyle] make this a
+     * Live Update — a chip in the status bar and a card on the lock screen, which is the platform's
+     * counterpart to a Dynamic Island Live Activity. `NotificationCompat` no-ops those calls below
+     * API 36, where it stays an ordinary ongoing notification with the same content.
+     *
+     * The countdown comes from the system chronometer, not from the tick: that keeps the remaining
+     * time exact even when Doze throttles the alarm chain and no tick arrives for several minutes.
+     * Ticks only advance the progress bar.
      */
     private fun postLive(session: UpcomingSession, now: LocalDateTime) {
+        val totalMinutes = Duration.between(session.start, session.end).toMinutes()
+            .coerceAtLeast(1)
+            .toInt()
+        val elapsedMinutes = Duration.between(session.start, now).toMinutes()
+            .coerceIn(0, totalMinutes.toLong())
+            .toInt()
+        val remainingMinutes = (totalMinutes - elapsedMinutes).coerceAtLeast(0)
+        val id = NotificationIds.live(session.id)
+
         val builder = baseBuilder(AwanNotificationChannels.SESSION_LIVE, session)
             .setContentText(timeFormatter.timeRange(context, session))
             .setOngoing(true)
+            // Without this the channel re-alerts on every one-minute redraw.
             .setOnlyAlertOnce(true)
             .setWhen(session.end.toEpochMillis())
             .setUsesChronometer(true)
             .setChronometerCountDown(true)
+            .setShortCriticalText(
+                context.getString(R.string.notifications_live_short_remaining, remainingMinutes)
+            )
+            .setRequestPromotedOngoing(true)
+            .setStyle(
+                NotificationCompat.ProgressStyle()
+                    .setProgress(elapsedMinutes)
+                    .addProgressSegment(NotificationCompat.ProgressStyle.Segment(totalMinutes))
+            )
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .addAction(
+                action(
+                    iconRes = R.drawable.ic_notification_check,
+                    labelRes = R.string.notifications_action_stop_here,
+                    session = session,
+                    type = NotificationAction.STOP_HERE,
+                    notificationId = id,
+                    now = now,
+                )
+            )
 
         // No toast: this redraws every minute, and an in-app banner every minute is unusable.
-        notify(id = NotificationIds.live(session.id), builder = builder)
+        notify(id = id, builder = builder)
     }
 
     private fun postEnded(session: UpcomingSession, now: LocalDateTime) {

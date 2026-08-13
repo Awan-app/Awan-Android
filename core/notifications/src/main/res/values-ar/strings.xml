@@ -26,7 +26,11 @@
     <string name="notifications_session_ended_title">هل أنهيت %1$s؟</string>
     <string name="notifications_session_ended_text">انتهت جلستك للتو · %1$s</string>
 
+    <!-- Status bar chip on Android 16+; kept very short because the chip truncates hard. -->
+    <string name="notifications_live_short_remaining">%1$d د</string>
+
     <!-- Actions -->
+    <string name="notifications_action_stop_here">التوقف هنا</string>
     <string name="notifications_action_snooze">تأجيل</string>
     <string name="notifications_action_reschedule">إعادة جدولة</string>
     <string name="notifications_action_complete">تحديد كمكتملة</string>

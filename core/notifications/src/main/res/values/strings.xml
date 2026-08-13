@@ -22,7 +22,11 @@
     <string name="notifications_session_ended_title">Did you finish %1$s?</string>
     <string name="notifications_session_ended_text">Your session just ended · %1$s</string>
 
+    <!-- Status bar chip on Android 16+; kept very short because the chip truncates hard. -->
+    <string name="notifications_live_short_remaining">%1$dm</string>
+
     <!-- Actions -->
+    <string name="notifications_action_stop_here">Stop here</string>
     <string name="notifications_action_snooze">Snooze</string>
     <string name="notifications_action_reschedule">Reschedule</string>
     <string name="notifications_action_complete">Mark complete</string>

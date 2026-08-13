@@ -22,7 +22,14 @@ object SessionNotificationPlanner {
     val REMINDER_GRACE: Duration = Duration.ofMinutes(5)
     val ENDED_GRACE: Duration = Duration.ofMinutes(30)
 
-    /** Cadence of the live notification's progress bar. */
+    /**
+     * Cadence of the live notification's progress bar.
+     *
+     * ponytail: setExactAndAllowWhileIdle is throttled to roughly once every 9 minutes once the app
+     * is idle in Doze, so with the screen off the bar advances in jumps rather than every minute.
+     * The countdown itself is drawn by the system chronometer and stays exact regardless. Upgrade
+     * path if the bar must be smooth in Doze: a foreground service for the session's duration.
+     */
     val LIVE_TICK: Duration = Duration.ofMinutes(1)
 
     fun plan(
