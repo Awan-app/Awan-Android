@@ -586,6 +586,23 @@ private fun FireBadge(
 }
 
 @Composable
+private fun DayNumberText(
+    dayNumber: String,
+    textColor: Color,
+    numberTag: String,
+    dateDescription: String,
+    modifier: Modifier = Modifier,
+) {
+    AwanText(
+        text = dayNumber,
+        style = AwanTextStyle(AwanTheme.typography.body, textColor),
+        modifier = modifier
+            .testTag(numberTag)
+            .semantics { contentDescription = dateDescription },
+    )
+}
+
+@Composable
 private fun DayCell(
     dayState: DayState,
     isReducedMotion: Boolean,
@@ -620,14 +637,7 @@ private fun DayCell(
     )
 
     val colors = AwanTheme.colors
-    val bodyTextStyle = AwanTheme.typography.body
-
-    val textColor = when {
-        dayState.isToday -> colors.onSky
-        dayState.isStreakDay -> colors.onSky
-        !dayState.isCurrentMonth -> colors.meta
-        else -> colors.textPrimary
-    }
+    val standardTextColor = if (!dayState.isCurrentMonth) colors.meta else colors.textPrimary
 
     val streakDayString = stringResource(R.string.calendar_streak_day)
     val hasDeadlineString = stringResource(R.string.calendar_has_deadline)
@@ -695,12 +705,11 @@ private fun DayCell(
                     // Shader host (transparent seam)
                     DeadlineShaderHost(size = dayCellCircleSize, testTag = deadlineShaderTag)
                     // Day number
-                    AwanText(
-                        text = dayNumber,
-                        style = AwanTextStyle(bodyTextStyle, colors.onSky),
-                        modifier = Modifier
-                            .testTag(numberTag)
-                            .semantics { contentDescription = dateDescription },
+                    DayNumberText(
+                        dayNumber = dayNumber,
+                        textColor = colors.onSky,
+                        numberTag = numberTag,
+                        dateDescription = dateDescription,
                     )
                     // Independent fire badge at top-right above shader layer
                     FireBadge(
@@ -744,12 +753,11 @@ private fun DayCell(
                             .testTag(streakNumberTag),
                         contentAlignment = Alignment.Center,
                     ) {
-                        AwanText(
-                            text = dayNumber,
-                            style = AwanTextStyle(bodyTextStyle, colors.streakIcon),
-                            modifier = Modifier
-                                .testTag(numberTag)
-                                .semantics { contentDescription = dateDescription },
+                        DayNumberText(
+                            dayNumber = dayNumber,
+                            textColor = colors.streakIcon,
+                            numberTag = numberTag,
+                            dateDescription = dateDescription,
                         )
                     }
                 }
@@ -775,12 +783,11 @@ private fun DayCell(
                     // Shader host (transparent seam)
                     DeadlineShaderHost(size = dayCellCircleSize, testTag = deadlineShaderTag)
                     // Day number on top
-                    AwanText(
-                        text = dayNumber,
-                        style = AwanTextStyle(bodyTextStyle, colors.onSky),
-                        modifier = Modifier
-                            .testTag(numberTag)
-                            .semantics { contentDescription = dateDescription },
+                    DayNumberText(
+                        dayNumber = dayNumber,
+                        textColor = colors.onSky,
+                        numberTag = numberTag,
+                        dateDescription = dateDescription,
                     )
                 }
             }
@@ -798,12 +805,11 @@ private fun DayCell(
                         .testTag(todayPrimaryTag),
                     contentAlignment = Alignment.Center,
                 ) {
-                    AwanText(
-                        text = dayNumber,
-                        style = AwanTextStyle(bodyTextStyle, colors.onSky),
-                        modifier = Modifier
-                            .testTag(numberTag)
-                            .semantics { contentDescription = dateDescription },
+                    DayNumberText(
+                        dayNumber = dayNumber,
+                        textColor = colors.onSky,
+                        numberTag = numberTag,
+                        dateDescription = dateDescription,
                     )
                 }
             }
@@ -841,12 +847,11 @@ private fun DayCell(
                             .testTag(streakNumberTag),
                         contentAlignment = Alignment.Center,
                     ) {
-                        AwanText(
-                            text = dayNumber,
-                            style = AwanTextStyle(bodyTextStyle, colors.streakIcon),
-                            modifier = Modifier
-                                .testTag(numberTag)
-                                .semantics { contentDescription = dateDescription },
+                        DayNumberText(
+                            dayNumber = dayNumber,
+                            textColor = colors.streakIcon,
+                            numberTag = numberTag,
+                            dateDescription = dateDescription,
                         )
                     }
                 }
@@ -864,12 +869,11 @@ private fun DayCell(
                 ) {
                     // Transparent shader host — seam for future shader replacement
                     DeadlineShaderHost(size = dayCellCircleSize, testTag = deadlineShaderTag)
-                    AwanText(
-                        text = dayNumber,
-                        style = AwanTextStyle(bodyTextStyle, textColor),
-                        modifier = Modifier
-                            .testTag(numberTag)
-                            .semantics { contentDescription = dateDescription },
+                    DayNumberText(
+                        dayNumber = dayNumber,
+                        textColor = standardTextColor,
+                        numberTag = numberTag,
+                        dateDescription = dateDescription,
                     )
                 }
             }
@@ -882,12 +886,11 @@ private fun DayCell(
                     modifier = Modifier.size(dayCellCircleSize),
                     contentAlignment = Alignment.Center,
                 ) {
-                    AwanText(
-                        text = dayNumber,
-                        style = AwanTextStyle(bodyTextStyle, textColor),
-                        modifier = Modifier
-                            .testTag(numberTag)
-                            .semantics { contentDescription = dateDescription },
+                    DayNumberText(
+                        dayNumber = dayNumber,
+                        textColor = standardTextColor,
+                        numberTag = numberTag,
+                        dateDescription = dateDescription,
                     )
                 }
             }
