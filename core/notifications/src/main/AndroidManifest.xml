@@ -21,6 +21,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".receiver.NotificationActionReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".receiver.BootCompletedReceiver"
             android:exported="false">
             <intent-filter>

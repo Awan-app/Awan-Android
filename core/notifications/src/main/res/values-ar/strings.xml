@@ -26,4 +26,9 @@
     <string name="notifications_session_ended_title">هل أنهيت %1$s؟</string>
     <string name="notifications_session_ended_text">انتهت جلستك للتو · %1$s</string>
 
+    <!-- Actions -->
+    <string name="notifications_action_snooze">تأجيل</string>
+    <string name="notifications_action_reschedule">إعادة جدولة</string>
+    <string name="notifications_action_complete">تحديد كمكتملة</string>
+
 </resources>

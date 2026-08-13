@@ -120,12 +120,26 @@ fun AwanApp(
     rewardEvents: Flow<RewardEvent>,
     modifier: Modifier = Modifier,
     isOnline: Boolean = true,
+    deepLinkSessionId: String? = null,
+    deepLinkDate: String? = null,
+    onDeepLinkHandled: () -> Unit = {},
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
     var onSelectHomeDate by remember { mutableStateOf<((LocalDate) -> Unit)?>(null) }
     val currentRoute = appState.navigationState.currentKey
     val showOfflineBanner = !isOnline && currentRoute != SplashRoute
+
+    // A notification can be tapped from any tab, so bring Home forward before it tries to open the
+    // session. Guarded on the main shell being up: during splash or auth the user may still need to
+    // log in, and the pending link survives until Home eventually composes.
+    androidx.compose.runtime.LaunchedEffect(deepLinkSessionId, appState.navigationState.currentTopLevelKey) {
+        if (deepLinkSessionId != null &&
+            appState.navigationState.currentTopLevelKey in appState.navigationState.topLevelKeys
+        ) {
+            navigator.navigate(HomeRoute())
+        }
+    }
 
     val offlineExplanation = stringResource(R.string.app_offline_lock_explanation)
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -234,6 +248,9 @@ fun AwanApp(
                 onNavigateToAddTask = { _, _ ->
                     showAddTask = true
                 },
+                deepLinkSessionId = deepLinkSessionId,
+                deepLinkDate = deepLinkDate,
+                onDeepLinkHandled = onDeepLinkHandled,
             )
 
             calendarEntry(

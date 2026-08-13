@@ -22,4 +22,9 @@
     <string name="notifications_session_ended_title">Did you finish %1$s?</string>
     <string name="notifications_session_ended_text">Your session just ended · %1$s</string>
 
+    <!-- Actions -->
+    <string name="notifications_action_snooze">Snooze</string>
+    <string name="notifications_action_reschedule">Reschedule</string>
+    <string name="notifications_action_complete">Mark complete</string>
+
 </resources>

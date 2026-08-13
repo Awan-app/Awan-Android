@@ -11,6 +11,12 @@ fun EntryProviderScope<Route>.homeEntry(
     onNavigateToCalendar: () -> Unit = {},
     onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
     onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
+    // Held by the caller rather than carried on the route: HomeRoute() is a top-level key, and a
+    // HomeRoute with arguments no longer matches it, so the navigator would stack a second Home on
+    // whatever tab was open instead of switching to this one.
+    deepLinkSessionId: String? = null,
+    deepLinkDate: String? = null,
+    onDeepLinkHandled: () -> Unit = {},
 ) {
     entry<HomeRoute> {
         HomeScreen(
@@ -18,6 +24,9 @@ fun EntryProviderScope<Route>.homeEntry(
             onNavigateToCalendar = onNavigateToCalendar,
             onRegisterSelectDate = onRegisterSelectDate,
             onNavigateToAddTask = onNavigateToAddTask,
+            deepLinkSessionId = deepLinkSessionId,
+            deepLinkDate = deepLinkDate,
+            onDeepLinkHandled = onDeepLinkHandled,
         )
     }
 }
