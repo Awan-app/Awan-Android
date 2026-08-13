@@ -9,6 +9,7 @@ import com.awan.app.core.domain.gamification.usecase.GetActivityDatesUseCase
 import com.awan.app.core.domain.gamification.usecase.ObserveGamificationProgressUseCase
 import com.awan.feature.calendar.impl.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,7 @@ class CalendarViewModel @Inject constructor(
     val state: StateFlow<CalendarUiState> = _state.asStateFlow()
     private val events = Channel<CalendarEvent>(Channel.BUFFERED)
     val event = events.receiveAsFlow()
+    private var todayActivityJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -77,7 +79,8 @@ class CalendarViewModel @Inject constructor(
                 ),
             )
         }
-        viewModelScope.launch {
+        todayActivityJob?.cancel()
+        todayActivityJob = viewModelScope.launch {
             val result = getActivityDatesUseCase(startDate = today, endDate = today)
             if (_state.value.today != today) return@launch
             val active = result is Result.Success && result.data.contains(today)
@@ -133,17 +136,18 @@ class CalendarViewModel @Inject constructor(
         val selected = if (current.selectedDate == current.today) today else current.selectedDate
         val month = if (current.currentYearMonth == YearMonth.from(current.today)) YearMonth.from(today) else current.currentYearMonth
         val goals = CalendarDateMapper.filterAndSortUpcomingGoals(snapshot.goals, today)
-        val streakCount = snapshot.user.streak.coerceAtLeast(0)
+        val snapshotStreakCount = snapshot.user.streak.coerceAtLeast(0)
         // Real activity dates win once they land; the back-counted estimate is only a stand-in
         // until then, and must not clobber them when the snapshot re-emits.
         val streakDates = current.streakDates.ifEmpty {
-            CalendarDateMapper.calculateStreakDates(streakCount, today)
+            CalendarDateMapper.calculateStreakDates(snapshotStreakCount, today)
         }
 
+        val preservedStreak = current.streak
         val preservedMaxStreak = current.maxStreak
         val isTodayActive = if (dayChanged) false else current.isTodayActive
         val headerState = CalendarStreakHeaderState.from(
-            streak = streakCount,
+            streak = preservedStreak,
             maxStreak = preservedMaxStreak,
             isTodayActive = isTodayActive,
         )
@@ -151,7 +155,7 @@ class CalendarViewModel @Inject constructor(
         _state.value = CalendarUiState(
             isLoading = false,
             errorMessage = null,
-            streak = streakCount,
+            streak = preservedStreak,
             maxStreak = preservedMaxStreak,
             isTodayActive = isTodayActive,
             streakHeaderState = headerState,

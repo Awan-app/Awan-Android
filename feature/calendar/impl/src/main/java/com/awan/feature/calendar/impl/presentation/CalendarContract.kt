@@ -25,7 +25,6 @@ enum class CalendarStreakHeaderState {
     }
 }
 
-
 data class CalendarUiState(
     val isLoading: Boolean = true,
     @StringRes val errorMessage: Int? = null,

@@ -12,6 +12,7 @@ import com.awan.app.core.domain.gamification.repository.GamificationRepository
 import com.awan.app.core.domain.gamification.usecase.GetActivityDatesUseCase
 import com.awan.app.core.domain.gamification.usecase.ObserveGamificationProgressUseCase
 import com.awan.app.core.model.CalendarUser
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -150,6 +151,99 @@ class CalendarViewModelTest {
         }
     }
 
+    @Test
+    fun laterSnapshotWithDifferentUserStreakDoesNotOverwriteProgressStreakOrHeaderState() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val fakeCalendarRepository = FakeCalendarRepository()
+            val fakeGamificationRepository = FakeGamificationRepository()
+            val getActivityDatesUseCase = GetActivityDatesUseCase(fakeGamificationRepository)
+            val observeGamificationProgressUseCase = ObserveGamificationProgressUseCase(fakeGamificationRepository)
+
+            val today = LocalDate.now()
+            fakeGamificationRepository.activityResults[today to today] = Result.Success(setOf(today))
+
+            val viewModel = CalendarViewModel(fakeCalendarRepository, getActivityDatesUseCase, observeGamificationProgressUseCase)
+            advanceUntilIdle()
+
+            // Progress authority emits streak 5, max 10
+            fakeGamificationRepository.progressFlow.value = GamificationProgress(points = 100, streak = 5, maxStreak = 10)
+            advanceUntilIdle()
+
+            val initialState = viewModel.state.value
+            assertEquals(5, initialState.streak)
+            assertEquals(10, initialState.maxStreak)
+            assertTrue(initialState.isTodayActive)
+            assertEquals(CalendarStreakHeaderState.Celebrate, initialState.streakHeaderState)
+
+            // Later snapshot arrives with a different user streak (2)
+            val user = CalendarUser(id = "user1", streak = 2, timezone = "UTC")
+            fakeCalendarRepository.emitSnapshot(CalendarSnapshot(user = user, goals = emptyList()))
+            advanceUntilIdle()
+
+            // Verify progress-derived streak/max and resulting header state were NOT overwritten by snapshot's streak
+            val updatedState = viewModel.state.value
+            assertEquals(5, updatedState.streak)
+            assertEquals(10, updatedState.maxStreak)
+            assertTrue(updatedState.isTodayActive)
+            assertEquals(CalendarStreakHeaderState.Celebrate, updatedState.streakHeaderState)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun olderSameDayActivityQueryCompletionCannotOverwriteNewerRequest() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val fakeCalendarRepository = FakeCalendarRepository()
+            val fakeGamificationRepository = FakeGamificationRepository()
+            val getActivityDatesUseCase = GetActivityDatesUseCase(fakeGamificationRepository)
+            val observeGamificationProgressUseCase = ObserveGamificationProgressUseCase(fakeGamificationRepository)
+
+            val today = LocalDate.now()
+            var request1Handled = false
+            val request1Completer = CompletableDeferred<Result<Set<LocalDate>>>()
+
+            fakeGamificationRepository.getActivityDatesHandler = { start, end ->
+                if (!request1Handled) {
+                    request1Handled = true
+                    request1Completer.await()
+                } else {
+                    Result.Error(AppError.Network)
+                }
+            }
+
+            val viewModel = CalendarViewModel(fakeCalendarRepository, getActivityDatesUseCase, observeGamificationProgressUseCase)
+            advanceUntilIdle()
+
+            // Trigger Request 1 (will suspend waiting for request1Completer)
+            fakeGamificationRepository.progressFlow.value = GamificationProgress(points = 100, streak = 3, maxStreak = 10)
+            testScheduler.runCurrent()
+
+            // Trigger Request 2 (will complete immediately with Error)
+            fakeGamificationRepository.progressFlow.value = GamificationProgress(points = 105, streak = 3, maxStreak = 10)
+            advanceUntilIdle()
+
+            val stateAfterRequest2 = viewModel.state.value
+            assertFalse(stateAfterRequest2.isTodayActive)
+            assertEquals(CalendarStreakHeaderState.Protect, stateAfterRequest2.streakHeaderState)
+
+            // Now Request 1 finishes with Success
+            request1Completer.complete(Result.Success(setOf(today)))
+            advanceUntilIdle()
+
+            // Cancelled Request 1 must NOT overwrite state to Celebrate
+            val finalState = viewModel.state.value
+            assertFalse(finalState.isTodayActive)
+            assertEquals(CalendarStreakHeaderState.Protect, finalState.streakHeaderState)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     private class FakeCalendarRepository : CalendarRepository {
         private val calendarFlow = MutableStateFlow<CalendarSnapshot?>(null)
 
@@ -166,6 +260,7 @@ class CalendarViewModelTest {
         val progressFlow = MutableStateFlow(GamificationProgress(points = 0, streak = 0, maxStreak = 0))
         val activityRequests = mutableListOf<Pair<LocalDate, LocalDate>>()
         val activityResults = mutableMapOf<Pair<LocalDate, LocalDate>, Result<Set<LocalDate>>>()
+        var getActivityDatesHandler: (suspend (LocalDate, LocalDate) -> Result<Set<LocalDate>>)? = null
 
         override fun observeProgress(): Flow<GamificationProgress> = progressFlow
 
@@ -175,7 +270,9 @@ class CalendarViewModelTest {
 
         override suspend fun getActivityDates(startDate: LocalDate, endDate: LocalDate): Result<Set<LocalDate>> {
             activityRequests.add(startDate to endDate)
-            return activityResults[startDate to endDate] ?: Result.Success(emptySet())
+            return getActivityDatesHandler?.invoke(startDate, endDate)
+                ?: activityResults[startDate to endDate]
+                ?: Result.Success(emptySet())
         }
 
         override suspend fun getWheelConfig(): Result<WheelConfig> = error("Not needed")

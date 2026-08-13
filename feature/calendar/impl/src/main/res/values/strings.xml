@@ -7,8 +7,6 @@
     <string name="calendar_upcoming_deadlines">Upcoming Deadlines</string>
     <string name="calendar_retry">Retry</string>
     <string name="calendar_no_deadlines">No upcoming deadlines scheduled.</string>
-    <string name="calendar_streak_title">%d Day Streak</string>
-    <string name="calendar_streak_subtitle">Consecutive active days ending today</string>
     <string name="calendar_streak_start_title">Start your streak</string>
     <string name="calendar_streak_start_subtitle">Complete a task today to light your fire.</string>
     <string name="calendar_streak_restart_title">Ready to start again?</string>
