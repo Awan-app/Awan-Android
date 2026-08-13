@@ -41,6 +41,7 @@ data class SessionDetailDialogState(
     val isEditing: Boolean = false,
     val editTitle: String = "",
     val editDescription: String = "",
+    val editDate: LocalDate = LocalDate.now(),
     val editStartMinutes: Int = 0,
     val editEndMinutes: Int = 0,
     val editDurationMinutes: Int = 30,

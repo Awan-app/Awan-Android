@@ -90,4 +90,9 @@
     <string name="home_dismiss_warning_subtitle">You have session detail adjustments. Are you sure you want to close and exit?</string>
     <string name="home_dismiss_warning_keep_editing">Keep Editing</string>
     <string name="home_dismiss_warning_close_anyway">Discard &amp; Close</string>
+    <string name="home_edit_label_date">Session Date</string>
+    <string name="home_date_picker_title">Select Date</string>
+    <string name="home_date_today_chip">Today</string>
+    <string name="home_date_tomorrow_chip">Tomorrow</string>
+    <string name="home_date_plus_days">+%1$dd</string>
 </resources>

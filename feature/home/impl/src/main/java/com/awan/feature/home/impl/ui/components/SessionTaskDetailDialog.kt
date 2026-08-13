@@ -1,6 +1,7 @@
 package com.awan.feature.home.impl.ui.components
 
 import androidx.activity.compose.BackHandler
+import java.time.LocalDate
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -69,6 +70,7 @@ private fun SessionDetailDialogState.currentScreen(showDismissWarningScreen: Boo
 fun SessionTaskDetailDialog(
     state: SessionDetailDialogState,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
     onSaveChanges: () -> Unit = {},
     onRetry: () -> Unit,
     onToggleStatus: () -> Unit,
@@ -76,10 +78,10 @@ fun SessionTaskDetailDialog(
     onStartMinutesChange: (Int) -> Unit = {},
     onEndMinutesChange: (Int) -> Unit = {},
     onDurationChange: (Int) -> Unit = {},
+    onDateChange: (LocalDate) -> Unit = {},
     onDeleteClick: () -> Unit = {},
     onConfirmDelete: () -> Unit = {},
     onCancelDelete: () -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     val coroutineScope = rememberCoroutineScope()
     var isExplicitDismissing by remember { mutableStateOf(false) }
@@ -247,11 +249,13 @@ fun SessionTaskDetailDialog(
                     if (state.detail != null) {
                         UnifiedSessionTaskContent(
                             detail = state.detail,
+                            editDate = state.editDate,
                             editStartMinutes = state.editStartMinutes,
                             editEndMinutes = state.editEndMinutes,
                             editDurationMinutes = state.editDurationMinutes,
                             onToggleStatus = onToggleStatus,
                             onToggleLock = onToggleLock,
+                            onDateChange = onDateChange,
                             onStartMinutesChange = onStartMinutesChange,
                             onEndMinutesChange = onEndMinutesChange,
                             onDurationChange = onDurationChange,

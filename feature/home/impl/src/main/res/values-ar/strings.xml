@@ -80,6 +80,7 @@
     <string name="home_task_session_item">جلسة %1$d (%2$s - %3$s)</string>
     <string name="home_edit_label_start_time">وقت البدء</string>
     <string name="home_edit_label_end_time">وقت الانتهاء</string>
+    <string name="home_edit_label_zone">المنطقة</string>
     <string name="home_delete_session_confirm_title">حذف الجلسة؟</string>
     <string name="home_delete_session_confirm_subtitle">سيتم حذف هذه الجلسة نهائياً من جدولك اليومي.</string>
     <string name="home_go_to_goal">عرض الهدف</string>
@@ -89,4 +90,9 @@
     <string name="home_dismiss_warning_subtitle">لديك تعديلات على الجلسة. هل أنت تأكد من الإغلاق والخروج دون حفظ التغييرات؟</string>
     <string name="home_dismiss_warning_keep_editing">متابعة التعديل</string>
     <string name="home_dismiss_warning_close_anyway">تجاهل وإغلاق</string>
+    <string name="home_edit_label_date">تاريخ الجلسة</string>
+    <string name="home_date_picker_title">تحديد التاريخ</string>
+    <string name="home_date_today_chip">اليوم</string>
+    <string name="home_date_tomorrow_chip">غداً</string>
+    <string name="home_date_plus_days">+%1$d أيام</string>
 </resources>

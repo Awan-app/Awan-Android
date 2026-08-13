@@ -221,6 +221,7 @@ fun HomeScreen(
                 onStartMinutesChange = viewModel::onEditStartMinutesChanged,
                 onEndMinutesChange = viewModel::onEditEndMinutesChanged,
                 onDurationChange = viewModel::onEditDurationChanged,
+                onDateChange = viewModel::onEditDateChanged,
                 onDeleteClick = viewModel::requestDeleteSession,
                 onConfirmDelete = viewModel::confirmDeleteAction,
                 onCancelDelete = viewModel::dismissDeleteConfirmDialog,

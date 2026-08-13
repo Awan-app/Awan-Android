@@ -548,6 +548,7 @@ class HomeViewModel @Inject constructor(
                         val endMin = result.data.session.end.hour * 60 + result.data.session.end.minute
                         val duration = (endMin - startMin).coerceAtLeast(15)
 
+                        val sessionDate = result.data.session.start.toLocalDate()
                         state.copy(
                             selectedSessionDetailState = state.selectedSessionDetailState?.copy(
                                 isLoading = false,
@@ -555,6 +556,7 @@ class HomeViewModel @Inject constructor(
                                 errorMessage = null,
                                 editTitle = result.data.task.title,
                                 editDescription = result.data.task.description ?: "",
+                                editDate = sessionDate,
                                 editStartMinutes = startMin,
                                 editEndMinutes = endMin,
                                 editDurationMinutes = duration,
@@ -760,6 +762,13 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun onEditDateChanged(newDate: LocalDate) {
+        _uiState.update { state ->
+            val updated = state.selectedSessionDetailState?.copy(editDate = newDate)
+            state.copy(selectedSessionDetailState = updated)
+        }
+    }
+
     fun onEditZoneChanged(newZoneId: String) {
         _uiState.update { state ->
             val dialogState = state.selectedSessionDetailState ?: return@update state
@@ -792,7 +801,7 @@ class HomeViewModel @Inject constructor(
                 description = dialogState.editDescription,
             )
 
-            val baseDate = detail.session.start.toLocalDate()
+            val baseDate = dialogState.editDate
             val newStartDateTime = baseDate.atStartOfDay().plusMinutes(startMin.toLong())
             val newEndDateTime = baseDate.atStartOfDay().plusMinutes(endMin.toLong())
             val dtFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
