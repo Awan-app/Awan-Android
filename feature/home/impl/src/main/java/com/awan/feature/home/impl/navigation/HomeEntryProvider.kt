@@ -9,7 +9,6 @@ import java.time.LocalDate
 fun EntryProviderScope<Route>.homeEntry(
     onLogout: () -> Unit,
     onNavigateToCalendar: () -> Unit = {},
-    onNavigateToGoals: (goalId: String?) -> Unit = {},
     onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
     onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
 ) {
@@ -17,7 +16,6 @@ fun EntryProviderScope<Route>.homeEntry(
         HomeScreen(
             onLogout = onLogout,
             onNavigateToCalendar = onNavigateToCalendar,
-            onNavigateToGoals = onNavigateToGoals,
             onRegisterSelectDate = onRegisterSelectDate,
             onNavigateToAddTask = onNavigateToAddTask,
         )

@@ -64,7 +64,6 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onLogout: () -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
-    onNavigateToGoals: (goalId: String?) -> Unit = {},
     onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
     onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
     viewModel: HomeViewModel = hiltViewModel(),

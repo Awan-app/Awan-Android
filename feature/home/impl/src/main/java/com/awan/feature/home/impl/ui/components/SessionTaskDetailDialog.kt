@@ -58,7 +58,7 @@ import kotlinx.coroutines.launch
 private enum class SheetScreen { DETAIL, DISMISS_WARNING, DELETE, LOADING, ERROR }
 
 private fun SessionDetailDialogState.currentScreen(showDismissWarningScreen: Boolean): SheetScreen = when {
-    isLoading -> SheetScreen.LOADING
+    isLoading || isSaving -> SheetScreen.LOADING
     errorMessage != null -> SheetScreen.ERROR
     showDismissWarningScreen -> SheetScreen.DISMISS_WARNING
     showDeleteConfirmDialog -> SheetScreen.DELETE
@@ -260,10 +260,7 @@ fun SessionTaskDetailDialog(
                             onEndMinutesChange = onEndMinutesChange,
                             onDurationChange = onDurationChange,
                             onDeleteClick = onDeleteClick,
-                            onConfirmClose = {
-                                onSaveChanges()
-                                executeDismiss()
-                            },
+                            onConfirmClose = onSaveChanges,
                         )
                     } else {
                         Spacer(modifier = Modifier.height(1.dp))

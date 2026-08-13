@@ -64,6 +64,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.ui.res.pluralStringResource
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanText
@@ -80,6 +82,16 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlinx.coroutines.launch
+
+private fun LazyListState.centeredItemIndex(): Int {
+    val items = layoutInfo.visibleItemsInfo
+    if (items.isEmpty()) return firstVisibleItemIndex
+    val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2
+    return items.minByOrNull { item ->
+        val itemCenter = item.offset + item.size / 2
+        kotlin.math.abs(itemCenter - viewportCenter)
+    }?.index ?: firstVisibleItemIndex
+}
 
 private enum class DialogPickerTarget { START_TIME, END_TIME, DATE }
 
@@ -515,13 +527,13 @@ private fun MainSessionTaskDetailView(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- Action Buttons Bar (Save Changes & Lock/Unlock using AwanButton design system) ---
+        // --- Action Buttons Bar (Save Changes, Mark Done/Pending & Lock/Unlock using AwanButton design system) ---
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Save Changes Button (closes the bottom sheet dialog on click)
+            // Save Changes Button
             AwanButton(
                 onClick = onConfirmClose,
                 variant = AwanButtonVariant.Primary,
@@ -536,6 +548,29 @@ private fun MainSessionTaskDetailView(
             ) {
                 AwanText(
                     text = stringResource(R.string.home_action_save_changes),
+                    style = AwanTheme.typography.button.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                )
+            }
+
+            // Mark Done / Mark Pending Button
+            AwanButton(
+                onClick = onToggleStatus,
+                variant = if (isCompleted) AwanButtonVariant.Secondary else AwanButtonVariant.Primary,
+                icon = {
+                    Icon(
+                        imageVector = if (isCompleted) Icons.AutoMirrored.Filled.Undo else Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(15.dp),
+                    )
+                },
+                modifier = Modifier.weight(1f),
+            ) {
+                AwanText(
+                    text = if (isCompleted) stringResource(R.string.home_action_mark_pending)
+                    else stringResource(R.string.home_action_mark_done),
                     style = AwanTheme.typography.button.copy(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -695,7 +730,7 @@ private fun CustomWheelTimePickerView(
     val minuteSnapFlingBehavior = rememberSnapFlingBehavior(lazyListState = minuteListState)
 
     val currentCenteredHourIndex by remember {
-        derivedStateOf { hourListState.firstVisibleItemIndex }
+        derivedStateOf { hourListState.centeredItemIndex() }
     }
     LaunchedEffect(currentCenteredHourIndex) {
         val selectedHourVal = (currentCenteredHourIndex % 12) + 1
@@ -707,7 +742,7 @@ private fun CustomWheelTimePickerView(
     }
 
     val currentCenteredMinuteIndex by remember {
-        derivedStateOf { minuteListState.firstVisibleItemIndex }
+        derivedStateOf { minuteListState.centeredItemIndex() }
     }
     LaunchedEffect(currentCenteredMinuteIndex) {
         selectedMinute = currentCenteredMinuteIndex % 60
@@ -738,7 +773,7 @@ private fun CustomWheelTimePickerView(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.home_picker_back),
                     tint = AwanTheme.colors.textPrimary,
                     modifier = Modifier.size(16.dp),
                 )
@@ -842,7 +877,7 @@ private fun CustomWheelTimePickerView(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AwanText(
-                text = "HOURS",
+                text = stringResource(R.string.home_picker_hours),
                 style = AwanTheme.typography.caption.copy(
                     fontSize = 10.5.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -854,7 +889,7 @@ private fun CustomWheelTimePickerView(
             )
             Spacer(modifier = Modifier.width(32.dp))
             AwanText(
-                text = "MINUTES",
+                text = stringResource(R.string.home_picker_minutes),
                 style = AwanTheme.typography.caption.copy(
                     fontSize = 10.5.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -1113,7 +1148,7 @@ private fun DateStepperCard(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    contentDescription = "Previous Day",
+                    contentDescription = stringResource(R.string.home_picker_previous_day),
                     tint = AwanTheme.colors.textPrimary,
                     modifier = Modifier.size(18.dp),
                 )
@@ -1167,7 +1202,7 @@ private fun DateStepperCard(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Next Day",
+                    contentDescription = stringResource(R.string.home_picker_next_day),
                     tint = AwanTheme.colors.textPrimary,
                     modifier = Modifier.size(18.dp),
                 )
@@ -1178,8 +1213,8 @@ private fun DateStepperCard(
         val quickDayOptions = listOf(
             Pair(stringResource(R.string.home_date_today_chip), today),
             Pair(stringResource(R.string.home_date_tomorrow_chip), today.plusDays(1)),
-            Pair(stringResource(R.string.home_date_plus_days, 2), today.plusDays(2)),
-            Pair(stringResource(R.string.home_date_plus_days, 3), today.plusDays(3)),
+            Pair(pluralStringResource(R.plurals.home_date_plus_days, 2, 2), today.plusDays(2)),
+            Pair(pluralStringResource(R.plurals.home_date_plus_days, 3, 3), today.plusDays(3)),
         )
 
         Row(
@@ -1262,7 +1297,9 @@ private fun CustomWheelDatePickerView(
     val monthSnapFlingBehavior = rememberSnapFlingBehavior(lazyListState = monthListState)
     val yearSnapFlingBehavior = rememberSnapFlingBehavior(lazyListState = yearListState)
 
-    val currentCenteredDayIndex by remember { derivedStateOf { dayListState.firstVisibleItemIndex } }
+    val coroutineScope = rememberCoroutineScope()
+
+    val currentCenteredDayIndex by remember { derivedStateOf { dayListState.centeredItemIndex() } }
     LaunchedEffect(currentCenteredDayIndex) {
         val maxDays = java.time.YearMonth.of(year, month).lengthOfMonth()
         val selectedDayVal = (currentCenteredDayIndex % 31) + 1
@@ -1270,19 +1307,35 @@ private fun CustomWheelDatePickerView(
         updateSelectedDate(year, month, validDay)
     }
 
-    val currentCenteredMonthIndex by remember { derivedStateOf { monthListState.firstVisibleItemIndex } }
+    val currentCenteredMonthIndex by remember { derivedStateOf { monthListState.centeredItemIndex() } }
     LaunchedEffect(currentCenteredMonthIndex) {
         val selectedMonthVal = (currentCenteredMonthIndex % 12) + 1
-        updateSelectedDate(year, selectedMonthVal, day)
+        val maxDays = java.time.YearMonth.of(year, selectedMonthVal).lengthOfMonth()
+        val currentWheelDay = (dayListState.centeredItemIndex() % 31) + 1
+        val validDay = currentWheelDay.coerceIn(1, maxDays)
+        if (validDay != currentWheelDay) {
+            val delta = validDay - currentWheelDay
+            coroutineScope.launch {
+                dayListState.scrollToItem(dayListState.centeredItemIndex() + delta)
+            }
+        }
+        updateSelectedDate(year, selectedMonthVal, validDay)
     }
 
-    val currentCenteredYearIndex by remember { derivedStateOf { yearListState.firstVisibleItemIndex } }
+    val currentCenteredYearIndex by remember { derivedStateOf { yearListState.centeredItemIndex() } }
     LaunchedEffect(currentCenteredYearIndex) {
         val selectedYearVal = minYear + (currentCenteredYearIndex % yearCount)
-        updateSelectedDate(selectedYearVal, month, day)
+        val maxDays = java.time.YearMonth.of(selectedYearVal, month).lengthOfMonth()
+        val currentWheelDay = (dayListState.centeredItemIndex() % 31) + 1
+        val validDay = currentWheelDay.coerceIn(1, maxDays)
+        if (validDay != currentWheelDay) {
+            val delta = validDay - currentWheelDay
+            coroutineScope.launch {
+                dayListState.scrollToItem(dayListState.centeredItemIndex() + delta)
+            }
+        }
+        updateSelectedDate(selectedYearVal, month, validDay)
     }
-
-    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = modifier
@@ -1306,7 +1359,7 @@ private fun CustomWheelDatePickerView(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.home_picker_back),
                     tint = AwanTheme.colors.textPrimary,
                     modifier = Modifier.size(16.dp),
                 )
@@ -1348,8 +1401,8 @@ private fun CustomWheelDatePickerView(
         val quickOptions = listOf(
             Pair(stringResource(R.string.home_date_today_chip), today),
             Pair(stringResource(R.string.home_date_tomorrow_chip), today.plusDays(1)),
-            Pair(stringResource(R.string.home_date_plus_days, 2), today.plusDays(2)),
-            Pair(stringResource(R.string.home_date_plus_days, 7), today.plusDays(7)),
+            Pair(pluralStringResource(R.plurals.home_date_plus_days, 2, 2), today.plusDays(2)),
+            Pair(pluralStringResource(R.plurals.home_date_plus_days, 7, 7), today.plusDays(7)),
         )
 
         Row(
@@ -1405,7 +1458,7 @@ private fun CustomWheelDatePickerView(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AwanText(
-                text = "DAY",
+                text = stringResource(R.string.home_picker_day),
                 style = AwanTheme.typography.caption.copy(
                     fontSize = 10.5.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -1416,7 +1469,7 @@ private fun CustomWheelDatePickerView(
                 modifier = Modifier.weight(1f),
             )
             AwanText(
-                text = "MONTH",
+                text = stringResource(R.string.home_picker_month),
                 style = AwanTheme.typography.caption.copy(
                     fontSize = 10.5.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -1427,7 +1480,7 @@ private fun CustomWheelDatePickerView(
                 modifier = Modifier.weight(1.2f),
             )
             AwanText(
-                text = "YEAR",
+                text = stringResource(R.string.home_picker_year),
                 style = AwanTheme.typography.caption.copy(
                     fontSize = 10.5.sp,
                     fontWeight = FontWeight.ExtraBold,

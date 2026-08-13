@@ -28,7 +28,6 @@ import com.awan.app.core.domain.home.usecase.RefreshDayScheduleUseCase
 import com.awan.app.core.domain.zones.usecase.RefreshZonesUseCase
 import com.awan.app.core.domain.home.usecase.UpdateTaskDetailUseCase
 import com.awan.app.core.domain.home.usecase.DeleteSessionUseCase
-import com.awan.app.core.domain.home.usecase.DeleteTaskUseCase
 import com.awan.app.core.domain.home.usecase.CompleteSessionUseCase
 import com.awan.app.core.domain.home.usecase.UncompleteSessionUseCase
 import com.awan.app.core.domain.home.usecase.MoveSessionUseCase
@@ -66,7 +65,6 @@ class HomeViewModel @Inject constructor(
     private val getSessionDetailUseCase: GetSessionDetailUseCase,
     private val updateTaskDetailUseCase: UpdateTaskDetailUseCase,
     private val deleteSessionUseCase: DeleteSessionUseCase,
-    private val deleteTaskUseCase: DeleteTaskUseCase,
     private val completeSessionUseCase: CompleteSessionUseCase,
     private val uncompleteSessionUseCase: UncompleteSessionUseCase,
     private val moveSessionUseCase: MoveSessionUseCase,
@@ -560,8 +558,6 @@ class HomeViewModel @Inject constructor(
                                 editStartMinutes = startMin,
                                 editEndMinutes = endMin,
                                 editDurationMinutes = duration,
-                                editZoneId = result.data.session.zoneId,
-                                availableZones = state.zones,
                             )
                         )
                     }
@@ -589,7 +585,12 @@ class HomeViewModel @Inject constructor(
 
     fun retryLoadSessionDetail() {
         val currentSessionId = uiState.value.selectedSessionDetailState?.sessionId ?: return
-        onSessionClicked(currentSessionId)
+        val currentDetailState = uiState.value.selectedSessionDetailState
+        if (currentDetailState?.detail != null) {
+            saveSessionDetailEdits()
+        } else {
+            onSessionClicked(currentSessionId)
+        }
     }
 
     fun toggleSessionStatusFromDialog() {
@@ -769,15 +770,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun onEditZoneChanged(newZoneId: String) {
-        _uiState.update { state ->
-            val dialogState = state.selectedSessionDetailState ?: return@update state
-            state.copy(
-                selectedSessionDetailState = dialogState.copy(editZoneId = newZoneId)
-            )
-        }
-    }
-
     fun saveSessionDetailEdits() {
         val dialogState = uiState.value.selectedSessionDetailState ?: return
         val detail = dialogState.detail ?: return
@@ -786,7 +778,6 @@ class HomeViewModel @Inject constructor(
         val startMin = dialogState.editStartMinutes
         val endMin = dialogState.editEndMinutes
         val newDuration = dialogState.editDurationMinutes
-        val newZoneId = dialogState.editZoneId
 
         _uiState.update { state ->
             state.copy(
@@ -818,13 +809,11 @@ class HomeViewModel @Inject constructor(
                         val updatedSession = d.session.copy(
                             start = newStartDateTime,
                             end = newEndDateTime,
-                            zoneId = newZoneId,
                         )
                         val updatedRelatedSessions = d.relatedSessions.map { s ->
                             if (s.id == sessionId) s.copy(
                                 start = newStartDateTime,
                                 end = newEndDateTime,
-                                zoneId = newZoneId,
                             ) else s
                         }
                         d.copy(
@@ -843,7 +832,6 @@ class HomeViewModel @Inject constructor(
                                 taskTitle = dialogState.editTitle,
                                 startMinutes = startMin,
                                 durationMinutes = newDuration,
-                                zoneId = newZoneId ?: s.zoneId,
                             )
                         } else if (s.taskId == taskId) {
                             s.copy(taskTitle = dialogState.editTitle)
@@ -856,9 +844,15 @@ class HomeViewModel @Inject constructor(
                     )
                 }
             } else {
+                val errorMsg = (taskResult as? Result.Error)?.error?.toReadableMessage()
+                    ?: (moveResult as? Result.Error)?.error?.toReadableMessage()
+                    ?: UiText.StringResource(R.string.home_error_something_went_wrong)
                 _uiState.update { state ->
                     state.copy(
-                        selectedSessionDetailState = state.selectedSessionDetailState?.copy(isSaving = false)
+                        selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                            isSaving = false,
+                            errorMessage = errorMsg,
+                        )
                     )
                 }
             }
@@ -871,17 +865,7 @@ class HomeViewModel @Inject constructor(
             state.copy(
                 selectedSessionDetailState = dialogState.copy(
                     showDeleteConfirmDialog = true,
-                    deleteTargetType = DeleteTargetType.SESSION,
                 )
-            )
-        }
-    }
-
-    fun selectDeleteTargetType(type: DeleteTargetType) {
-        _uiState.update { state ->
-            val dialogState = state.selectedSessionDetailState ?: return@update state
-            state.copy(
-                selectedSessionDetailState = dialogState.copy(deleteTargetType = type)
             )
         }
     }

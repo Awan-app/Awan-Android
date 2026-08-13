@@ -28,11 +28,6 @@ internal fun formatSelectedDate(date: LocalDate): UiText {
     }
 }
 
-enum class DeleteTargetType {
-    SESSION,
-    TASK,
-}
-
 data class SessionDetailDialogState(
     val sessionId: String,
     val isLoading: Boolean = true,
@@ -45,12 +40,9 @@ data class SessionDetailDialogState(
     val editStartMinutes: Int = 0,
     val editEndMinutes: Int = 0,
     val editDurationMinutes: Int = 30,
-    val editZoneId: String? = null,
-    val availableZones: List<ScheduleZone> = emptyList(),
     val isSaving: Boolean = false,
     val showDeleteConfirmDialog: Boolean = false,
     val isDeleting: Boolean = false,
-    val deleteTargetType: DeleteTargetType = DeleteTargetType.SESSION,
 )
 
 data class HomeUiState(

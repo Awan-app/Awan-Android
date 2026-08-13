@@ -230,7 +230,6 @@ fun AwanApp(
             homeEntry(
                 onLogout = { navigator.replaceAll(LoginRoute) },
                 onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
-                onNavigateToGoals = { _ -> navigator.navigate(com.awan.feature.goals.api.GoalsRoute) },
                 onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
                 onNavigateToAddTask = { _, _ ->
                     showAddTask = true
