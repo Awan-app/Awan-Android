@@ -66,6 +66,7 @@ fun GoalPreviewScreen(
     onOptionSelected: (String) -> Unit,
     onToggleMic: () -> Unit,
     isListening: Boolean,
+    micAmplitude: () -> Float,
     speechError: String?,
     modifier: Modifier = Modifier,
     isPermissionError: Boolean = false,
@@ -225,6 +226,7 @@ fun GoalPreviewScreen(
                             isListening = isListening,
                             onToggle = onToggleMic,
                             enabled = !state.isSubmitting,
+                            amplitude = micAmplitude,
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -456,6 +458,7 @@ private fun GoalPreviewScreenPreviewStepPreview(dark: Boolean = false) {
             onOptionSelected = {},
             onToggleMic = {},
             isListening = false,
+            micAmplitude = { 0f },
             speechError = null,
         )
     }
@@ -487,6 +490,7 @@ private fun GoalPreviewScreenMcqPreview() {
             onOptionSelected = {},
             onToggleMic = {},
             isListening = false,
+            micAmplitude = { 0f },
             speechError = null,
         )
     }

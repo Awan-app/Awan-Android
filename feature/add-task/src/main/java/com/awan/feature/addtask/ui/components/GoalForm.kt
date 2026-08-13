@@ -64,6 +64,7 @@ fun GoalFormContent(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    micAmplitude: () -> Float,
     speechError: String?,
     modifier: Modifier = Modifier,
     isPermissionError: Boolean = false,
@@ -119,6 +120,7 @@ fun GoalFormContent(
                         onAction = onAction,
                         isListening = isListening,
                         onToggleMic = onToggleMic,
+                        micAmplitude = micAmplitude,
                         speechError = speechError,
                         isPermissionError = isPermissionError,
                     )
@@ -129,6 +131,7 @@ fun GoalFormContent(
                         onAction = onAction,
                         isListening = isListening,
                         onToggleMic = onToggleMic,
+                        micAmplitude = micAmplitude,
                         speechError = speechError,
                         isPermissionError = isPermissionError,
                     )
@@ -139,6 +142,7 @@ fun GoalFormContent(
                         onAction = onAction,
                         isListening = isListening,
                         onToggleMic = onToggleMic,
+                        micAmplitude = micAmplitude,
                         speechError = speechError,
                         isPermissionError = isPermissionError,
                     )
@@ -149,6 +153,7 @@ fun GoalFormContent(
                         onAction = onAction,
                         isListening = isListening,
                         onToggleMic = onToggleMic,
+                        micAmplitude = micAmplitude,
                         speechError = speechError,
                         isPermissionError = isPermissionError,
                     )
@@ -173,6 +178,7 @@ private fun InitialStepContent(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    micAmplitude: () -> Float,
     speechError: String?,
     isPermissionError: Boolean,
 ) {
@@ -207,6 +213,7 @@ private fun InitialStepContent(
                                 isListening = isListening,
                                 onToggle = onToggleMic,
                                 enabled = !state.isSubmitting,
+                                amplitude = micAmplitude,
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -245,6 +252,7 @@ private fun MultipleChoiceStepContent(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    micAmplitude: () -> Float,
     speechError: String?,
     isPermissionError: Boolean,
 ) {
@@ -362,6 +370,7 @@ private fun MultipleChoiceStepContent(
                                 isListening = isListening,
                                 onToggle = onToggleMic,
                                 enabled = !state.isSubmitting,
+                                amplitude = micAmplitude,
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -400,6 +409,7 @@ private fun WritingStepContent(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    micAmplitude: () -> Float,
     speechError: String?,
     isPermissionError: Boolean,
 ) {
@@ -472,6 +482,7 @@ private fun WritingStepContent(
                                 isListening = isListening,
                                 onToggle = onToggleMic,
                                 enabled = !state.isSubmitting,
+                                amplitude = micAmplitude,
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -510,6 +521,7 @@ private fun PreviewStepContent(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    micAmplitude: () -> Float,
     speechError: String?,
     isPermissionError: Boolean,
 ) {
@@ -578,6 +590,7 @@ private fun PreviewStepContent(
                                 isListening = isListening,
                                 onToggle = onToggleMic,
                                 enabled = !state.isSubmitting,
+                                amplitude = micAmplitude,
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -733,6 +746,7 @@ private fun GoalFormInitialPreview() {
             ),
             onAction = {},
             isListening = false,
+            micAmplitude = { 0f },
             onToggleMic = {},
             speechError = null,
             modifier = Modifier.padding(16.dp),
@@ -756,6 +770,7 @@ private fun GoalFormMcqPreview() {
             ),
             onAction = {},
             isListening = false,
+            micAmplitude = { 0f },
             onToggleMic = {},
             speechError = null,
             modifier = Modifier.padding(16.dp),
@@ -776,6 +791,7 @@ private fun GoalFormWritingPreview() {
             ),
             onAction = {},
             isListening = false,
+            micAmplitude = { 0f },
             onToggleMic = {},
             speechError = null,
             modifier = Modifier.padding(16.dp),
@@ -806,6 +822,7 @@ private fun GoalFormPreviewStatePreview() {
             ),
             onAction = {},
             isListening = false,
+            micAmplitude = { 0f },
             onToggleMic = {},
             speechError = null,
             modifier = Modifier.padding(16.dp),

@@ -27,11 +27,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import java.util.concurrent.atomic.AtomicReference
 
 class SpeechRecognizerState internal constructor(
     val isListening: Boolean,
     val errorMessage: String?,
     val isPermissionError: Boolean,
+    /**
+     * How loud the microphone is hearing you, 0..1, updated many times a second while listening.
+     *
+     * Deliberately a lambda rather than a value: read it inside `graphicsLayer`/`drawBehind` so the
+     * level drives a frame without recomposing anything. Reading it in a composable body instead
+     * would recompose the caller on every audio frame.
+     */
+    val amplitude: () -> Float,
     private val startListeningAction: () -> Unit,
     private val stopListeningAction: () -> Unit,
     private val clearErrorAction: () -> Unit,
@@ -40,6 +49,16 @@ class SpeechRecognizerState internal constructor(
     fun stopListening() = stopListeningAction()
     fun clearError() = clearErrorAction()
 }
+
+/**
+ * `onRmsChanged` reports roughly -2 dB (silence) to 10 dB (loud) — the range is not documented as a
+ * contract, so it is clamped rather than trusted.
+ */
+private const val RMS_FLOOR_DB = -2f
+private const val RMS_CEILING_DB = 10f
+
+private fun normalizeRms(rmsdB: Float): Float =
+    ((rmsdB - RMS_FLOOR_DB) / (RMS_CEILING_DB - RMS_FLOOR_DB)).coerceIn(0f, 1f)
 
 private fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
@@ -71,6 +90,8 @@ fun rememberSpeechRecognizer(
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showRationaleDialog by remember { mutableStateOf(false) }
     var recognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
+    // Not State: the level changes on every audio frame, and nothing should recompose for it.
+    val amplitude = remember { AtomicReference(0f) }
 
     /**
      * The app's language, not the device's. MainActivity overrides [LocalConfiguration] from the
@@ -93,6 +114,7 @@ fun rememberSpeechRecognizer(
             stopListening()
             cancel()
         }
+        amplitude.set(0f)
         isListening = false
     }
 
@@ -128,11 +150,12 @@ fun rememberSpeechRecognizer(
             }
 
             override fun onBeginningOfSpeech() {}
-            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onRmsChanged(rmsdB: Float) = amplitude.set(normalizeRms(rmsdB))
             override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {}
+            override fun onEndOfSpeech() = amplitude.set(0f)
 
             override fun onError(error: Int) {
+                amplitude.set(0f)
                 isListening = false
                 when (error) {
                     SpeechRecognizer.ERROR_CLIENT -> {
@@ -149,6 +172,7 @@ fun rememberSpeechRecognizer(
             }
 
             override fun onResults(results: Bundle?) {
+                amplitude.set(0f)
                 isListening = false
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
@@ -254,6 +278,7 @@ fun rememberSpeechRecognizer(
             isListening = isListening,
             errorMessage = errorMessage,
             isPermissionError = isPermissionError,
+            amplitude = amplitude::get,
             startListeningAction = {
                 val hasPermission = ContextCompat.checkSelfPermission(
                     context,

@@ -337,6 +337,7 @@ private fun AddTaskSheetContent(
                             onAction = handleAction,
                             isListening = speechState.isListening,
                             onToggleMic = toggleMic,
+                            micAmplitude = speechState.amplitude,
                             speechError = speechState.errorMessage,
                             isPermissionError = speechState.isPermissionError,
                         )
@@ -346,6 +347,7 @@ private fun AddTaskSheetContent(
                             onAction = handleAction,
                             isListening = speechState.isListening,
                             onToggleMic = toggleMic,
+                            micAmplitude = speechState.amplitude,
                             speechError = speechState.errorMessage,
                             isPermissionError = speechState.isPermissionError,
                         )
@@ -399,6 +401,7 @@ private fun TaskForm(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    micAmplitude: () -> Float,
     speechError: String?,
     isPermissionError: Boolean,
 ) {
@@ -438,6 +441,7 @@ private fun TaskForm(
                             isListening = isListening,
                             onToggle = onToggleMic,
                             enabled = !state.isSubmitting,
+                            amplitude = micAmplitude,
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),

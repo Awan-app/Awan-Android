@@ -86,6 +86,7 @@ fun GoalPreviewRouteRoot(
             else speechState.startListening()
         },
         isListening = speechState.isListening,
+        micAmplitude = speechState.amplitude,
         speechError = speechState.errorMessage,
         isPermissionError = speechState.isPermissionError,
     )

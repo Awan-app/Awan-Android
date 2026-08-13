@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.style.Style
+import androidx.compose.foundation.style.pressed
 import androidx.compose.foundation.style.styleable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -87,25 +88,40 @@ private fun Segment(
         animationSpec = spec,
         label = "segmentFace",
     )
+    /**
+     * The selected segment's border matches its own face, so it disappears. A contrasting ring
+     * around a sunk face is indistinguishable from a rim under a raised one — the segment measures
+     * as pressed but reads as raised. Only the unselected segments keep a visible edge, and their
+     * rim is then the only rim on the track.
+     */
     val edge by animateColorAsState(
-        targetValue = if (isSelected) colors.skyPressed else colors.line,
+        targetValue = if (isSelected) colors.sky else colors.line,
         animationSpec = spec,
         label = "segmentEdge",
+    )
+    val rim by animateColorAsState(
+        targetValue = if (isSelected) colors.skyPressed else colors.line,
+        animationSpec = spec,
+        label = "segmentRim",
     )
     val ink by animateColorAsState(
         targetValue = if (isSelected) colors.onSky else colors.textSecondary,
         animationSpec = spec,
         label = "segmentInk",
     )
+    // A finger on a segment darkens it, on top of the sink. Without this the only feedback is 4dp
+    // of travel, which on the already-sunk selected segment is no feedback at all.
+    val activeFace = if (isSelected) colors.skyPressed else colors.disabledSurface
 
     val shape = AwanTheme.shapes.chip
-    val rimStyle = remember(edge, shape) { Style { background(edge); shape(shape) } }
-    val faceStyle = remember(face, edge, ink, shape) {
+    val rimStyle = remember(rim, shape) { Style { background(rim); shape(shape) } }
+    val faceStyle = remember(face, edge, ink, activeFace, shape) {
         Style {
             background(face)
             borderColor(edge)
             contentColor(ink)
             shape(shape)
+            pressed { background(activeFace) }
         }
     }
 

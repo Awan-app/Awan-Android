@@ -189,11 +189,15 @@ fun AwanButton(
                 Row(
                     modifier = Modifier
                         .padding(bottom = rimDepth, start = rimSide)
-                        .styleable(styleState, faceStyle, style)
+                        // Before styleable, not after: a graphicsLayer only transforms what is
+                        // drawn inside it, so downstream of the style it moved the label while
+                        // leaving the face background behind — the button measured as latched but
+                        // still showed its rim, reading as raised.
                         .graphicsLayer {
                             translationX = latchedTranslationX.toPx()
                             translationY = latchedTranslationY.toPx()
-                        },
+                        }
+                        .styleable(styleState, faceStyle, style),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
