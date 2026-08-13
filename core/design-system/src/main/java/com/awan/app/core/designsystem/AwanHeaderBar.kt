@@ -63,7 +63,7 @@ fun AwanHeaderBar(
     val displayName = userName.ifBlank { stringResource(R.string.ds_friend) }
 
     val mascotWidth by animateDpAsState(
-        targetValue = if (isCollapsed) 96.dp else 160.dp,
+        targetValue = if (isCollapsed) 80.dp else 140.dp,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "mascotWidth",
     )
@@ -74,7 +74,7 @@ fun AwanHeaderBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 6.dp),
+                .padding(horizontal = 4.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -125,7 +125,7 @@ fun AwanHeaderBar(
         }
 
         AnimatedVisibility(
-            visible = isCollapsed,
+            visible = !isCollapsed,
             enter = fadeIn(tween(220)) + expandVertically(tween(220)),
             exit = fadeOut(tween(180)) + shrinkVertically(tween(180)),
         ) {
@@ -140,7 +140,7 @@ fun AwanHeaderBar(
             )
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),

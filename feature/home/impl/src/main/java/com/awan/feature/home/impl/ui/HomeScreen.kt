@@ -234,6 +234,7 @@ fun HomeScreen(
         if (!uiState.isWheelOpen) {
             AwanWheelBadge(
                 hasFreeSpin = uiState.hasFreeSpin,
+                isCollapsed = isHeaderCollapsed,
                 onClick = viewModel::openWheel,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
