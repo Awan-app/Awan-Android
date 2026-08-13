@@ -1,5 +1,7 @@
 package com.awan.app.core.data.home.mapper
 
+import com.awan.app.core.data.util.minutesOfDay
+import com.awan.app.core.data.util.parseIsoDateTime
 import com.awan.app.core.domain.home.model.DaySchedule
 import com.awan.app.core.domain.home.model.DaySession
 import com.awan.app.core.domain.home.model.DayZone
@@ -43,9 +45,31 @@ internal object HomeMapper {
     // ── Session ───────────────────────────────────────────────────────────
 
     private fun SessionDto.toDaySession(task: TaskInfoResponse): DaySession {
-        val startMin = parseIsoTimeToMinutes(start)
-        val endMin   = parseIsoTimeToMinutes(end).let { if (it <= startMin) startMin + 30 else it }
-        val duration = (endMin - startMin).coerceAtLeast(1)
+        val startDt = parseIsoDateTime(start)
+        val endDt = parseIsoDateTime(end)
+        val startMin: Int
+        val duration: Int
+        if (startDt != null && endDt != null) {
+            startMin = startDt.minutesOfDay()
+            val betweenMins = java.time.Duration.between(startDt, endDt).toMinutes().toInt()
+            duration = if (betweenMins > 0) {
+                betweenMins
+            } else {
+                val adjustedEnd = endDt.plusDays(1)
+                val adjMins = java.time.Duration.between(startDt, adjustedEnd).toMinutes().toInt()
+                if (adjMins > 0) adjMins else 30
+            }
+        } else {
+            startMin = parseIsoTimeToMinutes(start)
+            val rawEndMin = parseIsoTimeToMinutes(end)
+            duration = if (rawEndMin > startMin) {
+                rawEndMin - startMin
+            } else if (rawEndMin < startMin) {
+                (rawEndMin + 24 * 60) - startMin
+            } else {
+                30
+            }
+        }
 
         return DaySession(
             id = id,
