@@ -113,6 +113,7 @@
     <string name="profile_routine_create">إنشاء روتين</string>
     <string name="profile_routine_edit">تعديل الروتين</string>
     <string name="profile_routine_summary_subtitle">قوالب لجدولك المتكرر</string>
+    <string name="profile_routine_summary_subtitle_today">روتين مخصص لهذا اليوم فقط</string>
     <string name="profile_routine_name">اسم الروتين</string>
     <string name="profile_routine_name_placeholder">مثال: يوم عمل، عطلة نهاية الأسبوع، إجازة</string>
     <string name="profile_routine_apply_to_days">تطبيق على الأيام</string>

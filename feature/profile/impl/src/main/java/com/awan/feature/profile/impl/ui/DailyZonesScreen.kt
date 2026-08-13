@@ -12,18 +12,20 @@ import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.feature.profile.impl.R
+import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import com.awan.feature.profile.impl.presentation.DailyZonesAction
 import com.awan.feature.profile.impl.presentation.DailyZonesState
 import com.awan.feature.profile.impl.ui.dailyzones.AddEditZoneSheet
 import com.awan.feature.profile.impl.ui.dailyzones.DailyZonesContent
 import com.awan.feature.profile.impl.ui.dailyzones.DailyZonesTopBar
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DailyZonesScreen(
     uiState: DailyZonesState,
     onAction: (DailyZonesAction) -> Unit,
-    onNavigateToRoutineDetails: (String) -> Unit,
+    onNavigateToRoutineDetails: (String?, String?) -> Unit,
     onCreateRoutineClick: (String?, String?) -> Unit,
     onBackClick: () -> Unit,
 ) {
@@ -32,7 +34,7 @@ fun DailyZonesScreen(
     var showDeleteConfirm by remember { mutableStateOf<DailyZone?>(null) }
 
     val colors = AwanTheme.colors
-    val dayColors = remember(uiState.templates, colors) {
+    val dayColors = remember(uiState.templates, uiState.overrides, colors) {
         val mapping = mutableMapOf<DayOfWeek, Color>()
         val distinctColors = listOf(
             colors.zoneMelon,
@@ -47,11 +49,22 @@ fun DailyZonesScreen(
             colors.zoneGray
         )
         
+        // 1. Templates colors
         uiState.templates.forEachIndexed { index, template ->
             val color = template.zones.firstOrNull()?.color?.toColor() 
                 ?: distinctColors[index % distinctColors.size]
             template.daysOfWeek.forEach { day ->
                 mapping[day] = color
+            }
+        }
+
+        // 2. Overrides (Custom Days) take precedence and use a special indicator color or their first zone color
+        uiState.overrides.forEach { override ->
+            val date = runCatching { LocalDate.parse(override.dateOfDay) }.getOrNull()
+            if (date != null) {
+                val day = DailyZonesHelper.getCurrentDay(date)
+                // Overrides use the sky color to indicate "special/customized" or their own zone color
+                mapping[day] = override.zones.firstOrNull()?.color?.toColor() ?: colors.sky
             }
         }
         mapping

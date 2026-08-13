@@ -7,6 +7,7 @@ import com.awan.app.core.model.Category
 
 data class EditRoutineState(
     val templateId: String? = null,
+    val overrideId: String? = null,
     val date: String? = null,
     val name: String = "",
     val selectedDays: Set<DayOfWeek> = emptySet(),

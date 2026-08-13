@@ -179,11 +179,15 @@ fun EditRoutineScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         AwanText(
-                            text = if (uiState.templateId == null) stringResource(R.string.profile_routine_create) else stringResource(R.string.profile_routine_edit),
+                            text = if (uiState.templateId == null && uiState.overrideId == null) 
+                                stringResource(R.string.profile_routine_create) 
+                            else stringResource(R.string.profile_routine_edit),
                             style = AwanTheme.styles.titleText
                         )
                         AwanText(
-                            text = stringResource(R.string.profile_routine_summary_subtitle),
+                            text = if (uiState.overrideId != null)
+                                stringResource(R.string.profile_routine_summary_subtitle_today)
+                            else stringResource(R.string.profile_routine_summary_subtitle),
                             style = AwanTheme.styles.metaText
                         )
                     }
@@ -196,7 +200,7 @@ fun EditRoutineScreen(
                     }
                 },
                 actions = {
-                    if (uiState.templateId != null) {
+                    if (uiState.templateId != null || uiState.overrideId != null) {
                         Box(modifier = Modifier.padding(end = 12.dp)) {
                             AwanIconButton(
                                 onClick = { showDeleteConfirm = true },
@@ -258,12 +262,16 @@ fun EditRoutineScreen(
                 }
             }
 
-            // Apply to Today Only (Checkbox) - Only show in creation mode
+            // Apply to Today Only (Checkbox) - Only show in creation mode or when editing an override
             if (uiState.templateId == null) {
                 AwanCard(
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(12.dp),
-                    onClick = { if (uiState.date != null) onAction(EditRoutineAction.ToggleTodayOnly(!uiState.isTodayOnly)) }
+                    onClick = { 
+                        if (uiState.date != null && uiState.overrideId == null) {
+                            onAction(EditRoutineAction.ToggleTodayOnly(!uiState.isTodayOnly)) 
+                        }
+                    }
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -273,7 +281,7 @@ fun EditRoutineScreen(
                         Checkbox(
                             checked = uiState.isTodayOnly,
                             onCheckedChange = { onAction(EditRoutineAction.ToggleTodayOnly(it)) },
-                            enabled = uiState.date != null,
+                            enabled = uiState.date != null && uiState.overrideId == null,
                             colors = CheckboxDefaults.colors(checkedColor = AwanTheme.colors.sky)
                         )
                         Column(modifier = Modifier.weight(1f)) {

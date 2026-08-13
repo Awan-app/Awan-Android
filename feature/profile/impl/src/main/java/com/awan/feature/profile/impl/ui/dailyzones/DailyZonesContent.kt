@@ -22,7 +22,7 @@ fun DailyZonesContent(
     uiState: DailyZonesState,
     dayColors: Map<DayOfWeek, Color>,
     onAction: (DailyZonesAction) -> Unit,
-    onNavigateToRoutineDetails: (String) -> Unit,
+    onNavigateToRoutineDetails: (String?, String?) -> Unit,
     onCreateRoutineClick: (String?, String?) -> Unit,
     onAddZoneClick: () -> Unit,
     onEditZone: (DailyZone) -> Unit,
@@ -47,6 +47,7 @@ fun DailyZonesContent(
         }
 
         val currentTemplateId = uiState.currentTemplate?.id
+        val currentOverrideDate = uiState.currentOverride?.dateOfDay
         val routineName = uiState.currentOverride?.name 
             ?: uiState.currentTemplate?.name 
             ?: stringResource(R.string.profile_routine_default_name)
@@ -55,9 +56,10 @@ fun DailyZonesContent(
             day = uiState.selectedDay,
             templateName = routineName,
             zoneCount = uiState.selectedDayZones.size,
-            onEditRoutineClick = if (!uiState.isLoading && currentTemplateId != null) {
-                { onNavigateToRoutineDetails(currentTemplateId) }
-            } else null
+            onEditRoutineClick = if (!uiState.isLoading && (currentTemplateId != null || currentOverrideDate != null)) {
+                { onNavigateToRoutineDetails(currentTemplateId, currentOverrideDate) }
+            } else null,
+            isOverride = uiState.currentOverride != null
         )
 
         if (uiState.currentTemplate != null || uiState.currentOverride != null) {
@@ -66,7 +68,8 @@ fun DailyZonesContent(
                 selectedTemplateId = uiState.currentTemplate?.id,
                 onTemplateSelected = { onAction(DailyZonesAction.SelectTemplate(it)) },
                 onCreateRoutineClick = onCreateRoutineClick,
-                selectedDate = uiState.selectedDate?.toString()
+                selectedDate = uiState.selectedDate?.toString(),
+                currentOverrideName = uiState.currentOverride?.name
             )
         }
 

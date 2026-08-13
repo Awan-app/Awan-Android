@@ -113,6 +113,7 @@
     <string name="profile_routine_create">Create Routine</string>
     <string name="profile_routine_edit">Edit Routine</string>
     <string name="profile_routine_summary_subtitle">Templates for your recurring schedule</string>
+    <string name="profile_routine_summary_subtitle_today">Custom routine for this day only</string>
     <string name="profile_routine_name">Routine Name</string>
     <string name="profile_routine_name_placeholder">e.g. Workday, Weekend, Vacation</string>
     <string name="profile_routine_apply_to_days">Apply to Days</string>

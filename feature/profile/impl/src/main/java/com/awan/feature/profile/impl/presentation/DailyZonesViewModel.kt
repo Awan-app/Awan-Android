@@ -76,16 +76,11 @@ class DailyZonesViewModel @Inject constructor(
                 val categories = categoriesResult.data
 
                 _uiState.update { state ->
-                    val defaultTemplate = templates.find { it.name.equals("Default", ignoreCase = true) }
-                        ?: templates.find { it.name.equals("My Week", ignoreCase = true) }
-                        ?: templates.firstOrNull()
-
                     state.copy(
                         isLoading = false,
                         templates = templates,
                         overrides = overrides,
-                        availableCategories = categories,
-                        selectedTemplateId = state.selectedTemplateId ?: defaultTemplate?.id
+                        availableCategories = categories
                     )
                 }
                 updateSelectedDayData()

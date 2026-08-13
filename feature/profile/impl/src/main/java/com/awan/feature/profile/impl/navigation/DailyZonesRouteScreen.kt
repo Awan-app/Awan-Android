@@ -12,7 +12,7 @@ import com.awan.feature.profile.impl.ui.DailyZonesScreen
 @Composable
 fun DailyZonesRouteScreen(
     viewModel: DailyZonesViewModel = hiltViewModel(),
-    onRoutineClick: (String) -> Unit,
+    onRoutineClick: (String?, String?) -> Unit,
     onCreateRoutineClick: (String?, String?) -> Unit,
     onBack: () -> Unit
 ) {

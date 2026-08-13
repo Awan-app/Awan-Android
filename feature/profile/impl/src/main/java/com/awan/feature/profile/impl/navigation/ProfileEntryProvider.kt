@@ -28,7 +28,7 @@ fun EntryProviderScope<Route>.profileEntry(
 
     entry<DailyZonesRoute> {
         DailyZonesRouteScreen(
-            onRoutineClick = { onNavigateToEditRoutine(it, null) },
+            onRoutineClick = { templateId, date -> onNavigateToEditRoutine(templateId, date) },
             onCreateRoutineClick = { templateId, date -> onNavigateToEditRoutine(templateId, date) },
             onBack = onBack
         )
