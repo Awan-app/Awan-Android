@@ -19,6 +19,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -77,6 +78,7 @@ import com.composables.icons.lucide.Lucide
 import com.awan.app.core.designsystem.AwanBackButton
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
+import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanSurface
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextStyle
@@ -211,7 +213,7 @@ fun CalendarScreen(
                     modifier = Modifier.testTag("calendar_title"),
                 )
             }
-            StreakSummaryCard(streak = state.streak)
+            StreakHeaderCard(state = state.streakHeaderState, streak = state.streak)
 
             MonthHeader(
                 yearMonth = state.currentYearMonth,
@@ -283,42 +285,136 @@ fun CalendarScreen(
         }
 }
 
+private data class CalendarStreakHeaderVisual(
+    val faceColor: Color,
+    val rimColor: Color,
+    val circleColor: Color,
+    val titleText: String,
+    val subtitleText: String,
+)
+
 @Composable
-private fun StreakSummaryCard(streak: Int) {
-    AwanSurface(
+private fun StreakHeaderCard(
+    state: CalendarStreakHeaderState,
+    streak: Int,
+) {
+    val colors = AwanTheme.colors
+    val variantTag = "streak_header_${state.name.lowercase()}"
+    val visual = when (state) {
+        CalendarStreakHeaderState.Start -> CalendarStreakHeaderVisual(
+            faceColor = colors.sky.copy(alpha = 0.12f),
+            rimColor = colors.sky.copy(alpha = 0.35f),
+            circleColor = colors.sky.copy(alpha = 0.20f),
+            titleText = stringResource(R.string.calendar_streak_start_title),
+            subtitleText = stringResource(R.string.calendar_streak_start_subtitle),
+        )
+        CalendarStreakHeaderState.Restart -> CalendarStreakHeaderVisual(
+            faceColor = colors.zoneCoral.copy(alpha = 0.12f),
+            rimColor = colors.zoneCoral.copy(alpha = 0.35f),
+            circleColor = colors.zoneCoral.copy(alpha = 0.20f),
+            titleText = stringResource(R.string.calendar_streak_restart_title),
+            subtitleText = stringResource(R.string.calendar_streak_restart_subtitle),
+        )
+        CalendarStreakHeaderState.Protect -> CalendarStreakHeaderVisual(
+            faceColor = colors.zoneTangerine.copy(alpha = 0.14f),
+            rimColor = colors.zoneTangerine.copy(alpha = 0.45f),
+            circleColor = colors.zoneTangerine.copy(alpha = 0.25f),
+            titleText = stringResource(R.string.calendar_streak_protect_title, streak),
+            subtitleText = stringResource(R.string.calendar_streak_protect_subtitle),
+        )
+        CalendarStreakHeaderState.Celebrate -> CalendarStreakHeaderVisual(
+            faceColor = colors.zoneSun.copy(alpha = 0.16f),
+            rimColor = colors.zoneSun.copy(alpha = 0.50f),
+            circleColor = colors.zoneCoral.copy(alpha = 0.30f),
+            titleText = stringResource(R.string.calendar_streak_celebrate_title, streak),
+            subtitleText = stringResource(R.string.calendar_streak_celebrate_subtitle),
+        )
+    }
+
+    AwanCard(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("streak_summary_card")
+            .testTag(variantTag),
+        background = visual.faceColor,
+        customRimColor = visual.rimColor,
+        contentPadding = PaddingValues(AwanTheme.spacing.xs),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(AwanTheme.spacing.xs),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start,
         ) {
+            val outerSize = if (state == CalendarStreakHeaderState.Restart) 44.dp else 48.dp
+            val innerSize = if (state == CalendarStreakHeaderState.Restart) 32.dp else 36.dp
+
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(outerSize)
                     .clip(CircleShape)
-                    .background(AwanTheme.colors.streakSurface),
+                    .then(
+                        if (state == CalendarStreakHeaderState.Protect) {
+                            Modifier
+                                .background(visual.circleColor.copy(alpha = 0.15f))
+                                .border(2.dp, colors.zoneTangerine.copy(alpha = 0.6f), CircleShape)
+                        } else {
+                            Modifier.background(visual.circleColor)
+                        }
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_flame_filled),
-                    contentDescription = null,
-                    tint = AwanTheme.colors.streakIcon,
-                    modifier = Modifier.testTag("streak_flame_icon"),
-                )
+                Box(
+                    modifier = Modifier
+                        .size(innerSize)
+                        .clip(CircleShape)
+                        .background(visual.circleColor.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    when (state) {
+                        CalendarStreakHeaderState.Start -> Icon(
+                            painter = painterResource(id = R.drawable.ic_flame_filled),
+                            contentDescription = null,
+                            tint = colors.sky,
+                            modifier = Modifier.testTag("streak_header_start_icon"),
+                        )
+                        CalendarStreakHeaderState.Restart -> Icon(
+                            painter = painterResource(id = R.drawable.ic_flame_filled),
+                            contentDescription = null,
+                            tint = colors.zoneCoral,
+                            modifier = Modifier.testTag("streak_header_restart_icon"),
+                        )
+                        CalendarStreakHeaderState.Protect -> Icon(
+                            painter = painterResource(id = R.drawable.ic_flame_filled),
+                            contentDescription = null,
+                            tint = colors.zoneTangerine,
+                            modifier = Modifier.testTag("streak_header_protect_icon"),
+                        )
+                        CalendarStreakHeaderState.Celebrate -> Box(
+                            modifier = Modifier
+                                .size(26.dp)
+                                .clip(CircleShape)
+                                .background(colors.zoneSun.copy(alpha = 0.4f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_flame_filled),
+                                contentDescription = null,
+                                tint = colors.zoneSun,
+                                modifier = Modifier.testTag("streak_header_celebrate_icon"),
+                            )
+                        }
+                    }
+                }
             }
             Spacer(modifier = Modifier.width(AwanTheme.spacing.md))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 AwanText(
-                    text = stringResource(R.string.calendar_streak_title, streak),
+                    text = visual.titleText,
                     style = AwanTheme.styles.titleText,
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 AwanText(
-                    text = stringResource(R.string.calendar_streak_subtitle),
+                    text = visual.subtitleText,
                     style = AwanTheme.styles.captionText,
                 )
             }

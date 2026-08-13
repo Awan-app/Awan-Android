@@ -9,6 +9,14 @@
     <string name="calendar_no_deadlines">No upcoming deadlines scheduled.</string>
     <string name="calendar_streak_title">%d Day Streak</string>
     <string name="calendar_streak_subtitle">Consecutive active days ending today</string>
+    <string name="calendar_streak_start_title">Start your streak</string>
+    <string name="calendar_streak_start_subtitle">Complete a task today to light your fire.</string>
+    <string name="calendar_streak_restart_title">Ready to start again?</string>
+    <string name="calendar_streak_restart_subtitle">Your last streak ended. Complete a task today to begin a new one.</string>
+    <string name="calendar_streak_protect_title">%1$d-day streak at risk</string>
+    <string name="calendar_streak_protect_subtitle">Complete a task today to keep your fire burning.</string>
+    <string name="calendar_streak_celebrate_title">%1$d-day streak! You\'re on fire</string>
+    <string name="calendar_streak_celebrate_subtitle">You completed today\'s task. Keep it going tomorrow.</string>
     <string name="calendar_target_date">Target: %s</string>
     <string name="calendar_badge_today">Today</string>
     <string name="calendar_badge_tomorrow">Tomorrow</string>
