@@ -334,14 +334,15 @@ private fun StreakHeaderCard(
     AwanCard(
         modifier = Modifier
             .fillMaxWidth()
-            .testTag("streak_summary_card")
-            .testTag(variantTag),
+            .testTag("streak_summary_card"),
         background = visual.faceColor,
         customRimColor = visual.rimColor,
         contentPadding = PaddingValues(AwanTheme.spacing.xs),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(variantTag),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start,
         ) {
