@@ -212,15 +212,15 @@ class CalendarScreenTest {
             }
         }
 
-        // Cell exists (tappable) — today itself lands in the plain branch too for
-        // sanity, but here we specifically check a non-today plain day
+        // The plain day cell is tappable and visible.
         val plainDay = today.minusDays(5)
         composeRule.onNodeWithTag("calendar_day_$plainDay").assertIsDisplayed()
-        // No decorations rendered for a plain day
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_today_primary").fetchSemanticsNodes().size)
+        // No streak, deadline, or badge decorations on the grid (today itself still shows
+        // today_primary but plain/missed days contribute none of the streak or deadline tags).
         assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_fire").fetchSemanticsNodes().size)
         assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_number").fetchSemanticsNodes().size)
         assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_deadline_shader").fetchSemanticsNodes().size)
+        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_badge").fetchSemanticsNodes().size)
     }
 
     /**
@@ -273,9 +273,10 @@ class CalendarScreenTest {
         composeRule.onNodeWithTag("calendar_day_$yesterdayStreak").assertIsDisplayed()
         composeRule.onNodeWithTag("calendar_day_streak_fire").assertIsDisplayed()
         composeRule.onNodeWithTag("calendar_day_streak_number").assertIsDisplayed()
-        // No today-primary or deadline shader for a non-today streak day
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_today_primary").fetchSemanticsNodes().size)
+        // The full grid also renders today (with today_primary) — we only verify that
+        // no deadline shader is rendered on the grid, and no badge appears.
         assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_deadline_shader").fetchSemanticsNodes().size)
+        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_badge").fetchSemanticsNodes().size)
     }
 
     /**
@@ -301,8 +302,8 @@ class CalendarScreenTest {
 
         composeRule.onNodeWithTag("calendar_day_$deadlineDay").assertIsDisplayed()
         composeRule.onNodeWithTag("calendar_day_deadline_shader").assertIsDisplayed()
-        // No today-primary or streak decorations
-        assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_today_primary").fetchSemanticsNodes().size)
+        // The full grid also renders today (with today_primary) — we only verify that
+        // no streak decorations appear anywhere.
         assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_fire").fetchSemanticsNodes().size)
         assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_number").fetchSemanticsNodes().size)
         assertEquals(0, composeRule.onAllNodesWithTag("calendar_day_streak_badge").fetchSemanticsNodes().size)
