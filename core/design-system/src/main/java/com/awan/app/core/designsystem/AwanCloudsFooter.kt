@@ -52,6 +52,9 @@ fun AwanCloudsFooter(
         label = "cloud_float_y",
     )
 
+    val colors = AwanTheme.colors
+    val typography = AwanTheme.typography
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -88,8 +91,8 @@ fun AwanCloudsFooter(
                 path = bgPath,
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFFDBEAFE).copy(alpha = 0.65f),
-                        Color(0xFFEEF2FF).copy(alpha = 0.9f),
+                        colors.skyMorning.copy(alpha = 0.65f),
+                        colors.background.copy(alpha = 0.9f),
                     ),
                 ),
             )
@@ -115,8 +118,8 @@ fun AwanCloudsFooter(
                 path = fgPath,
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.95f),
-                        Color(0xFFF1F5F9),
+                        colors.surface.copy(alpha = 0.95f),
+                        colors.background.copy(alpha = 0.9f),
                     ),
                 ),
             )
@@ -127,17 +130,17 @@ fun AwanCloudsFooter(
         Box(
             modifier = Modifier
                 .offset(y = (-18).dp + floatY.dp)
-                .shadow(8.dp, badgeShape, spotColor = Color(0xFF6366F1))
+                .shadow(8.dp, badgeShape, spotColor = colors.sky.copy(alpha = 0.5f))
                 .clip(badgeShape)
                 .background(
                     Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFFFFFFFF).copy(alpha = 0.95f),
-                            Color(0xFFF8FAFC).copy(alpha = 0.98f),
+                            colors.surface.copy(alpha = 0.95f),
+                            colors.surface,
                         ),
                     ),
                 )
-                .border(1.5.dp, Color(0xFFC7D2FE), badgeShape)
+                .border(1.5.dp, colors.line, badgeShape)
                 .padding(horizontal = 16.dp, vertical = 10.dp),
         ) {
             Row(
@@ -149,13 +152,13 @@ fun AwanCloudsFooter(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFEEF2FF))
-                        .border(1.dp, Color(0xFFC7D2FE), CircleShape),
+                        .background(colors.disabledSurface)
+                        .border(1.dp, colors.line, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     AwanText(
                         text = "🔒",
-                        style = AwanTheme.typography.body.copy(fontSize = 16.sp),
+                        style = typography.body.copy(fontSize = 16.sp),
                     )
                 }
 
@@ -165,25 +168,25 @@ fun AwanCloudsFooter(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         AwanText(
                             text = title,
-                            style = AwanTheme.typography.heading.copy(
+                            style = typography.heading.copy(
                                 fontSize = 13.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF312E81),
+                                color = colors.textPrimary,
                             ),
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         // Sparkle icon
                         AwanText(
                             text = "✨",
-                            style = AwanTheme.typography.caption.copy(fontSize = 12.sp),
+                            style = typography.caption.copy(fontSize = 12.sp),
                         )
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     AwanText(
                         text = subtitle,
-                        style = AwanTheme.typography.caption.copy(
+                        style = typography.caption.copy(
                             fontSize = 11.sp,
-                            color = Color(0xFF64748B),
+                            color = colors.textSecondary,
                         ),
                     )
                 }

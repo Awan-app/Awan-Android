@@ -30,6 +30,7 @@ fun TimelineTrackCanvas(
     modifier: Modifier = Modifier,
 ) {
     val hourLineColor = AwanTheme.colors.line
+    val colors = AwanTheme.colors
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Canvas(
         modifier = modifier
@@ -123,8 +124,7 @@ fun TimelineTrackCanvas(
 
             if (subIntervalMins > 0 && hHeight > 0f) {
                 val step = subIntervalMins
-                val tickAlpha  = if (step == 5) 0x22 else 0x44
-                val tickColor  = Color(tickAlpha shl 24 or 0xCBD5E1)
+                val tickColor  = colors.line.copy(alpha = if (step == 5) 0.15f else 0.3f)
                 val tickWidth  = if (step == 5) 5.dp.toPx() else 8.dp.toPx()
                 val tickStroke = if (step == 5) 0.8.dp.toPx() else 1.dp.toPx()
 
@@ -135,7 +135,7 @@ fun TimelineTrackCanvas(
 
                     if (isMidHour && step == 10) {
                         drawLine(
-                            color       = Color(0xFFE2E8F0).copy(alpha = 0.45f),
+                            color       = colors.line.copy(alpha = 0.45f),
                             start       = Offset(trackX, subY),
                             end         = Offset(lineEnd, subY),
                             strokeWidth = 0.8.dp.toPx(),
