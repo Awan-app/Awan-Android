@@ -7,6 +7,7 @@ import com.awan.app.core.domain.auth.usecase.ObserveSessionExpiredUseCase
 import com.awan.app.core.domain.gamification.model.RewardEvent
 import com.awan.app.core.domain.gamification.usecase.ObserveRewardEventsUseCase
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
+import com.awan.app.core.model.DarkThemeConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -38,7 +39,7 @@ class MainActivityViewModel @Inject constructor(
     val uiState: StateFlow<MainActivityUiState> = userDataRepository.userPreferences
         .map {
             MainActivityUiState.Success(
-                useDarkTheme = it.darkThemeEnabled,
+                darkThemeConfig = it.darkThemeConfig,
                 language = it.locale
             )
         }
@@ -52,7 +53,7 @@ class MainActivityViewModel @Inject constructor(
 sealed interface MainActivityUiState {
     data object Loading : MainActivityUiState
     data class Success(
-        val useDarkTheme: Boolean,
+        val darkThemeConfig: DarkThemeConfig,
         val language: String
     ) : MainActivityUiState
 }

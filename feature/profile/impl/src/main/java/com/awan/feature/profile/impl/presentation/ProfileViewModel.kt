@@ -23,6 +23,7 @@ import com.awan.app.core.domain.profile.usecase.UpdateProfilePictureUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateSessionSettingsUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateSleepScheduleUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateTimezoneUseCase
+import com.awan.app.core.model.DarkThemeConfig
 import com.awan.app.core.model.StoreItemType
 import com.awan.feature.profile.impl.R
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -69,7 +70,7 @@ class ProfileViewModel @Inject constructor(
 
     fun onAction(action: ProfileAction) {
         when (action) {
-            is ProfileAction.SetTheme -> setTheme(action.useDarkTheme)
+            is ProfileAction.SetTheme -> setTheme(action.config)
             is ProfileAction.SetLanguage -> setLanguage(action.languageCode)
             ProfileAction.Refresh -> loadProfile()
             is ProfileAction.UpdateSleepSchedule -> updateSleepSchedule(action.wakeupTime, action.sleepTime)
@@ -105,7 +106,7 @@ class ProfileViewModel @Inject constructor(
             getUserDataUseCase().collectLatest { userData ->
                 _uiState.update {
                     it.copy(
-                        useDarkTheme = userData.darkThemeEnabled,
+                        darkThemeConfig = userData.darkThemeConfig,
                         language = userData.locale
                     )
                 }
@@ -132,9 +133,9 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private fun setTheme(useDarkTheme: Boolean) {
+    private fun setTheme(config: DarkThemeConfig) {
         viewModelScope.launch {
-            setDarkThemeUseCase(useDarkTheme)
+            setDarkThemeUseCase(config)
         }
     }
 

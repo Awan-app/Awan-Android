@@ -10,7 +10,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalConfiguration
 
 internal data class AwanThemeValues(
@@ -19,9 +19,10 @@ internal data class AwanThemeValues(
     val shapes: AwanShapes,
     val spacing: AwanSpacing,
     val motion: AwanMotion,
+    val isDark: Boolean,
 )
 
-internal val LocalAwanTheme = staticCompositionLocalOf<AwanThemeValues> {
+internal val LocalAwanTheme = compositionLocalOf<AwanThemeValues> {
     error("AwanTheme is not present")
 }
 
@@ -43,17 +44,16 @@ object AwanTheme {
 
     val styles: AwanStyles = AwanStyles
 
+    val isDark: Boolean
+        @Composable @ReadOnlyComposable get() = LocalAwanTheme.current.isDark
+
     @Composable
     operator fun invoke(
-        dark: Boolean = false,
+        dark: Boolean = isSystemInDarkTheme(),
         light: Boolean = false,
         content: @Composable () -> Unit,
     ) {
-        val isDark = when {
-            dark -> true
-            light -> false
-            else -> isSystemInDarkTheme()
-        }
+        val isDark = if (light) false else dark
         val colors = if (isDark) DarkAwanColors else LightAwanColors
         val colorScheme = if (isDark) {
             darkColorScheme(
@@ -140,6 +140,7 @@ object AwanTheme {
             shapes = AwanShapeTokens,
             spacing = AwanSpacingTokens,
             motion = AwanMotionTokens,
+            isDark = isDark,
         )
 
         androidx.compose.runtime.CompositionLocalProvider(LocalAwanTheme provides values) {

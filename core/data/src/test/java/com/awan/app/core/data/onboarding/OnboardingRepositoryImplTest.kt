@@ -222,7 +222,7 @@ class OnboardingRepositoryImplTest {
 
         override val userPreferences: Flow<UserPreferencesData> = prefs
 
-        override suspend fun setDarkThemeEnabled(enabled: Boolean) {}
+        override suspend fun setDarkThemeConfig(config: com.awan.app.core.model.DarkThemeConfig) {}
         override suspend fun setDynamicColorEnabled(enabled: Boolean) {}
         override suspend fun setOnboardingCompleted(completed: Boolean) {
             isOnboardingCompleted = completed

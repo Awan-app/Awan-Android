@@ -17,6 +17,12 @@ option java_multiple_files = true;
  * The Kotlin lite DSL allows immutable updates:
  *   dataStore.updateData { current -> current.copy { darkThemeEnabled = true } }
  */
+enum DarkThemeConfigProto {
+  DARK_THEME_CONFIG_FOLLOW_SYSTEM = 0;
+  DARK_THEME_CONFIG_LIGHT = 1;
+  DARK_THEME_CONFIG_DARK = 2;
+}
+
 message UserPreferences {
   // Theme & display
   bool dark_theme_enabled = 1;
@@ -40,4 +46,6 @@ message UserPreferences {
 
   // Tracks whether the RECORD_AUDIO permission was requested on this device.
   bool mic_permission_requested = 7;
+
+  DarkThemeConfigProto dark_theme_config = 8;
 }

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.os.LocaleListCompat
 import java.util.Locale
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.awan.app.MainActivityUiState.*
@@ -30,6 +31,7 @@ import com.awan.app.core.data.sync.SyncWorker.Companion.schedulePeriodicSync
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.LocalRewardAnchors
 import com.awan.app.core.designsystem.RewardAnchors
+import com.awan.app.core.model.DarkThemeConfig
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import com.awan.feature.calendar.api.CalendarRoute
@@ -49,27 +51,12 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        var uiState: MainActivityUiState by mutableStateOf(Loading)
-        var isOnline by mutableStateOf(true)
-
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.isOnline.collectLatest { online ->
-                        isOnline = online
-                        if (online) {
-                            schedulePeriodicSync(this@MainActivity)
-                            enqueueImmediateSync(this@MainActivity)
-                        }
-                    }
-                }
-                launch {
-                    viewModel.uiState.collectLatest { state ->
-                        uiState = state
-                        if (state is Success) {
-                            val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags(state.language)
-                            AppCompatDelegate.setApplicationLocales(appLocale)
-                        }
+                viewModel.isOnline.collectLatest { online ->
+                    if (online) {
+                        schedulePeriodicSync(this@MainActivity)
+                        enqueueImmediateSync(this@MainActivity)
                     }
                 }
             }
@@ -82,9 +69,17 @@ class MainActivity : AppCompatActivity() {
         ComposeFoundationFlags.isInheritedTextStyleEnabled = false
         enableEdgeToEdge()
         setContent {
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
+
             val currentLanguage = when (val state = uiState) {
                 Loading -> ""
                 is Success -> state.language
+            }
+
+            if (uiState is Success) {
+                val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags((uiState as Success).language)
+                AppCompatDelegate.setApplicationLocales(appLocale)
             }
 
             val locale = remember(currentLanguage) {
@@ -123,15 +118,19 @@ class MainActivity : AppCompatActivity() {
                     )
                 )
 
-                val useDarkTheme = when (val state = uiState) {
-                    Loading -> isSystemInDarkTheme()
-                    is Success -> state.useDarkTheme
+                val darkThemeConfig = when (val state = uiState) {
+                    Loading -> DarkThemeConfig.FOLLOW_SYSTEM
+                    is Success -> state.darkThemeConfig
                 }
 
-                AwanTheme(
-                    dark = useDarkTheme,
-                    light = !useDarkTheme
-                ) {
+                val systemDark = isSystemInDarkTheme()
+                val isDark = when (darkThemeConfig) {
+                    DarkThemeConfig.FOLLOW_SYSTEM -> systemDark
+                    DarkThemeConfig.DARK -> true
+                    DarkThemeConfig.LIGHT -> false
+                }
+
+                AwanTheme(dark = isDark) {
                     AwanApp(
                         appState = appState,
                         isOnline = isOnline,
