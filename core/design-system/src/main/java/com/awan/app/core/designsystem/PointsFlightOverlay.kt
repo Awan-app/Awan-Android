@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -226,7 +227,7 @@ fun PointsFlightOverlay(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         AwanText(
-                            text = "$comboCount" + "x COMBO BONUS!",
+                            text = stringResource(R.string.ds_combo_bonus, comboCount),
                             style = AwanTheme.typography.caption.copy(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Black,

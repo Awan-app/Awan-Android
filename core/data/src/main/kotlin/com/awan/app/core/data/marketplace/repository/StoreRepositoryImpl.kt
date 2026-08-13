@@ -77,9 +77,12 @@ class StoreRepositoryImpl @Inject constructor(
 
             val profileResult = profileRepository.getProfile()
             when (profileResult) {
-                is Result.Success -> profileResult.data.points?.let { gamificationEventBus.updatePoints(it) }
+                is Result.Success -> {
+                    val points = profileResult.data.points ?: 0
+                    gamificationEventBus.updatePoints(points)
+                }
                 is Result.Error -> return@withContext Result.Error(profileResult.error)
-                Result.Loading -> Unit
+                Result.Loading -> return@withContext Result.Error(AppError.Unknown(IllegalStateException("Unexpected loading state during profile sync")))
             }
         }
         result

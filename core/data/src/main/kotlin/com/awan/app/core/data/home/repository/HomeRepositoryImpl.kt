@@ -125,9 +125,11 @@ class HomeRepositoryImpl @Inject constructor(
                         if (endMinutes > startMinutes) {
                             endMinutes - startMinutes
                         } else if (endMinutes < startMinutes) {
-                            (endMinutes + 24 * 60) - startMinutes
-                        } else if (s.startTime != s.endTime) {
-                            24 * 60
+                            if (startLocalTime.hour >= 18 && endLocalTime.hour <= 6) {
+                                (endMinutes + 24 * 60) - startMinutes
+                            } else {
+                                0
+                            }
                         } else {
                             0
                         }
@@ -177,7 +179,7 @@ class HomeRepositoryImpl @Inject constructor(
             val sessionDetailInfo = if (sessionDto != null) {
                 val startDt = parseIsoDateTime(sessionDto.start) ?: LocalDateTime.parse(sessionDto.start)
                 var endDt = parseIsoDateTime(sessionDto.end) ?: LocalDateTime.parse(sessionDto.end)
-                if (!endDt.isAfter(startDt) && sessionDto.start != sessionDto.end) {
+                if (!endDt.isAfter(startDt) && startDt != endDt && startDt.hour >= 18 && endDt.hour <= 6) {
                     endDt = endDt.plusDays(1)
                 }
                 SessionDetailInfo(
@@ -193,7 +195,7 @@ class HomeRepositoryImpl @Inject constructor(
                 val cached = local.getSession(sessionId)!!
                 val startDt = LocalDateTime.parse("${cached.date}T${cached.startTime}")
                 var endDt = LocalDateTime.parse("${cached.date}T${cached.endTime}")
-                if (!endDt.isAfter(startDt) && cached.startTime != cached.endTime) {
+                if (!endDt.isAfter(startDt) && startDt != endDt && startDt.hour >= 18 && endDt.hour <= 6) {
                     endDt = endDt.plusDays(1)
                 }
                 SessionDetailInfo(

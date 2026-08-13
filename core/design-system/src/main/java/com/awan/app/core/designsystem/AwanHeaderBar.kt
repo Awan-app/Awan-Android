@@ -235,9 +235,21 @@ private fun NavArrowButton2D(
                 .border(1.5.dp, rimColor, buttonShape),
             contentAlignment = Alignment.Center,
         ) {
+            val isRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
+            val icon = if (isNext) {
+                if (isRtl) Lucide.ChevronLeft else Lucide.ChevronRight
+            } else {
+                if (isRtl) Lucide.ChevronRight else Lucide.ChevronLeft
+            }
+            val contentDesc = if (isNext) {
+                stringResource(R.string.ds_next_day)
+            } else {
+                stringResource(R.string.ds_previous_day)
+            }
+
             Icon(
-                imageVector = if (isNext) Lucide.ChevronRight else Lucide.ChevronLeft,
-                contentDescription = if (isNext) "Next Day" else "Previous Day",
+                imageVector = icon,
+                contentDescription = contentDesc,
                 tint = iconColor,
                 modifier = Modifier.size(22.dp),
             )

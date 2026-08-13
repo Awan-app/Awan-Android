@@ -22,33 +22,81 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Icon
+import androidx.compose.ui.res.stringResource
 import com.composables.icons.lucide.Coins
 import com.composables.icons.lucide.Flame
 import com.composables.icons.lucide.Lucide
 
 private val BadgeShape = RoundedCornerShape(12.dp)
+
 private const val PULSE_SCALE = 1.18f
 
 /**
-  * Formats a point integer value to a compact abbreviated string (e.g., 999, 1k, 1.2k, 10.5k, 1M).
-  */
-fun formatAbbreviatedPoints(points: Int): String {
-    if (points < 0) return "-${formatAbbreviatedPoints(-points)}"
-    return when {
-        points >= 1_000_000_000 -> formatDecimal(points / 1_000_000_000.0) + "B"
-        points >= 1_000_000 -> formatDecimal(points / 1_000_000.0) + "M"
-        points >= 1_000 -> formatDecimal(points / 1_000.0) + "k"
-        else -> points.toString()
-    }
-}
+ * Formats a point integer value to a compact abbreviated string (e.g., 999, 1k, 1.2k, 10.5k, 1M).
+ * Pure function suitable for deterministic unit testing.
+ */
+fun formatAbbreviatedPointsValue(
+    points: Int,
+    thousandFmt: String = "%1\$sk",
+    millionFmt: String = "%1\$sM",
+    billionFmt: String = "%1\$sB",
+): String {
+    val isNegative = points < 0
+    val absValue = kotlin.math.abs(points.toLong())
 
-private fun formatDecimal(value: Double): String {
-    val rounded = Math.round(value * 10.0) / 10.0
-    return if (rounded % 1.0 == 0.0) {
+    var divisor = when {
+        absValue >= 1_000_000_000L -> 1_000_000_000.0
+        absValue >= 1_000_000L -> 1_000_000.0
+        absValue >= 1_000L -> 1_000.0
+        else -> 1.0
+    }
+
+    var fmt = when {
+        absValue >= 1_000_000_000L -> billionFmt
+        absValue >= 1_000_000L -> millionFmt
+        absValue >= 1_000L -> thousandFmt
+        else -> null
+    }
+
+    var rounded = Math.round((absValue / divisor) * 10.0) / 10.0
+
+    // Promote boundary overflow post-rounding (e.g., 999_950 -> 1000.0k -> 1.0M)
+    if (rounded >= 1000.0 && fmt != billionFmt && fmt != null) {
+        if (fmt == thousandFmt) {
+            fmt = millionFmt
+            rounded /= 1000.0
+        } else if (fmt == millionFmt) {
+            fmt = billionFmt
+            rounded /= 1000.0
+        }
+    }
+
+    val numberStr = if (rounded % 1.0 == 0.0) {
         rounded.toLong().toString()
     } else {
         String.format(java.util.Locale.US, "%.1f", rounded)
     }
+
+    val formattedPositive = if (fmt != null) {
+        String.format(java.util.Locale.US, fmt, numberStr)
+    } else {
+        numberStr
+    }
+
+    return if (isNegative) "-$formattedPositive" else formattedPositive
+}
+
+/**
+ * Composable wrapper retrieving localized points shortcut formats.
+ */
+@Composable
+fun formatAbbreviatedPoints(points: Int): String {
+    return formatAbbreviatedPointsValue(
+        points = points,
+        thousandFmt = stringResource(R.string.ds_points_thousand),
+        millionFmt = stringResource(R.string.ds_points_million),
+        billionFmt = stringResource(R.string.ds_points_billion),
+    )
 }
 
 /**

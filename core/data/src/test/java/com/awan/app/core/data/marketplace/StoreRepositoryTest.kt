@@ -1,5 +1,6 @@
 package com.awan.app.core.data.marketplace
 
+import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSource
 import com.awan.app.core.data.marketplace.repository.StoreRepositoryImpl
@@ -91,6 +92,28 @@ class StoreRepositoryTest {
         assertEquals("o1", inventory[0].id)
     }
 
+    @Test
+    fun `buyItem returns error when profile repository returns error`() = runTest(testDispatcher) {
+        fakeConnectivityMonitor.online = true
+        fakeProfileRepository.profileResult = Result.Error(AppError.Network)
+
+        val result = repository.buyItem("1")
+
+        assertTrue(result is Result.Error)
+        assertEquals(AppError.Network, (result as Result.Error).error)
+    }
+
+    @Test
+    fun `buyItem returns error when profile repository returns loading`() = runTest(testDispatcher) {
+        fakeConnectivityMonitor.online = true
+        fakeProfileRepository.profileResult = Result.Loading
+
+        val result = repository.buyItem("1")
+
+        assertTrue(result is Result.Error)
+        assertTrue((result as Result.Error).error is AppError.Unknown)
+    }
+
     // Fakes
     private class FakeStoreRemoteDataSource : StoreRemoteDataSource {
         var buyCalled = false
@@ -133,9 +156,12 @@ class StoreRepositoryTest {
 
     private class FakeProfileRepository : ProfileRepository {
         var getProfileCalled = false
+        var profileResult: Result<com.awan.app.core.domain.profile.model.Profile>? = null
+
         override fun observeProfile(): Flow<com.awan.app.core.domain.profile.model.Profile?> = flowOf(null)
         override suspend fun getProfile(): Result<com.awan.app.core.domain.profile.model.Profile> {
             getProfileCalled = true
+            profileResult?.let { return it }
             return Result.Success(
                 com.awan.app.core.domain.profile.model.Profile(
                     id = "p1", email = "test@test.com", firstName = "Test", lastName = "User",
