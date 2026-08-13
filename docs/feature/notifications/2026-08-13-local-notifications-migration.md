@@ -355,3 +355,110 @@ area and writing them is not in scope.
 - **No backend change.** If the server keeps sending session pushes they are dropped client-side —
   worth turning off server-side later, but not required for this to be correct.
 - **Reward/wheel notifications stay push-only**, per your call to revisit in a later phase.
+
+---
+
+## Implementation notes (what actually differed)
+
+### Build / test status
+
+| Check | Result |
+|---|---|
+| `./gradlew assembleDebug` | BUILD SUCCESSFUL |
+| `./gradlew testDebugUnitTest` | BUILD SUCCESSFUL — 461 tests, 0 failures, including 19 new `SessionNotificationPlannerTest` cases |
+| `./gradlew lint` | BUILD SUCCESSFUL (`HardcodedText` and `MissingTranslation` are errors) |
+| Device run | Pixel-class emulator, **API 37** — see below |
+
+### Verified on device
+
+Seeded sessions straight into Room (the account was logged in, so the first attempt was
+overwritten by `OfflineSyncCoordinator.syncScheduleRange` calling `replaceSessionsForDates` — a live
+demonstration of exactly the hazard this design avoids; the seed had to be done with the radio off).
+
+Confirmed working:
+
+- All four channels created with the intended importances (`session_reminders` 4, `session_live` 2,
+  `session_end` 4, `rewards` 3).
+- Reminder posted with **Snooze** and **Reschedule**, body "Starts in 9 minutes · 10:51 PM – 11:51 PM",
+  on a task with an Arabic title.
+- Live activity posted as a genuine Live Update: dumped extras show
+  `android.template=android.app.Notification$ProgressStyle` (not a compat fallback),
+  `requestPromotedOngoing=true`, `shortCriticalText=30m`, `progress=2` of `progressMax=32` —
+  correct for a session 2 minutes into 32 — plus `showChronometer`/`chronometerCountDown` and the
+  **Stop here** action. The shade showed the countdown ticking (28:47 → 28:14) and the progress bar.
+- Tapping **Stop here** offline cancelled the notification immediately and left
+  `NotificationActionWorker` `ENQUEUED` with `required_network_type=1`, i.e. the offline queue works.
+  *(That queued action was then deleted from the WorkManager DB rather than let it mutate a real
+  session on the account.)*
+- Reconciliation: when connectivity returned and the sync restored the real session times, both
+  posted notifications disappeared on their own.
+- One `RTC_WAKEUP` alarm at a time, tagged
+  `*walarm*:com.awan.app/.core.notifications.receiver.SessionAlarmReceiver`.
+- Merged manifest carries `USE_EXACT_ALARM`, `SCHEDULE_EXACT_ALARM` capped at 32,
+  `RECEIVE_BOOT_COMPLETED`, all three receivers, and `MainActivity` `launchMode="singleTop"`.
+- Settings screen in English **and** Arabic (RTL correct); selecting 15 min wrote proto field 12 = 15
+  and left fields 8–11 absent, confirming the negated-default scheme.
+
+### Not verified
+
+- **Reboot survival.** `BootCompletedReceiver` is registered and the reschedule worker exists, but no
+  `adb reboot` cycle was run.
+- **Timezone change** retiming.
+- **A real Snooze / Mark complete against the backend** — the one queued action was deliberately
+  removed rather than allowed to mutate real data. The endpoint calls themselves are the same
+  `MoveSessionUseCase` / `CompleteSessionUseCase` the Home screen already uses.
+- Doze behaviour of the one-minute tick.
+
+### Deviations from the plan as written
+
+1. **`NotificationPreferences` lives in `:core:model`, not `:core:domain`.** `:core:datastore` cannot
+   see `:core:domain`, and mirroring six fields plus their defaults in both places invites drift.
+2. **`:core:notifications` takes the Compose BOM but not the compose convention plugin.** It depends on
+   `:core:design-system` only for `AwanToastManager`, and that module exposes Compose artifacts as
+   `api` with BOM-governed versions; without the BOM they resolve to no version at all. The module has
+   no composables, so turning on the Compose compiler for it would be pure cost.
+3. **Deep link is passed beside the route, not on it.** `HomeRoute` did gain a `sessionId`, but the
+   navigator matches top-level keys by equality — `HomeRoute(date, sessionId)` is not `HomeRoute()`, so
+   navigating to it stacks a second Home on the open tab instead of switching tabs. The link is held in
+   `:app` state and handed to `homeEntry`, surviving until Home composes (so a tap during splash still
+   lands). `HomeRoute.date`, which was previously accepted and silently ignored, is now wired through.
+4. **Reconciliation is by notification tag, not by session id.** The plan said to diff against the
+   sessions Room knows about. That is wrong for the headline case: a deleted session contributes no id
+   to compare against, so its notification would be stranded on screen forever. All session
+   notifications now carry the tag `awan-session` and anything posted under it outside the current plan
+   is cancelled; the reward notification uses `awan-remote` so it is never collateral.
+5. **`SessionNotificationPlanner.nextAfter` was extracted** so the "next alarm" rule is pure and
+   testable, instead of living inline in the Android-dependent scheduler.
+6. **Channels are created at startup**, not lazily on first post, so the system notification settings
+   page is not empty before the user's first session.
+7. **`MinutesPreferenceRow` was added** to `:feature:profile:impl`. `PreferenceRow`'s trailing slot sits
+   beside the title, which crushed "Remind me" onto three lines with four options — and Arabic is wider.
+
+### Traps — the three bugs that only surfaced under review or on a device
+
+These are all the same shape: the engine silently does nothing, or does something forever, and the
+build stays green.
+
+1. **A live event is never due if judged by `at`.** `at` on a `Live` event is the *next redraw*, always
+   a tick in the future while the session runs. The other two events are judged `at <= now`; applying
+   that uniformly meant the live notification never appeared **at all**. It is judged on
+   `start <= now < end` instead. Easy to reintroduce by "tidying" `isDue` into one uniform rule.
+2. **Picking the next alarm from "not due" instead of "future" loops the chain.** A plan legitimately
+   contains past events (this morning's reminders, after a reboot at noon). One of those chosen as the
+   next alarm fires immediately, is still not due, and reschedules itself — forever. `nextAfter`
+   filters on `at.isAfter(now)`, and a test asserts the premise that stranded events really do exist.
+3. **A finished session kept planning ticks.** Without the `now.isBefore(session.end)` guard, an ended
+   session produces a tick a minute out forever: never due, always the next alarm, one exact alarm per
+   minute for a session that is over.
+
+### Other things worth knowing
+
+- **The observation window is fixed at process start** (`today .. today+2`). A process alive for days
+  stops reacting to edits outside it. Alarms stay correct regardless — `rescheduleAll` recomputes
+  `today` every run — and the foreground catch-up covers real usage.
+- **`USE_EXACT_ALARM` is a Play Console declaration**, not just a manifest line.
+- **The API doc is stale**: `docs/feature/backend/AWAN_API_DOCUMENTATION.md` still documents
+  `PATCH /v1/sessions/{id}/status`.
+- **CLAUDE.md is stale about the database**: it says `AwanDatabase` is at version 4 with real
+  migrations; it is at **version 1** with `fallbackToDestructiveMigration`. This change needed no
+  schema change, so it did not matter here.
