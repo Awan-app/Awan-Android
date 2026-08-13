@@ -19,9 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -44,7 +42,6 @@ import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.CascadeItem
-import com.awan.app.core.designsystem.rememberSpeechRecognizer
 import com.awan.app.core.designsystem.reducedMotion
 import com.awan.app.core.model.GoalDecompositionBlock
 import com.awan.app.core.model.GoalProposal
@@ -58,52 +55,6 @@ import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.Check
 import com.composables.icons.lucide.Lucide
 import java.time.LocalDate
-
-@Composable
-fun GoalForm(
-    state: AddTaskState,
-    onAction: (AddTaskAction) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val currentInput by rememberUpdatedState(state.input)
-    val speechState = rememberSpeechRecognizer(
-        onTranscript = { transcript -> onAction(AddTaskAction.InputChanged(transcript)) },
-        currentText = { currentInput },
-        hasRequestedMicPermission = state.hasRequestedMicPermission,
-        onSetMicPermissionRequested = { requested ->
-            onAction(AddTaskAction.SetMicPermissionRequested(requested))
-        },
-    )
-
-    LaunchedEffect(state.isSubmitting) {
-        if (state.isSubmitting && speechState.isListening) {
-            speechState.stopListening()
-        }
-    }
-
-    val handleAction: (AddTaskAction) -> Unit = { action ->
-        if (action is AddTaskAction.InputChanged || action is AddTaskAction.GoalOptionSelected) {
-            speechState.clearError()
-        }
-        onAction(action)
-    }
-
-    GoalFormContent(
-        state = state,
-        onAction = handleAction,
-        isListening = speechState.isListening,
-        onToggleMic = {
-            if (speechState.isListening) {
-                speechState.stopListening()
-            } else {
-                speechState.startListening()
-            }
-        },
-        speechError = speechState.errorMessage,
-        isPermissionError = speechState.isPermissionError,
-        modifier = modifier,
-    )
-}
 
 @Composable
 fun GoalFormContent(

@@ -21,13 +21,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -40,6 +43,7 @@ import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanConfirmDialog
 import com.awan.app.core.designsystem.AwanDatePickerDialog
 import com.awan.app.core.designsystem.AwanMascot
+import com.awan.app.core.designsystem.AwanMicButton
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
@@ -49,6 +53,7 @@ import com.awan.app.core.designsystem.CloudDrift
 import com.awan.app.core.designsystem.ObserveAsEvents
 import com.awan.app.core.designsystem.SparkleBurst
 import com.awan.app.core.designsystem.reducedMotion
+import com.awan.app.core.designsystem.rememberSpeechRecognizer
 import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskAction
 import com.awan.feature.addtask.presentation.AddTaskEvent
@@ -60,7 +65,7 @@ import com.awan.feature.addtask.presentation.GoalStep
 import com.awan.feature.addtask.presentation.TaskConfirmation
 import com.awan.feature.addtask.ui.components.AddTaskModeSelector
 import com.awan.feature.addtask.ui.components.AiToggle
-import com.awan.feature.addtask.ui.components.GoalForm
+import com.awan.feature.addtask.ui.components.GoalFormContent
 import com.awan.feature.addtask.ui.components.ImageAttachment
 import com.awan.feature.addtask.ui.components.TaskAttributeChips
 import com.awan.feature.addtask.ui.components.TaskConfirmationPanel
@@ -198,12 +203,43 @@ private fun AttributePickers(state: AddTaskState, onAction: (AddTaskAction) -> U
     }
 }
 
+/**
+ * One recognizer for the whole sheet. Both modes dictate into the same `state.input`, so a
+ * recognizer per form would be two microphones competing for one field.
+ */
 @Composable
 private fun AddTaskSheetContent(
     state: AddTaskState,
     onAction: (AddTaskAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val currentInput by rememberUpdatedState(state.input)
+    val speechState = rememberSpeechRecognizer(
+        onTranscript = { transcript -> onAction(AddTaskAction.InputChanged(transcript)) },
+        currentText = { currentInput },
+        hasRequestedMicPermission = state.hasRequestedMicPermission,
+        onSetMicPermissionRequested = { requested ->
+            onAction(AddTaskAction.SetMicPermissionRequested(requested))
+        },
+    )
+
+    LaunchedEffect(state.isSubmitting) {
+        if (state.isSubmitting && speechState.isListening) {
+            speechState.stopListening()
+        }
+    }
+
+    val toggleMic = {
+        if (speechState.isListening) speechState.stopListening() else speechState.startListening()
+    }
+
+    val handleAction: (AddTaskAction) -> Unit = { action ->
+        if (action is AddTaskAction.InputChanged || action is AddTaskAction.GoalOptionSelected) {
+            speechState.clearError()
+        }
+        onAction(action)
+    }
+
     Column(modifier = modifier) {
         SkyHeader(state = state)
 
@@ -235,8 +271,24 @@ private fun AddTaskSheetContent(
                         modifier = Modifier.fillMaxWidth(),
                     )
 
-                    AddTaskMode.TASK -> TaskForm(state = state, onAction = onAction)
-                    AddTaskMode.GOAL -> GoalForm(state = state, onAction = onAction)
+                    AddTaskMode.TASK -> TaskForm(
+                        state = state,
+                        onAction = handleAction,
+                        isListening = speechState.isListening,
+                        onToggleMic = toggleMic,
+                        speechError = speechState.errorMessage,
+                        isPermissionError = speechState.isPermissionError,
+                    )
+
+                    AddTaskMode.GOAL -> GoalFormContent(
+                        state = state,
+                        onAction = handleAction,
+                        isListening = speechState.isListening,
+                        onToggleMic = toggleMic,
+                        speechError = speechState.errorMessage,
+                        isPermissionError = speechState.isPermissionError,
+                    )
+
                     else -> Unit
                 }
 
@@ -280,6 +332,10 @@ private fun SkyHeader(state: AddTaskState) {
 private fun TaskForm(
     state: AddTaskState,
     onAction: (AddTaskAction) -> Unit,
+    isListening: Boolean,
+    onToggleMic: () -> Unit,
+    speechError: String?,
+    isPermissionError: Boolean,
 ) {
     val composing = state.aiEnabled
 
@@ -309,11 +365,27 @@ private fun TaskForm(
                     // Empty while the parser is stood down, which is what hides the highlights.
                     visualTransformation = rememberTokenHighlight(state.parsed.tokens),
                     enabled = !state.isSubmitting,
+                    isError = isPermissionError,
                     capitalization = KeyboardCapitalization.Sentences,
                     imeAction = ImeAction.Next,
+                    trailingContent = {
+                        AwanMicButton(
+                            isListening = isListening,
+                            onToggle = onToggleMic,
+                            enabled = !state.isSubmitting,
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
+        }
+
+        if (speechError != null) {
+            AwanText(
+                text = speechError,
+                style = AwanTheme.styles.errorText,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
         }
 
         if (!state.aiEnabled) {
