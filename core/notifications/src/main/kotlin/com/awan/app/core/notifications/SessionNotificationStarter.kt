@@ -27,11 +27,16 @@ class SessionNotificationStarter @Inject constructor(
     private val observeUpcomingSessions: ObserveUpcomingSessionsUseCase,
     private val getNotificationPreferences: GetNotificationPreferencesUseCase,
     private val scheduler: SessionNotificationScheduler,
+    private val channels: AwanNotificationChannels,
     private val clock: Clock,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
 
     fun start() {
+        // Up front, not on first post: until a channel exists the system notification settings page
+        // is empty, so a user who opened it before their first session had nothing to configure.
+        channels.ensureCreated()
+
         scope.launch {
             val today = LocalDate.now(clock)
             combine(

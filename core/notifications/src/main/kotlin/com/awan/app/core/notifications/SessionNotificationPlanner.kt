@@ -54,15 +54,21 @@ object SessionNotificationPlanner {
      * True when [event] should be showing right now. Past events outside their grace window are
      * deliberately not replayed — after a reboot at noon, this morning's reminders are noise.
      */
-    fun isDue(event: SessionNotificationEvent, now: LocalDateTime): Boolean {
-        if (event.at.isAfter(now)) return false
-        return when (event) {
-            is SessionNotificationEvent.Reminder ->
-                // Never fire a reminder for a session that has already started.
-                now.isBefore(event.session.start) && withinGrace(event.at, now, REMINDER_GRACE)
-            is SessionNotificationEvent.Live -> now.isBefore(event.session.end)
-            is SessionNotificationEvent.Ended -> withinGrace(event.at, now, ENDED_GRACE)
-        }
+    fun isDue(event: SessionNotificationEvent, now: LocalDateTime): Boolean = when (event) {
+        // Judged on the session running, not on `at`. For a live event `at` is the *next redraw*,
+        // which is always a tick in the future while the session runs — requiring `at <= now` like
+        // the others would mean the live notification could never be shown at all.
+        is SessionNotificationEvent.Live ->
+            !now.isBefore(event.session.start) && now.isBefore(event.session.end)
+
+        is SessionNotificationEvent.Reminder ->
+            !event.at.isAfter(now) &&
+                // Never remind about a session that has already started.
+                now.isBefore(event.session.start) &&
+                withinGrace(event.at, now, REMINDER_GRACE)
+
+        is SessionNotificationEvent.Ended ->
+            !event.at.isAfter(now) && withinGrace(event.at, now, ENDED_GRACE)
     }
 
     private fun withinGrace(at: LocalDateTime, now: LocalDateTime, grace: Duration): Boolean =

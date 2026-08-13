@@ -131,7 +131,44 @@ class SessionNotificationPlannerTest {
             .single()
 
         assertEquals(now.plusMinutes(1), live.at)
-        assertTrue(SessionNotificationPlanner.isDue(live.copy(at = now), now))
+    }
+
+    @Test
+    fun `a running session's live event is due even though its next tick is in the future`() {
+        // The regression that hid the live notification entirely: `at` is the next redraw, always a
+        // tick ahead while the session runs, so judging it like the other events by `at <= now`
+        // meant it was never due and the notification never appeared.
+        val session = session(start = now.minusMinutes(10), end = now.plusMinutes(50))
+
+        val live = SessionNotificationPlanner.plan(listOf(session), preferences, now)
+            .filterIsInstance<SessionNotificationEvent.Live>()
+            .single()
+
+        assertTrue(live.at.isAfter(now))
+        assertTrue(SessionNotificationPlanner.isDue(live, now))
+    }
+
+    @Test
+    fun `a live event becomes due the moment the session starts`() {
+        val session = session(start = now, end = now.plusMinutes(60))
+
+        val live = SessionNotificationPlanner.plan(listOf(session), preferences, now)
+            .filterIsInstance<SessionNotificationEvent.Live>()
+            .single()
+
+        assertTrue(SessionNotificationPlanner.isDue(live, now))
+    }
+
+    @Test
+    fun `a live event is not due before the session starts`() {
+        val session = session(start = now.plusMinutes(30), end = now.plusMinutes(90))
+
+        val live = SessionNotificationPlanner.plan(listOf(session), preferences, now)
+            .filterIsInstance<SessionNotificationEvent.Live>()
+            .single()
+
+        assertFalse(SessionNotificationPlanner.isDue(live, now))
+        assertEquals(session.start, live.at)
     }
 
     @Test
