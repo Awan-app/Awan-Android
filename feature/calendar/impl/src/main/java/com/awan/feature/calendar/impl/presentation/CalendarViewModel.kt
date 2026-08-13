@@ -44,15 +44,25 @@ class CalendarViewModel @Inject constructor(
                 val updatedStreak = progress.streak.coerceAtLeast(0)
                 val updatedMaxStreak = progress.maxStreak.coerceAtLeast(0)
                 _state.update { current ->
+                    val streakDates = CalendarDateMapper.calculateStreakDates(updatedStreak, current.today)
+                    val monthDays = CalendarDateMapper.buildMonthDays(
+                        yearMonth = current.currentYearMonth,
+                        today = current.today,
+                        selectedDate = current.selectedDate,
+                        streakDates = streakDates,
+                        goalDates = current.upcomingGoals.map { it.targetDate }.toSet(),
+                    )
                     current.copy(
                         streak = updatedStreak,
                         maxStreak = updatedMaxStreak,
-                        isTodayActive = false,
+                        isTodayActive = current.isTodayActive,
                         streakHeaderState = CalendarStreakHeaderState.from(
                             streak = updatedStreak,
                             maxStreak = updatedMaxStreak,
-                            isTodayActive = false,
+                            isTodayActive = current.isTodayActive,
                         ),
+                        streakDates = streakDates,
+                        monthDays = monthDays,
                     )
                 }
                 loadTodayActivity(_state.value.today)
@@ -72,12 +82,13 @@ class CalendarViewModel @Inject constructor(
     private fun loadTodayActivity(today: LocalDate) {
         val generation = ++todayActivityGeneration
         _state.update { current ->
+            val active = current.isTodayActive
             current.copy(
-                isTodayActive = false,
+                isTodayActive = active,
                 streakHeaderState = CalendarStreakHeaderState.from(
                     streak = current.streak,
                     maxStreak = current.maxStreak,
-                    isTodayActive = false,
+                    isTodayActive = active,
                 ),
             )
         }
@@ -88,6 +99,14 @@ class CalendarViewModel @Inject constructor(
             val active = result is Result.Success && result.data.contains(today)
             _state.update { current ->
                 if (current.today != today || todayActivityGeneration != generation) current else {
+                    val updatedStreakDates = if (active) current.streakDates + today else current.streakDates
+                    val updatedMonthDays = CalendarDateMapper.buildMonthDays(
+                        yearMonth = current.currentYearMonth,
+                        today = current.today,
+                        selectedDate = current.selectedDate,
+                        streakDates = updatedStreakDates,
+                        goalDates = current.upcomingGoals.map { it.targetDate }.toSet(),
+                    )
                     current.copy(
                         isTodayActive = active,
                         streakHeaderState = CalendarStreakHeaderState.from(
@@ -95,6 +114,8 @@ class CalendarViewModel @Inject constructor(
                             maxStreak = current.maxStreak,
                             isTodayActive = active,
                         ),
+                        streakDates = updatedStreakDates,
+                        monthDays = updatedMonthDays,
                     )
                 }
             }
@@ -132,45 +153,54 @@ class CalendarViewModel @Inject constructor(
     private fun render(snapshot: CalendarSnapshot) {
         val zone = CalendarDateMapper.parseZoneIdOrDefault(snapshot.user.timezone)
         val today = LocalDate.now(zone)
-        val current = _state.value
-        val dayChanged = today != current.today
+        var shouldLoadTodayActivity = false
 
-        val selected = if (current.selectedDate == current.today) today else current.selectedDate
-        val month = if (current.currentYearMonth == YearMonth.from(current.today)) YearMonth.from(today) else current.currentYearMonth
-        val goals = CalendarDateMapper.filterAndSortUpcomingGoals(snapshot.goals, today)
-        val snapshotStreakCount = snapshot.user.streak.coerceAtLeast(0)
-        // Real activity dates win once they land; the back-counted estimate is only a stand-in
-        // until then, and must not clobber them when the snapshot re-emits.
-        val streakDates = current.streakDates.ifEmpty {
-            CalendarDateMapper.calculateStreakDates(snapshotStreakCount, today)
+        _state.update { current ->
+            val dayChanged = today != current.today
+            if (dayChanged) {
+                shouldLoadTodayActivity = true
+            }
+
+            val selected = if (current.selectedDate == current.today) today else current.selectedDate
+            val month = if (current.currentYearMonth == YearMonth.from(current.today)) YearMonth.from(today) else current.currentYearMonth
+            val goals = CalendarDateMapper.filterAndSortUpcomingGoals(snapshot.goals, today)
+
+            val initialStreak = if (current.streak > 0) current.streak else snapshot.user.streak.coerceAtLeast(0)
+            val streakDates = if (dayChanged) {
+                CalendarDateMapper.calculateStreakDates(initialStreak, today)
+            } else {
+                current.streakDates.ifEmpty {
+                    CalendarDateMapper.calculateStreakDates(initialStreak, today)
+                }
+            }
+
+            val preservedStreak = initialStreak
+            val preservedMaxStreak = current.maxStreak
+            val isTodayActive = if (dayChanged) false else current.isTodayActive
+            val headerState = CalendarStreakHeaderState.from(
+                streak = preservedStreak,
+                maxStreak = preservedMaxStreak,
+                isTodayActive = isTodayActive,
+            )
+
+            current.copy(
+                isLoading = false,
+                errorMessage = null,
+                streak = preservedStreak,
+                maxStreak = preservedMaxStreak,
+                isTodayActive = isTodayActive,
+                streakHeaderState = headerState,
+                timezone = zone,
+                today = today,
+                selectedDate = selected,
+                currentYearMonth = month,
+                streakDates = streakDates,
+                upcomingGoals = goals,
+                monthDays = CalendarDateMapper.buildMonthDays(month, today, selected, streakDates, goals.map { it.targetDate }.toSet()),
+            )
         }
 
-        val preservedStreak = current.streak
-        val preservedMaxStreak = current.maxStreak
-        val isTodayActive = if (dayChanged) false else current.isTodayActive
-        val headerState = CalendarStreakHeaderState.from(
-            streak = preservedStreak,
-            maxStreak = preservedMaxStreak,
-            isTodayActive = isTodayActive,
-        )
-
-        _state.value = CalendarUiState(
-            isLoading = false,
-            errorMessage = null,
-            streak = preservedStreak,
-            maxStreak = preservedMaxStreak,
-            isTodayActive = isTodayActive,
-            streakHeaderState = headerState,
-            timezone = zone,
-            today = today,
-            selectedDate = selected,
-            currentYearMonth = month,
-            streakDates = streakDates,
-            upcomingGoals = goals,
-            monthDays = CalendarDateMapper.buildMonthDays(month, today, selected, streakDates, goals.map { it.targetDate }.toSet()),
-        )
-
-        if (dayChanged) {
+        if (shouldLoadTodayActivity) {
             loadTodayActivity(today)
         }
     }

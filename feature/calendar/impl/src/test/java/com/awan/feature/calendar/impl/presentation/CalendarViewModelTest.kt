@@ -302,6 +302,98 @@ class CalendarViewModelTest {
         }
     }
 
+    @Test
+    fun todayActivityCompletionAddsTodayToStreakDatesAndRebuildsMonthDays() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val fakeCalendarRepository = FakeCalendarRepository()
+            val fakeGamificationRepository = FakeGamificationRepository()
+            val getActivityDatesUseCase = GetActivityDatesUseCase(fakeGamificationRepository)
+            val observeGamificationProgressUseCase = ObserveGamificationProgressUseCase(fakeGamificationRepository)
+
+            val today = LocalDate.now()
+            fakeGamificationRepository.activityResults[today to today] = Result.Success(setOf(today))
+
+            val viewModel = CalendarViewModel(fakeCalendarRepository, getActivityDatesUseCase, observeGamificationProgressUseCase)
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertTrue(state.streakDates.contains(today))
+            val todayDayState = state.monthDays.first { it.date == today }
+            assertTrue(todayDayState.isStreakDay)
+            assertTrue(state.isTodayActive)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun progressFlowEmissionRecalculatesStreakDatesAndMonthDays() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val fakeCalendarRepository = FakeCalendarRepository()
+            val fakeGamificationRepository = FakeGamificationRepository()
+            val getActivityDatesUseCase = GetActivityDatesUseCase(fakeGamificationRepository)
+            val observeGamificationProgressUseCase = ObserveGamificationProgressUseCase(fakeGamificationRepository)
+
+            val viewModel = CalendarViewModel(fakeCalendarRepository, getActivityDatesUseCase, observeGamificationProgressUseCase)
+            advanceUntilIdle()
+
+            val today = viewModel.state.value.today
+            fakeGamificationRepository.progressFlow.value = GamificationProgress(points = 100, streak = 4, maxStreak = 10)
+            advanceUntilIdle()
+
+            val expectedStreakDates = CalendarDateMapper.calculateStreakDates(4, today)
+            val state = viewModel.state.value
+            assertEquals(4, state.streak)
+            assertEquals(expectedStreakDates, state.streakDates)
+            for (date in expectedStreakDates) {
+                val dayState = state.monthDays.firstOrNull { it.date == date }
+                if (dayState != null) {
+                    assertTrue("Expected dayState for $date to have isStreakDay = true", dayState.isStreakDay)
+                }
+            }
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun snapshotEmissionOnInitialLoadUsesUserStreakForHeaderAndGrid() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val fakeCalendarRepository = FakeCalendarRepository()
+            val fakeGamificationRepository = FakeGamificationRepository()
+            val getActivityDatesUseCase = GetActivityDatesUseCase(fakeGamificationRepository)
+            val observeGamificationProgressUseCase = ObserveGamificationProgressUseCase(fakeGamificationRepository)
+
+            val viewModel = CalendarViewModel(fakeCalendarRepository, getActivityDatesUseCase, observeGamificationProgressUseCase)
+            advanceUntilIdle()
+
+            val today = viewModel.state.value.today
+            val user = CalendarUser(id = "user1", streak = 5, timezone = "UTC")
+            fakeCalendarRepository.emitSnapshot(CalendarSnapshot(user = user, goals = emptyList()))
+            advanceUntilIdle()
+
+            val expectedStreakDates = CalendarDateMapper.calculateStreakDates(5, today)
+            val state = viewModel.state.value
+            assertEquals(5, state.streak)
+            assertEquals(CalendarStreakHeaderState.from(5, state.maxStreak, state.isTodayActive), state.streakHeaderState)
+            assertEquals(expectedStreakDates, state.streakDates)
+            for (date in expectedStreakDates) {
+                val dayState = state.monthDays.firstOrNull { it.date == date }
+                if (dayState != null) {
+                    assertTrue("Expected dayState for $date to have isStreakDay = true", dayState.isStreakDay)
+                }
+            }
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     private class FakeCalendarRepository : CalendarRepository {
         private val calendarFlow = MutableStateFlow<CalendarSnapshot?>(null)
 
