@@ -269,7 +269,16 @@ class OnboardingRepositoryImplTest {
         override suspend fun addZoneToTemplate(templateId: String, zone: DailyZone): Result<DailyZone> = Result.Success(zone)
         override suspend fun getTemplateZones(templateId: String): Result<List<DailyZone>> = Result.Success(emptyList())
         override suspend fun updateTemplateZones(templateId: String, zones: List<DailyZone>): Result<List<DailyZone>> = Result.Success(zones)
-        override suspend fun createOverride(date: String, zones: List<DailyZone>): Result<TemplateOverride> = Result.Error(com.awan.app.core.common.error.AppError.Unknown())
+
+        override suspend fun createOverride(
+            date: String,
+            zones: List<DailyZone>,
+            name: String?,
+        ): Result<TemplateOverride> {
+            failWith?.let { return Result.Error(it) }
+            return Result.Error(com.awan.app.core.common.error.AppError.Unknown())
+        }
+
         override suspend fun getOverrides(): Result<List<TemplateOverride>> = Result.Success(emptyList())
         override suspend fun getOverride(overrideId: String): Result<TemplateOverride> = Result.Error(com.awan.app.core.common.error.AppError.Unknown())
         override suspend fun updateOverride(overrideId: String, name: String?, date: String): Result<TemplateOverride> = Result.Error(com.awan.app.core.common.error.AppError.Unknown())

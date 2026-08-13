@@ -60,13 +60,15 @@ fun DailyZonesContent(
             } else null
         )
 
-        RoutinePicker(
-            templates = uiState.templates,
-            selectedTemplateId = uiState.currentTemplate?.id,
-            onTemplateSelected = { onAction(DailyZonesAction.SelectTemplate(it)) },
-            onCreateRoutineClick = onCreateRoutineClick,
-            selectedDate = uiState.selectedDate?.toString()
-        )
+        if (uiState.currentTemplate != null || uiState.currentOverride != null) {
+            RoutinePicker(
+                templates = uiState.templates,
+                selectedTemplateId = uiState.currentTemplate?.id,
+                onTemplateSelected = { onAction(DailyZonesAction.SelectTemplate(it)) },
+                onCreateRoutineClick = onCreateRoutineClick,
+                selectedDate = uiState.selectedDate?.toString()
+            )
+        }
 
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
             when {
