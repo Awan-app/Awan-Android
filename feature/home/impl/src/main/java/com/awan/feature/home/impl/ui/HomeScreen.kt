@@ -1,7 +1,6 @@
 package com.awan.feature.home.impl.ui
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,24 +13,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
@@ -76,7 +75,18 @@ fun HomeScreen(
     }
 
     val timelineScrollState = rememberScrollState()
-    val isHeaderCollapsed by remember { derivedStateOf { timelineScrollState.value > 80 } }
+    var isHeaderCollapsed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(timelineScrollState) {
+        snapshotFlow { timelineScrollState.value }
+            .collect { scroll ->
+                if (!isHeaderCollapsed && scroll > 80) {
+                    isHeaderCollapsed = true
+                } else if (isHeaderCollapsed && scroll < 40) {
+                    isHeaderCollapsed = false
+                }
+            }
+    }
 
     val contentState: TimelineContentState = when {
         uiState.isLoading                 -> TimelineContentState.Loading
@@ -98,11 +108,13 @@ fun HomeScreen(
                 userName = uiState.userName,
                 greetingPrefix = uiState.greetingPrefix.asString(),
                 streakCount = uiState.streakCount,
+                isStreakActive = uiState.isStreakActive,
                 pointsCount = uiState.pointsCount,
                 mascotExpression = uiState.mascotExpression,
                 subtitleText = uiState.subtitleText.asString(),
                 selectedDateText = uiState.selectedDateText.asString(),
                 isCollapsed = isHeaderCollapsed,
+                isToday = uiState.isToday,
                 totalSessionsCount = uiState.sessions.size,
                 completedSessionsCount = uiState.completedSessionsCount,
                 completedHours = uiState.completedHours,
@@ -230,6 +242,7 @@ fun HomeScreen(
         if (!uiState.isWheelOpen) {
             AwanWheelBadge(
                 hasFreeSpin = uiState.hasFreeSpin,
+                isCollapsed = isHeaderCollapsed,
                 onClick = viewModel::openWheel,
                 modifier = Modifier
                     .align(Alignment.TopEnd)

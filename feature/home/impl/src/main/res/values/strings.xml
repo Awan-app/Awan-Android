@@ -100,4 +100,16 @@
         <item quantity="one">+%1$dd</item>
         <item quantity="other">+%1$dd</item>
     </plurals>
+    <string name="home_task_sessions_header">Task Sessions</string>
+    <string name="home_delete_dialog_title">Delete Confirmation</string>
+    <string name="home_delete_dialog_subtitle">Choose what you would like to delete:</string>
+    <string name="home_delete_option_session_title">Delete This Session Only</string>
+    <string name="home_delete_option_session_subtitle">Removes only this scheduled time slot.</string>
+    <string name="home_delete_option_task_title">Delete Task &amp; All Sessions</string>
+    <string name="home_delete_option_task_subtitle">Removes the task and all associated sessions permanently.</string>
+    <string name="home_task_session_item">Session %1$d (%2$s - %3$s)</string>
+    <string name="home_sample_task_1">New Task Session</string>
+    <string name="home_sample_task_2">Practice Exercise</string>
+    <string name="home_sample_task_3">Deep Focus</string>
+    <string name="home_sample_task_4">Review Notes</string>
 </resources>

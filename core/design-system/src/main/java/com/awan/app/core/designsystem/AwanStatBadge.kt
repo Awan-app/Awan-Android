@@ -22,27 +22,101 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Icon
+import androidx.compose.ui.res.stringResource
 import com.composables.icons.lucide.Coins
 import com.composables.icons.lucide.Flame
 import com.composables.icons.lucide.Lucide
 
 private val BadgeShape = RoundedCornerShape(12.dp)
+
 private const val PULSE_SCALE = 1.18f
 
 /**
- * The streak badge in the home header. Reads its colours from the theme's streak tokens so it
- * matches the streak line on the calendar.
+ * Formats a point integer value to a compact abbreviated string (e.g., 999, 1k, 1.2k, 10.5k, 1M).
+ * Pure function suitable for deterministic unit testing.
+ */
+fun formatAbbreviatedPointsValue(
+    points: Int,
+    thousandFmt: String = "%1\$sk",
+    millionFmt: String = "%1\$sM",
+    billionFmt: String = "%1\$sB",
+): String {
+    val isNegative = points < 0
+    val absValue = kotlin.math.abs(points.toLong())
+
+    var divisor = when {
+        absValue >= 1_000_000_000L -> 1_000_000_000.0
+        absValue >= 1_000_000L -> 1_000_000.0
+        absValue >= 1_000L -> 1_000.0
+        else -> 1.0
+    }
+
+    var fmt = when {
+        absValue >= 1_000_000_000L -> billionFmt
+        absValue >= 1_000_000L -> millionFmt
+        absValue >= 1_000L -> thousandFmt
+        else -> null
+    }
+
+    var rounded = Math.round((absValue / divisor) * 10.0) / 10.0
+
+    // Promote boundary overflow post-rounding (e.g., 999_950 -> 1000.0k -> 1.0M)
+    if (rounded >= 1000.0 && fmt != billionFmt && fmt != null) {
+        if (fmt == thousandFmt) {
+            fmt = millionFmt
+            rounded /= 1000.0
+        } else if (fmt == millionFmt) {
+            fmt = billionFmt
+            rounded /= 1000.0
+        }
+    }
+
+    val numberStr = if (rounded % 1.0 == 0.0) {
+        rounded.toLong().toString()
+    } else {
+        String.format(java.util.Locale.US, "%.1f", rounded)
+    }
+
+    val formattedPositive = if (fmt != null) {
+        String.format(java.util.Locale.US, fmt, numberStr)
+    } else {
+        numberStr
+    }
+
+    return if (isNegative) "-$formattedPositive" else formattedPositive
+}
+
+/**
+ * Composable wrapper retrieving localized points shortcut formats.
+ */
+@Composable
+fun formatAbbreviatedPoints(points: Int): String {
+    return formatAbbreviatedPointsValue(
+        points = points,
+        thousandFmt = stringResource(R.string.ds_points_thousand),
+        millionFmt = stringResource(R.string.ds_points_million),
+        billionFmt = stringResource(R.string.ds_points_billion),
+    )
+}
+
+/**
+ * The streak badge in the home header. Reads its colours from the theme's streak tokens when active,
+ * and renders in a muted gray when today's streak is not yet completed/taken.
  */
 @Composable
 fun AwanStreakBadge(
     streakCount: Int,
+    isStreakActive: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
+    val surfaceColor = if (isStreakActive) AwanTheme.colors.streakSurface else AwanTheme.colors.disabledSurface
+    val accentColor = if (isStreakActive) AwanTheme.colors.streakIcon else AwanTheme.colors.disabledContent
+
     AwanStatBadge(
         icon = Lucide.Flame,
-        value = streakCount,
-        surface = AwanTheme.colors.streakSurface,
-        accent = AwanTheme.colors.streakIcon,
+        text = streakCount.toString(),
+        surface = surfaceColor,
+        accent = accentColor,
         modifier = modifier,
     )
 }
@@ -60,6 +134,7 @@ fun AwanPointsBadge(
     modifier: Modifier = Modifier,
 ) {
     val anchors = LocalRewardAnchors.current
+    val currentPoints = anchors.animatedPoints ?: pointsCount
     val scale by animateFloatAsState(
         targetValue = if (anchors.pointsPulse) PULSE_SCALE else 1f,
         animationSpec = AwanTheme.motion.playful.spec(),
@@ -67,7 +142,7 @@ fun AwanPointsBadge(
     )
     AwanStatBadge(
         icon = Lucide.Coins,
-        value = anchors.animatedPoints ?: pointsCount,
+        text = formatAbbreviatedPoints(currentPoints),
         surface = AwanTheme.colors.pointsSurface,
         accent = AwanTheme.colors.pointsIcon,
         modifier = modifier.scale(scale),
@@ -77,7 +152,7 @@ fun AwanPointsBadge(
 @Composable
 private fun AwanStatBadge(
     icon: ImageVector,
-    value: Int,
+    text: String,
     surface: Color,
     accent: Color,
     modifier: Modifier = Modifier,
@@ -99,7 +174,7 @@ private fun AwanStatBadge(
             )
             Spacer(modifier = Modifier.width(4.dp))
             AwanText(
-                text = value.toString(),
+                text = text,
                 style = AwanTheme.typography.heading.copy(
                     fontSize = 13.5.sp,
                     fontWeight = FontWeight.ExtraBold,

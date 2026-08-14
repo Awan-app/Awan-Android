@@ -16,6 +16,11 @@ import com.awan.app.core.network.dto.store.EquippedItemDto
 import com.awan.app.core.network.dto.store.OwnedItemDto
 import com.awan.app.core.network.dto.store.StoreItemDto
 import com.awan.app.core.network.dto.store.StoreItemTypeDto
+import com.awan.app.core.data.gamification.GamificationEventBus
+import com.awan.app.core.database.dao.UserDao
+import com.awan.app.core.database.model.UserEntity
+import com.awan.app.core.database.model.UserPreferencesEntity
+import com.awan.app.core.database.model.UserWithPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -58,6 +63,7 @@ class InventoryRepositoryImplTest {
             remoteDataSource = remote,
             storeDao = dao,
             profileRepository = FakeProfileRepository(),
+            gamificationEventBus = GamificationEventBus(FakeUserDao()),
             connectivityMonitor = FakeNetworkConnectivityMonitor(),
             ioDispatcher = testDispatcher,
         )
@@ -139,5 +145,21 @@ class InventoryRepositoryImplTest {
     private class FakeNetworkConnectivityMonitor : NetworkConnectivityMonitor {
         override val isOnline: Flow<Boolean> = MutableStateFlow(true)
         override fun isCurrentlyOnline(): Boolean = true
+    }
+
+    private class FakeUserDao : UserDao {
+        private var user: UserEntity? = null
+        override suspend fun upsertUser(user: UserEntity) { this.user = user }
+        override fun observeUser(userId: String): Flow<UserEntity?> = flowOf(user)
+        override suspend fun getUser(userId: String): UserEntity? = user
+        override suspend fun getFirstUser(): UserEntity? = user
+        override suspend fun deleteUser(userId: String) { user = null }
+        override suspend fun getMinExpiryTime(): Long? = null
+        override suspend fun upsertPreferences(preferences: UserPreferencesEntity) {}
+        override fun observePreferences(userId: String): Flow<UserPreferencesEntity?> = flowOf(null)
+        override suspend fun getPreferences(userId: String): UserPreferencesEntity? = null
+        override fun observeUserWithPreferences(userId: String): Flow<UserWithPreferences?> = flowOf(null)
+        override suspend fun getUserWithPreferences(userId: String): UserWithPreferences? = null
+        override suspend fun upsertUserWithPreferences(user: UserEntity, preferences: UserPreferencesEntity) { this.user = user }
     }
 }

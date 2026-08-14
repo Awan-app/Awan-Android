@@ -104,4 +104,16 @@
         <item quantity="many">+%1$d يوماً</item>
         <item quantity="other">+%1$d يوم</item>
     </plurals>
+    <string name="home_task_sessions_header">جلسات المهمة</string>
+    <string name="home_delete_dialog_title">تأكيد الحذف</string>
+    <string name="home_delete_dialog_subtitle">اختر ما ترغب في حذفه:</string>
+    <string name="home_delete_option_session_title">حذف هذه الجلسة فقط</string>
+    <string name="home_delete_option_session_subtitle">يحذف الفترة الزمنية المحددة لهذه الجلسة فقط.</string>
+    <string name="home_delete_option_task_title">حذف المهمة وجميع الجلسات</string>
+    <string name="home_delete_option_task_subtitle">يحذف المهمة وجميع الجلسات المرتبطة بها نهائياً.</string>
+    <string name="home_task_session_item">جلسة %1$d (%2$s - %3$s)</string>
+    <string name="home_sample_task_1">جلسة مهمة جديدة</string>
+    <string name="home_sample_task_2">تمرين عملي</string>
+    <string name="home_sample_task_3">تركيز عميق</string>
+    <string name="home_sample_task_4">مراجعة الملاحظات</string>
 </resources>

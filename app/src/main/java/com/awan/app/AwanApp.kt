@@ -278,7 +278,8 @@ fun AwanApp(
 
 
         val currentRoute = appState.navigationState.currentKey
-        val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route == currentRoute }
+        val currentTopLevelKey = appState.navigationState.currentTopLevelKey
+        val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route::class == currentRoute::class }
 
         if (isTopLevel) {
             val navItems = remember(appState.topLevelDestinations) {
@@ -292,7 +293,9 @@ fun AwanApp(
                     )
                 }
             }
-            val selectedDest = appState.topLevelDestinations.find { it.route == appState.navigationState.currentTopLevelKey }
+            val selectedDest = remember(currentTopLevelKey, appState.topLevelDestinations) {
+                appState.topLevelDestinations.find { dest -> dest.route != null && dest.route::class == currentTopLevelKey::class }
+            }
 
             AwanBottomNavBar(
                 items = navItems,

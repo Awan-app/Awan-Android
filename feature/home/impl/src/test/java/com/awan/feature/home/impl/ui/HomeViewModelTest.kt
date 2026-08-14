@@ -28,6 +28,7 @@ import com.awan.app.core.domain.home.usecase.UpdateTaskDetailUseCase
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.repository.ProfileRepository
 import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
+import com.awan.app.core.domain.profile.usecase.ObserveProfileUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.model.Session
@@ -97,6 +98,7 @@ class HomeViewModelTest {
         moveSessionUseCase = MoveSessionUseCase(fakeHomeRepository),
         updateSessionLockUseCase = UpdateSessionLockUseCase(fakeHomeRepository),
         getProfileUseCase = GetProfileUseCase(fakeProfileRepository),
+        observeProfileUseCase = ObserveProfileUseCase(fakeProfileRepository),
     )
 
     @Test

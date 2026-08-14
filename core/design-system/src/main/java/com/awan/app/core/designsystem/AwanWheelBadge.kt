@@ -53,11 +53,24 @@ fun AwanWheelBadge(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     hasFreeSpin: Boolean = true,
+    isCollapsed: Boolean = false,
 ) {
     val reduced = reducedMotion()
     val haptics = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+
+    val badgeSize by androidx.compose.animation.core.animateDpAsState(
+        targetValue = if (isCollapsed) 28.dp else 38.dp,
+        animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+        label = "wheelBadgeSize",
+    )
+
+    val iconSize by androidx.compose.animation.core.animateDpAsState(
+        targetValue = if (isCollapsed) 14.dp else 20.dp,
+        animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+        label = "wheelIconSize",
+    )
 
     val transition = rememberInfiniteTransition(label = "wheelBadge")
     val pulse by transition.animateFloat(
@@ -86,7 +99,6 @@ fun AwanWheelBadge(
     val pressScale = if (isPressed) 0.92f else 1f
     val pressOffset = if (isPressed) 2.dp else 0.dp
 
-    // Premium Gold Gradient for Active State vs Muted Metallic Gold-Grey Gradient for Claimed State
     val badgeGradient = if (hasFreeSpin) {
         Brush.verticalGradient(
             listOf(
@@ -108,15 +120,14 @@ fun AwanWheelBadge(
         modifier = modifier
             .offset { IntOffset(0, (floatY.dp + pressOffset).roundToPx()) }
             .scale(pressScale)
-            .size(BadgeSize + 8.dp)
+            .size(badgeSize + 6.dp)
             .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
-        // Outer Glowing Gold Aura Pulse Ring (Active only)
         if (hasFreeSpin) {
             Box(
                 modifier = Modifier
-                    .size(BadgeSize * pulse)
+                    .size(badgeSize * pulse)
                     .drawBehind {
                         drawCircle(
                             brush = Brush.radialGradient(
@@ -130,17 +141,16 @@ fun AwanWheelBadge(
             )
         }
 
-        // 2D Tactile Gold Gift Badge Body
         Box(
             modifier = Modifier
-                .size(BadgeSize)
+                .size(badgeSize)
                 .clip(CircleShape)
                 .background(if (hasFreeSpin) colors.ink else colors.meta)
-                .padding(bottom = 2.5.dp)
+                .padding(bottom = if (isCollapsed) 1.5.dp else 2.5.dp)
                 .clip(CircleShape)
                 .background(badgeGradient)
                 .border(
-                    width = 2.dp,
+                    width = if (isCollapsed) 1.5.dp else 2.dp,
                     color = if (hasFreeSpin) colors.pointsSurface else colors.line,
                     shape = CircleShape,
                 )
@@ -160,7 +170,7 @@ fun AwanWheelBadge(
                 imageVector = Lucide.Gift,
                 contentDescription = null,
                 tint = if (hasFreeSpin) colors.ink else colors.meta,
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(iconSize),
             )
         }
     }
