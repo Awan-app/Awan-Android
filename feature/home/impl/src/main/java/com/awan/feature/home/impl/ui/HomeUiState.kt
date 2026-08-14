@@ -33,7 +33,6 @@ data class SessionDetailDialogState(
     val isLoading: Boolean = true,
     val detail: SessionTaskDetail? = null,
     val errorMessage: UiText? = null,
-    val isEditing: Boolean = false,
     val editTitle: String = "",
     val editDescription: String = "",
     val editDate: LocalDate = LocalDate.now(),

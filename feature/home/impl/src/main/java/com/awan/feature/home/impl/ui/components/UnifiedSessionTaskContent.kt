@@ -65,7 +65,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.res.pluralStringResource
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
@@ -509,7 +508,7 @@ private fun MainSessionTaskDetailView(
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         AwanText(
-                                            text = "${duration}m",
+                                            text = stringResource(R.string.home_edit_duration_mins, duration),
                                             style = AwanTheme.typography.caption.copy(
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
@@ -813,7 +812,7 @@ private fun CustomWheelTimePickerView(
                         contentAlignment = Alignment.Center,
                     ) {
                         AwanText(
-                            text = "AM",
+                            text = stringResource(R.string.home_picker_am),
                             style = AwanTheme.typography.button.copy(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
@@ -834,7 +833,7 @@ private fun CustomWheelTimePickerView(
                         contentAlignment = Alignment.Center,
                     ) {
                         AwanText(
-                            text = "PM",
+                            text = stringResource(R.string.home_picker_pm),
                             style = AwanTheme.typography.button.copy(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
@@ -1283,6 +1282,9 @@ private fun CustomWheelDatePickerView(
         val selectedDayVal = (currentCenteredDayIndex % 31) + 1
         val validDay = selectedDayVal.coerceIn(1, maxDays)
         updateSelectedDate(year, month, validDay)
+        if (validDay != selectedDayVal) {
+            dayListState.scrollToItem(currentCenteredDayIndex - (selectedDayVal - validDay))
+        }
     }
 
     val currentCenteredMonthIndex by remember { derivedStateOf { monthListState.centeredItemIndex() } }
@@ -1503,9 +1505,15 @@ private fun CustomWheelDatePickerView(
                     ) {
                         items(12_000) { index ->
                             val dVal = (index % 31) + 1
-                            val isSelected = (index == currentCenteredDayIndex)
+                            val maxDaysInMonth = java.time.YearMonth.of(year, month).lengthOfMonth()
+                            val isInvalidDay = dVal > maxDaysInMonth
+                            val isSelected = (index == currentCenteredDayIndex) && !isInvalidDay
                             val scale = if (isSelected) 1.15f else 0.75f
-                            val alpha = if (isSelected) 1.0f else 0.45f
+                            val alpha = when {
+                                isInvalidDay -> 0.12f
+                                isSelected -> 1.0f
+                                else -> 0.45f
+                            }
 
                             Box(
                                 modifier = Modifier
@@ -1513,7 +1521,8 @@ private fun CustomWheelDatePickerView(
                                     .height(52.dp)
                                     .clickable {
                                         coroutineScope.launch {
-                                            dayListState.animateScrollToItem(index)
+                                            val targetIdx = if (isInvalidDay) index - (dVal - maxDaysInMonth) else index
+                                            dayListState.animateScrollToItem(targetIdx)
                                         }
                                     },
                                 contentAlignment = Alignment.Center,
@@ -1637,12 +1646,3 @@ private data class StatusChipStyle(
     val fg: Color,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
 )
-
-private fun LazyListState.centeredItemIndex(): Int {
-    val info = layoutInfo
-    val visibleItems = info.visibleItemsInfo
-    if (visibleItems.isEmpty()) return firstVisibleItemIndex
-    val mid = (info.viewportStartOffset + info.viewportEndOffset) / 2
-    return visibleItems.minByOrNull { kotlin.math.abs((it.offset + it.size / 2) - mid) }?.index
-        ?: firstVisibleItemIndex
-}

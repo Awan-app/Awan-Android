@@ -92,10 +92,13 @@
     <string name="home_picker_day">اليوم</string>
     <string name="home_picker_month">الشهر</string>
     <string name="home_picker_year">السنة</string>
+    <string name="home_picker_am">ص</string>
+    <string name="home_picker_pm">م</string>
+    <string name="home_edit_duration_mins">%1$dد</string>
 
     <plurals name="home_date_plus_days">
-        <item quantity="zero">+0 يوم</item>
-        <item quantity="one">+يوم واحد</item>
+        <item quantity="zero">+%1$d يوم</item>
+        <item quantity="one">+يوم</item>
         <item quantity="two">+يومان</item>
         <item quantity="few">+%1$d أيام</item>
         <item quantity="many">+%1$d يوماً</item>

@@ -92,9 +92,12 @@
     <string name="home_picker_day">DAY</string>
     <string name="home_picker_month">MONTH</string>
     <string name="home_picker_year">YEAR</string>
+    <string name="home_picker_am">AM</string>
+    <string name="home_picker_pm">PM</string>
+    <string name="home_edit_duration_mins">%1$dm</string>
 
     <plurals name="home_date_plus_days">
-        <item quantity="one">+%1$d day</item>
-        <item quantity="other">+%1$d days</item>
+        <item quantity="one">+%1$dd</item>
+        <item quantity="other">+%1$dd</item>
     </plurals>
 </resources>
