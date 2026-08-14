@@ -38,12 +38,20 @@ class NotificationSettingsViewModel @Inject constructor(
                 update { it.copy(sessionLiveActivityEnabled = action.enabled) }
             is NotificationSettingsAction.SetSessionEnd ->
                 update { it.copy(sessionEndEnabled = action.enabled) }
+            is NotificationSettingsAction.SetSessionFollowUp ->
+                update { it.copy(sessionFollowUpEnabled = action.enabled) }
+            is NotificationSettingsAction.SetStreakReminder ->
+                update { it.copy(streakReminderEnabled = action.enabled) }
+            is NotificationSettingsAction.SetDailyBrief ->
+                update { it.copy(dailyBriefEnabled = action.enabled) }
             is NotificationSettingsAction.SetRewards ->
                 update { it.copy(rewardsEnabled = action.enabled) }
             is NotificationSettingsAction.SetReminderLead ->
                 update { it.copy(reminderLeadMinutes = action.minutes) }
             is NotificationSettingsAction.SetSnooze ->
                 update { it.copy(snoozeMinutes = action.minutes) }
+            is NotificationSettingsAction.SetFollowUpDelay ->
+                update { it.copy(followUpDelayMinutes = action.minutes) }
             is NotificationSettingsAction.SystemPermissionChanged ->
                 _uiState.update { it.copy(systemNotificationsEnabled = action.enabled) }
         }

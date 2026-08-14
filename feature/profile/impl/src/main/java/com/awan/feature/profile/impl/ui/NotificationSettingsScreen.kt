@@ -15,10 +15,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Snooze
 import androidx.compose.material.icons.filled.Timelapse
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
@@ -107,7 +111,16 @@ fun NotificationSettingsScreen(
                         checked = uiState.preferences.sessionEndEnabled,
                         enabled = uiState.systemNotificationsEnabled,
                         iconColor = AwanTheme.colors.sky,
+                        showDivider = true,
                         onCheckedChange = { onAction(NotificationSettingsAction.SetSessionEnd(it)) },
+                    )
+                    SwitchRow(
+                        icon = Icons.Default.QuestionAnswer,
+                        title = stringResource(ProfileR.string.profile_notifications_follow_up),
+                        checked = uiState.preferences.sessionFollowUpEnabled,
+                        enabled = uiState.systemNotificationsEnabled,
+                        iconColor = AwanTheme.colors.sky,
+                        onCheckedChange = { onAction(NotificationSettingsAction.SetSessionFollowUp(it)) },
                     )
                 }
             }
@@ -133,7 +146,41 @@ fun NotificationSettingsScreen(
                         selected = uiState.preferences.snoozeMinutes,
                         enabled = uiState.systemNotificationsEnabled,
                         label = { stringResource(ProfileR.string.profile_notifications_minutes, it) },
+                        showDivider = true,
                         onSelect = { onAction(NotificationSettingsAction.SetSnooze(it)) },
+                    )
+                    AwanChoiceRow(
+                        icon = Icons.Default.HourglassEmpty,
+                        title = stringResource(ProfileR.string.profile_notifications_follow_up_delay),
+                        options = NotificationPreferences.FOLLOW_UP_CHOICES,
+                        selected = uiState.preferences.followUpDelayMinutes,
+                        enabled = uiState.systemNotificationsEnabled &&
+                            uiState.preferences.sessionFollowUpEnabled,
+                        label = { stringResource(ProfileR.string.profile_notifications_minutes, it) },
+                        onSelect = { onAction(NotificationSettingsAction.SetFollowUpDelay(it)) },
+                    )
+                }
+            }
+
+            SectionTitle(stringResource(ProfileR.string.profile_notifications_section_nudges))
+            AwanCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp)) {
+                Column {
+                    SwitchRow(
+                        icon = Icons.Default.LocalFireDepartment,
+                        title = stringResource(ProfileR.string.profile_notifications_streak),
+                        checked = uiState.preferences.streakReminderEnabled,
+                        enabled = uiState.systemNotificationsEnabled,
+                        iconColor = AwanTheme.colors.zoneTangerine,
+                        showDivider = true,
+                        onCheckedChange = { onAction(NotificationSettingsAction.SetStreakReminder(it)) },
+                    )
+                    SwitchRow(
+                        icon = Icons.Default.WbSunny,
+                        title = stringResource(ProfileR.string.profile_notifications_daily_brief),
+                        checked = uiState.preferences.dailyBriefEnabled,
+                        enabled = uiState.systemNotificationsEnabled,
+                        iconColor = AwanTheme.colors.zoneTangerine,
+                        onCheckedChange = { onAction(NotificationSettingsAction.SetDailyBrief(it)) },
                     )
                 }
             }
