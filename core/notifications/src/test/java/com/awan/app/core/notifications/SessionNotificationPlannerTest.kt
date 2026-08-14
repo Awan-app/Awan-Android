@@ -320,6 +320,23 @@ class SessionNotificationPlannerTest {
     }
 
     @Test
+    fun `every timing default is one of the options offered for it`() {
+        // A stored value outside the choice row's options renders as nothing selected, which reads
+        // as a broken screen rather than as a default.
+        assertTrue(
+            NotificationPreferences.DEFAULT_REMINDER_LEAD_MINUTES in
+                NotificationPreferences.REMINDER_LEAD_CHOICES
+        )
+        assertTrue(
+            NotificationPreferences.DEFAULT_SNOOZE_MINUTES in NotificationPreferences.SNOOZE_CHOICES
+        )
+        assertTrue(
+            NotificationPreferences.DEFAULT_FOLLOW_UP_MINUTES in
+                NotificationPreferences.FOLLOW_UP_CHOICES
+        )
+    }
+
+    @Test
     fun `a follow-up is due only within its grace window`() {
         val session = session(start = now.minusHours(4), end = now.minusHours(3))
 
@@ -503,6 +520,48 @@ class SessionNotificationPlannerTest {
         assertEquals(2, brief.plannedCount)
         assertEquals("Design review", brief.firstTitle)
         assertEquals(first.start, brief.firstStart)
+    }
+
+    @Test
+    fun `the brief names the next session ahead, not one that is already over`() {
+        // Caught on a device: a block scheduled before the user woke up was announced as "first",
+        // so the morning brief was describing something already finished.
+        val overnight = session(
+            id = "early",
+            start = now.toLocalDate().atTime(4, 12),
+            end = now.toLocalDate().atTime(5, 12),
+            title = "Gym",
+        )
+        val ahead = session(
+            id = "ahead",
+            start = now.toLocalDate().atTime(10, 0),
+            end = now.toLocalDate().atTime(11, 0),
+            title = "Design review",
+        )
+
+        val brief = plan(listOf(overnight, ahead), day = dayKnown)
+            .filterIsInstance<DayNotificationEvent.DailyBrief>()
+            .single { it.slot == DayNotificationEvent.DailyBrief.Slot.MORNING }
+
+        assertEquals("Design review", brief.firstTitle)
+        // The count is still the whole day's plan, which is what "3 blocks today" means.
+        assertEquals(2, brief.plannedCount)
+    }
+
+    @Test
+    fun `a brief with nothing left ahead falls back to the day's first session`() {
+        val done = session(
+            id = "early",
+            start = now.toLocalDate().atTime(4, 12),
+            end = now.toLocalDate().atTime(5, 12),
+            title = "Gym",
+        )
+
+        val brief = plan(listOf(done), day = dayKnown)
+            .filterIsInstance<DayNotificationEvent.DailyBrief>()
+            .single()
+
+        assertEquals("Gym", brief.firstTitle)
     }
 
     @Test

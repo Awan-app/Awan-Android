@@ -297,3 +297,103 @@ note). Only content changes — no new step, no flow change, no `OnboardingViewM
   contradict the server; the wheel stays on the push/rewards path.
 - **No server-side streak check.** `getActivityDates` is network-only, so the warning is driven by
   local completed-sessions-today and worded accordingly.
+
+---
+
+## Implementation notes (what actually differed)
+
+### Build / test status
+
+| Check | Result |
+|---|---|
+| `./gradlew assembleDebug` | BUILD SUCCESSFUL |
+| `./gradlew testDebugUnitTest` | BUILD SUCCESSFUL — 0 failures, including 44 `SessionNotificationPlannerTest` cases (up from 19) and 3 new `LiveDismissalRecordTest` cases |
+| `./gradlew lint` | BUILD SUCCESSFUL (`HardcodedText` and `MissingTranslation` are errors) |
+| Device run | Pixel-class emulator, API 37, airplane mode, real logged-in account |
+
+### Verified on device
+
+- **All five channels created**, including the new one: `nudges` (Daily nudges, importance 3) beside
+  `session_reminders` 4, `session_live` 2, `session_end` 4, `rewards` 3. Note the emulator's *Settings
+  → Notifications* page listed only "Other" and did not show them; `dumpsys notification` did. The
+  Settings UI is not a reliable check here.
+- **The daily brief fired on its own exact alarm.** `dumpsys alarm` showed a single `RTC_WAKEUP` at
+  `2026-08-14 08:00:00` tagged `SessionAlarmReceiver` — wake 07:00 from the synced profile plus one
+  hour — and at 08:00 the notification posted on the `nudges` channel: *"Good morning / 4 blocks today
+  · Study Clean Code is first, at …"*, rendering an Arabic task title and a locale-formatted time.
+- **No streak warning**, correctly: the account had completed sessions that day, so the plan did not
+  contain a `StreakRisk` at all.
+- **The live notification carries both buttons.** `actions=2`, `flags=ONGOING_EVENT|ONLY_ALERT_ONCE|
+  PROMOTED_ONGOING`, with a live chronometer (37:13 counting down), the progress bar, and
+  **Complete now** / **Stop**.
+- **Stop does nothing but dismiss.** After tapping it the session row was still
+  `SCHEDULED 08:00–08:45`, unchanged, and the shared-prefs record read exactly
+  `claude-live-test → 2026-08-14T08:00:00|2026-08-14T08:45:00`.
+- **The dismissal survives a foreground.** Relaunching the app — which runs `rescheduleAll()` — left
+  the notification gone.
+- **Moving the session brings it back.** Changing the end time to 09:15 and relaunching re-posted the
+  live notification with both actions, because the stored window no longer matched.
+- **Reconciliation still works with the new event types**: deleting the session cleared its live
+  notification on the next reschedule, leaving only the brief.
+
+### Not verified
+
+- **Reboot survival** and **timezone change** — same gaps as the previous plan; no `adb reboot` cycle.
+- **The streak warning firing.** Its trigger is `sleepTime − 2h` = 21:00, and the emulator's clock
+  could not be moved (`adb root` is unavailable on this image, `su` is absent). The timing rules,
+  including the overnight case, are covered by unit tests instead.
+- **The onboarding step on a device.** The account was already onboarded, and seeing the step means
+  clearing app data, which would have destroyed the user's local database and session. Checked by
+  build + the two Compose previews (LTR and the newly added RTL) only.
+- **A real follow-up notification**, for the same reason the clock could not move. Its planning rules
+  are unit-tested.
+
+### Deviations from the plan as written
+
+1. **`PlanYourDay` became `DailyBrief`** with two bodies, after you asked for the morning summary as
+   well. One event, one switch, two moments — the midday repeat only fires while the day is still
+   empty.
+2. **`DISMISS_LIVE` retimes as well as cancels.** The plan had the receiver record the dismissal and
+   cancel. That is not enough: `SessionNotificationScheduler.driveLiveWhileInProcess` redraws the live
+   notification from a coroutine every five seconds while the app is alive, and only a reschedule
+   stops that loop. The receiver now calls `rescheduleAll()` through `goAsync()`, the same shape
+   `SessionAlarmReceiver` uses.
+3. **`LiveDismissalRecord` was extracted** from `LiveNotificationDismissals`. The plan promised a test
+   for the pruning, but `SharedPreferences` needs Robolectric and only JUnit 4 + coroutines-test are
+   on this module's test classpath. The encode/decode/expiry rules — the parts that can actually
+   break — are pure and tested; the Android shell around them is not.
+4. **No `IsScheduleKnownUseCase` call for tomorrow.** Only today's schedule is checked, because only
+   today's events exist.
+
+### Traps
+
+1. **A timing default that is not one of its own options renders as nothing selected.** Shipped
+   `DEFAULT_FOLLOW_UP_MINUTES = 90` with `FOLLOW_UP_CHOICES = listOf(30, 60, 120)`; the "Follow up
+   after" row came up on the device with no segment highlighted, looking broken. Choices are now
+   `30/60/90/120` and a test asserts every default is in its own choice list — which the two
+   pre-existing rows also had to satisfy.
+2. **"First" in the brief has to mean "next", not "earliest".** The brief fires at wake + 1h, and a
+   session scheduled before the user woke is already over by then. The first device run announced a
+   4:12 AM session that had finished. It now picks the earliest session whose end is after the brief's
+   own moment, falling back to the earliest overall.
+3. **The two brief slots must not share a notification id.** They would, being keyed on the date — and
+   then the scheduler's "already showing" guard reads the midday post as a re-post of the morning one
+   and skips it. The slot is part of the id.
+4. **Day-scoped events cannot be judged in `isDue`.** It receives only `(event, now)`, and "nothing
+   completed today" needs the session list. Those conditions are applied when the plan is built; since
+   the plan is rebuilt on every session write, a condition that stops holding stops producing its
+   event and reconciliation cancels what was posted.
+5. **An overnight `sleepTime` puts the whole day in the past.** With sleep at 01:00, anchoring the
+   day's end to today places the streak warning at 23:00 *yesterday*. `dayEndMoment` adds a day when
+   `dayEnd <= wake`.
+
+### Other things worth knowing
+
+- **The streak warning never names a number.** `getActivityDates` is network-only and `UserEntity`
+  caches no `lastActivityDate`, so the device cannot know whether the server counts today. The trigger
+  is the local proxy "no session completed today", and the copy says exactly that.
+- **A device with no synced profile falls back to 07:00 / 23:00.** Onboarding sends wake and sleep to
+  the backend and does not write the local `user_preferences` row, and `CalendarLocalDataSourceImpl`
+  can write `""`, so both null and blank are treated as absent.
+- **`adb root` and `su` are unavailable** on the Google-APIs emulator image, so the device clock cannot
+  be moved. Anything gated on a specific time of day has to be waited for, or covered by unit tests.

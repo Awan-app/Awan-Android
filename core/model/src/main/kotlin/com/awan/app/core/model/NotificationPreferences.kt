@@ -28,6 +28,8 @@ data class NotificationPreferences(
 
         val REMINDER_LEAD_CHOICES = listOf(5, 10, 15, 30)
         val SNOOZE_CHOICES = listOf(5, 10, 15)
-        val FOLLOW_UP_CHOICES = listOf(30, 60, 120)
+        // Must contain DEFAULT_FOLLOW_UP_MINUTES: the choice row renders nothing as selected when
+        // the stored value is not one of its options.
+        val FOLLOW_UP_CHOICES = listOf(30, 60, 90, 120)
     }
 }

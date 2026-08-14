@@ -224,19 +224,24 @@ object SessionNotificationPlanner {
 
         if (preferences.dailyBriefEnabled) {
             val wakeMoment = day.today.atTime(day.wake)
-            val first = today.minByOrNull { it.start }
-            fun brief(at: LocalDateTime, slot: DayNotificationEvent.DailyBrief.Slot) =
-                DayNotificationEvent.DailyBrief(
+            fun brief(at: LocalDateTime, slot: DayNotificationEvent.DailyBrief.Slot) {
+                // "First" means the next one still ahead of the user, not the earliest on the
+                // clock: a block scheduled before they woke up is already over by the time the
+                // brief lands, and naming it reads as a brief about yesterday.
+                val next = today.filter { it.end.isAfter(at) }.minByOrNull { it.start }
+                    ?: today.minByOrNull { it.start }
+                events += DayNotificationEvent.DailyBrief(
                     at = at,
                     date = day.today,
                     slot = slot,
                     plannedCount = today.size,
-                    firstTitle = first?.title,
-                    firstStart = first?.start,
+                    firstTitle = next?.title,
+                    firstStart = next?.start,
                 )
+            }
 
             val morningAt = wakeMoment.plus(BRIEF_AFTER_WAKE)
-            events += brief(morningAt, DayNotificationEvent.DailyBrief.Slot.MORNING)
+            brief(morningAt, DayNotificationEvent.DailyBrief.Slot.MORNING)
 
             // The second ask exists only for a day that is still empty — once anything is planned,
             // the morning summary has already said everything there is to say.
@@ -244,7 +249,7 @@ object SessionNotificationPlanner {
                 Duration.between(wakeMoment, dayEndMoment(day)).toMinutes() / 2
             )
             if (today.isEmpty() && middayAt.isAfter(morningAt)) {
-                events += brief(middayAt, DayNotificationEvent.DailyBrief.Slot.MIDDAY)
+                brief(middayAt, DayNotificationEvent.DailyBrief.Slot.MIDDAY)
             }
         }
 
