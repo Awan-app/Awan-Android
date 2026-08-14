@@ -99,13 +99,17 @@ class SessionNotificationPoster @Inject constructor(
      * Ticks only advance the progress bar.
      */
     private fun postLive(session: UpcomingSession, now: LocalDateTime) {
-        val totalMinutes = Duration.between(session.start, session.end).toMinutes()
+        // Seconds, not minutes: a bar scaled in minutes can only ever move in whole-minute steps, so
+        // it sat still between ticks however often the notification was redrawn.
+        val totalSeconds = Duration.between(session.start, session.end).seconds
             .coerceAtLeast(1)
             .toInt()
-        val elapsedMinutes = Duration.between(session.start, now).toMinutes()
-            .coerceIn(0, totalMinutes.toLong())
+        val elapsedSeconds = Duration.between(session.start, now).seconds
+            .coerceIn(0, totalSeconds.toLong())
             .toInt()
-        val remainingMinutes = (totalMinutes - elapsedMinutes).coerceAtLeast(0)
+        val remainingMinutes = Duration.ofSeconds((totalSeconds - elapsedSeconds).toLong())
+            .toMinutes()
+            .toInt()
         val id = NotificationIds.live(session.id)
 
         val builder = baseBuilder(AwanNotificationChannels.SESSION_LIVE, session)
@@ -122,8 +126,8 @@ class SessionNotificationPoster @Inject constructor(
             .setRequestPromotedOngoing(true)
             .setStyle(
                 NotificationCompat.ProgressStyle()
-                    .setProgress(elapsedMinutes)
-                    .addProgressSegment(NotificationCompat.ProgressStyle.Segment(totalMinutes))
+                    .setProgress(elapsedSeconds)
+                    .addProgressSegment(NotificationCompat.ProgressStyle.Segment(totalSeconds))
             )
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(

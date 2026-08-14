@@ -205,10 +205,44 @@ class SessionNotificationPlannerTest {
         // Guard the premise: this plan really does contain the stranded past events.
         assertTrue(plan.any { !SessionNotificationPlanner.isDue(it, now) && !it.at.isAfter(now) })
 
-        val next = SessionNotificationPlanner.nextAfter(plan, now)
+        listOfNotNull(
+            SessionNotificationPlanner.nextUserEventAfter(plan, now),
+            SessionNotificationPlanner.nextTickAfter(plan, now),
+        ).forEach { next ->
+            assertTrue("next alarm is in the past: $next", next.at.isAfter(now))
+        }
+    }
 
-        assertTrue("next alarm is in the past: $next", next!!.at.isAfter(now))
-        assertEquals(plan.filter { it.at.isAfter(now) }.minOf { it.at }, next.at)
+    @Test
+    fun `a running session's ticks never displace the next reminder`() {
+        // Why the two alarms are separate: a single slot always held the running session's next
+        // tick, because a tick is a minute away and the reminder is not, so the reminder never
+        // reached the OS and one dropped tick lost it entirely.
+        val running = session(id = "running", start = now.minusMinutes(5), end = now.plusMinutes(55))
+        val later = session(id = "later", start = now.plusHours(2), end = now.plusHours(3))
+        // End notifications off, so the running session's own end cannot be the next user event and
+        // the reminder is unambiguously what the user slot has to hold.
+        val prefs = preferences.copy(sessionEndEnabled = false)
+        val plan = SessionNotificationPlanner.plan(listOf(running, later), prefs, now)
+
+        val userEvent = SessionNotificationPlanner.nextUserEventAfter(plan, now)
+        val tick = SessionNotificationPlanner.nextTickAfter(plan, now)
+
+        // The tick is sooner, so it would have won a shared slot.
+        assertEquals(now.plusMinutes(1), tick!!.at)
+        assertTrue(tick.at.isBefore(userEvent!!.at))
+        // The reminder is scheduled in its own right regardless.
+        assertTrue(userEvent is SessionNotificationEvent.Reminder)
+        assertEquals(later.start.minusMinutes(prefs.reminderLeadMinutes.toLong()), userEvent.at)
+    }
+
+    @Test
+    fun `a session's own start is a user event, not a tick`() {
+        val soon = session(start = now.plusMinutes(30), end = now.plusMinutes(90))
+        val plan = SessionNotificationPlanner.plan(listOf(soon), preferences, now)
+        val live = plan.filterIsInstance<SessionNotificationEvent.Live>().single()
+
+        assertFalse(SessionNotificationPlanner.isMidSessionTick(live))
     }
 
     @Test
@@ -216,7 +250,8 @@ class SessionNotificationPlannerTest {
         val over = session(id = "over", start = now.minusHours(3), end = now.minusHours(2))
         val plan = SessionNotificationPlanner.plan(listOf(over), preferences, now)
 
-        assertEquals(null, SessionNotificationPlanner.nextAfter(plan, now))
+        assertEquals(null, SessionNotificationPlanner.nextUserEventAfter(plan, now))
+        assertEquals(null, SessionNotificationPlanner.nextTickAfter(plan, now))
     }
 
     @Test

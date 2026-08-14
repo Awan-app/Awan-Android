@@ -47,6 +47,7 @@ import com.awan.app.core.designsystem.BottomNavItem
 import com.awan.app.core.common.R as CommonR
 import com.awan.app.core.designsystem.ObserveAsEvents
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import com.awan.app.core.domain.gamification.model.RewardEvent
 import com.awan.core.navigation.NavigationState
 import com.awan.core.navigation.Navigator
@@ -121,25 +122,35 @@ fun AwanApp(
     rewardEvents: Flow<RewardEvent>,
     modifier: Modifier = Modifier,
     isOnline: Boolean = true,
-    deepLinkSessionId: String? = null,
-    deepLinkDate: String? = null,
-    onDeepLinkHandled: () -> Unit = {},
+    deepLinkEvents: Flow<SessionDeepLink> = emptyFlow(),
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
     var onSelectHomeDate by remember { mutableStateOf<((LocalDate) -> Unit)?>(null) }
+    var onOpenHomeSession by remember { mutableStateOf<((String) -> Unit)?>(null) }
+    var pendingDeepLink by remember { mutableStateOf<SessionDeepLink?>(null) }
     val currentRoute = appState.navigationState.currentKey
     val showOfflineBanner = !isOnline && currentRoute != SplashRoute
 
-    // A notification can be tapped from any tab, so bring Home forward before it tries to open the
-    // session. Guarded on the main shell being up: during splash or auth the user may still need to
-    // log in, and the pending link survives until Home eventually composes.
-    androidx.compose.runtime.LaunchedEffect(deepLinkSessionId, appState.navigationState.currentTopLevelKey) {
-        if (deepLinkSessionId != null &&
-            appState.navigationState.currentTopLevelKey in appState.navigationState.topLevelKeys
-        ) {
-            navigator.navigate(HomeRoute())
-        }
+    ObserveAsEvents(deepLinkEvents) { pendingDeepLink = it }
+
+    /**
+     * Held until Home has registered its opener, then acted on once and dropped.
+     *
+     * Deliberately not keyed on the current tab. It was, and since the link stayed set until Home
+     * cleared it, every tab change re-ran this and navigated straight back to Home — the tapped
+     * screen flashed and bounced, and no other screen could be reached at all.
+     */
+    androidx.compose.runtime.LaunchedEffect(pendingDeepLink, onOpenHomeSession) {
+        val link = pendingDeepLink ?: return@LaunchedEffect
+        val openSession = onOpenHomeSession ?: return@LaunchedEffect
+
+        navigator.navigate(HomeRoute())
+        link.date
+            ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            ?.let { onSelectHomeDate?.invoke(it) }
+        openSession(link.sessionId)
+        pendingDeepLink = null
     }
 
     val offlineExplanation = stringResource(R.string.app_offline_lock_explanation)
@@ -249,9 +260,7 @@ fun AwanApp(
                 onNavigateToAddTask = { _, _ ->
                     showAddTask = true
                 },
-                deepLinkSessionId = deepLinkSessionId,
-                deepLinkDate = deepLinkDate,
-                onDeepLinkHandled = onDeepLinkHandled,
+                onRegisterOpenSession = { callback -> onOpenHomeSession = callback },
             )
 
             calendarEntry(

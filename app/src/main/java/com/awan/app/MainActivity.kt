@@ -32,6 +32,8 @@ import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.LocalRewardAnchors
 import com.awan.app.core.designsystem.RewardAnchors
 import com.awan.app.core.notifications.NotificationIntents
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import com.awan.app.core.notifications.SessionNotificationScheduler
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
@@ -53,8 +55,12 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var notificationScheduler: SessionNotificationScheduler
 
-    private var deepLinkSessionId: String? by mutableStateOf(null)
-    private var deepLinkDate: String? by mutableStateOf(null)
+    /**
+     * One-shot, not state. A tap is an event: held as state it stays true after it has been acted
+     * on, and anything re-reading it later acts on it again.
+     */
+    private val deepLinks = Channel<SessionDeepLink>(Channel.BUFFERED)
+    private val deepLinkEvents = deepLinks.receiveAsFlow()
 
     /**
      * The Activity is `singleTop`, so a second notification tap while it is already showing arrives
@@ -68,12 +74,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun readDeepLink(intent: Intent?) {
         val sessionId = intent?.getStringExtra(NotificationIntents.EXTRA_SESSION_ID) ?: return
-        deepLinkSessionId = sessionId
-        deepLinkDate = intent.getStringExtra(NotificationIntents.EXTRA_SESSION_DATE)
+        val date = intent.getStringExtra(NotificationIntents.EXTRA_SESSION_DATE)
 
         // Consumed off the Intent so a rotation does not reopen the sheet the user just dismissed.
         intent.removeExtra(NotificationIntents.EXTRA_SESSION_ID)
         intent.removeExtra(NotificationIntents.EXTRA_SESSION_DATE)
+
+        deepLinks.trySend(SessionDeepLink(sessionId = sessionId, date = date))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -172,12 +179,7 @@ class MainActivity : AppCompatActivity() {
                         isOnline = isOnline,
                         sessionExpiredEvents = viewModel.sessionExpired,
                         rewardEvents = viewModel.rewardEvents,
-                        deepLinkSessionId = deepLinkSessionId,
-                        deepLinkDate = deepLinkDate,
-                        onDeepLinkHandled = {
-                            deepLinkSessionId = null
-                            deepLinkDate = null
-                        },
+                        deepLinkEvents = deepLinkEvents,
                     )
                 }
             }

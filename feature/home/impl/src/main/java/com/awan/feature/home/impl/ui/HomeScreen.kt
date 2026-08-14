@@ -66,9 +66,7 @@ fun HomeScreen(
     onNavigateToCalendar: () -> Unit = {},
     onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
     onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
-    deepLinkSessionId: String? = null,
-    deepLinkDate: String? = null,
-    onDeepLinkHandled: () -> Unit = {},
+    onRegisterOpenSession: ((String) -> Unit) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
 
@@ -76,15 +74,9 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         onRegisterSelectDate(viewModel::selectDate)
-    }
-
-    // Survives until consumed, so a notification tapped during splash still opens its session once
-    // Home finally composes.
-    LaunchedEffect(deepLinkSessionId, deepLinkDate) {
-        if (deepLinkSessionId == null) return@LaunchedEffect
-        deepLinkDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }?.let(viewModel::selectDate)
-        viewModel.onSessionClicked(deepLinkSessionId)
-        onDeepLinkHandled()
+        // Registered, not received: the caller holds any pending notification tap until this runs,
+        // so a tap during splash still opens its session once Home finally composes.
+        onRegisterOpenSession(viewModel::onSessionClicked)
     }
 
     val timelineScrollState = rememberScrollState()

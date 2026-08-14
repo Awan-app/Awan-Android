@@ -40,15 +40,38 @@ object SessionNotificationPlanner {
         sessions.flatMap { eventsFor(it, preferences, now) }.sortedBy { it.at }
 
     /**
-     * The event the next alarm should be set for.
+     * A redraw of an already-running session's progress bar, as opposed to a moment the user is
+     * waiting for. Cosmetic: missing one costs a stale bar for a minute and nothing else.
+     */
+    fun isMidSessionTick(event: SessionNotificationEvent): Boolean =
+        event is SessionNotificationEvent.Live && event.at.isAfter(event.session.start)
+
+    /**
+     * The next moment that matters to the user — a reminder, a session starting, a session ending.
+     *
+     * Kept apart from [nextTickAfter] because these two cannot share one alarm slot. A running
+     * session produces a tick every minute, and a tick is always sooner than the next reminder, so a
+     * single slot spends the whole session holding ticks and the reminder is never registered with
+     * the OS at all. It then exists only as a link in a chain: drop one tick — process killed, OEM
+     * defers the alarm — and the reminder is simply never scheduled.
      *
      * Strictly in the future, never merely "not due". A plan legitimately contains events whose
      * moment has passed without being due — this morning's reminders, after a reboot at noon. Taking
      * the first non-due event instead would set an alarm for a time already gone, which fires at
      * once, is still not due, and reschedules itself forever.
      */
-    fun nextAfter(plan: List<SessionNotificationEvent>, now: LocalDateTime): SessionNotificationEvent? =
-        plan.filter { it.at.isAfter(now) }.minByOrNull { it.at }
+    fun nextUserEventAfter(
+        plan: List<SessionNotificationEvent>,
+        now: LocalDateTime,
+    ): SessionNotificationEvent? =
+        plan.filter { it.at.isAfter(now) && !isMidSessionTick(it) }.minByOrNull { it.at }
+
+    /** The next progress redraw, on its own alarm so it cannot displace a user-facing one. */
+    fun nextTickAfter(
+        plan: List<SessionNotificationEvent>,
+        now: LocalDateTime,
+    ): SessionNotificationEvent? =
+        plan.filter { it.at.isAfter(now) && isMidSessionTick(it) }.minByOrNull { it.at }
 
     /**
      * True when [event] should be showing right now. Past events outside their grace window are
@@ -111,9 +134,16 @@ object SessionNotificationPlanner {
 
     /**
      * The next moment the live notification needs redrawing: the session's start if it has not begun,
-     * otherwise one tick from now. Ticks are computed off [now] rather than off the start time so a
-     * long-running session does not accumulate a queue of missed ticks to catch up on.
+     * otherwise the next point on a grid laid from the start.
+     *
+     * On the grid rather than [now] + one tick. An alarm always fires a little late, and scheduling
+     * the next one relative to when the last one *ran* folds that lateness in again every minute —
+     * after twenty ticks the bar was redrawing twenty seconds off the minute it was drawing. Anchored
+     * to the start, a late tick is late once and the one after it is back on time.
      */
-    private fun nextLiveMoment(session: UpcomingSession, now: LocalDateTime): LocalDateTime =
-        if (now.isBefore(session.start)) session.start else now.plus(LIVE_TICK)
+    private fun nextLiveMoment(session: UpcomingSession, now: LocalDateTime): LocalDateTime {
+        if (now.isBefore(session.start)) return session.start
+        val ticksElapsed = Duration.between(session.start, now).toMillis() / LIVE_TICK.toMillis()
+        return session.start.plus(LIVE_TICK.multipliedBy(ticksElapsed + 1))
+    }
 }

@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import com.awan.app.core.common.di.ApplicationScope
 import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.domain.notifications.usecase.GetNotificationPreferencesUseCase
@@ -20,7 +21,12 @@ import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -28,8 +34,12 @@ import kotlinx.coroutines.withContext
 /**
  * The whole local-notification engine.
  *
- * Holds **one** exact alarm at a time — whatever has to happen next — and rebuilds everything from
- * Room each time it runs. Nothing about which notifications exist is persisted, because it cannot be:
+ * Holds **two** exact alarms — the next moment the user is waiting for, and the next progress redraw
+ * for a session already running — and rebuilds everything from Room each time it runs. They are
+ * separate because a running session redraws every minute, which would otherwise monopolise a single
+ * slot and leave the next reminder unregistered with the OS until the session ended.
+ *
+ * Nothing about which notifications exist is persisted, because it cannot be:
  * `SessionDao.replaceSessionsForDates` deletes and rewrites entire date ranges on every sync, so any
  * per-session bookkeeping would be destroyed underneath us.
  *
@@ -44,6 +54,7 @@ class SessionNotificationScheduler @Inject constructor(
     private val getNotificationPreferences: GetNotificationPreferencesUseCase,
     private val poster: SessionNotificationPoster,
     private val clock: Clock,
+    @ApplicationScope private val scope: CoroutineScope,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) {
 
@@ -52,6 +63,8 @@ class SessionNotificationScheduler @Inject constructor(
     // Room emissions, the foreground catch-up and an alarm can land at once; without this they
     // interleave and the loser's alarm overwrites the winner's.
     private val mutex = Mutex()
+
+    private var liveTicker: Job? = null
 
     suspend fun rescheduleAll() = withContext(ioDispatcher) {
         mutex.withLock {
@@ -65,11 +78,48 @@ class SessionNotificationScheduler @Inject constructor(
             val plan = SessionNotificationPlanner.plan(sessions, preferences, now)
 
             val due = plan.filter { SessionNotificationPlanner.isDue(it, now) }
-            val next = SessionNotificationPlanner.nextAfter(plan, now)
 
             due.forEach { poster.post(it, now) }
             cancelStale(due)
-            scheduleNext(next, now)
+            // Two slots, not one. See SessionNotificationPlanner.nextUserEventAfter: sharing a slot
+            // means a running session's per-minute ticks keep the next reminder from ever reaching
+            // the OS, so one dropped tick loses the reminder entirely.
+            schedule(
+                requestCode = USER_ALARM_REQUEST_CODE,
+                next = SessionNotificationPlanner.nextUserEventAfter(plan, now),
+                now = now,
+            )
+            schedule(
+                requestCode = TICK_ALARM_REQUEST_CODE,
+                next = SessionNotificationPlanner.nextTickAfter(plan, now),
+                now = now,
+            )
+            driveLiveWhileInProcess(due.filterIsInstance<SessionNotificationEvent.Live>().firstOrNull())
+        }
+    }
+
+    /**
+     * Redraws the running-session notification from inside the process, between alarm ticks.
+     *
+     * The alarm chain is what keeps the notification correct when nothing of ours is running, but it
+     * is coarse and the OS is free to deliver it late — which is what left the progress bar lagging
+     * the countdown beside it. Whenever the process is alive, which is most of the time the user is
+     * actually looking at the notification, this drives it instead.
+     *
+     * Cancelled and restarted on every reschedule, so it always holds current session data, and it
+     * stops itself at the end of the session rather than running for as long as the process does.
+     */
+    private fun driveLiveWhileInProcess(live: SessionNotificationEvent.Live?) {
+        liveTicker?.cancel()
+        if (live == null) return
+
+        liveTicker = scope.launch {
+            while (isActive) {
+                delay(IN_PROCESS_TICK_MS)
+                val now = LocalDateTime.now(clock)
+                if (!now.isBefore(live.session.end)) break
+                poster.post(live, now)
+            }
         }
     }
 
@@ -91,8 +141,8 @@ class SessionNotificationScheduler @Inject constructor(
             .forEach(poster::cancel)
     }
 
-    private fun scheduleNext(next: SessionNotificationEvent?, now: LocalDateTime) {
-        val pendingIntent = alarmPendingIntent()
+    private fun schedule(requestCode: Int, next: SessionNotificationEvent?, now: LocalDateTime) {
+        val pendingIntent = alarmPendingIntent(requestCode)
         if (next == null) {
             alarmManager.cancel(pendingIntent)
             return
@@ -116,17 +166,27 @@ class SessionNotificationScheduler @Inject constructor(
     private fun canScheduleExact(): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
 
-    private fun alarmPendingIntent(): PendingIntent = PendingIntent.getBroadcast(
+    private fun alarmPendingIntent(requestCode: Int): PendingIntent = PendingIntent.getBroadcast(
         context,
-        ALARM_REQUEST_CODE,
+        requestCode,
         Intent(context, SessionAlarmReceiver::class.java),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
     private companion object {
         const val TAG = "AwanNotifications"
-        const val ALARM_REQUEST_CODE = 3001
+        /** Reminders, session starts and session ends — the moments the user is waiting for. */
+        const val USER_ALARM_REQUEST_CODE = 3001
+
+        /** Progress redraws for a session already running. Losing one costs a stale bar. */
+        const val TICK_ALARM_REQUEST_CODE = 3002
         const val LOOKAHEAD_DAYS = 1L
         const val MIN_DELAY_MS = 1_000L
+
+        /**
+         * Fine enough that the bar visibly tracks the countdown, coarse enough that it is a handful
+         * of notification updates a minute rather than a redraw loop.
+         */
+        const val IN_PROCESS_TICK_MS = 5_000L
     }
 }
