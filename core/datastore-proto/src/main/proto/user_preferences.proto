@@ -9,9 +9,9 @@ option java_multiple_files = true;
  * UserPreferences — persisted application-level settings for a single Awan user.
  *
  * Schema evolution rules (protobuf wire-compatibility):
- *  - NEVER renumber existing field tags (1–6 are frozen).
+ *  - NEVER renumber existing field tags (1–17 are frozen).
  *  - NEVER change the type of an existing field.
- *  - Add new optional fields with new tag numbers (7, 8, …).
+ *  - Add new optional fields with new tag numbers (18, 19, …).
  *  - Use sensible proto3 defaults: bool → false, string → "".
  *
  * The Kotlin lite DSL allows immutable updates:
@@ -55,4 +55,15 @@ message UserPreferences {
   // exact moment the session starts.
   int32 session_reminder_lead_minutes = 12;
   int32 session_snooze_minutes        = 13;
+
+  // Engagement notifications, same negated convention.
+  //  - follow up: a check-in when a session ended and was never answered
+  //  - streak:    a warning before the day ends with nothing completed
+  //  - brief:     the morning summary, and the nudge to plan an empty day
+  bool session_follow_up_disabled = 14;
+  bool streak_reminder_disabled   = 15;
+  bool daily_brief_disabled       = 16;
+
+  // 0 means "never set", as above.
+  int32 session_follow_up_minutes = 17;
 }

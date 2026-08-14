@@ -62,9 +62,13 @@ class AwanPreferencesDataSource @Inject constructor(
                 sessionRemindersDisabled = !preferences.sessionRemindersEnabled
                 sessionLiveActivityDisabled = !preferences.sessionLiveActivityEnabled
                 sessionEndNotificationDisabled = !preferences.sessionEndEnabled
+                sessionFollowUpDisabled = !preferences.sessionFollowUpEnabled
+                streakReminderDisabled = !preferences.streakReminderEnabled
+                dailyBriefDisabled = !preferences.dailyBriefEnabled
                 rewardNotificationsDisabled = !preferences.rewardsEnabled
                 sessionReminderLeadMinutes = preferences.reminderLeadMinutes
                 sessionSnoozeMinutes = preferences.snoozeMinutes
+                sessionFollowUpMinutes = preferences.followUpDelayMinutes
             }
         }
     }
@@ -88,6 +92,9 @@ class AwanPreferencesDataSource @Inject constructor(
         sessionRemindersEnabled = !sessionRemindersDisabled,
         sessionLiveActivityEnabled = !sessionLiveActivityDisabled,
         sessionEndEnabled = !sessionEndNotificationDisabled,
+        sessionFollowUpEnabled = !sessionFollowUpDisabled,
+        streakReminderEnabled = !streakReminderDisabled,
+        dailyBriefEnabled = !dailyBriefDisabled,
         rewardsEnabled = !rewardNotificationsDisabled,
         reminderLeadMinutes = sessionReminderLeadMinutes
             .takeIf { it > 0 }
@@ -95,5 +102,8 @@ class AwanPreferencesDataSource @Inject constructor(
         snoozeMinutes = sessionSnoozeMinutes
             .takeIf { it > 0 }
             ?: NotificationPreferences.DEFAULT_SNOOZE_MINUTES,
+        followUpDelayMinutes = sessionFollowUpMinutes
+            .takeIf { it > 0 }
+            ?: NotificationPreferences.DEFAULT_FOLLOW_UP_MINUTES,
     )
 }

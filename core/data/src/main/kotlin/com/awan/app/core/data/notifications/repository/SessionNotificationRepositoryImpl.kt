@@ -3,6 +3,7 @@ package com.awan.app.core.data.notifications.repository
 import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.data.notifications.mapper.toUpcomingSessions
+import com.awan.app.core.database.dao.CachedScheduleDateDao
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.domain.notifications.model.UpcomingSession
 import com.awan.app.core.domain.notifications.repository.SessionNotificationRepository
@@ -18,6 +19,7 @@ import kotlinx.coroutines.withContext
 @Singleton
 class SessionNotificationRepositoryImpl @Inject constructor(
     private val sessionDao: SessionDao,
+    private val cachedScheduleDateDao: CachedScheduleDateDao,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : SessionNotificationRepository {
 
@@ -30,4 +32,8 @@ class SessionNotificationRepositoryImpl @Inject constructor(
         withContext(ioDispatcher) {
             sessionDao.getUpcomingSessions(startDate.toString(), endDate.toString()).toUpcomingSessions()
         }
+
+    override suspend fun isScheduleKnown(date: LocalDate): Boolean = withContext(ioDispatcher) {
+        cachedScheduleDateDao.isDateCached(date.toString())
+    }
 }
