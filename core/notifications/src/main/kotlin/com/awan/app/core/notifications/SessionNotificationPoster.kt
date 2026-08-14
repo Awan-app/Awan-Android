@@ -138,9 +138,22 @@ class SessionNotificationPoster @Inject constructor(
             .addAction(
                 action(
                     iconRes = R.drawable.ic_notification_check,
-                    labelRes = R.string.notifications_action_stop_here,
+                    labelRes = R.string.notifications_action_complete_now,
                     session = session,
-                    type = NotificationAction.STOP_HERE,
+                    type = NotificationAction.COMPLETE_NOW,
+                    notificationId = id,
+                    now = now,
+                )
+            )
+            // The way out that does not claim the session was finished. This notification is
+            // ongoing, so without it the only way off the user's screen is to say they completed
+            // something they did not.
+            .addAction(
+                action(
+                    iconRes = R.drawable.ic_notification_stop,
+                    labelRes = R.string.notifications_action_stop,
+                    session = session,
+                    type = NotificationAction.DISMISS_LIVE,
                     notificationId = id,
                     now = now,
                 )

@@ -9,7 +9,17 @@ enum class NotificationAction {
     COMPLETE,
 
     /** Ends the session at the moment the button was pressed, then completes it. */
-    STOP_HERE,
+    COMPLETE_NOW,
+
+    /**
+     * Clears the running session's notification and leaves the session alone — no status change, no
+     * time change, no request at all.
+     *
+     * The live notification is ongoing, so it cannot be swiped away, and [COMPLETE_NOW] is the only
+     * other way off the screen. Without this the user's only exit is to claim they finished
+     * something they did not.
+     */
+    DISMISS_LIVE,
     ;
 
     companion object {

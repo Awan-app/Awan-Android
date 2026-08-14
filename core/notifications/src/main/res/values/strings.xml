@@ -42,7 +42,9 @@
     <string name="notifications_live_short_remaining">%1$dm</string>
 
     <!-- Actions -->
-    <string name="notifications_action_stop_here">Stop here</string>
+    <string name="notifications_action_complete_now">Complete now</string>
+    <!-- Clears the running-session notification and changes nothing about the session itself. -->
+    <string name="notifications_action_stop">Stop</string>
     <string name="notifications_action_snooze">Snooze</string>
     <string name="notifications_action_reschedule">Reschedule</string>
     <string name="notifications_action_complete">Mark complete</string>

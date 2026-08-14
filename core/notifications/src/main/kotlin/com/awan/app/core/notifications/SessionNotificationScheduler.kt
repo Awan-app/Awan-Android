@@ -61,6 +61,7 @@ class SessionNotificationScheduler @Inject constructor(
     private val isScheduleKnown: IsScheduleKnownUseCase,
     private val observeProfile: ObserveProfileUseCase,
     private val poster: SessionNotificationPoster,
+    private val dismissals: LiveNotificationDismissals,
     private val clock: Clock,
     @ApplicationScope private val scope: CoroutineScope,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
@@ -88,6 +89,9 @@ class SessionNotificationScheduler @Inject constructor(
                 preferences = preferences,
                 now = now,
                 day = dayContext(today),
+                // Reading also prunes: this runs on every alarm, every session write and every app
+                // foreground, so a dismissal outlives its session by one reschedule at most.
+                dismissedLive = dismissals.current(now),
             )
 
             val due = plan.filter { SessionNotificationPlanner.isDue(it, now) }

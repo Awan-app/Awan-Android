@@ -50,7 +50,9 @@
     <string name="notifications_live_short_remaining">%1$d د</string>
 
     <!-- Actions -->
-    <string name="notifications_action_stop_here">التوقف هنا</string>
+    <string name="notifications_action_complete_now">إنهاء الآن</string>
+    <!-- Clears the running-session notification and changes nothing about the session itself. -->
+    <string name="notifications_action_stop">إيقاف</string>
     <string name="notifications_action_snooze">تأجيل</string>
     <string name="notifications_action_reschedule">إعادة جدولة</string>
     <string name="notifications_action_complete">تحديد كمكتملة</string>

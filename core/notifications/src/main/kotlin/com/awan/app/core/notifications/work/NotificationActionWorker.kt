@@ -51,7 +51,9 @@ class NotificationActionWorker @AssistedInject constructor(
         val outcome = when (action) {
             NotificationAction.SNOOZE -> snooze(sessionId)
             NotificationAction.COMPLETE -> complete(sessionId)
-            NotificationAction.STOP_HERE -> stopHere(sessionId)
+            NotificationAction.COMPLETE_NOW -> completeNow(sessionId)
+            // Handled entirely in the receiver: it touches nothing a worker could carry.
+            NotificationAction.DISMISS_LIVE -> return Result.success()
         }
 
         return when (outcome) {
@@ -92,7 +94,7 @@ class NotificationActionWorker @AssistedInject constructor(
      * be editing an already-closed session. If the move fails the whole thing retries, so a partial
      * "moved but not completed" state resolves on the next attempt rather than sticking.
      */
-    private suspend fun stopHere(sessionId: String): AppResult {
+    private suspend fun completeNow(sessionId: String): AppResult {
         val start = inputData.getString(KEY_START_ISO)?.let(::parse) ?: return AppResult.Fail
         val now = inputData.getString(KEY_NOW_ISO)?.let(::parse) ?: return AppResult.Fail
 
