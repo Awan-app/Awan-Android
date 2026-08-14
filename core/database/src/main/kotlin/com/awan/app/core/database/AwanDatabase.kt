@@ -27,6 +27,10 @@ import com.awan.app.core.database.model.TemplateDayOfWeekEntity
 import com.awan.app.core.database.model.TemplateEntity
 import com.awan.app.core.database.model.TemplateOverrideEntity
 import com.awan.app.core.database.model.UserEntity
+import com.awan.app.core.database.dao.ScheduleDraftDao
+import com.awan.app.core.database.model.ScheduleDraftEntity
+import com.awan.app.core.database.model.ScheduleDraftSessionEntity
+import com.awan.app.core.database.model.ScheduleDraftUnscheduledTaskEntity
 import com.awan.app.core.database.model.UserPreferencesEntity
 import com.awan.app.core.database.model.ZoneEntity
 
@@ -55,6 +59,9 @@ import com.awan.app.core.database.model.ZoneEntity
         OwnedItemEntity::class,
         EquippedItemEntity::class,
         McpTokenEntity::class,
+        ScheduleDraftEntity::class,
+        ScheduleDraftSessionEntity::class,
+        ScheduleDraftUnscheduledTaskEntity::class,
     ],
     version = 2,
     exportSchema = true,
@@ -82,4 +89,6 @@ abstract class AwanDatabase : RoomDatabase() {
     abstract fun storeDao(): StoreDao
 
     abstract fun mcpTokenDao(): McpTokenDao
+
+    abstract fun scheduleDraftDao(): ScheduleDraftDao
 }

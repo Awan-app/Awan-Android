@@ -11,7 +11,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.ComponentActivity
 import com.awan.app.core.designsystem.AwanActionSheet
 import com.awan.app.core.designsystem.AwanButtonVariant
-import com.awan.app.core.designsystem.AwanConfirmDialog
+
 import com.awan.app.core.designsystem.ObserveAsEvents
 import com.awan.app.core.designsystem.rememberSpeechRecognizer
 import com.awan.feature.addtask.R
@@ -23,6 +23,7 @@ import com.awan.feature.addtask.presentation.AddTaskViewModel
 fun GoalPreviewRouteRoot(
     onBack: () -> Unit,
     onNavigateToGoals: () -> Unit,
+    onNavigateToGoalSchedule: (String) -> Unit = {},
     viewModel: AddTaskViewModel = hiltViewModel(
         viewModelStoreOwner = checkNotNull(LocalActivity.current) as ComponentActivity,
     ),
@@ -32,6 +33,7 @@ fun GoalPreviewRouteRoot(
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
             is AddTaskEvent.GoalCreated -> onNavigateToGoals()
+            is AddTaskEvent.GoalScheduleRequested -> onNavigateToGoalSchedule(event.goalId)
             is AddTaskEvent.TaskCreated -> onBack()
             is AddTaskEvent.AiRequested -> Unit
             AddTaskEvent.Dismissed -> onBack()
@@ -58,13 +60,14 @@ fun GoalPreviewRouteRoot(
     }
 
     if (state.showDiscardConfirm) {
-        AwanConfirmDialog(
+        AwanActionSheet(
             title = stringResource(R.string.add_task_discard_title),
             body = stringResource(R.string.add_task_discard_body),
-            confirmLabel = stringResource(R.string.add_task_discard_confirm),
-            confirmVariant = AwanButtonVariant.Destructive,
-            onConfirm = { viewModel.onAction(AddTaskAction.DiscardConfirmed) },
-            dismissLabel = stringResource(R.string.add_task_discard_cancel),
+            primaryLabel = stringResource(R.string.add_task_discard_confirm),
+            primaryVariant = AwanButtonVariant.Destructive,
+            onPrimary = { viewModel.onAction(AddTaskAction.DiscardConfirmed) },
+            secondaryLabel = stringResource(R.string.add_task_discard_cancel),
+            onSecondary = { viewModel.onAction(AddTaskAction.DiscardCancelled) },
             onDismiss = { viewModel.onAction(AddTaskAction.DiscardCancelled) },
         )
     }

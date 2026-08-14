@@ -10,7 +10,8 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class AiTaskProposalsRoute(
-    val text: String,
+    val text: String = "",
     val note: String? = null,
     val imageUri: String? = null,
+    val goalId: String? = null,
 ) : Route

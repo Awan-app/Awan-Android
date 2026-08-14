@@ -17,6 +17,7 @@ import com.awan.app.core.network.dto.GoalStatusDto
 import com.awan.app.core.network.dto.category.CategoryDto
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.PageResponse
+import com.awan.app.core.model.ProposedGoalSession
 import com.awan.app.core.model.ProposedTask
 import com.awan.app.core.model.Task
 import kotlinx.coroutines.CancellationException
@@ -46,7 +47,7 @@ class GoalRepositoryTest {
         ): PageResponse<GoalInfoResponse> = error("Not implemented")
 
         override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): GoalInfoResponse = error("Not implemented")
-        override suspend fun addTasksToGoal(goalId: String, request: com.awan.app.core.network.dto.goal.BulkCreateGoalTasksRequest): List<com.awan.app.core.network.dto.task.TaskInfoResponse> = error("Not implemented")
+
         override suspend fun getInboxGoal(): GoalInfoResponse = error("Not implemented")
         override suspend fun getGoal(goalId: String, expand: Boolean): GoalInfoResponse = error("Not implemented")
         override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest): GoalInfoResponse = error("Not implemented")
@@ -71,20 +72,14 @@ class GoalRepositoryTest {
         var response: Result<List<GoalInfoResponse>> = Result.Success(emptyList()),
     ) : GoalRemoteDataSource {
         var lastCreateRequest: com.awan.app.core.network.dto.goal.CreateGoalRequest? = null
-        var lastBulkGoalId: String? = null
-        var lastBulkRequest: com.awan.app.core.network.dto.goal.BulkCreateGoalTasksRequest? = null
-        var bulkResponse: Result<List<TaskInfoResponse>> = Result.Success(emptyList())
+
 
         override suspend fun getGoals(): Result<List<GoalInfoResponse>> = response
         override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): Result<GoalInfoResponse> {
             lastCreateRequest = request
             return Result.Success(GoalInfoResponse(id = "goal-created", title = request.title))
         }
-        override suspend fun addTasksToGoal(goalId: String, request: com.awan.app.core.network.dto.goal.BulkCreateGoalTasksRequest): Result<List<TaskInfoResponse>> {
-            lastBulkGoalId = goalId
-            lastBulkRequest = request
-            return bulkResponse
-        }
+
         override suspend fun getInboxGoal(): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun getGoal(goalId: String, expand: Boolean): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
@@ -95,7 +90,7 @@ class GoalRepositoryTest {
         override suspend fun cancelDecomposition(sessionId: String): Result<Unit> = error("Not implemented")
         override suspend fun scheduleGoal(goalId: String): Result<com.awan.app.core.network.dto.task.TaskScheduleResponse> = error("Not implemented")
         override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse> = error("Not implemented")
-        override suspend fun confirmGoalSchedule(request: com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest): Result<Unit> = error("Not implemented")
+        override suspend fun confirmGoalSchedule(request: com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest): Result<List<com.awan.app.core.network.dto.goal.AiConfirmedSessionItemDto>> = error("Not implemented")
     }
 
 
@@ -183,7 +178,6 @@ class GoalRepositoryTest {
 
     @Test
     fun `repository reads from Room and maps entities to domain models`() = runTest(testDispatcher) {
-        // Simulate: Room already has goals from a prior sync
         val storedEntities = listOf(
             GoalEntity(
                 id = "goal-1",
@@ -211,7 +205,12 @@ class GoalRepositoryTest {
 =======
             categoryDao = TestCategoryDao(),
             taskDao = TestTaskDao(),
+<<<<<<< HEAD
 >>>>>>> 99c21bd6 (AWAN-83: use goal task bulk endpoint)
+=======
+            scheduleDraftDao = TestScheduleDraftDao(),
+            sessionDao = TestSessionDao()
+>>>>>>> f20bbd00 (AWAN-83: reuse ai-tasks screen for goal schedule review, persist drafts, and resilient confirm parsing)
         )
 
         val result = repository.getGoals()
@@ -241,7 +240,12 @@ class GoalRepositoryTest {
 =======
             categoryDao = TestCategoryDao(),
             taskDao = TestTaskDao(),
+<<<<<<< HEAD
 >>>>>>> 99c21bd6 (AWAN-83: use goal task bulk endpoint)
+=======
+            scheduleDraftDao = TestScheduleDraftDao(),
+            sessionDao = TestSessionDao()
+>>>>>>> f20bbd00 (AWAN-83: reuse ai-tasks screen for goal schedule review, persist drafts, and resilient confirm parsing)
         )
 
 
@@ -264,6 +268,8 @@ class GoalRepositoryTest {
             connectivityMonitor = onlineMonitor,
             categoryDao = TestCategoryDao(),
             taskDao = TestTaskDao(),
+            scheduleDraftDao = TestScheduleDraftDao(),
+            sessionDao = TestSessionDao()
         )
 
         val result = repository.createGoal(
@@ -286,37 +292,7 @@ class GoalRepositoryTest {
         assertEquals(0, request.tasks.single().estimatedPoints)
     }
 
-    @Test
-    fun `repository saves proposed tasks through the goal bulk endpoint`() = runTest(testDispatcher) {
-        val remote = FakeGoalRemoteDataSource().apply {
-            bulkResponse = Result.Success(
-                listOf(TaskInfoResponse(id = "task-1", title = "Task A", estimatedDuration = 30, goalId = null)),
-            )
-        }
-        val taskDao = TestTaskDao()
-        val repository = GoalRepositoryImpl(
-            remoteDataSource = remote,
-            goalDao = FakeGoalDao(),
-            connectivityMonitor = object : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
-                override val isOnline = flowOf(true)
-                override fun isCurrentlyOnline() = true
-            },
-            categoryDao = TestCategoryDao(),
-            taskDao = taskDao,
-        )
 
-        val result: Result<List<Task>> = repository.addTasksToGoal(
-            goalId = "goal-1",
-            tasks = listOf(ProposedTask("Task A", estimatedDuration = null, estimatedPoints = null)),
-        )
-
-        assertTrue(result is Result.Success)
-        assertEquals("goal-1", remote.lastBulkGoalId)
-        assertEquals("proposal-task-0", remote.lastBulkRequest?.tasks?.single()?.tempId)
-        assertEquals(30, remote.lastBulkRequest?.tasks?.single()?.estimatedDuration)
-        assertEquals("goal-1", taskDao.tasks.single().goalId)
-        assertEquals("task-1", (result as Result.Success).data.single().id)
-    }
     @Test(expected = CancellationException::class)
     fun `cancellation from the API is rethrown by remote data source`() = runTest(testDispatcher) {
         val api = object : FakeGoalApiService() {
@@ -331,5 +307,259 @@ class GoalRepositoryTest {
         val remoteDataSource = GoalRemoteDataSourceImpl(api, json, testDispatcher)
 
         remoteDataSource.getGoals()
+    }
+
+    @Test
+    fun `confirmGoalSchedule with missing remote taskId falls back to requested taskId and upserts`() = runTest(testDispatcher) {
+        val remote = object : FakeGoalRemoteDataSource() {
+            override suspend fun confirmGoalSchedule(request: com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest): Result<List<com.awan.app.core.network.dto.goal.AiConfirmedSessionItemDto>> {
+                return Result.Success(listOf(com.awan.app.core.network.dto.goal.AiConfirmedSessionItemDto(id = "s1", taskId = null, start = "2026-08-13T10:00:00Z", end = "2026-08-13T11:00:00Z")))
+            }
+        }
+        val onlineMonitor = object : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
+            override val isOnline: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.flowOf(true)
+            override fun isCurrentlyOnline(): Boolean = true
+        }
+        val draftDao = TestScheduleDraftDao()
+        val sessionDao = TestSessionDao()
+        val repository = GoalRepositoryImpl(
+            remoteDataSource = remote,
+            goalDao = FakeGoalDao(),
+            connectivityMonitor = onlineMonitor,
+            categoryDao = TestCategoryDao(),
+            taskDao = TestTaskDao(),
+            scheduleDraftDao = draftDao,
+            sessionDao = sessionDao
+        )
+
+        val result = repository.confirmGoalSchedule("g1", listOf(ProposedGoalSession(taskId = "req-t1", taskTitle = "Title", zoneId = null, start = "2026-08-13T10:00:00Z", end = "2026-08-13T11:00:00Z", isSelected = true)))
+
+        assertTrue(result is Result.Success)
+        assertEquals(1, sessionDao.upserted.size)
+        assertEquals("req-t1", sessionDao.upserted[0].taskId)
+        assertEquals(1, draftDao.deletedDrafts.size)
+    }
+
+    @Test
+    fun `confirmGoalSchedule assigns TTL and atomically cleans up draft`() = runTest(testDispatcher) {
+        val remote = object : FakeGoalRemoteDataSource() {
+            override suspend fun confirmGoalSchedule(request: com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest): Result<List<com.awan.app.core.network.dto.goal.AiConfirmedSessionItemDto>> {
+                return Result.Success(listOf(com.awan.app.core.network.dto.goal.AiConfirmedSessionItemDto(id = "s1", taskId = "t1", start = "2026-08-13T10:00:00Z", end = "2026-08-13T11:00:00Z")))
+            }
+        }
+        val onlineMonitor = object : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
+            override val isOnline: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.flowOf(true)
+            override fun isCurrentlyOnline(): Boolean = true
+        }
+        val draftDao = TestScheduleDraftDao()
+        val sessionDao = TestSessionDao()
+        val repository = GoalRepositoryImpl(
+            remoteDataSource = remote,
+            goalDao = FakeGoalDao(),
+            connectivityMonitor = onlineMonitor,
+            categoryDao = TestCategoryDao(),
+            taskDao = TestTaskDao(),
+            scheduleDraftDao = draftDao,
+            sessionDao = sessionDao
+        )
+
+        val result = repository.confirmGoalSchedule("g1", listOf())
+
+        assertTrue(result is Result.Success)
+        assertEquals(1, sessionDao.upserted.size)
+        assertTrue(sessionDao.upserted[0].expiryTime > 0)
+        assertEquals(1, draftDao.deletedDrafts.size)
+        assertEquals("g1", draftDao.deletedDrafts[0])
+    }
+    @Test
+    fun `proposeGoalSchedule inserts awaiting draft if not exists`() = runTest(testDispatcher) {
+        val remote = object : FakeGoalRemoteDataSource() {
+            override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse> {
+                return Result.Error(AppError.Network) // Force network error to observe pre-network state
+            }
+        }
+        val onlineMonitor = object : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
+            override val isOnline: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.flowOf(true)
+            override fun isCurrentlyOnline(): Boolean = true
+        }
+        val draftDao = TestScheduleDraftDao()
+        val repository = GoalRepositoryImpl(
+            remoteDataSource = remote,
+            goalDao = FakeGoalDao(),
+            connectivityMonitor = onlineMonitor,
+            categoryDao = TestCategoryDao(),
+            taskDao = TestTaskDao(),
+            scheduleDraftDao = draftDao,
+            sessionDao = TestSessionDao()
+        )
+
+        val result = repository.proposeGoalSchedule("g1")
+        assertTrue(result is Result.Error)
+        assertEquals(1, draftDao.insertedDraftsIfNotExist.size)
+        assertEquals("g1", draftDao.insertedDraftsIfNotExist[0].goalId)
+        assertEquals("AWAITING_PROPOSAL", draftDao.insertedDraftsIfNotExist[0].state)
+    }
+
+    @Test
+    fun `proposeGoalSchedule maps all proposal types correctly`() = runTest(testDispatcher) {
+        val remote = object : FakeGoalRemoteDataSource() {
+            override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse> {
+                return Result.Success(
+                    com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse(
+                        goalId = "g1",
+                        proposedSessions = listOf(
+                            com.awan.app.core.network.dto.goal.ProposedGoalSessionDto(
+                                taskId = "t1", taskTitle = "Task 1", zoneId = "z1", start = "10:00", end = "11:00"
+                            )
+                        ),
+                        suggestions = listOf(
+                            com.awan.app.core.network.dto.goal.GoalScheduleSuggestionDto(
+                                taskId = "t2", taskTitle = "Task 2", zoneId = null, start = "11:00", end = "12:00",
+                                suggestionType = "OVERLAP", reason = "Overlap",
+                                overlapInfo = com.awan.app.core.network.dto.goal.ScheduleOverlapInfoDto(
+                                    taskTitle = "Task X", start = "11:00", end = "12:00", mandatory = true, points = 10
+                                )
+                            )
+                        ),
+                        unscheduledTasks = listOf(
+                            com.awan.app.core.network.dto.goal.UnscheduledTaskDto(
+                                taskId = "t3", taskTitle = "Task 3", message = "No time"
+                            )
+                        )
+                    )
+                )
+            }
+        }
+        val repository = GoalRepositoryImpl(
+            remoteDataSource = remote,
+            goalDao = FakeGoalDao(),
+            connectivityMonitor = object : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
+                override val isOnline: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.flowOf(true)
+                override fun isCurrentlyOnline(): Boolean = true
+            },
+            categoryDao = TestCategoryDao(),
+            taskDao = TestTaskDao(),
+            scheduleDraftDao = TestScheduleDraftDao(),
+            sessionDao = TestSessionDao()
+        )
+
+        val result = repository.proposeGoalSchedule("g1")
+        assertTrue(result is Result.Success)
+        val proposal = (result as Result.Success).data
+        assertEquals(1, proposal.proposedSessions.size)
+        assertEquals("t1", proposal.proposedSessions[0].taskId)
+        assertEquals("Task 1", proposal.proposedSessions[0].taskTitle)
+        assertEquals("z1", proposal.proposedSessions[0].zoneId)
+        assertEquals("10:00", proposal.proposedSessions[0].start)
+        assertEquals("11:00", proposal.proposedSessions[0].end)
+        assertTrue(proposal.proposedSessions[0].isSelected)
+
+        assertEquals(1, proposal.suggestions.size)
+        assertEquals("t2", proposal.suggestions[0].taskId)
+        assertEquals("Task 2", proposal.suggestions[0].taskTitle)
+        assertEquals(null, proposal.suggestions[0].zoneId)
+        assertEquals("11:00", proposal.suggestions[0].start)
+        assertEquals("12:00", proposal.suggestions[0].end)
+        assertEquals("OVERLAP", proposal.suggestions[0].suggestionType)
+        assertEquals("Overlap", proposal.suggestions[0].reason)
+        assertEquals("Task X", proposal.suggestions[0].overlapInfo?.taskTitle)
+        assertEquals("11:00", proposal.suggestions[0].overlapInfo?.start)
+        assertEquals("12:00", proposal.suggestions[0].overlapInfo?.end)
+        assertEquals(true, proposal.suggestions[0].overlapInfo?.mandatory)
+        assertEquals(10, proposal.suggestions[0].overlapInfo?.points)
+        assertFalse(proposal.suggestions[0].isSelected)
+
+        assertEquals(1, proposal.unscheduledTasks.size)
+        assertEquals("t3", proposal.unscheduledTasks[0].taskId)
+        assertEquals("Task 3", proposal.unscheduledTasks[0].taskTitle)
+        assertEquals("No time", proposal.unscheduledTasks[0].message)
+    }
+
+    @Test
+    fun `confirmGoalSchedule network failure keeps CONFIRMING state`() = runTest(testDispatcher) {
+        val remote = object : FakeGoalRemoteDataSource() {
+            override suspend fun confirmGoalSchedule(request: com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest): Result<List<com.awan.app.core.network.dto.goal.AiConfirmedSessionItemDto>> {
+                return Result.Error(AppError.Network)
+            }
+        }
+        val draftDao = TestScheduleDraftDao()
+        val repository = GoalRepositoryImpl(
+            remoteDataSource = remote,
+            goalDao = FakeGoalDao(),
+            connectivityMonitor = object : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
+                override val isOnline: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.flowOf(true)
+                override fun isCurrentlyOnline(): Boolean = true
+            },
+            categoryDao = TestCategoryDao(),
+            taskDao = TestTaskDao(),
+            scheduleDraftDao = draftDao,
+            sessionDao = TestSessionDao()
+        )
+
+        val result = repository.confirmGoalSchedule("g1", listOf())
+        assertTrue(result is Result.Error)
+        assertEquals("CONFIRMING", draftDao.draftStates["g1"])
+    }
+
+    @Test
+    fun `proposeGoalSchedule network failure keeps AWAITING_PROPOSAL state`() = runTest(testDispatcher) {
+        val remote = object : FakeGoalRemoteDataSource() {
+            override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse> {
+                return Result.Error(AppError.Network)
+            }
+        }
+        val draftDao = TestScheduleDraftDao()
+        val repository = GoalRepositoryImpl(
+            remoteDataSource = remote,
+            goalDao = FakeGoalDao(),
+            connectivityMonitor = object : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
+                override val isOnline: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.flowOf(true)
+                override fun isCurrentlyOnline(): Boolean = true
+            },
+            categoryDao = TestCategoryDao(),
+            taskDao = TestTaskDao(),
+            scheduleDraftDao = draftDao,
+            sessionDao = TestSessionDao()
+        )
+
+        val result = repository.proposeGoalSchedule("g1")
+        assertTrue(result is Result.Error)
+        assertEquals(1, draftDao.insertedDraftsIfNotExist.size)
+        assertEquals("g1", draftDao.insertedDraftsIfNotExist[0].goalId)
+        assertEquals("AWAITING_PROPOSAL", draftDao.insertedDraftsIfNotExist[0].state)
+    }
+
+    @Test
+    fun `proposeGoalSchedule success sets READY state`() = runTest(testDispatcher) {
+        val remote = object : FakeGoalRemoteDataSource() {
+            override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse> {
+                return Result.Success(com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse("g1"))
+            }
+        }
+        val draftDao = object : TestScheduleDraftDao() {
+            override suspend fun replaceDraft(
+                draft: com.awan.app.core.database.model.ScheduleDraftEntity,
+                sessions: List<com.awan.app.core.database.model.ScheduleDraftSessionEntity>,
+                unscheduledTasks: List<com.awan.app.core.database.model.ScheduleDraftUnscheduledTaskEntity>
+            ) {
+                draftStates[draft.goalId] = draft.state
+            }
+        }
+        val repository = GoalRepositoryImpl(
+            remoteDataSource = remote,
+            goalDao = FakeGoalDao(),
+            connectivityMonitor = object : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
+                override val isOnline: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.flowOf(true)
+                override fun isCurrentlyOnline(): Boolean = true
+            },
+            categoryDao = TestCategoryDao(),
+            taskDao = TestTaskDao(),
+            scheduleDraftDao = draftDao,
+            sessionDao = TestSessionDao()
+        )
+
+        val result = repository.proposeGoalSchedule("g1")
+        assertTrue(result is Result.Success)
+        assertEquals("READY", draftDao.draftStates["g1"])
     }
 }

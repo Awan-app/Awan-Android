@@ -133,13 +133,13 @@ class AddTaskViewModelTest {
     private class FakeGoalRepository : GoalRepository {
         var nextContinueReply: Result<GoalDecompositionReply>? = null
         var nextCreateResult: Result<Goal>? = null
-        var nextAddTasksResult: Result<List<Task>>? = null
+        var nextConfirmResult: Result<Goal>? = null
 
         val continueCalls = mutableListOf<Pair<String?, String>>()
         val createTaskCalls = mutableListOf<List<ProposedTask>>()
-        val addTasksCalls = mutableListOf<Pair<String, List<ProposedTask>>>()
         val deleteGoalCalls = mutableListOf<String>()
         val cancelCalls = mutableListOf<String>()
+        val confirmCalls = mutableListOf<String>()
 
         override fun observeGoals(): Flow<List<Goal>> = flowOf(emptyList())
 
@@ -154,7 +154,8 @@ class AddTaskViewModelTest {
         }
 
         override suspend fun confirmDecomposition(sessionId: String): Result<Goal> {
-            return Result.Error(AppError.Network)
+            confirmCalls += sessionId
+            return nextConfirmResult ?: Result.Error(AppError.Network)
         }
 
         override suspend fun createGoal(
@@ -166,13 +167,7 @@ class AddTaskViewModelTest {
             createTaskCalls += tasks
             return nextCreateResult ?: Result.Success(Goal(id = "g-created", title = title, description = description, emoji = ""))
         }
-        override suspend fun addTasksToGoal(
-            goalId: String,
-            tasks: List<ProposedTask>,
-        ): Result<List<Task>> {
-            addTasksCalls += goalId to tasks
-            return nextAddTasksResult ?: Result.Success(emptyList())
-        }
+
         override suspend fun getInboxGoal(): Result<Goal> = error("not used")
         override suspend fun getGoal(goalId: String): Result<Goal> = error("not used")
 <<<<<<< HEAD
@@ -202,7 +197,9 @@ class AddTaskViewModelTest {
         }
         override suspend fun scheduleGoal(goalId: String): Result<Unit> = error("not used")
         override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.model.GoalScheduleProposal> = error("not used")
-        override suspend fun confirmGoalSchedule(goalId: String, sessions: List<com.awan.app.core.model.ProposedGoalSession>): Result<Unit> = error("not used")
+        override suspend fun confirmGoalSchedule(goalId: String, sessions: List<com.awan.app.core.model.ProposedGoalSession>): Result<List<com.awan.app.core.model.ConfirmedGoalSession>> = error("not used")
+        override suspend fun clearScheduleDraft(goalId: String): Unit = error("not used")
+        override suspend fun getPendingScheduleDraftGoalId(): Result<String?> = Result.Success(null)
     }
 
     private class FakeZoneRepository(private val zones: List<DayZone>) : ZonesRepository {
@@ -1240,7 +1237,7 @@ class AddTaskViewModelTest {
         }
 
     @Test
-    fun `Add tasks saves every proposed task and emits GoalCreated once ignoring duplicates`() =
+    fun `Add tasks confirms the proposal and emits GoalScheduleRequested once ignoring duplicates`() =
         runTest(testDispatcher) {
             val proposal = GoalProposal(
                 title = "Goal Title",
@@ -1255,16 +1252,11 @@ class AddTaskViewModelTest {
             )
             goalRepository.nextContinueReply = Result.Success(previewReply)
 
-            val createGate = CompletableDeferred<Result<Goal>>()
+            val confirmGate = CompletableDeferred<Result<Goal>>()
             val gateRepository = object : GoalRepository by goalRepository {
-                override suspend fun createGoal(
-                    title: String,
-                    description: String?,
-                    targetDate: String?,
-                    tasks: List<ProposedTask>,
-                ): Result<Goal> {
-                    goalRepository.createTaskCalls += tasks
-                    return createGate.await()
+                override suspend fun confirmDecomposition(sessionId: String): Result<Goal> {
+                    goalRepository.confirmCalls += sessionId
+                    return confirmGate.await()
                 }
             }
             val customViewModel = AddTaskViewModel(
@@ -1305,12 +1297,11 @@ class AddTaskViewModelTest {
             customViewModel.onAction(AddTaskAction.AddGoalTasks)
             customViewModel.onAction(AddTaskAction.AddGoalTasks)
 
-            assertEquals(listOf(emptyList<ProposedTask>()), goalRepository.createTaskCalls)
             assertTrue(customViewModel.state.value.isSubmitting)
 
-            val createdGoal = Goal(id = "g-1", title = "Goal Title", description = null, emoji = "🎯")
-            createGate.complete(Result.Success(createdGoal))
+            confirmGate.complete(Result.Success(Goal(id = "g-1", title = "Goal Title", description = null, emoji = "🎯")))
 
+<<<<<<< HEAD
 <<<<<<< HEAD
             assertEquals(AddTaskEvent.GoalCreated("Goal Title"), events.first())
             advanceUntilIdle()
@@ -1318,10 +1309,44 @@ class AddTaskViewModelTest {
             assertEquals(listOf("g-1" to proposal.tasks), goalRepository.addTasksCalls)
             assertEquals(AddTaskEvent.GoalCreated("Goal Title"), customViewModel.events.first())
 >>>>>>> 99c21bd6 (AWAN-83: use goal task bulk endpoint)
+=======
+            assertEquals(listOf("sess-confirm"), goalRepository.confirmCalls)
+            assertEquals(AddTaskEvent.GoalScheduleRequested("g-1"), customViewModel.events.first())
+>>>>>>> f20bbd00 (AWAN-83: reuse ai-tasks screen for goal schedule review, persist drafts, and resilient confirm parsing)
         }
 
     @Test
-    fun `bulk task failure rolls back the goal and keeps the preview retryable`() = runTest(testDispatcher) {
+    fun `saving as draft creates a goal without tasks and emits GoalCreated`() = runTest(testDispatcher) {
+        val proposal = GoalProposal(
+            title = "Goal Title",
+            description = "Goal description",
+            targetDate = "2026-09-01",
+            tasks = listOf(ProposedTask("Task 1", 30, 5)),
+        )
+        goalRepository.nextContinueReply = Result.Success(
+            GoalDecompositionReply(
+                sessionId = "sess-draft",
+                blocks = listOf(GoalDecompositionBlock.Proposal(proposal)),
+                hasProposal = true,
+            ),
+        )
+        goalRepository.nextConfirmResult = Result.Success(Goal(id = "g-draft", title = "Goal Title", emoji = ""))
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+        viewModel.onAction(AddTaskAction.InputChanged("Goal"))
+        viewModel.onAction(AddTaskAction.Submit)
+        viewModel.onAction(AddTaskAction.AcceptGoalProposal)
+        viewModel.onAction(AddTaskAction.SaveGoalAsDraft)
+
+        assertTrue(goalRepository.confirmCalls.isEmpty())
+        assertEquals(listOf(emptyList<ProposedTask>()), goalRepository.createTaskCalls)
+        assertEquals(listOf("sess-draft"), goalRepository.cancelCalls)
+        assertEquals(AddTaskEvent.GoalCreated("Goal Title"), viewModel.events.first())
+    }
+
+    @Test
+    fun `confirm failure keeps the preview retryable`() = runTest(testDispatcher) {
         val proposal = GoalProposal(
             title = "Goal Title",
             description = null,
@@ -1335,7 +1360,7 @@ class AddTaskViewModelTest {
                 hasProposal = true,
             ),
         )
-        goalRepository.nextAddTasksResult = Result.Error(AppError.Network)
+        goalRepository.nextConfirmResult = Result.Error(AppError.Network)
         val viewModel = viewModel()
 
         viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
@@ -1344,9 +1369,7 @@ class AddTaskViewModelTest {
         viewModel.onAction(AddTaskAction.AcceptGoalProposal)
         viewModel.onAction(AddTaskAction.AddGoalTasks)
 
-        assertEquals(listOf(emptyList<ProposedTask>()), goalRepository.createTaskCalls)
-        assertEquals(listOf("g-created" to proposal.tasks), goalRepository.addTasksCalls)
-        assertEquals(listOf("g-created"), goalRepository.deleteGoalCalls)
+        assertEquals(listOf("sess-fail-bulk"), goalRepository.confirmCalls)
         assertEquals(GoalStep.Preview(proposal), viewModel.state.value.goalStep)
         assertFalse(viewModel.state.value.isSubmitting)
         assertEquals(R.string.add_task_error_goal_confirm_failed, viewModel.state.value.errorMessage)
@@ -1503,17 +1526,50 @@ class AddTaskViewModelTest {
 
             assertEquals(GoalStep.Preview(proposal), viewModel.state.value.goalStep)
 
-            goalRepository.nextCreateResult = Result.Error(AppError.Network)
+            goalRepository.nextConfirmResult = Result.Error(AppError.Network)
             viewModel.onAction(AddTaskAction.AcceptGoalProposal)
             assertTrue(viewModel.state.value.showGoalSaveChoice)
-            viewModel.onAction(AddTaskAction.SaveGoalAsDraft)
-            assertEquals(listOf(emptyList<ProposedTask>()), goalRepository.createTaskCalls)
+            viewModel.onAction(AddTaskAction.AddGoalTasks)
+            assertEquals(listOf("sess-fail"), goalRepository.confirmCalls)
 
             val confirmFailedState = viewModel.state.value
             assertEquals(GoalStep.Preview(proposal), confirmFailedState.goalStep)
             assertEquals("sess-fail", confirmFailedState.goalSessionId)
             assertFalse(confirmFailedState.isSubmitting)
             assertEquals(R.string.add_task_error_goal_confirm_failed, confirmFailedState.errorMessage)
+        }
+
+    @Test
+    fun `SaveGoalAsDraft failure preserves preview retryable state and does not cancel decomposition`() =
+        runTest(testDispatcher) {
+            val proposal = GoalProposal(
+                title = "Goal Title",
+                description = null,
+                targetDate = null,
+                tasks = listOf(ProposedTask("Task 1", 30, 5)),
+            )
+            goalRepository.nextContinueReply = Result.Success(
+                GoalDecompositionReply(
+                    sessionId = "sess-draft-fail",
+                    blocks = listOf(GoalDecompositionBlock.Proposal(proposal)),
+                    hasProposal = true,
+                ),
+            )
+            goalRepository.nextCreateResult = Result.Error(AppError.Network)
+            val viewModel = viewModel()
+
+            viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+            viewModel.onAction(AddTaskAction.InputChanged("Goal"))
+            viewModel.onAction(AddTaskAction.Submit)
+            viewModel.onAction(AddTaskAction.AcceptGoalProposal)
+            viewModel.onAction(AddTaskAction.SaveGoalAsDraft)
+
+            assertTrue(goalRepository.cancelCalls.isEmpty())
+            assertTrue(goalRepository.confirmCalls.isEmpty())
+            assertEquals(GoalStep.Preview(proposal), viewModel.state.value.goalStep)
+            assertEquals("sess-draft-fail", viewModel.state.value.goalSessionId)
+            assertFalse(viewModel.state.value.isSubmitting)
+            assertEquals(R.string.add_task_error_goal_confirm_failed, viewModel.state.value.errorMessage)
         }
 
     @Test

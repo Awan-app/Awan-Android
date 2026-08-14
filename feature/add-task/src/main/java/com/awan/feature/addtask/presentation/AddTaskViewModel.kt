@@ -439,7 +439,13 @@ class AddTaskViewModel @Inject constructor(
         val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
                 when (val result = saveGoalProposal(sessionId, proposal, addTasks)) {
-                    is Result.Success -> close(AddTaskEvent.GoalCreated(result.data.title))
+                    is Result.Success -> {
+                        if (addTasks) {
+                            close(AddTaskEvent.GoalScheduleRequested(result.data.id))
+                        } else {
+                            close(AddTaskEvent.GoalCreated(result.data.title))
+                        }
+                    }
                     is Result.Error -> _state.update {
                         it.copy(
                             isSubmitting = false,

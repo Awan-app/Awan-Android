@@ -6,11 +6,16 @@ import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.error.ValidationReason
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.designsystem.parseIsoDateTime
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
+import com.awan.app.core.domain.goal.usecase.ClearScheduleDraftUseCase
+import com.awan.app.core.domain.goal.usecase.ConfirmGoalScheduleUseCase
+import com.awan.app.core.domain.goal.usecase.ProposeGoalScheduleUseCase
 import com.awan.app.core.domain.image.usecase.ReadImageUseCase
 import com.awan.app.core.domain.task.usecase.CreateTasksUseCase
 import com.awan.app.core.domain.task.usecase.ProposeTasksFromImageUseCase
 import com.awan.app.core.domain.task.usecase.ProposeTasksFromTextUseCase
+import com.awan.app.core.model.ProposedGoalSession
 import com.awan.app.core.model.ProposedSession
 import com.awan.app.core.model.TaskDraft
 import com.awan.app.core.model.TaskProposal
@@ -18,6 +23,7 @@ import com.awan.app.core.model.TaskWithSessionsDraft
 import com.awan.app.core.model.toSessionDraft
 import com.awan.feature.aitasks.impl.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
@@ -27,9 +33,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Clock
 import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 @HiltViewModel
@@ -39,6 +47,9 @@ class AiTasksViewModel @Inject constructor(
     private val createTasks: CreateTasksUseCase,
     private val getCategories: GetCategoriesUseCase,
     private val readImage: ReadImageUseCase,
+    private val proposeGoalScheduleUseCase: ProposeGoalScheduleUseCase,
+    private val confirmGoalScheduleUseCase: ConfirmGoalScheduleUseCase,
+    private val clearScheduleDraftUseCase: ClearScheduleDraftUseCase,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -52,6 +63,8 @@ class AiTasksViewModel @Inject constructor(
     private var hasLoaded = false
     private var lastText = ""
     private var lastNote: String? = null
+    private var lastImageUri: String? = null
+    private var lastGoalId: String? = null
 
     private companion object {
         const val DEFAULT_SESSION_MINUTES = 60L
@@ -60,8 +73,8 @@ class AiTasksViewModel @Inject constructor(
 
     fun onAction(action: AiTasksAction) {
         when (action) {
-            is AiTasksAction.Load -> load(action.text, action.note, action.imageUri)
-            AiTasksAction.Retry -> load(lastText, lastNote, _state.value.imageUri, force = true)
+            is AiTasksAction.Load -> load(action.text, action.note, action.imageUri, action.goalId)
+            AiTasksAction.Retry -> load(lastText, lastNote, lastImageUri, lastGoalId, force = true)
             is AiTasksAction.Removed -> removeProposal(action.id)
             AiTasksAction.UndoRemove -> undoRemove()
             AiTasksAction.ResetPlan -> resetPlan()
@@ -85,21 +98,41 @@ class AiTasksViewModel @Inject constructor(
             AiTasksAction.BackRequested -> requestBack()
             AiTasksAction.DiscardConfirmed -> {
                 _state.update { it.copy(showDiscardConfirm = false) }
-                close(AiTasksEvent.Dismissed)
+                val goalId = _state.value.goalId
+                if (goalId != null) {
+                    viewModelScope.launch {
+                        withContext(NonCancellable) {
+                            clearScheduleDraftUseCase(goalId)
+                        }
+                        close(AiTasksEvent.Dismissed)
+                    }
+                } else {
+                    close(AiTasksEvent.Dismissed)
+                }
             }
             AiTasksAction.DiscardCancelled -> _state.update { it.copy(showDiscardConfirm = false) }
         }
     }
 
     /** Ignores a second call — the Root composable fires this once via `LaunchedEffect(Unit)`. */
-    private fun load(text: String, note: String?, imageUri: String?, force: Boolean = false) {
+    private fun load(
+        text: String,
+        note: String?,
+        imageUri: String?,
+        goalId: String?,
+        force: Boolean = false,
+    ) {
         if (hasLoaded && !force) return
         hasLoaded = true
         lastText = text
         lastNote = note
+        lastImageUri = imageUri
+        lastGoalId = goalId
+
         _state.update {
             it.copy(
                 isLoading = true,
+                goalId = goalId,
                 imageUri = imageUri,
                 errorMessage = null,
                 acceptError = null,
@@ -111,60 +144,141 @@ class AiTasksViewModel @Inject constructor(
         viewModelScope.launch {
             coroutineScope {
                 val categoriesDeferred = async { getCategories() }
-                // Neither channel has room for both a title and a note, so whichever one isn't the
-                // channel's own field rides along inside it — nothing typed is silently dropped.
-                val proposalsResult = if (imageUri != null) {
-                    fetchFromImage(imageUri, combineContext(text, note))
-                } else {
-                    proposeFromText(combineContext(text, note) ?: text)
-                }
                 val categories = when (val result = categoriesDeferred.await()) {
                     is Result.Success -> result.data
                     else -> emptyList()
                 }
 
-                when (proposalsResult) {
-                    is Result.Success -> {
-                        val proposals = proposalsResult.data.tasks.map { proposal -> proposal.toUi() }
-                        _state.update {
-                            it.copy(
-                                isLoading = false,
-                                sourceSummary = proposalsResult.data.sourceSummary,
-                                availableCategories = categories,
-                                proposals = proposals,
-                                originalProposals = proposals,
-                            )
+                if (goalId != null) {
+                    when (val goalScheduleResult = proposeGoalScheduleUseCase(goalId)) {
+                        is Result.Success -> {
+                            val goalProposal = goalScheduleResult.data
+                            val uiList = mutableListOf<ProposalUi>()
+
+                            goalProposal.proposedSessions.forEach { s ->
+                                val start = parseIsoDateTime(s.start) ?: LocalDateTime.now(clock)
+                                val end = parseIsoDateTime(s.end) ?: start.plusMinutes(DEFAULT_SESSION_MINUTES)
+                                uiList += ProposalUi(
+                                    id = nextProposalId++,
+                                    taskId = s.taskId,
+                                    draft = TaskDraft(
+                                        title = s.taskTitle.orEmpty(),
+                                        durationMinutes = Duration.between(start, end).toMinutes().toInt().coerceAtLeast(15),
+                                    ),
+                                    sessions = listOf(
+                                        ProposedSession(
+                                            start = start,
+                                            end = end,
+                                            zoneId = s.zoneId,
+                                            isAiSuggested = true,
+                                        )
+                                    ),
+                                )
+                            }
+
+                            goalProposal.suggestions.forEach { s ->
+                                val start = parseIsoDateTime(s.start) ?: LocalDateTime.now(clock)
+                                val end = parseIsoDateTime(s.end) ?: start.plusMinutes(DEFAULT_SESSION_MINUTES)
+                                uiList += ProposalUi(
+                                    id = nextProposalId++,
+                                    taskId = s.taskId,
+                                    draft = TaskDraft(
+                                        title = s.taskTitle.orEmpty(),
+                                        durationMinutes = Duration.between(start, end).toMinutes().toInt().coerceAtLeast(15),
+                                    ),
+                                    sessions = listOf(
+                                        ProposedSession(
+                                            start = start,
+                                            end = end,
+                                            zoneId = s.zoneId,
+                                            isAiSuggested = true,
+                                        )
+                                    ),
+                                    reason = s.reason,
+                                    overlapInfo = s.overlapInfo,
+                                )
+                            }
+
+                            goalProposal.unscheduledTasks.forEach { u ->
+                                uiList += ProposalUi(
+                                    id = nextProposalId++,
+                                    taskId = u.taskId,
+                                    draft = TaskDraft(
+                                        title = u.taskTitle.orEmpty(),
+                                        durationMinutes = 60,
+                                    ),
+                                    sessions = emptyList(),
+                                    reason = u.message,
+                                    isUnscheduled = true,
+                                )
+                            }
+
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    availableCategories = categories,
+                                    proposals = uiList,
+                                    originalProposals = uiList,
+                                )
+                            }
                         }
+                        is Result.Error -> {
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    errorMessage = R.string.ai_tasks_error_generic,
+                                )
+                            }
+                        }
+                        Result.Loading -> Unit
+                    }
+                } else {
+                    val proposalsResult = if (imageUri != null) {
+                        fetchFromImage(imageUri, combineContext(text, note))
+                    } else {
+                        proposeFromText(combineContext(text, note) ?: text)
                     }
 
-                    is Result.Error -> _state.update {
-                        it.copy(
-                            isLoading = false,
-                            availableCategories = categories,
-                            errorMessage = proposalsResult.error.toProposalErrorRes(),
-                        )
-                    }
+                    when (proposalsResult) {
+                        is Result.Success -> {
+                            val proposals = proposalsResult.data.tasks.map { proposal -> proposal.toUi() }
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    sourceSummary = proposalsResult.data.sourceSummary,
+                                    availableCategories = categories,
+                                    proposals = proposals,
+                                    originalProposals = proposals,
+                                )
+                            }
+                        }
 
-                    Result.Loading -> Unit
+                        is Result.Error -> _state.update {
+                            it.copy(isLoading = false, errorMessage = proposalsResult.error.toProposalErrorRes())
+                        }
+
+                        Result.Loading -> Unit
+                    }
                 }
             }
         }
     }
 
-    private suspend fun fetchFromImage(imageUri: String, note: String?) =
-        when (val image = readImage(imageUri)) {
-            is Result.Success -> proposeFromImage(image.data, note)
-            is Result.Error -> Result.Error(image.error)
+    private suspend fun fetchFromImage(uri: String, context: String?): Result<com.awan.app.core.model.TaskProposals> =
+        when (val bytesResult = readImage(uri)) {
+            is Result.Success -> proposeFromImage(bytesResult.data, context)
+            is Result.Error -> bytesResult
             Result.Loading -> Result.Loading
         }
 
     private fun TaskProposal.toUi(): ProposalUi =
-        ProposalUi(id = nextProposalId++, draft = draft, sessions = sessions, reason = reason)
+        ProposalUi(
+            id = nextProposalId++,
+            draft = draft,
+            sessions = sessions,
+            reason = reason,
+        )
 
-    private fun updateDraft(id: Int, transform: (TaskDraft) -> TaskDraft) =
-        updateProposal(id) { it.copy(draft = transform(it.draft)) }
-
-    /** Any edit clears the accept banner — the user is already acting on what it told them. */
     private fun updateProposal(id: Int, transform: (ProposalUi) -> ProposalUi) {
         _state.update { state ->
             state.copy(
@@ -174,19 +288,18 @@ class AiTasksViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Only the newest removal is held. A second X before the first is undone drops the older one:
-     * the undo bar can only ever name one task, and offering "Undo" for a task the user can no
-     * longer see named would restore something they'd stopped thinking about.
-     */
+    private fun updateDraft(id: Int, transform: (TaskDraft) -> TaskDraft) {
+        updateProposal(id) { it.copy(draft = transform(it.draft)) }
+    }
+
     private fun removeProposal(id: Int) {
         val index = _state.value.proposals.indexOfFirst { it.id == id }
         if (index < 0) return
         _state.update { state ->
+            val removed = state.proposals[index]
             state.copy(
                 proposals = state.proposals.filterIndexed { i, _ -> i != index },
-                lastRemoved = RemovedProposal(state.proposals[index], index),
-                acceptError = null,
+                lastRemoved = RemovedProposal(removed, index),
             )
         }
     }
@@ -216,7 +329,10 @@ class AiTasksViewModel @Inject constructor(
         val start = LocalDate.now(clock).plusDays(1).atTime(DEFAULT_SESSION_HOUR, 0)
         val newIndex = proposal.sessions.size
         updateProposal(id) {
-            it.copy(sessions = it.sessions + ProposedSession(start = start, end = start.plusMinutes(DEFAULT_SESSION_MINUTES)))
+            it.copy(
+                sessions = it.sessions + ProposedSession(start = start, end = start.plusMinutes(DEFAULT_SESSION_MINUTES)),
+                isUnscheduled = false,
+            )
         }
         openSessionPicker(id, newIndex)
     }
@@ -272,19 +388,41 @@ class AiTasksViewModel @Inject constructor(
         }
         _state.update { it.copy(isAccepting = true, acceptError = null) }
         viewModelScope.launch {
-            val drafts = selected.map { proposal ->
-                TaskWithSessionsDraft(
-                    task = proposal.draft,
-                    sessions = proposal.sessions.map { it.toSessionDraft() },
-                )
-            }
-            when (val result = createTasks(drafts)) {
-                is Result.Success -> close(AiTasksEvent.TasksCreated(result.data.size))
-                is Result.Error -> _state.update {
-                    it.copy(isAccepting = false, acceptError = R.string.ai_tasks_error_accept_failed)
+            if (current.goalId != null) {
+                val goalSessions = selected.flatMap { proposal ->
+                    proposal.sessions.map { session ->
+                        ProposedGoalSession(
+                            taskId = proposal.taskId ?: java.util.UUID.randomUUID().toString(),
+                            taskTitle = proposal.draft.title,
+                            zoneId = session.zoneId,
+                            start = session.start.toString(),
+                            end = session.end.toString(),
+                            isSelected = true,
+                        )
+                    }
                 }
+                when (val result = confirmGoalScheduleUseCase(current.goalId, goalSessions)) {
+                    is Result.Success -> close(AiTasksEvent.TasksCreated(result.data.size))
+                    is Result.Error -> _state.update {
+                        it.copy(isAccepting = false, acceptError = R.string.ai_tasks_error_accept_failed)
+                    }
+                    Result.Loading -> Unit
+                }
+            } else {
+                val drafts = selected.map { proposal ->
+                    TaskWithSessionsDraft(
+                        task = proposal.draft,
+                        sessions = proposal.sessions.map { it.toSessionDraft() },
+                    )
+                }
+                when (val result = createTasks(drafts)) {
+                    is Result.Success -> close(AiTasksEvent.TasksCreated(result.data.size))
+                    is Result.Error -> _state.update {
+                        it.copy(isAccepting = false, acceptError = R.string.ai_tasks_error_accept_failed)
+                    }
 
-                Result.Loading -> Unit
+                    Result.Loading -> Unit
+                }
             }
         }
     }
@@ -293,7 +431,17 @@ class AiTasksViewModel @Inject constructor(
         if (_state.value.isDirty) {
             _state.update { it.copy(showDiscardConfirm = true) }
         } else {
-            close(AiTasksEvent.Dismissed)
+            val goalId = _state.value.goalId
+            if (goalId != null) {
+                viewModelScope.launch {
+                    withContext(NonCancellable) {
+                        clearScheduleDraftUseCase(goalId)
+                    }
+                    close(AiTasksEvent.Dismissed)
+                }
+            } else {
+                close(AiTasksEvent.Dismissed)
+            }
         }
     }
 

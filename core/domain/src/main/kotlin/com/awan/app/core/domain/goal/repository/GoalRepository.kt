@@ -1,18 +1,17 @@
-package com.awan.app.core.domain.goal.repository
+﻿package com.awan.app.core.domain.goal.repository
 
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.model.ConfirmedGoalSession
 import com.awan.app.core.model.Goal
 import com.awan.app.core.model.GoalDecompositionReply
 import com.awan.app.core.model.GoalDecompositionTranscript
+import com.awan.app.core.model.GoalScheduleDraft
 import com.awan.app.core.model.GoalScheduleProposal
 import com.awan.app.core.model.ProposedGoalSession
 import com.awan.app.core.model.ProposedTask
-import com.awan.app.core.model.Task
 import kotlinx.coroutines.flow.Flow
 
 interface GoalRepository {
-    fun observeGoals(): Flow<List<Goal>>
-    fun observeGoal(goalId: String): Flow<Goal?>
     suspend fun getGoals(): Result<List<Goal>>
     suspend fun createGoal(
         title: String,
@@ -20,19 +19,8 @@ interface GoalRepository {
         targetDate: String?,
         tasks: List<ProposedTask> = emptyList(),
     ): Result<Goal>
-    suspend fun addTasksToGoal(
-        goalId: String,
-        tasks: List<ProposedTask>,
-    ): Result<List<Task>>
     suspend fun getInboxGoal(): Result<Goal>
     suspend fun getGoal(goalId: String): Result<Goal>
-    suspend fun updateGoal(
-        goalId: String,
-        title: String? = null,
-        description: String? = null,
-        status: String? = null,
-        targetDate: String? = null,
-    ): Result<Goal>
     suspend fun deleteGoal(goalId: String): Result<Unit>
     suspend fun continueDecomposition(
         sessionId: String?,
@@ -43,5 +31,7 @@ interface GoalRepository {
     suspend fun cancelDecomposition(sessionId: String): Result<Unit>
     suspend fun scheduleGoal(goalId: String): Result<Unit>
     suspend fun proposeGoalSchedule(goalId: String): Result<GoalScheduleProposal>
-    suspend fun confirmGoalSchedule(goalId: String, sessions: List<ProposedGoalSession>): Result<Unit>
+    suspend fun confirmGoalSchedule(goalId: String, sessions: List<ProposedGoalSession>): Result<List<ConfirmedGoalSession>>
+    suspend fun clearScheduleDraft(goalId: String)
+    suspend fun getPendingScheduleDraftGoalId(): Result<String?>
 }

@@ -46,3 +46,45 @@ internal open class TestTaskDao : TaskDao {
     override suspend fun deleteTasksByGoal(goalId: String) { tasks.removeIf { it.goalId == goalId } }
     override suspend fun nullifyOrphanedGoalReferences() {}
 }
+
+internal open class TestScheduleDraftDao : com.awan.app.core.database.dao.ScheduleDraftDao {
+    val insertedDraftsIfNotExist = mutableListOf<com.awan.app.core.database.model.ScheduleDraftEntity>()
+    val upsertedDraftSessions = mutableListOf<com.awan.app.core.database.model.ScheduleDraftSessionEntity>()
+
+    override suspend fun insertDraft(draft: com.awan.app.core.database.model.ScheduleDraftEntity) {}
+    override suspend fun insertDraftSessions(sessions: List<com.awan.app.core.database.model.ScheduleDraftSessionEntity>) {}
+    override suspend fun insertDraftUnscheduledTasks(tasks: List<com.awan.app.core.database.model.ScheduleDraftUnscheduledTaskEntity>) {}
+
+    override fun observeDraft(goalId: String): kotlinx.coroutines.flow.Flow<com.awan.app.core.database.model.ScheduleDraftEntity?> = kotlinx.coroutines.flow.flowOf(null)
+    override fun observeDraftSessions(goalId: String): kotlinx.coroutines.flow.Flow<List<com.awan.app.core.database.model.ScheduleDraftSessionEntity>> = kotlinx.coroutines.flow.flowOf(emptyList())
+    override fun observeDraftUnscheduledTasks(goalId: String): kotlinx.coroutines.flow.Flow<List<com.awan.app.core.database.model.ScheduleDraftUnscheduledTaskEntity>> = kotlinx.coroutines.flow.flowOf(emptyList())
+
+    override suspend fun getDraft(goalId: String): com.awan.app.core.database.model.ScheduleDraftEntity? = null
+    override suspend fun getDraftSessions(goalId: String): List<com.awan.app.core.database.model.ScheduleDraftSessionEntity> = emptyList()
+    override suspend fun getDraftUnscheduledTasks(goalId: String): List<com.awan.app.core.database.model.ScheduleDraftUnscheduledTaskEntity> = emptyList()
+    override suspend fun getPendingDraftGoalId(): String? = null
+
+    val deletedDrafts = mutableListOf<String>()
+    val insertedSessions = mutableListOf<com.awan.app.core.database.model.SessionEntity>()
+
+    val draftStates = mutableMapOf<String, String>()
+    override suspend fun deleteDraft(goalId: String) { deletedDrafts.add(goalId); draftStates.remove(goalId) }
+    override suspend fun deleteDraftSessions(goalId: String) {}
+    override suspend fun deleteDraftUnscheduledTasks(goalId: String) {}
+    override suspend fun deleteDraftEntity(goalId: String) {}
+    override suspend fun updateDraftState(goalId: String, state: String) { draftStates[goalId] = state }
+    override suspend fun insertDraftIfNotExists(draft: com.awan.app.core.database.model.ScheduleDraftEntity) { insertedDraftsIfNotExist.add(draft) }
+}
+
+internal open class TestSessionDao : com.awan.app.core.database.dao.SessionDao {
+    val upserted = mutableListOf<com.awan.app.core.database.model.SessionEntity>()
+    override suspend fun upsertSession(session: com.awan.app.core.database.model.SessionEntity) { upserted += session }
+    override suspend fun upsertSessions(sessions: List<com.awan.app.core.database.model.SessionEntity>) { upserted += sessions }
+    override fun observeSessionsForDate(date: String): Flow<List<com.awan.app.core.database.model.SessionEntity>> = flowOf(emptyList())
+    override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<com.awan.app.core.database.model.SessionEntity>> = flowOf(emptyList())
+    override suspend fun getSessionsForDate(date: String): List<com.awan.app.core.database.model.SessionEntity> = emptyList()
+    override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<com.awan.app.core.database.model.SessionEntity> = emptyList()
+    override suspend fun getSession(id: String): com.awan.app.core.database.model.SessionEntity? = null
+    override suspend fun deleteSessionsForDates(dates: List<String>) {}
+    override suspend fun deleteSession(id: String) {}
+}

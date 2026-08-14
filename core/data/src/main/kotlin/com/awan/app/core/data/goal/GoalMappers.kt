@@ -1,4 +1,4 @@
-package com.awan.app.core.data.goal
+﻿package com.awan.app.core.data.goal
 
 import com.awan.app.core.data.task.toTaskModel
 import com.awan.app.core.database.model.GoalEntity
@@ -49,9 +49,7 @@ internal fun GoalInfoResponse.toModel(): Goal {
         description = description,
         emoji = extractedEmoji,
         status = status.toModel(),
-        tasks = tasks?.map { it.toTaskModel() } ?: emptyList(),
-        targetDate = targetDate,
-        createdAt = createdAt ?: "",
+        tasks = tasks.map { it.copy(goalId = id).toTaskModel() },
     )
 }
 
@@ -70,8 +68,6 @@ internal fun GoalEntity.toModel(): Goal {
         emoji = extractedEmoji,
         status = goalStatus,
         tasks = emptyList(), // tasks are stored separately in TaskEntity
-        targetDate = targetDate,
-        createdAt = createdAt,
     )
 }
 
