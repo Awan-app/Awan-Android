@@ -1,6 +1,7 @@
 package com.awan.app.core.datastore
 
 import com.awan.app.core.datastore.model.UserPreferencesData
+import com.awan.app.core.model.NotificationPreferences
 import kotlinx.coroutines.flow.Flow
 
 interface UserPreferencesDataSource {
@@ -13,4 +14,5 @@ interface UserPreferencesDataSource {
     suspend fun setLocale(locale: String)
     suspend fun setDefaultRegion(region: String)
     suspend fun setMicPermissionRequested(requested: Boolean)
+    suspend fun setNotificationPreferences(preferences: NotificationPreferences)
 }

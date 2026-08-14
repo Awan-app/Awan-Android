@@ -60,6 +60,7 @@ fun HomeScreen(
     onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
     onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
     onDateChanged: (LocalDate) -> Unit = {},
+    onRegisterOpenSession: ((String) -> Unit) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
 
@@ -71,6 +72,9 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         onRegisterSelectDate(viewModel::selectDate)
+        // Registered, not received: the caller holds any pending notification tap until this runs,
+        // so a tap during splash still opens its session once Home finally composes.
+        onRegisterOpenSession(viewModel::onSessionClicked)
     }
 
     val timelineScrollState = rememberScrollState()

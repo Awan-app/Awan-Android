@@ -25,6 +25,7 @@ import com.awan.app.core.data.gamification.repository.GamificationRepositoryImpl
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
 import com.awan.app.core.data.home.remote.HomeRemoteDataSourceImpl
 import com.awan.app.core.data.home.repository.HomeRepositoryImpl
+import com.awan.app.core.data.notifications.repository.SessionNotificationRepositoryImpl
 import com.awan.app.core.data.image.ImageRepositoryImpl
 import com.awan.app.core.domain.image.repository.ImageRepository
 import com.awan.app.core.domain.onboarding.repository.OnboardingRepository
@@ -62,6 +63,7 @@ import com.awan.app.core.domain.task.repository.AiTaskRepository
 import com.awan.app.core.domain.template.repository.TemplateRepository
 import com.awan.app.core.domain.gamification.repository.GamificationRepository
 import com.awan.app.core.domain.home.repository.HomeRepository
+import com.awan.app.core.domain.notifications.repository.SessionNotificationRepository
 import com.awan.app.core.domain.zones.repository.ZonesRepository
 import com.awan.app.core.domain.marketplace.repository.StoreRepository
 import com.awan.app.core.data.network.NetworkConnectivityMonitorImpl
@@ -304,5 +306,11 @@ internal abstract class DataModule {
     abstract fun bindDeviceTokenRepository(
         impl: com.awan.app.core.data.devicetoken.repository.DeviceTokenRepositoryImpl,
     ): com.awan.app.core.domain.devicetoken.repository.DeviceTokenRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSessionNotificationRepository(
+        impl: SessionNotificationRepositoryImpl,
+    ): SessionNotificationRepository
 }
 

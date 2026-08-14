@@ -11,7 +11,5 @@
     <string name="navigation_add_task">Add a task</string>
     <string name="app_offline_banner_text">You are offline. Server edits and sync are disabled.</string>
     <string name="app_offline_lock_explanation">This action requires an active internet connection.</string>
-    <string name="app_notification_channel_name">Awan Notifications</string>
-    <string name="app_notification_channel_description">Notifications for sessions and daily spin reminders</string>
 </resources>
 

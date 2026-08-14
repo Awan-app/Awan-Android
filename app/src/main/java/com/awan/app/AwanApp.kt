@@ -50,6 +50,7 @@ import com.awan.app.core.designsystem.BottomNavItem
 import com.awan.app.core.common.R as CommonR
 import com.awan.app.core.designsystem.ObserveAsEvents
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import com.awan.app.core.domain.gamification.model.RewardEvent
 import com.awan.core.navigation.NavigationState
 import com.awan.core.navigation.Navigator
@@ -79,6 +80,7 @@ import com.awan.feature.profile.api.DailyZonesRoute
 import com.awan.feature.profile.api.EditRoutineRoute
 import com.awan.feature.profile.api.McpInfoRoute
 import com.awan.feature.profile.api.McpSettingsRoute
+import com.awan.feature.profile.api.NotificationSettingsRoute
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.splash.api.SplashRoute
 import com.awan.feature.splash.impl.navigation.splashEntry
@@ -126,6 +128,7 @@ fun AwanApp(
     modifier: Modifier = Modifier,
     isOnline: Boolean = true,
     addTaskViewModel: AddTaskViewModel = hiltViewModel(),
+    deepLinkEvents: Flow<SessionDeepLink> = emptyFlow(),
 ) {
     var currentHomeDate by rememberSaveable { mutableStateOf<String?>(null) }
     val navigator = remember { Navigator(appState.navigationState) }
@@ -133,8 +136,31 @@ fun AwanApp(
     var addTaskZoneId by rememberSaveable { mutableStateOf<String?>(null) }
     var addTaskDate by rememberSaveable { mutableStateOf<String?>(null) }
     var onSelectHomeDate by remember { mutableStateOf<((LocalDate) -> Unit)?>(null) }
+    var onOpenHomeSession by remember { mutableStateOf<((String) -> Unit)?>(null) }
+    var pendingDeepLink by remember { mutableStateOf<SessionDeepLink?>(null) }
     val currentRoute = appState.navigationState.currentKey
     val showOfflineBanner = !isOnline && currentRoute != SplashRoute
+
+    ObserveAsEvents(deepLinkEvents) { pendingDeepLink = it }
+
+    /**
+     * Held until Home has registered its opener, then acted on once and dropped.
+     *
+     * Deliberately not keyed on the current tab. It was, and since the link stayed set until Home
+     * cleared it, every tab change re-ran this and navigated straight back to Home — the tapped
+     * screen flashed and bounced, and no other screen could be reached at all.
+     */
+    androidx.compose.runtime.LaunchedEffect(pendingDeepLink, onOpenHomeSession) {
+        val link = pendingDeepLink ?: return@LaunchedEffect
+        val openSession = onOpenHomeSession ?: return@LaunchedEffect
+
+        navigator.navigate(HomeRoute())
+        link.date
+            ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            ?.let { onSelectHomeDate?.invoke(it) }
+        openSession(link.sessionId)
+        pendingDeepLink = null
+    }
 
     val offlineExplanation = stringResource(R.string.app_offline_lock_explanation)
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -173,7 +199,7 @@ fun AwanApp(
         }
 
         AddTaskSheet(
-            onDismiss = { 
+            onDismiss = {
                 showAddTask = false
                 addTaskZoneId = null
                 addTaskDate = null
@@ -264,7 +290,8 @@ fun AwanApp(
                 },
                 onDateChanged = { date ->
                     currentHomeDate = date.toString()
-                }
+                },
+                onRegisterOpenSession = { callback -> onOpenHomeSession = callback },
             )
 
             calendarEntry(
@@ -290,6 +317,7 @@ fun AwanApp(
                 onNavigateToInventory = { navigator.navigate(InventoryRoute) },
                 onNavigateToMcpSettings = { navigator.navigate(McpSettingsRoute) },
                 onNavigateToMcpInfo = { navigator.navigate(McpInfoRoute) },
+                onNavigateToNotificationSettings = { navigator.navigate(NotificationSettingsRoute) },
             )
             goalPreviewEntry(
                 onBack = { navigator.goBack() },

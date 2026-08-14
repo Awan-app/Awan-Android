@@ -7,6 +7,7 @@ import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.CategoryEntity
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.UpcomingSessionRow
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
 import com.awan.app.core.database.model.UserEntity
@@ -120,6 +121,8 @@ private class FakeSessionDao : SessionDao {
 
     override suspend fun upsertSession(session: SessionEntity) { rows[session.id] = session }
     override suspend fun upsertSessions(sessions: List<SessionEntity>) { sessions.forEach { rows[it.id] = it } }
+    override fun observeUpcomingSessions(startDate: String, endDate: String): Flow<List<UpcomingSessionRow>> = flowOf(emptyList())
+    override suspend fun getUpcomingSessions(startDate: String, endDate: String): List<UpcomingSessionRow> = emptyList()
     override suspend fun getSession(id: String): SessionEntity? = rows[id]
     override suspend fun deleteSession(id: String) { rows.remove(id) }
     override fun observeSessionsForDate(date: String): Flow<List<SessionEntity>> = flowOf(emptyList())
