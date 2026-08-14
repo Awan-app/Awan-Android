@@ -47,4 +47,14 @@
     <string name="ds_wheel_collect">Collect</string>
     <string name="ds_wheel_close">Close</string>
     <string name="ds_wheel_item_wedge">Gift</string>
+
+    <!-- Points shortcuts -->
+    <string name="ds_points_thousand">%1$sk</string>
+    <string name="ds_points_million">%1$sM</string>
+    <string name="ds_points_billion">%1$sB</string>
+
+    <!-- Navigation & Combos -->
+    <string name="ds_next_day">Next day</string>
+    <string name="ds_previous_day">Previous day</string>
+    <string name="ds_combo_bonus">%1$d× COMBO BONUS!</string>
 </resources>

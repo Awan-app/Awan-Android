@@ -1,5 +1,6 @@
 package com.awan.app.core.data.marketplace
 
+import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSource
 import com.awan.app.core.data.marketplace.repository.StoreRepositoryImpl
@@ -25,6 +26,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+import com.awan.app.core.data.gamification.GamificationEventBus
+import com.awan.app.core.database.dao.UserDao
+import com.awan.app.core.database.model.UserEntity
+import com.awan.app.core.database.model.UserPreferencesEntity
+import com.awan.app.core.database.model.UserWithPreferences
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class StoreRepositoryTest {
 
@@ -34,6 +41,7 @@ class StoreRepositoryTest {
     private lateinit var fakeStoreDao: FakeStoreDao
     private lateinit var fakeProfileRepository: FakeProfileRepository
     private lateinit var fakeConnectivityMonitor: FakeConnectivityMonitor
+    private lateinit var gamificationEventBus: GamificationEventBus
 
     @Before
     fun setup() {
@@ -41,10 +49,12 @@ class StoreRepositoryTest {
         fakeStoreDao = FakeStoreDao()
         fakeProfileRepository = FakeProfileRepository()
         fakeConnectivityMonitor = FakeConnectivityMonitor()
+        gamificationEventBus = GamificationEventBus(FakeUserDao())
         repository = StoreRepositoryImpl(
             remoteDataSource = fakeRemoteDataSource,
             storeDao = fakeStoreDao,
             profileRepository = fakeProfileRepository,
+            gamificationEventBus = gamificationEventBus,
             connectivityMonitor = fakeConnectivityMonitor,
             ioDispatcher = testDispatcher
         )
@@ -80,6 +90,28 @@ class StoreRepositoryTest {
         val inventory = repository.getInventory().first()
         assertEquals(1, inventory.size)
         assertEquals("o1", inventory[0].id)
+    }
+
+    @Test
+    fun `buyItem returns error when profile repository returns error`() = runTest(testDispatcher) {
+        fakeConnectivityMonitor.online = true
+        fakeProfileRepository.profileResult = Result.Error(AppError.Network)
+
+        val result = repository.buyItem("1")
+
+        assertTrue(result is Result.Error)
+        assertEquals(AppError.Network, (result as Result.Error).error)
+    }
+
+    @Test
+    fun `buyItem returns error when profile repository returns loading`() = runTest(testDispatcher) {
+        fakeConnectivityMonitor.online = true
+        fakeProfileRepository.profileResult = Result.Loading
+
+        val result = repository.buyItem("1")
+
+        assertTrue(result is Result.Error)
+        assertTrue((result as Result.Error).error is AppError.Unknown)
     }
 
     // Fakes
@@ -124,9 +156,12 @@ class StoreRepositoryTest {
 
     private class FakeProfileRepository : ProfileRepository {
         var getProfileCalled = false
+        var profileResult: Result<com.awan.app.core.domain.profile.model.Profile>? = null
+
         override fun observeProfile(): Flow<com.awan.app.core.domain.profile.model.Profile?> = flowOf(null)
         override suspend fun getProfile(): Result<com.awan.app.core.domain.profile.model.Profile> {
             getProfileCalled = true
+            profileResult?.let { return it }
             return Result.Success(
                 com.awan.app.core.domain.profile.model.Profile(
                     id = "p1", email = "test@test.com", firstName = "Test", lastName = "User",
@@ -152,5 +187,21 @@ class StoreRepositoryTest {
         var online = true
         override val isOnline: Flow<Boolean> = flowOf(online)
         override fun isCurrentlyOnline(): Boolean = online
+    }
+
+    private class FakeUserDao : UserDao {
+        private var user: UserEntity? = null
+        override suspend fun upsertUser(user: UserEntity) { this.user = user }
+        override fun observeUser(userId: String): Flow<UserEntity?> = flowOf(user)
+        override suspend fun getUser(userId: String): UserEntity? = user
+        override suspend fun getFirstUser(): UserEntity? = user
+        override suspend fun deleteUser(userId: String) { user = null }
+        override suspend fun getMinExpiryTime(): Long? = null
+        override suspend fun upsertPreferences(preferences: UserPreferencesEntity) {}
+        override fun observePreferences(userId: String): Flow<UserPreferencesEntity?> = flowOf(null)
+        override suspend fun getPreferences(userId: String): UserPreferencesEntity? = null
+        override fun observeUserWithPreferences(userId: String): Flow<UserWithPreferences?> = flowOf(null)
+        override suspend fun getUserWithPreferences(userId: String): UserWithPreferences? = null
+        override suspend fun upsertUserWithPreferences(user: UserEntity, preferences: UserPreferencesEntity) { this.user = user }
     }
 }

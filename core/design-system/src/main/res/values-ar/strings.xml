@@ -47,4 +47,14 @@
     <string name="ds_wheel_collect">استلام</string>
     <string name="ds_wheel_close">إغلاق</string>
     <string name="ds_wheel_item_wedge">هدية</string>
+
+    <!-- Points shortcuts -->
+    <string name="ds_points_thousand">%1$s ألف</string>
+    <string name="ds_points_million">%1$s مليون</string>
+    <string name="ds_points_billion">%1$s مليار</string>
+
+    <!-- Navigation & Combos -->
+    <string name="ds_next_day">اليوم التالي</string>
+    <string name="ds_previous_day">اليوم السابق</string>
+    <string name="ds_combo_bonus">مكافأة تتابع %1$d×!</string>
 </resources>
