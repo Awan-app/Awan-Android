@@ -137,10 +137,8 @@ fun HomeScreen(
 
             Crossfade(
                 targetState = contentState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                label = "timeline_content",
+                label = "TimelineContentStateTransition",
+                modifier = Modifier.weight(1f),
             ) { state ->
                 when (state) {
                     TimelineContentState.Loading -> {
@@ -153,11 +151,11 @@ fun HomeScreen(
                                 verticalArrangement = Arrangement.Center,
                             ) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(48.dp),
                                     color = AwanTheme.colors.sky,
                                     strokeWidth = 3.dp,
+                                    modifier = Modifier.size(36.dp),
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
                                 AwanText(
                                     text = stringResource(R.string.loading_your_schedule),
                                     style = AwanTheme.typography.body.copy(
@@ -231,23 +229,21 @@ fun HomeScreen(
             SessionTaskDetailDialog(
                 state = dialogState,
                 onDismiss = viewModel::dismissSessionDetail,
+                onSaveChanges = viewModel::saveSessionDetailEdits,
                 onRetry = viewModel::retryLoadSessionDetail,
                 onToggleStatus = viewModel::toggleSessionStatusFromDialog,
                 onToggleLock = viewModel::toggleSessionLockFromDialog,
-                onStartEditing = viewModel::startEditingSessionDetail,
-                onCancelEditing = viewModel::cancelEditingSessionDetail,
-                onTitleChange = viewModel::onEditTitleChanged,
-                onDescriptionChange = viewModel::onEditDescriptionChanged,
+                onStartMinutesChange = viewModel::onEditStartMinutesChanged,
+                onEndMinutesChange = viewModel::onEditEndMinutesChanged,
                 onDurationChange = viewModel::onEditDurationChanged,
-                onSaveEdits = viewModel::saveSessionDetailEdits,
+                onDateChange = viewModel::onEditDateChanged,
                 onDeleteClick = viewModel::requestDeleteSession,
-                onSelectDeleteTarget = viewModel::selectDeleteTargetType,
                 onConfirmDelete = viewModel::confirmDeleteAction,
                 onCancelDelete = viewModel::dismissDeleteConfirmDialog,
             )
         }
 
-        if (!uiState.isWheelOpen) {
+        if (!uiState.isWheelOpen && uiState.hasFreeSpin) {
             AwanWheelBadge(
                 hasFreeSpin = uiState.hasFreeSpin,
                 isCollapsed = isHeaderCollapsed,

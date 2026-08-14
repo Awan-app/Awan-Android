@@ -44,7 +44,6 @@
     <string name="home_task_mandatory">Mandatory</string>
     <string name="home_task_optional">Optional</string>
     <string name="home_task_splitting_label">Task Splitting</string>
-    <string name="home_task_splitting_allowed">Allowed</string>
     <string name="home_task_splitting_not_allowed">Single Session</string>
     <string name="home_dialog_close">Close</string>
     <string name="home_session_detail_loading">Loading session details…</string>
@@ -70,6 +69,37 @@
     <string name="home_action_cancel">Cancel</string>
     <string name="home_action_edit">Edit</string>
     <string name="home_action_delete">Delete</string>
+    <string name="home_edit_label_start_time">Start Time</string>
+    <string name="home_edit_label_end_time">End Time</string>
+    <string name="home_edit_label_zone">Zone</string>
+    <string name="home_delete_session_confirm_title">Delete Session?</string>
+    <string name="home_delete_session_confirm_subtitle">This session will be permanently removed from your daily schedule.</string>
+    <string name="home_action_confirm_close">Confirm &amp; Close</string>
+    <string name="home_action_save_changes">Save Changes</string>
+    <string name="home_dismiss_warning_title">Close Session Details?</string>
+    <string name="home_dismiss_warning_subtitle">You have session detail adjustments. Are you sure you want to close and exit?</string>
+    <string name="home_dismiss_warning_keep_editing">Keep Editing</string>
+    <string name="home_dismiss_warning_close_anyway">Discard &amp; Close</string>
+    <string name="home_edit_label_date">Session Date</string>
+    <string name="home_date_picker_title">Select Date</string>
+    <string name="home_date_today_chip">Today</string>
+    <string name="home_date_tomorrow_chip">Tomorrow</string>
+    <string name="home_picker_back">Back</string>
+    <string name="home_picker_previous_day">Previous day</string>
+    <string name="home_picker_next_day">Next day</string>
+    <string name="home_picker_hours">HOURS</string>
+    <string name="home_picker_minutes">MINUTES</string>
+    <string name="home_picker_day">DAY</string>
+    <string name="home_picker_month">MONTH</string>
+    <string name="home_picker_year">YEAR</string>
+    <string name="home_picker_am">AM</string>
+    <string name="home_picker_pm">PM</string>
+    <string name="home_edit_duration_mins">%1$dm</string>
+
+    <plurals name="home_date_plus_days">
+        <item quantity="one">+%1$dd</item>
+        <item quantity="other">+%1$dd</item>
+    </plurals>
     <string name="home_task_sessions_header">Task Sessions</string>
     <string name="home_delete_dialog_title">Delete Confirmation</string>
     <string name="home_delete_dialog_subtitle">Choose what you would like to delete:</string>

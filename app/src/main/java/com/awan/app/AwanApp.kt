@@ -59,6 +59,7 @@ import com.awan.feature.aitasks.api.AiTaskProposalsRoute
 import com.awan.feature.aitasks.impl.navigation.aiTasksEntry
 import com.awan.feature.auth.api.LoginRoute
 import com.awan.feature.auth.impl.navigation.authEntry
+import com.awan.feature.calendar.api.CalendarRoute
 import com.awan.feature.calendar.impl.navigation.calendarEntry
 import com.awan.feature.chat.impl.navigation.chatEntry
 import com.awan.feature.goals.api.GoalsRoute
@@ -255,7 +256,7 @@ fun AwanApp(
             )
             homeEntry(
                 onLogout = { navigator.replaceAll(LoginRoute) },
-                onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
+                onNavigateToCalendar = { navigator.navigate(CalendarRoute()) },
                 onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
                 onNavigateToAddTask = { _, _ ->
                     showAddTask = true
@@ -320,7 +321,9 @@ fun AwanApp(
                     )
                 }
             }
-            val selectedDest = appState.topLevelDestinations.find { dest -> dest.route != null && dest.route::class == currentTopLevelKey::class }
+            val selectedDest = remember(currentTopLevelKey, appState.topLevelDestinations) {
+                appState.topLevelDestinations.find { dest -> dest.route != null && dest.route::class == currentTopLevelKey::class }
+            }
 
             AwanBottomNavBar(
                 items = navItems,
