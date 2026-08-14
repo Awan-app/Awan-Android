@@ -75,4 +75,10 @@
     <string name="goals_filter_reset">إعادة ضبط</string>
     <string name="goals_filter_apply">تطبيق</string>
     <string name="goals_filter_options_placeholder">خيارات التصفية ستتوفر قريباً...</string>
+    <string name="goals_dialog_delete_goal_title">حذف الهدف</string>
+    <string name="goals_dialog_delete_goal_body">هل أنت متأكد من حذف هذا الهدف؟ سيتم حذف جميع المهام المرتبطة به أيضاً.</string>
+    <string name="goals_dialog_delete_task_title">حذف المهمة</string>
+    <string name="goals_dialog_delete_task_body">هل أنت متأكد من حذف هذه المهمة؟</string>
+    <string name="goals_dialog_delete_confirm">حذف</string>
+    <string name="goals_dialog_delete_cancel">إلغاء</string>
 </resources>

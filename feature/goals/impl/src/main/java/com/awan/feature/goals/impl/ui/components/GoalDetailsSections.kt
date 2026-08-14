@@ -141,21 +141,20 @@ internal fun GoalDetailsContent(
                 isCompleting = completingTaskIds.contains(task.id),
                 isGoalAchieved = isAchieved,
                 onToggle = { onTaskToggle(task.id) },
+                onDelete = { onDeleteTaskClick(task.id) }
             )
         }
 
-        if (!isAchieved) {
-            item {
-                Spacer(modifier = Modifier.height(spacing.xl))
-                AwanButton(
-                    onClick = onDeleteGoalClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    variant = AwanButtonVariant.Destructive,
-                    isLoading = isDeleting,
-                    icon = Lucide.Trash2
-                ) {
-                    AwanText(text = stringResource(R.string.goals_remove_label))
-                }
+        item {
+            Spacer(modifier = Modifier.height(spacing.xl))
+            AwanButton(
+                onClick = onDeleteGoalClick,
+                modifier = Modifier.fillMaxWidth(),
+                variant = AwanButtonVariant.Destructive,
+                isLoading = isDeleting,
+                icon = Lucide.Trash2
+            ) {
+                AwanText(text = stringResource(R.string.goals_remove_label))
             }
         }
         

@@ -29,6 +29,7 @@ internal fun GoalTaskTimelineItem(
     isCompleting: Boolean,
     isGoalAchieved: Boolean,
     onToggle: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     val colors = AwanTheme.colors
     val spacing = AwanTheme.spacing
@@ -78,6 +79,21 @@ internal fun GoalTaskTimelineItem(
                 )
                 
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                    if (!isGoalAchieved) {
+                        AwanIconButton(
+                            onClick = onDelete,
+                            contentDescription = "Delete Task",
+                            icon = {
+                                Icon(
+                                    imageVector = Lucide.Trash2,
+                                    contentDescription = null,
+                                    tint = colors.textSecondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        )
+                    }
+
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))

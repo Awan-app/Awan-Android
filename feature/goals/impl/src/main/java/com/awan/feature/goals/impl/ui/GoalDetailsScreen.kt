@@ -16,9 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.model.GoalStatus
+import com.awan.feature.goals.impl.R
 import com.awan.feature.goals.impl.presentation.GoalDetailsAction
 import com.awan.feature.goals.impl.presentation.GoalDetailsEvent
 import com.awan.feature.goals.impl.presentation.GoalDetailsState
@@ -103,11 +105,11 @@ fun GoalDetailsScreen(
         // Dialogs
         goalToDelete?.let { goalId ->
             AwanConfirmDialog(
-                title = "Delete Goal",
-                body = "Are you sure you want to delete this goal? All associated tasks will also be removed.",
-                confirmLabel = "Delete",
+                title = stringResource(R.string.goals_dialog_delete_goal_title),
+                body = stringResource(R.string.goals_dialog_delete_goal_body),
+                confirmLabel = stringResource(R.string.goals_dialog_delete_confirm),
                 confirmVariant = AwanButtonVariant.Destructive,
-                dismissLabel = "Cancel",
+                dismissLabel = stringResource(R.string.goals_dialog_delete_cancel),
                 onConfirm = {
                     onAction(GoalDetailsAction.DeleteClicked)
                     goalToDelete = null
@@ -118,11 +120,11 @@ fun GoalDetailsScreen(
 
         taskToDelete?.let { taskId ->
             AwanConfirmDialog(
-                title = "Delete Task",
-                body = "Are you sure you want to delete this task?",
-                confirmLabel = "Delete",
+                title = stringResource(R.string.goals_dialog_delete_task_title),
+                body = stringResource(R.string.goals_dialog_delete_task_body),
+                confirmLabel = stringResource(R.string.goals_dialog_delete_confirm),
                 confirmVariant = AwanButtonVariant.Destructive,
-                dismissLabel = "Cancel",
+                dismissLabel = stringResource(R.string.goals_dialog_delete_cancel),
                 onConfirm = {
                     onAction(GoalDetailsAction.DeleteTaskClicked(taskId))
                     taskToDelete = null
