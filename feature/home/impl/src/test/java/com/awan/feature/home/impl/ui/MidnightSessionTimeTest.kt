@@ -57,11 +57,11 @@ class MidnightSessionTimeTest {
     }
 
     @Test
-    fun `calculateDurationMinutes returns zero for invalid inverted same day session`() {
+    fun `calculateDurationMinutes handles 10 AM to 9 AM same date rollover as 1380 min`() {
         val start = LocalDateTime.of(2026, 8, 13, 10, 0)
         val end = LocalDateTime.of(2026, 8, 13, 9, 0) // 10 AM to 9 AM on same date
         val duration = calculateDurationMinutes(start, end)
-        assertEquals(0, duration)
+        assertEquals(1380, duration)
     }
 
     @Test
@@ -70,6 +70,38 @@ class MidnightSessionTimeTest {
         val end = LocalDateTime.of(2026, 8, 13, 0, 0)
         val duration = calculateDurationMinutes(start, end)
         assertEquals(1, duration)
+    }
+
+    @Test
+    fun `calculateDurationMinutes handles 11 PM to 7 AM overnight session`() {
+        val start = LocalDateTime.of(2026, 8, 13, 23, 0)
+        val end = LocalDateTime.of(2026, 8, 13, 7, 0)
+        val duration = calculateDurationMinutes(start, end)
+        assertEquals(480, duration)
+    }
+
+    @Test
+    fun `calculateDurationMinutes handles 7 PM to 8 AM overnight session`() {
+        val start = LocalDateTime.of(2026, 8, 13, 19, 0)
+        val end = LocalDateTime.of(2026, 8, 13, 8, 0)
+        val duration = calculateDurationMinutes(start, end)
+        assertEquals(780, duration)
+    }
+
+    @Test
+    fun `calculateDurationMinutes handles 5 30 PM to 12 30 AM overnight session`() {
+        val start = LocalDateTime.of(2026, 8, 13, 17, 30)
+        val end = LocalDateTime.of(2026, 8, 13, 0, 30)
+        val duration = calculateDurationMinutes(start, end)
+        assertEquals(420, duration)
+    }
+
+    @Test
+    fun `calculateDurationMinutes handles 12 00 PM to 12 30 AM overnight session`() {
+        val start = LocalDateTime.of(2026, 8, 13, 12, 0)
+        val end = LocalDateTime.of(2026, 8, 13, 0, 30)
+        val duration = calculateDurationMinutes(start, end)
+        assertEquals(750, duration)
     }
 
     @Test

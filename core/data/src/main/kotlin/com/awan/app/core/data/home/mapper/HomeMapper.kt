@@ -54,7 +54,7 @@ internal object HomeMapper {
             val betweenMins = java.time.Duration.between(startDt, endDt).toMinutes().toInt()
             duration = when {
                 betweenMins > 0 -> betweenMins
-                betweenMins < 0 && startDt.toLocalDate() == endDt.toLocalDate() && startDt.hour >= 18 && endDt.hour <= 6 -> {
+                betweenMins < 0 && startDt.toLocalDate() == endDt.toLocalDate() -> {
                     val adjustedEnd = endDt.plusDays(1)
                     val adjMins = java.time.Duration.between(startDt, adjustedEnd).toMinutes().toInt()
                     if (adjMins > 0) adjMins else 0
@@ -64,11 +64,9 @@ internal object HomeMapper {
         } else {
             startMin = parseIsoTimeToMinutes(start)
             val rawEndMin = parseIsoTimeToMinutes(end)
-            val startHour = startMin / 60
-            val endHour = rawEndMin / 60
             duration = when {
                 rawEndMin > startMin -> rawEndMin - startMin
-                rawEndMin < startMin && startHour >= 18 && endHour <= 6 -> (rawEndMin + 24 * 60) - startMin
+                rawEndMin < startMin -> (rawEndMin + 24 * 60) - startMin
                 else -> 0
             }
         }

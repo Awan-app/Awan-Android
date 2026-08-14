@@ -1,4 +1,4 @@
-package com.awan.app.core.data.gamification
+package com.awan.app.gamification
 
 import com.awan.app.core.domain.gamification.model.RewardEvent
 import com.awan.app.core.domain.gamification.model.RewardSource

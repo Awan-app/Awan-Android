@@ -8,8 +8,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
-import com.awan.app.core.data.gamification.RewardBatcher
-import com.awan.app.core.data.gamification.TimestampedRewardEvent
+import androidx.compose.runtime.snapshotFlow
+import com.awan.app.gamification.RewardBatcher
+import com.awan.app.gamification.TimestampedRewardEvent
 import com.awan.app.core.designsystem.ItemFlightOverlay
 import com.awan.app.core.designsystem.LocalRewardAnchors
 import com.awan.app.core.designsystem.PointsFlightOverlay
@@ -17,6 +18,7 @@ import com.awan.app.core.designsystem.StreakLootOverlay
 import com.awan.app.core.domain.gamification.model.RewardEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun RewardOverlayHost(
@@ -33,8 +35,11 @@ fun RewardOverlayHost(
         }
     }
 
-    LaunchedEffect(showing, queue.size) {
-        if (showing == null && queue.isNotEmpty()) {
+    LaunchedEffect(showing) {
+        if (showing == null) {
+            if (queue.isEmpty()) {
+                snapshotFlow { queue.size }.first { it > 0 }
+            }
             delay(RewardBatcher.DEFAULT_WINDOW_MS)
             val result = RewardBatcher.batchNext(
                 queue = queue,

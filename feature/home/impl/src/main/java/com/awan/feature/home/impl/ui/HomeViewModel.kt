@@ -97,13 +97,9 @@ class HomeViewModel @Inject constructor(
             when (val result = getProfileUseCase()) {
                 is Result.Success -> {
                     val user = result.data
-                    val name = user.firstName?.takeIf { it.isNotBlank() } ?: "User"
+                    val name = user.firstName?.takeIf { it.isNotBlank() } ?: ""
                     _uiState.update { state ->
-                        state.copy(
-                            userName = name,
-                            streakCount = user.streak ?: 0,
-                            pointsCount = user.points ?: 0,
-                        )
+                        state.copy(userName = name)
                     }
                 }
                 else -> Unit
@@ -115,13 +111,9 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             observeProfileUseCase().collect { profile ->
                 if (profile != null) {
-                    val name = profile.firstName?.takeIf { it.isNotBlank() } ?: "User"
+                    val name = profile.firstName?.takeIf { it.isNotBlank() } ?: ""
                     _uiState.update { state ->
-                        state.copy(
-                            userName = name,
-                            streakCount = profile.streak ?: state.streakCount,
-                            pointsCount = profile.points ?: state.pointsCount,
-                        )
+                        state.copy(userName = name)
                     }
                 }
             }
@@ -695,7 +687,12 @@ class HomeViewModel @Inject constructor(
         _uiState.update { state ->
             val dialogState = state.selectedSessionDetailState ?: return@update state
             val detail = dialogState.detail ?: return@update state
-            val duration = calculateDurationMinutes(detail.session.start, detail.session.end)
+            val calculatedDuration = calculateDurationMinutes(detail.session.start, detail.session.end)
+            val duration = if (calculatedDuration > 0) {
+                calculatedDuration
+            } else {
+                detail.task.estimatedDuration?.takeIf { it > 0 } ?: 30
+            }
 
             state.copy(
                 selectedSessionDetailState = dialogState.copy(

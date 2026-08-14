@@ -12,13 +12,9 @@ internal fun calculateDurationMinutes(start: LocalDateTime, end: LocalDateTime):
     val duration = java.time.Duration.between(start, end).toMinutes().toInt()
     return if (duration < 0) {
         if (start.toLocalDate() == end.toLocalDate()) {
-            if (start.hour >= 18 && end.hour <= 6) {
-                val adjustedEnd = end.plusDays(1)
-                val adjustedDuration = java.time.Duration.between(start, adjustedEnd).toMinutes().toInt()
-                if (adjustedDuration > 0) adjustedDuration else 0
-            } else {
-                0
-            }
+            val adjustedEnd = end.plusDays(1)
+            val adjustedDuration = java.time.Duration.between(start, adjustedEnd).toMinutes().toInt()
+            if (adjustedDuration > 0) adjustedDuration else 0
         } else {
             0
         }
