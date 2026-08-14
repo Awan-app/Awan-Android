@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -169,6 +171,7 @@ fun AddTaskSheet(
         containerColor = AwanTheme.colors.background,
         contentColor = AwanTheme.colors.textPrimary,
         dragHandle = null,
+        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) },
         modifier = modifier,
     ) {
         // No imePadding here: ModalBottomSheet's own root already applies it, and repeating it just
@@ -278,7 +281,7 @@ private fun AddTaskSheetContent(
      * `statusBarsPadding()` cannot be used here.
      */
     BoxWithConstraints(modifier) {
-        val topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
+        val topInset = WindowInsets.safeDrawing.only(WindowInsetsSides.Top).asPaddingValues().calculateTopPadding()
 
         Column(Modifier.heightIn(max = (maxHeight - topInset - AwanTheme.spacing.sm).coerceAtLeast(0.dp))) {
             SkyHeader(state = state)
