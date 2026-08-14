@@ -71,6 +71,7 @@ fun AwanButton(
     haptic: HapticFeedbackType? = awanButtonHaptic(variant),
     icon: (@Composable () -> Unit)? = null,
     latchedPressed: Boolean = false,
+    role: Role? = Role.Button,
     content: @Composable RowScope.() -> Unit,
 ) {
     val effectiveEnabled = enabled && !isLoading
@@ -120,7 +121,7 @@ fun AwanButton(
             easing = LinearOutSlowInEasing,
         ),
         label = "AwanButtonPressTranslationX",
-    ).value
+    )
     val pressTranslationY = animateDpAsState(
         targetValue = if (effectivePressed) AwanButtonRimDepth else 0.dp,
         animationSpec = tween(
@@ -128,7 +129,7 @@ fun AwanButton(
             easing = LinearOutSlowInEasing,
         ),
         label = "AwanButtonPressTranslationY",
-    ).value
+    )
     // A chip's target is exactly the pill: face plus rim, with no dead margin around it.
     val minTouchSize = if (variant == AwanButtonVariant.Chip) AwanChipFaceHeight + AwanButtonRimDepth else 48.dp
     val rimTopInset = animateDpAsState(
@@ -170,7 +171,7 @@ fun AwanButton(
                 interactionSource = null,
                 indication = null,
                 enabled = effectiveEnabled,
-                role = Role.Button,
+                role = role,
                 onClick = {
                     haptic?.let(hapticFeedback::performHapticFeedback)
                     onClick()
@@ -200,8 +201,8 @@ fun AwanButton(
                         // leaving the face background behind — the button measured as latched but
                         // still showed its rim, reading as raised.
                         .graphicsLayer {
-                            translationX = pressTranslationX.toPx()
-                            translationY = pressTranslationY.toPx()
+                            translationX = pressTranslationX.value.toPx()
+                            translationY = pressTranslationY.value.toPx()
                         }
                         .styleable(styleState, faceStyle, style),
                     horizontalArrangement = Arrangement.Center,

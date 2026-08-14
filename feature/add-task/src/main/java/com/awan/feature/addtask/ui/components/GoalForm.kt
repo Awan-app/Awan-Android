@@ -45,15 +45,12 @@ import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.CascadeItem
 import com.awan.app.core.designsystem.reducedMotion
 import com.awan.app.core.model.GoalDecompositionBlock
-import com.awan.app.core.model.GoalProposal
-import com.awan.app.core.model.ProposedTask
 import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskAction
 import com.awan.feature.addtask.presentation.AddTaskMode
 import com.awan.feature.addtask.presentation.AddTaskState
 import com.awan.feature.addtask.presentation.GoalPhase
 import com.awan.feature.addtask.presentation.GoalStep
-import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.Check
 import com.composables.icons.lucide.Lucide
 import java.time.LocalDate
@@ -147,16 +144,7 @@ fun GoalFormContent(
                         isPermissionError = isPermissionError,
                     )
 
-                    is GoalStep.Preview -> PreviewStepContent(
-                        step = step,
-                        state = state,
-                        onAction = onAction,
-                        isListening = isListening,
-                        onToggleMic = onToggleMic,
-                        micAmplitude = micAmplitude,
-                        speechError = speechError,
-                        isPermissionError = isPermissionError,
-                    )
+                    is GoalStep.Preview -> Unit
                 }
             }
         }
@@ -515,114 +503,6 @@ private fun WritingStepContent(
 }
 
 @Composable
-private fun PreviewStepContent(
-    step: GoalStep.Preview,
-    state: AddTaskState,
-    onAction: (AddTaskAction) -> Unit,
-    isListening: Boolean,
-    onToggleMic: () -> Unit,
-    micAmplitude: () -> Float,
-    speechError: String?,
-    isPermissionError: Boolean,
-) {
-    val replyBlocks = state.goalReplyBlocks
-
-    Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
-        if (replyBlocks.isNotEmpty()) {
-            var proposalRendered = false
-            replyBlocks.forEachIndexed { index, block ->
-                when (block) {
-                    is GoalDecompositionBlock.Text -> {
-                        CascadeItem(index + 1, Modifier.fillMaxWidth()) {
-                            AssistantTextCard(text = block.text)
-                        }
-                    }
-
-                    is GoalDecompositionBlock.Proposal -> {
-                        if (!proposalRendered) {
-                            proposalRendered = true
-                            CascadeItem(index + 1, Modifier.fillMaxWidth()) {
-                                ProposalCard(proposal = block.proposal)
-                            }
-                        }
-                    }
-
-                    is GoalDecompositionBlock.Question -> Unit
-                }
-            }
-            if (!proposalRendered) {
-                CascadeItem(replyBlocks.size + 1, Modifier.fillMaxWidth()) {
-                    ProposalCard(proposal = step.proposal)
-                }
-            }
-        } else {
-            CascadeItem(1, Modifier.fillMaxWidth()) {
-                ProposalCard(proposal = step.proposal)
-            }
-        }
-
-        val baseIndex = if (replyBlocks.isNotEmpty()) replyBlocks.size + 2 else 2
-
-        CascadeItem(baseIndex, Modifier.fillMaxWidth()) {
-            AwanButton(
-                onClick = { onAction(AddTaskAction.AcceptGoalProposal) },
-                enabled = state.canAcceptGoal,
-                isLoading = state.isSubmitting,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                AwanText(stringResource(R.string.add_task_goal_preview_accept))
-            }
-        }
-
-        CascadeItem(baseIndex + 1, Modifier.fillMaxWidth()) {
-            Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-                AwanAiAura(active = state.isSubmitting, modifier = Modifier.fillMaxWidth()) {
-                    AwanTextField(
-                        value = state.input,
-                        onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
-                        placeholder = stringResource(R.string.add_task_goal_preview_revision_placeholder),
-                        contentDescriptionText = stringResource(R.string.add_task_goal_preview_revision_description),
-                        enabled = !state.isSubmitting,
-                        singleLine = false,
-                        isError = isPermissionError,
-                        trailingContent = {
-                            AwanMicButton(
-                                isListening = isListening,
-                                onToggle = onToggleMic,
-                                enabled = !state.isSubmitting,
-                                amplitude = micAmplitude,
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-
-                if (speechError != null) {
-                    AwanText(
-                        text = speechError,
-                        style = AwanTheme.styles.errorText,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = AwanTheme.spacing.xxs)
-                            .semantics { liveRegion = LiveRegionMode.Polite },
-                    )
-                }
-
-                AwanButton(
-                    onClick = { onAction(AddTaskAction.Submit) },
-                    enabled = state.canSubmit,
-                    isLoading = state.isSubmitting,
-                    variant = AwanButtonVariant.Quiet,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    AwanText(stringResource(R.string.add_task_goal_preview_revision_submit))
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun AssistantTextCard(text: String) {
     AwanCard(
         background = AwanTheme.colors.surface.copy(alpha = 0.6f),
@@ -632,102 +512,6 @@ private fun AssistantTextCard(text: String) {
             text = text,
             style = AwanTheme.typography.body.copy(color = AwanTheme.colors.textSecondary),
         )
-    }
-}
-
-@Composable
-private fun ProposalCard(proposal: GoalProposal) {
-    AwanCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
-            AwanText(
-                text = proposal.title,
-                style = AwanTheme.typography.title.copy(color = AwanTheme.colors.textPrimary),
-            )
-
-            proposal.description?.takeIf { it.isNotBlank() }?.let { desc ->
-                AwanText(
-                    text = desc,
-                    style = AwanTheme.typography.body.copy(color = AwanTheme.colors.textSecondary),
-                )
-            }
-
-            proposal.targetDate?.takeIf { it.isNotBlank() }?.let { dateStr ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs),
-                ) {
-                    Icon(
-                        imageVector = Lucide.Calendar,
-                        contentDescription = null,
-                        tint = AwanTheme.colors.sky,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    AwanText(
-                        text = stringResource(R.string.add_task_goal_preview_target_date, dateStr),
-                        style = AwanTheme.styles.metaText,
-                    )
-                }
-            }
-
-            if (proposal.tasks.isNotEmpty()) {
-                AwanText(
-                    text = stringResource(R.string.add_task_goal_preview_tasks_header, proposal.tasks.size),
-                    style = AwanTheme.typography.body.copy(
-                        color = AwanTheme.colors.textPrimary,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                    modifier = Modifier.padding(top = AwanTheme.spacing.xxs),
-                )
-
-                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-                    proposal.tasks.forEachIndexed { index, task ->
-                        TaskProposalItem(index = index + 1, task = task)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TaskProposalItem(index: Int, task: ProposedTask) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = AwanTheme.colors.line.copy(alpha = 0.3f),
-                shape = AwanTheme.shapes.chip,
-            )
-            .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            AwanText(
-                text = stringResource(R.string.add_task_goal_preview_task_item_title, index, task.title),
-                style = AwanTheme.typography.body.copy(color = AwanTheme.colors.textPrimary),
-                modifier = Modifier.weight(1f),
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-                task.estimatedDuration?.let { dur ->
-                    val durText = durationLabel(dur)
-                    AwanText(
-                        text = stringResource(R.string.add_task_goal_preview_duration, durText),
-                        style = AwanTheme.styles.metaText,
-                    )
-                }
-
-                task.estimatedPoints?.let { pts ->
-                    AwanText(
-                        text = stringResource(R.string.add_task_goal_preview_points, pts),
-                        style = AwanTheme.styles.metaText,
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -788,37 +572,6 @@ private fun GoalFormWritingPreview() {
                 mode = AddTaskMode.GOAL,
                 goalStep = GoalStep.WritingQuestion(question = "How many hours per week can you dedicate?"),
                 input = "5 hours every weekend",
-            ),
-            onAction = {},
-            isListening = false,
-            micAmplitude = { 0f },
-            onToggleMic = {},
-            speechError = null,
-            modifier = Modifier.padding(16.dp),
-        )
-    }
-}
-
-@Preview(name = "GoalForm · 4. Preview", showBackground = true)
-@Composable
-private fun GoalFormPreviewStatePreview() {
-    AwanTheme {
-        GoalFormContent(
-            state = AddTaskState(
-                today = LocalDate.of(2026, 7, 28),
-                mode = AddTaskMode.GOAL,
-                goalStep = GoalStep.Preview(
-                    proposal = GoalProposal(
-                        title = "Master Conversational Spanish",
-                        description = "Targeted practice for trip to Spain",
-                        targetDate = "2026-09-01",
-                        tasks = listOf(
-                            ProposedTask("Daily vocabulary review", estimatedDuration = 30, estimatedPoints = 10),
-                            ProposedTask("Practice with language exchange partner", estimatedDuration = 60, estimatedPoints = 25),
-                        ),
-                    ),
-                ),
-                goalSessionId = "session-123",
             ),
             onAction = {},
             isListening = false,

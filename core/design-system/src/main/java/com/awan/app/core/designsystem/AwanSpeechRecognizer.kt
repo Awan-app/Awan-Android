@@ -100,6 +100,8 @@ fun rememberSpeechRecognizer(
      */
     val languageTag = LocalConfiguration.current.locales[0].toLanguageTag()
     val latestText by rememberUpdatedState(currentText)
+    val currentOnTranscript by rememberUpdatedState(onTranscript)
+    val currentOnSetMicPermissionRequested by rememberUpdatedState(onSetMicPermissionRequested)
 
     // Resolved here rather than inside the listener: the recognizer's callbacks are not composable,
     // and the activity's resources are not guaranteed to carry the app locale the composition does.
@@ -110,10 +112,7 @@ fun rememberSpeechRecognizer(
     val permissionDeniedText = stringResource(R.string.ds_speech_permission_denied)
 
     fun stopInternal() {
-        recognizer?.apply {
-            stopListening()
-            cancel()
-        }
+        recognizer?.stopListening()
         amplitude.set(0f)
         isListening = false
     }
@@ -161,6 +160,10 @@ fun rememberSpeechRecognizer(
                     SpeechRecognizer.ERROR_CLIENT -> {
                         // Silent when cancelled by user/app
                     }
+                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> {
+                        isPermissionError = true
+                        errorMessage = permissionDeniedText
+                    }
                     SpeechRecognizer.ERROR_NO_MATCH,
                     SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
                         errorMessage = noMatchText
@@ -176,14 +179,14 @@ fun rememberSpeechRecognizer(
                 isListening = false
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
-                    onTranscript(prefix + matches[0])
+                    currentOnTranscript(prefix + matches[0])
                 }
             }
 
             override fun onPartialResults(partialResults: Bundle?) {
                 val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
-                    onTranscript(prefix + matches[0])
+                    currentOnTranscript(prefix + matches[0])
                 }
             }
 
@@ -203,11 +206,12 @@ fun rememberSpeechRecognizer(
         contract = ActivityResultContracts.RequestPermission(),
     ) { isGranted ->
         if (isGranted) {
-            onSetMicPermissionRequested(false)
+            currentOnSetMicPermissionRequested(false)
             isPermissionError = false
             errorMessage = null
             startListeningNow()
         } else {
+            currentOnSetMicPermissionRequested(true)
             val activity = context.findActivity()
             val shouldShowRationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
                 activity,
@@ -242,7 +246,6 @@ fun rememberSpeechRecognizer(
             confirmLabel = stringResource(R.string.ds_speech_rationale_confirm),
             onConfirm = {
                 showRationaleDialog = false
-                onSetMicPermissionRequested(true)
                 permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             },
             dismissLabel = stringResource(R.string.ds_speech_rationale_cancel),
@@ -261,6 +264,7 @@ fun rememberSpeechRecognizer(
                 errorMessage = null
                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                     data = Uri.fromParts("package", context.packageName, null)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(intent)
             },
@@ -287,7 +291,7 @@ fun rememberSpeechRecognizer(
 
                 if (hasPermission) {
                     if (hasRequestedMicPermission) {
-                        onSetMicPermissionRequested(false)
+                        currentOnSetMicPermissionRequested(false)
                     }
                     isPermissionError = false
                     errorMessage = null

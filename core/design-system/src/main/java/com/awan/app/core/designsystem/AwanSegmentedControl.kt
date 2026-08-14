@@ -155,9 +155,8 @@ private fun Segment(
 
     AwanButton(
         onClick = onClick,
-        // AwanButton is a Role.Button; a segment is one of a set, and only the set knows that.
+        // AwanButton defaults to Role.Button; a segment is one of a set, and only the set knows that.
         modifier = modifier.semantics {
-            role = Role.Tab
             selected = isSelected
         },
         style = faceStyle,
@@ -165,6 +164,7 @@ private fun Segment(
         variant = AwanButtonVariant.Chip,
         enabled = enabled,
         latchedPressed = isSelected,
+        role = Role.Tab,
     ) {
         // Chip's LocalContentColor is fixed to textSecondary, so the label carries its own colour.
         AwanText(text = text, style = AwanTheme.styles.buttonCompactText.copy(color = ink))

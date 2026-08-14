@@ -257,7 +257,7 @@ private fun AddTaskSheetContent(
     }
 
     val handleAction: (AddTaskAction) -> Unit = { action ->
-        if (action is AddTaskAction.InputChanged || action is AddTaskAction.GoalOptionSelected) {
+        if (action is AddTaskAction.InputChanged || action is AddTaskAction.GoalOptionSelected || action is AddTaskAction.ModeChanged) {
             speechState.clearError()
         }
         onAction(action)
@@ -280,7 +280,7 @@ private fun AddTaskSheetContent(
     BoxWithConstraints(modifier) {
         val topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
 
-        Column(Modifier.heightIn(max = maxHeight - topInset - AwanTheme.spacing.sm)) {
+        Column(Modifier.heightIn(max = (maxHeight - topInset - AwanTheme.spacing.sm).coerceAtLeast(0.dp))) {
             SkyHeader(state = state)
 
             Column(
