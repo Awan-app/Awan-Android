@@ -121,6 +121,10 @@ class AddTaskViewModelTest {
         override suspend fun deleteTask(taskId: String): Result<Unit> = error("not used")
 
         override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = error("not used")
+
+        override suspend fun completeTask(taskId: String): Result<Task> = error("not used")
+
+        override suspend fun moveTask(taskId: String, goalId: String?): Result<Task> = error("not used")
     }
 
     private class FakeGoalRepository : GoalRepository {
@@ -160,6 +164,9 @@ class AddTaskViewModelTest {
         ): Result<Goal> = error("not used")
 
         override suspend fun deleteGoal(goalId: String): Result<Unit> = error("not used")
+
+        override fun observeGoal(goalId: String): Flow<Goal?> = flowOf(null)
+
         override suspend fun getDecompositionTranscript(sessionId: String): Result<com.awan.app.core.model.GoalDecompositionTranscript> = error("not used")
         override suspend fun cancelDecomposition(sessionId: String): Result<Unit> = error("not used")
         override suspend fun scheduleGoal(goalId: String): Result<Unit> = error("not used")
@@ -241,15 +248,16 @@ class AddTaskViewModelTest {
     private lateinit var userDataRepository: FakeUserDataRepository
 
     private fun viewModel(): AddTaskViewModel = AddTaskViewModel(
-        parseTaskInput = ParseTaskInputUseCase(clock),
-        applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
-        getCategories = GetCategoriesUseCase(categoryRepository),
-        createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-        continueGoalDecomposition = ContinueGoalDecompositionUseCase(goalRepository),
-        confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(goalRepository),
-        getUserDataUseCase = GetUserDataUseCase(userDataRepository),
-        setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
-        clock = clock,
+        ParseTaskInputUseCase(clock),
+        ApplyTaskAttributeUseCase(clock),
+        GetCategoriesUseCase(categoryRepository),
+        GetZonesForDateUseCase(zoneRepository),
+        CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+        ContinueGoalDecompositionUseCase(goalRepository),
+        ConfirmGoalDecompositionUseCase(goalRepository),
+        GetUserDataUseCase(userDataRepository),
+        SetMicPermissionRequestedUseCase(userDataRepository),
+        clock,
     )
 
     /** The sentences asserted here are English, and the parser follows the ambient locale. */
@@ -1261,15 +1269,16 @@ class AddTaskViewModelTest {
                 }
             }
             val customViewModel = AddTaskViewModel(
-                parseTaskInput = ParseTaskInputUseCase(clock),
-                applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
-                getCategories = GetCategoriesUseCase(categoryRepository),
-                createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-                continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
-                confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
-                getUserDataUseCase = GetUserDataUseCase(userDataRepository),
-                setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
-                clock = clock,
+                ParseTaskInputUseCase(clock),
+                ApplyTaskAttributeUseCase(clock),
+                GetCategoriesUseCase(categoryRepository),
+                GetZonesForDateUseCase(zoneRepository),
+                CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+                ContinueGoalDecompositionUseCase(gateRepository),
+                ConfirmGoalDecompositionUseCase(gateRepository),
+                GetUserDataUseCase(userDataRepository),
+                SetMicPermissionRequestedUseCase(userDataRepository),
+                clock,
             )
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
@@ -1351,15 +1360,16 @@ class AddTaskViewModelTest {
                 }
             }
             val customViewModel = AddTaskViewModel(
-                parseTaskInput = ParseTaskInputUseCase(clock),
-                applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
-                getCategories = GetCategoriesUseCase(categoryRepository),
-                createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-                continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
-                confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
-                getUserDataUseCase = GetUserDataUseCase(userDataRepository),
-                setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
-                clock = clock,
+                ParseTaskInputUseCase(clock),
+                ApplyTaskAttributeUseCase(clock),
+                GetCategoriesUseCase(categoryRepository),
+                GetZonesForDateUseCase(zoneRepository),
+                CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+                ContinueGoalDecompositionUseCase(gateRepository),
+                ConfirmGoalDecompositionUseCase(gateRepository),
+                GetUserDataUseCase(userDataRepository),
+                SetMicPermissionRequestedUseCase(userDataRepository),
+                clock,
             )
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
@@ -1444,15 +1454,16 @@ class AddTaskViewModelTest {
                 }
             }
             val customViewModel = AddTaskViewModel(
-                parseTaskInput = ParseTaskInputUseCase(clock),
-                applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
-                getCategories = GetCategoriesUseCase(categoryRepository),
-                createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-                continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
-                confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
-                getUserDataUseCase = GetUserDataUseCase(userDataRepository),
-                setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
-                clock = clock,
+                ParseTaskInputUseCase(clock),
+                ApplyTaskAttributeUseCase(clock),
+                GetCategoriesUseCase(categoryRepository),
+                GetZonesForDateUseCase(zoneRepository),
+                CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+                ContinueGoalDecompositionUseCase(gateRepository),
+                ConfirmGoalDecompositionUseCase(gateRepository),
+                GetUserDataUseCase(userDataRepository),
+                SetMicPermissionRequestedUseCase(userDataRepository),
+                clock,
             )
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
@@ -1554,15 +1565,16 @@ class AddTaskViewModelTest {
                 }
             }
             val customViewModel = AddTaskViewModel(
-                parseTaskInput = ParseTaskInputUseCase(clock),
-                applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
-                getCategories = GetCategoriesUseCase(categoryRepository),
-                createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-                continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
-                confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
-                getUserDataUseCase = GetUserDataUseCase(userDataRepository),
-                setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
-                clock = clock,
+                ParseTaskInputUseCase(clock),
+                ApplyTaskAttributeUseCase(clock),
+                GetCategoriesUseCase(categoryRepository),
+                GetZonesForDateUseCase(zoneRepository),
+                CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+                ContinueGoalDecompositionUseCase(gateRepository),
+                ConfirmGoalDecompositionUseCase(gateRepository),
+                GetUserDataUseCase(userDataRepository),
+                SetMicPermissionRequestedUseCase(userDataRepository),
+                clock,
             )
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))

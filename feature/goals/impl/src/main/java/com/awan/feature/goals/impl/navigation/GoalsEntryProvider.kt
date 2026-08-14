@@ -35,32 +35,50 @@ fun EntryProviderScope<Route>.goalsEntry(
     }
 
     entry<InboxRoute> {
-        val viewModel: InboxViewModel = hiltViewModel()
-        val state by viewModel.state.collectAsStateWithLifecycle()
-
-        InboxScreen(
-            state = state,
-            events = viewModel.events,
-            onAction = viewModel::onAction,
-            onNavigateBack = onBack
-        )
+        InboxRouteScreen(onBack = onBack)
     }
 
     entry<GoalDetailsRoute> { route ->
-        val viewModel: GoalDetailsViewModel = hiltViewModel()
-        val state by viewModel.state.collectAsStateWithLifecycle()
-
-        androidx.compose.runtime.LaunchedEffect(route.id) {
-            viewModel.loadGoal(route.id)
-        }
-
-        GoalDetailsScreen(
-            state = state,
-            events = viewModel.events,
-            onAction = viewModel::onAction,
-            onNavigateBack = onBack
+        GoalDetailsRouteScreen(
+            route = route,
+            onBack = onBack
         )
     }
+}
+
+@Composable
+fun InboxRouteScreen(
+    onBack: () -> Unit,
+    viewModel: InboxViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    InboxScreen(
+        state = state,
+        events = viewModel.events,
+        onAction = viewModel::onAction,
+        onNavigateBack = onBack
+    )
+}
+
+@Composable
+fun GoalDetailsRouteScreen(
+    route: GoalDetailsRoute,
+    onBack: () -> Unit,
+    viewModel: GoalDetailsViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    androidx.compose.runtime.LaunchedEffect(route.id) {
+        viewModel.loadGoal(route.id)
+    }
+
+    GoalDetailsScreen(
+        state = state,
+        events = viewModel.events,
+        onAction = viewModel::onAction,
+        onNavigateBack = onBack
+    )
 }
 
 @Composable

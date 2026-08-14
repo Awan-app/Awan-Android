@@ -37,7 +37,8 @@ fun GoalDetailsScreen(
     events: Flow<GoalDetailsEvent>,
     onAction: (GoalDetailsAction) -> Unit,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    addTaskViewModel: AddTaskViewModel = hiltViewModel(),
 ) {
     val colors = AwanTheme.colors
     val context = LocalContext.current
@@ -145,8 +146,6 @@ fun GoalDetailsScreen(
         }
 
         if (state.showAddTaskSheet && state.goal != null) {
-            val addTaskViewModel: AddTaskViewModel = hiltViewModel()
-            
             LaunchedEffect(state.goal.id) {
                 addTaskViewModel.onAction(AddTaskAction.Initialize(goalId = state.goal.id))
             }

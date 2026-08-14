@@ -88,6 +88,13 @@ class AiTaskRepositoryImplTest {
         override suspend fun deleteTask(taskId: String): Result<Unit> = error("not used")
 
         override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = error("not used")
+
+        override suspend fun updateTask(
+            taskId: String,
+            request: com.awan.app.core.network.dto.task.TaskUpdateRequest
+        ): Result<TaskInfoResponse> = error("not used")
+
+        override suspend fun completeTask(taskId: String): Result<com.awan.app.core.network.dto.task.TaskCompletionResponse> = error("not used")
     }
 
     private val fakeTaskDao = object : TaskDao {
@@ -102,7 +109,7 @@ class AiTaskRepositoryImplTest {
         override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
         override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
         override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
-        override fun getDependsOnIds(taskId: String): List<String> = emptyList()
+        override suspend fun getDependsOnIds(taskId: String): List<String> = emptyList()
         override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
         override suspend fun deleteAllDependenciesForTask(taskId: String) {}
         override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}

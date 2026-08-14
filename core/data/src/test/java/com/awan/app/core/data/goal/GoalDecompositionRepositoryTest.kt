@@ -26,8 +26,10 @@ import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
 import com.awan.app.core.database.dao.TaskDao
+import com.awan.app.core.database.model.CategoryEntity
 import com.awan.app.core.database.model.GoalEntity
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
@@ -113,12 +115,23 @@ class GoalDecompositionRepositoryTest {
         override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
         override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
         override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
-        override fun getDependsOnIds(taskId: String): List<String> = emptyList()
+        override suspend fun getDependsOnIds(taskId: String): List<String> = emptyList()
         override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
         override suspend fun deleteAllDependenciesForTask(taskId: String) {}
         override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}
         override suspend fun deleteTasksByGoal(goalId: String) {}
         override suspend fun nullifyOrphanedGoalReferences() {}
+    }
+
+    private val noOpCategoryDao = object : CategoryDao {
+        override suspend fun upsertCategories(categories: List<CategoryEntity>) {}
+        override suspend fun upsertCategory(category: CategoryEntity) {}
+        override fun observeAllCategories(): Flow<List<CategoryEntity>> = flowOf(emptyList())
+        override suspend fun getAllCategories(): List<CategoryEntity> = emptyList()
+        override suspend fun getCategory(id: String): CategoryEntity? = null
+        override suspend fun deleteCategory(id: String) {}
+        override suspend fun deleteAllCategories() {}
+        override suspend fun getMinExpiryTime(): Long? = null
     }
 
     // --- C. Remote data source / repository behavior ---
@@ -177,7 +190,7 @@ class GoalDecompositionRepositoryTest {
         override suspend fun getGoals(): Result<List<GoalInfoResponse>> = Result.Success(emptyList())
         override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun getInboxGoal(): Result<GoalInfoResponse> = error("Not implemented")
-        override suspend fun getGoal(goalId: String): Result<GoalInfoResponse> = error("Not implemented")
+        override suspend fun getGoal(goalId: String, expand: Boolean): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun deleteGoal(goalId: String): Result<Unit> = error("Not implemented")
         override suspend fun continueDecomposition(request: GoalDecomposeRequest): Result<GoalDecomposeResponse> = error("Not implemented")
@@ -197,7 +210,14 @@ class GoalDecompositionRepositoryTest {
             override suspend fun continueDecomposition(request: GoalDecomposeRequest): Result<GoalDecomposeResponse> =
                 expectedError
         }
-        val repository = GoalRepositoryImpl(fakeDs, noOpGoalDao, noOpTaskDao, onlineMonitor, testDispatcher)
+        val repository = GoalRepositoryImpl(
+            remoteDataSource = fakeDs,
+            goalDao = noOpGoalDao,
+            taskDao = noOpTaskDao,
+            categoryDao = noOpCategoryDao,
+            connectivityMonitor = onlineMonitor,
+            ioDispatcher = testDispatcher
+        )
         val result = repository.continueDecomposition(sessionId = null, message = "Test")
 
         assertEquals(expectedError, result)
@@ -211,7 +231,14 @@ class GoalDecompositionRepositoryTest {
             override suspend fun confirmDecomposition(sessionId: String): Result<GoalInfoResponse> =
                 expectedError
         }
-        val repository = GoalRepositoryImpl(fakeDs, noOpGoalDao, noOpTaskDao, onlineMonitor, testDispatcher)
+        val repository = GoalRepositoryImpl(
+            remoteDataSource = fakeDs,
+            goalDao = noOpGoalDao,
+            taskDao = noOpTaskDao,
+            categoryDao = noOpCategoryDao,
+            connectivityMonitor = onlineMonitor,
+            ioDispatcher = testDispatcher
+        )
 
         val result = repository.confirmDecomposition(sessionId = "sess-x")
 

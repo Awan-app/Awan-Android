@@ -125,6 +125,7 @@ fun AwanApp(
     rewardEvents: Flow<RewardEvent>,
     modifier: Modifier = Modifier,
     isOnline: Boolean = true,
+    addTaskViewModel: AddTaskViewModel = hiltViewModel(),
 ) {
     var currentHomeDate by rememberSaveable { mutableStateOf<String?>(null) }
     val navigator = remember { Navigator(appState.navigationState) }
@@ -162,8 +163,6 @@ fun AwanApp(
     }
 
     if (showAddTask && isOnline) {
-        val addTaskViewModel: AddTaskViewModel = hiltViewModel()
-        
         androidx.compose.runtime.LaunchedEffect(addTaskZoneId, addTaskDate) {
             addTaskViewModel.onAction(
                 AddTaskAction.Initialize(
@@ -191,7 +190,6 @@ fun AwanApp(
                 addTaskDate = null
                 navigator.navigate(AiTaskProposalsRoute(text = text, note = note, imageUri = imageUri))
             },
-            viewModel = addTaskViewModel
         )
     }
 
