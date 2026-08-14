@@ -239,7 +239,7 @@ fun HomeScreen(
             )
         }
 
-        if (!uiState.isWheelOpen) {
+        if (!uiState.isWheelOpen && uiState.hasFreeSpin) {
             AwanWheelBadge(
                 hasFreeSpin = uiState.hasFreeSpin,
                 isCollapsed = isHeaderCollapsed,

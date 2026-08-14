@@ -583,6 +583,8 @@ private fun WheelCanvas(
         if (canSpin) R.string.ds_wheel_tap_to_spin else R.string.ds_wheel_claimed_title
     )
 
+    val haptics = LocalHapticFeedback.current
+
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -590,7 +592,19 @@ private fun WheelCanvas(
             .semantics {
                 role = Role.Button
                 contentDescription = wheelDescription
-            },
+            }
+            .then(
+                if (enabled) {
+                    Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                            onSpin()
+                        },
+                    )
+                } else Modifier
+            ),
     ) {
         Canvas(
             modifier = Modifier.fillMaxSize(),
