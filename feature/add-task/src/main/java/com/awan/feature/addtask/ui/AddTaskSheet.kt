@@ -367,7 +367,7 @@ private fun AddTaskSheetContent(
  * opens, so the sheet reads as sky arriving rather than a panel appearing.
  */
 @Composable
-private fun SkyHeader(state: AddTaskState) {proce
+private fun SkyHeader(state: AddTaskState) {
     CloudDrift(height = SkyHeight) {
         // The sheet has no Material drag handle — the sky is the header — so this stands in for it.
         Box(
