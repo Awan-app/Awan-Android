@@ -29,6 +29,30 @@
 
     <string name="profile_section_settings">SETTINGS</string>
     <string name="profile_notifications">Notifications</string>
+
+    <!-- Notification settings -->
+    <string name="profile_notifications_title">Notifications</string>
+    <string name="profile_notifications_section_sessions">SESSIONS</string>
+    <string name="profile_notifications_section_timing">TIMING</string>
+    <string name="profile_notifications_section_nudges">NUDGES</string>
+    <string name="profile_notifications_section_other">OTHER</string>
+    <string name="profile_notifications_reminders">Before a session starts</string>
+    <string name="profile_notifications_live_activity">Live progress while running</string>
+    <string name="profile_notifications_session_end">When a session ends</string>
+    <string name="profile_notifications_follow_up">If you don\'t reply after a session</string>
+    <string name="profile_notifications_streak">Before the day ends with nothing done</string>
+    <string name="profile_notifications_daily_brief">A morning look at your day</string>
+    <string name="profile_notifications_rewards">Rewards and daily spin</string>
+    <string name="profile_notifications_reminder_lead">Remind me (min)</string>
+    <string name="profile_notifications_snooze_length">Snooze by (min)</string>
+    <string name="profile_notifications_snooze_ask">Ask</string>
+    <string name="profile_notifications_follow_up_delay">Follow up after (min)</string>
+    <!-- Segment label. The unit lives in the row title so four segments fit without wrapping. -->
+    <string name="profile_notifications_minutes">%1$d</string>
+    <string name="profile_notifications_system_settings">System notification settings</string>
+    <string name="profile_notifications_blocked_title">Notifications are turned off</string>
+    <string name="profile_notifications_blocked_body">Awan cannot remind you about sessions until notifications are allowed for this app.</string>
+    <string name="profile_notifications_blocked_action">Allow notifications</string>
     <string name="profile_help_center">Help Center</string>
     <string name="profile_inventory">Inventory</string>
     <string name="profile_how_to_earn_points">How to Earn Points</string>
