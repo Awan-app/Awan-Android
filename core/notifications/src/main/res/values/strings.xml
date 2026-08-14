@@ -46,6 +46,10 @@
     <!-- Clears the running-session notification and changes nothing about the session itself. -->
     <string name="notifications_action_stop">Stop</string>
     <string name="notifications_action_snooze">Snooze</string>
+    <!-- The button says what it will do, when there is a stored length to name. -->
+    <string name="notifications_action_snooze_for">Snooze %1$d min</string>
+    <string name="notifications_snooze_prompt">Snooze for…</string>
+    <string name="notifications_action_snooze_minutes">%1$d min</string>
     <string name="notifications_action_reschedule">Reschedule</string>
     <string name="notifications_action_complete">Mark complete</string>
 

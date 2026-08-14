@@ -54,6 +54,10 @@
     <!-- Clears the running-session notification and changes nothing about the session itself. -->
     <string name="notifications_action_stop">إيقاف</string>
     <string name="notifications_action_snooze">تأجيل</string>
+    <!-- The button says what it will do, when there is a stored length to name. -->
+    <string name="notifications_action_snooze_for">تأجيل %1$d د</string>
+    <string name="notifications_snooze_prompt">تأجيل لمدة…</string>
+    <string name="notifications_action_snooze_minutes">%1$d د</string>
     <string name="notifications_action_reschedule">إعادة جدولة</string>
     <string name="notifications_action_complete">تحديد كمكتملة</string>
 

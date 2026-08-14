@@ -7,6 +7,7 @@ import com.awan.app.core.notifications.model.DayNotificationEvent
 import com.awan.app.core.notifications.model.NotificationDayContext
 import com.awan.app.core.notifications.model.SessionNotificationEvent
 import com.awan.app.core.notifications.model.SessionWindow
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.LocalTime
 import org.junit.Assert.assertEquals
@@ -337,6 +338,58 @@ class SessionNotificationPlannerTest {
     }
 
     @Test
+    fun `the snooze lengths offered on the notification are real lengths`() {
+        // They become the picker's buttons and then a number of minutes to move a session by, so a
+        // sentinel among them would shift a session backwards by one minute.
+        assertTrue(NotificationPreferences.SNOOZE_LENGTH_CHOICES.all { it > 0 })
+        assertEquals(
+            NotificationPreferences.SNOOZE_CHOICES.size - 1,
+            NotificationPreferences.SNOOZE_LENGTH_CHOICES.size,
+        )
+        assertEquals(NotificationPreferences.SNOOZE_ASK, NotificationPreferences.DEFAULT_SNOOZE_MINUTES)
+    }
+
+    @Test
+    fun `minutes until a session are rounded, not truncated`() {
+        // An alarm is delivered at or after its moment, never before, so the time left at post time
+        // is always a shade under the lead the user chose — and flooring turned every "in 5 minutes"
+        // reminder into "in 4 minutes".
+        assertEquals(5, SessionNotificationPlanner.roundedMinutes(Duration.ofSeconds(299)))
+        assertEquals(5, SessionNotificationPlanner.roundedMinutes(Duration.ofMinutes(5)))
+        assertEquals(4, SessionNotificationPlanner.roundedMinutes(Duration.ofSeconds(269)))
+        assertEquals(0, SessionNotificationPlanner.roundedMinutes(Duration.ofSeconds(-30)))
+    }
+
+    @Test
+    fun `minutes remaining are rounded up`() {
+        // This sits beside the system chronometer, which counts real seconds: anything that floors
+        // reads 0m for the last full minute while the countdown plainly disagrees.
+        assertEquals(1, SessionNotificationPlanner.ceilMinutes(Duration.ofSeconds(10)))
+        assertEquals(2, SessionNotificationPlanner.ceilMinutes(Duration.ofSeconds(61)))
+        assertEquals(0, SessionNotificationPlanner.ceilMinutes(Duration.ZERO))
+        assertEquals(0, SessionNotificationPlanner.ceilMinutes(Duration.ofSeconds(-90)))
+    }
+
+    @Test
+    fun `an event's grace is the same window it is judged due within`() {
+        // The delivery record expires on this, so a grace that disagrees with isDue either re-posts
+        // a notification the user dismissed or blocks one that was never delivered.
+        val session = session(start = now.plusMinutes(10), end = now.plusMinutes(70))
+        val events = listOf(
+            SessionNotificationEvent.Reminder(now, session),
+            SessionNotificationEvent.Ended(now, session),
+            SessionNotificationEvent.FollowUp(now, session),
+            DayNotificationEvent.StreakRisk(now, now.toLocalDate()),
+        )
+
+        events.forEach { event ->
+            val grace = SessionNotificationPlanner.graceFor(event)
+            assertTrue(SessionNotificationPlanner.isDue(event, now.plus(grace)))
+            assertFalse(SessionNotificationPlanner.isDue(event, now.plus(grace).plusSeconds(1)))
+        }
+    }
+
+    @Test
     fun `a follow-up is due only within its grace window`() {
         val session = session(start = now.minusHours(4), end = now.minusHours(3))
 
@@ -489,13 +542,16 @@ class SessionNotificationPlannerTest {
     }
 
     @Test
-    fun `no streak warning while a session is running`() {
-        // The live notification is already on screen saying the opposite.
+    fun `a session merely running does not clear the streak warning`() {
+        // It used to. A condition applied here decides whether the event exists at all, and an event
+        // that does not exist gets no alarm — so a block running at 21:00 threw the whole day's
+        // warning away with nothing left to bring it back inside its grace window. Running is not
+        // finished, so the warning still holds.
         val running = session(start = now.minusMinutes(5), end = now.plusMinutes(55))
 
         val plan = plan(listOf(running), day = dayKnown)
 
-        assertTrue(plan.none { it is DayNotificationEvent.StreakRisk })
+        assertTrue(plan.any { it is DayNotificationEvent.StreakRisk })
     }
 
     @Test

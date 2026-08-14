@@ -16,6 +16,8 @@ import com.awan.app.core.common.error.AppError
 import com.awan.app.core.domain.home.usecase.CompleteSessionUseCase
 import com.awan.app.core.domain.home.usecase.MoveSessionUseCase
 import com.awan.app.core.domain.notifications.usecase.GetNotificationPreferencesUseCase
+import com.awan.app.core.model.NotificationPreferences
+import com.awan.app.core.notifications.NotificationIntents
 import com.awan.app.core.notifications.SessionNotificationScheduler
 import com.awan.app.core.notifications.model.NotificationAction
 import dagger.assisted.Assisted
@@ -74,7 +76,7 @@ class NotificationActionWorker @AssistedInject constructor(
     private suspend fun snooze(sessionId: String): AppResult {
         val start = inputData.getString(KEY_START_ISO)?.let(::parse) ?: return AppResult.Fail
         val end = inputData.getString(KEY_END_ISO)?.let(::parse) ?: return AppResult.Fail
-        val minutes = getNotificationPreferences().first().snoozeMinutes.toLong()
+        val minutes = snoozeMinutes().toLong()
 
         // Shifts both ends, so snoozing preserves the session's length rather than eating into it.
         return moveSession(
@@ -82,6 +84,24 @@ class NotificationActionWorker @AssistedInject constructor(
             startIso = start.plusMinutes(minutes).format(ISO),
             endIso = end.plusMinutes(minutes).format(ISO),
         ).toAppResult()
+    }
+
+    /**
+     * The length the user picked on the notification, or the one they stored.
+     *
+     * The stored value can itself be "ask every time", which is not a length. That only reaches here
+     * from a notification posted by an older build, so it falls back to the shortest real option
+     * rather than moving the session backwards by a sentinel.
+     */
+    private suspend fun snoozeMinutes(): Int {
+        val explicit = inputData.getInt(KEY_SNOOZE_MINUTES, NotificationIntents.NO_SNOOZE_MINUTES)
+        if (explicit > 0) return explicit
+
+        val stored = getNotificationPreferences().first().snoozeMinutes
+        if (stored > 0) return stored
+
+        Log.w(TAG, "Snooze with no length; using the shortest option")
+        return NotificationPreferences.SNOOZE_LENGTH_CHOICES.first()
     }
 
     private suspend fun complete(sessionId: String): AppResult =
@@ -136,6 +156,7 @@ class NotificationActionWorker @AssistedInject constructor(
         private const val KEY_START_ISO = "startIso"
         private const val KEY_END_ISO = "endIso"
         private const val KEY_NOW_ISO = "nowIso"
+        private const val KEY_SNOOZE_MINUTES = "snoozeMinutes"
         private const val MIN_SESSION_MINUTES = 1L
 
         private val ISO: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
@@ -147,6 +168,7 @@ class NotificationActionWorker @AssistedInject constructor(
             startIso: String?,
             endIso: String?,
             nowIso: String?,
+            snoozeMinutes: Int = NotificationIntents.NO_SNOOZE_MINUTES,
         ) {
             val request = OneTimeWorkRequestBuilder<NotificationActionWorker>()
                 .setConstraints(
@@ -160,6 +182,7 @@ class NotificationActionWorker @AssistedInject constructor(
                         .putString(KEY_START_ISO, startIso)
                         .putString(KEY_END_ISO, endIso)
                         .putString(KEY_NOW_ISO, nowIso)
+                        .putInt(KEY_SNOOZE_MINUTES, snoozeMinutes)
                         .build()
                 )
                 .build()

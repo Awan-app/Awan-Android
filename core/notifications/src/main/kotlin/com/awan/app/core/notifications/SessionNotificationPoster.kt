@@ -10,6 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.awan.app.core.designsystem.AwanToastManager
 import com.awan.app.core.domain.notifications.model.UpcomingSession
+import com.awan.app.core.model.NotificationPreferences
 import com.awan.app.core.notifications.model.AwanNotificationEvent
 import com.awan.app.core.notifications.model.DayNotificationEvent
 import com.awan.app.core.notifications.model.NotificationAction
@@ -34,10 +35,15 @@ class SessionNotificationPoster @Inject constructor(
 
     private val manager = NotificationManagerCompat.from(context)
 
-    fun post(event: AwanNotificationEvent, now: LocalDateTime) {
+    fun post(
+        event: AwanNotificationEvent,
+        now: LocalDateTime,
+        preferences: NotificationPreferences,
+    ) {
         channels.ensureCreated()
         when (event) {
-            is SessionNotificationEvent.Reminder -> postReminder(event.session, now)
+            is SessionNotificationEvent.Reminder ->
+                postReminder(event.session, now, preferences.snoozeMinutes)
             is SessionNotificationEvent.Live -> postLive(event.session, now)
             is SessionNotificationEvent.Ended -> postEnded(event.session, now)
             is SessionNotificationEvent.FollowUp -> postFollowUp(event.session, now)
@@ -67,8 +73,11 @@ class SessionNotificationPoster @Inject constructor(
         emptySet()
     }
 
-    private fun postReminder(session: UpcomingSession, now: LocalDateTime) {
-        val minutes = Duration.between(now, session.start).toMinutes().coerceAtLeast(0).toInt()
+    private fun postReminder(session: UpcomingSession, now: LocalDateTime, snoozeMinutes: Int) {
+        // Rounded, not truncated: an alarm is delivered at or after its moment, so the time left is
+        // always a shade under the lead the user picked and flooring turns every "in 5 minutes" into
+        // "in 4 minutes".
+        val minutes = SessionNotificationPlanner.roundedMinutes(Duration.between(now, session.start))
         val text = context.resources.getQuantityString(
             R.plurals.notifications_reminder_text,
             minutes,
@@ -84,11 +93,49 @@ class SessionNotificationPoster @Inject constructor(
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text))
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .addAction(snoozeAction(session, id, now))
+                .addAction(snoozeAction(session, id, now, snoozeMinutes))
                 .addAction(rescheduleAction(session)),
             toastTitle = session.title,
             toastMessage = text,
         )
+    }
+
+    /**
+     * The reminder again, with the snooze lengths as its buttons.
+     *
+     * Posted at the reminder's own id, so it replaces it in place rather than stacking a second
+     * notification — the user asked a question of the notification they are looking at, and the
+     * answer belongs there. Dismissing it is the way out; a fourth "Cancel" action would push a
+     * duration off the screen.
+     */
+    fun postSnoozeChoice(session: UpcomingSession, now: LocalDateTime) {
+        channels.ensureCreated()
+        val id = NotificationIds.reminder(session.id)
+        val builder = baseBuilder(AwanNotificationChannels.SESSION_REMINDERS, session)
+            .setContentText(context.getString(R.string.notifications_snooze_prompt))
+            .setAutoCancel(true)
+            // Already alerted when the reminder itself arrived moments ago.
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+
+        NotificationPreferences.SNOOZE_LENGTH_CHOICES.forEach { minutes ->
+            builder.addAction(
+                NotificationCompat.Action.Builder(
+                    R.drawable.ic_notification_snooze,
+                    context.getString(R.string.notifications_action_snooze_minutes, minutes),
+                    NotificationIntents.action(
+                        context = context,
+                        session = session,
+                        action = NotificationAction.SNOOZE,
+                        notificationId = id,
+                        now = now,
+                        snoozeMinutes = minutes,
+                    ),
+                ).build()
+            )
+        }
+
+        notify(id = id, builder = builder)
     }
 
     /**
@@ -112,9 +159,11 @@ class SessionNotificationPoster @Inject constructor(
         val elapsedSeconds = Duration.between(session.start, now).seconds
             .coerceIn(0, totalSeconds.toLong())
             .toInt()
-        val remainingMinutes = Duration.ofSeconds((totalSeconds - elapsedSeconds).toLong())
-            .toMinutes()
-            .toInt()
+        // Rounded up: this sits beside the system chronometer, which counts real seconds, so
+        // anything that floors reads 0m for the last full minute while the countdown disagrees.
+        val remainingMinutes = SessionNotificationPlanner.ceilMinutes(
+            Duration.ofSeconds((totalSeconds - elapsedSeconds).toLong())
+        )
         val id = NotificationIds.live(session.id)
 
         val builder = baseBuilder(AwanNotificationChannels.SESSION_LIVE, session)
@@ -283,15 +332,31 @@ class SessionNotificationPoster @Inject constructor(
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(launchIntent())
 
-    private fun snoozeAction(session: UpcomingSession, notificationId: Int, now: LocalDateTime) =
-        action(
-            iconRes = R.drawable.ic_notification_snooze,
-            labelRes = R.string.notifications_action_snooze,
+    /**
+     * Says what it will do. With a length stored the button is "Snooze 10 min", so the user is not
+     * agreeing to something they have to open the app to find out; in ask mode it stays "Snooze",
+     * because the length is the next question rather than a promise.
+     */
+    private fun snoozeAction(
+        session: UpcomingSession,
+        notificationId: Int,
+        now: LocalDateTime,
+        snoozeMinutes: Int,
+    ) = NotificationCompat.Action.Builder(
+        R.drawable.ic_notification_snooze,
+        if (snoozeMinutes == NotificationPreferences.SNOOZE_ASK) {
+            context.getString(R.string.notifications_action_snooze)
+        } else {
+            context.getString(R.string.notifications_action_snooze_for, snoozeMinutes)
+        },
+        NotificationIntents.action(
+            context = context,
             session = session,
-            type = NotificationAction.SNOOZE,
+            action = NotificationAction.SNOOZE,
             notificationId = notificationId,
             now = now,
-        )
+        ),
+    ).build()
 
     /**
      * Rescheduling needs a time picker, so this opens the session's detail sheet rather than trying

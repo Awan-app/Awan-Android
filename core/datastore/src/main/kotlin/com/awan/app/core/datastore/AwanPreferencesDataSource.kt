@@ -99,8 +99,10 @@ class AwanPreferencesDataSource @Inject constructor(
         reminderLeadMinutes = sessionReminderLeadMinutes
             .takeIf { it > 0 }
             ?: NotificationPreferences.DEFAULT_REMINDER_LEAD_MINUTES,
+        // Not `> 0` like the others: NotificationPreferences.SNOOZE_ASK is negative, and reading it
+        // as unset would silently turn "ask me every time" back into a fixed length.
         snoozeMinutes = sessionSnoozeMinutes
-            .takeIf { it > 0 }
+            .takeIf { it != 0 }
             ?: NotificationPreferences.DEFAULT_SNOOZE_MINUTES,
         followUpDelayMinutes = sessionFollowUpMinutes
             .takeIf { it > 0 }

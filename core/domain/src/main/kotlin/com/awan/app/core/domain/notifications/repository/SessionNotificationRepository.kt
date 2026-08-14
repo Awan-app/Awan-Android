@@ -23,4 +23,13 @@ interface SessionNotificationRepository {
      * gets told to go plan a day the app simply has not loaded yet.
      */
     suspend fun isScheduleKnown(date: LocalDate): Boolean
+
+    /**
+     * The same answer as a flow, so the scheduler re-plans the moment it changes.
+     *
+     * Needed on its own because a day with no sessions produces no session emission when it syncs:
+     * the sessions table is written with the same nothing it already held, and the day notifications
+     * gated on this flag would stay unplanned until the next app foreground.
+     */
+    fun observeScheduleKnown(date: LocalDate): Flow<Boolean>
 }

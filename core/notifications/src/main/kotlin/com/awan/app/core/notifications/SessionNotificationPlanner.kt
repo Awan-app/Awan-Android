@@ -49,6 +49,8 @@ object SessionNotificationPlanner {
      */
     val LIVE_TICK: Duration = Duration.ofMinutes(1)
 
+    private const val SECONDS_PER_MINUTE = 60L
+
     fun plan(
         sessions: List<UpcomingSession>,
         preferences: NotificationPreferences,
@@ -126,6 +128,36 @@ object SessionNotificationPlanner {
         is DayNotificationEvent.DailyBrief ->
             !event.at.isAfter(now) && withinGrace(event.at, now, DAILY_BRIEF_GRACE)
     }
+
+    /** How long [event] stays worth firing after its moment — the same windows [isDue] applies. */
+    fun graceFor(event: AwanNotificationEvent): Duration = when (event) {
+        is SessionNotificationEvent.Reminder -> REMINDER_GRACE
+        is SessionNotificationEvent.Ended -> ENDED_GRACE
+        is SessionNotificationEvent.FollowUp -> FOLLOW_UP_GRACE
+        is DayNotificationEvent.StreakRisk -> STREAK_RISK_GRACE
+        is DayNotificationEvent.DailyBrief -> DAILY_BRIEF_GRACE
+        // Judged on the session's window rather than on a grace after a moment.
+        is SessionNotificationEvent.Live -> Duration.between(event.session.start, event.session.end)
+    }
+
+    /**
+     * Rounded to the nearest minute, not truncated.
+     *
+     * An alarm is delivered at or after its moment, never before, so the time left at post time is
+     * always a shade under the lead the user chose — and flooring turned every "in 5 minutes"
+     * reminder into "in 4 minutes".
+     */
+    fun roundedMinutes(duration: Duration): Int =
+        ((duration.seconds + SECONDS_PER_MINUTE / 2) / SECONDS_PER_MINUTE).coerceAtLeast(0).toInt()
+
+    /**
+     * Rounded up, for time still remaining.
+     *
+     * The status-bar chip sits beside the system chronometer, which counts real seconds: anything
+     * that floors reads `0m` for the last full minute while the countdown plainly disagrees.
+     */
+    fun ceilMinutes(duration: Duration): Int =
+        ((duration.seconds + SECONDS_PER_MINUTE - 1) / SECONDS_PER_MINUTE).coerceAtLeast(0).toInt()
 
     private fun withinGrace(at: LocalDateTime, now: LocalDateTime, grace: Duration): Boolean =
         Duration.between(at, now) <= grace
@@ -215,7 +247,7 @@ object SessionNotificationPlanner {
         val today = sessions.filter { it.start.toLocalDate() == day.today }
         val events = mutableListOf<DayNotificationEvent>()
 
-        if (preferences.streakReminderEnabled && isStreakAtRisk(today, now)) {
+        if (preferences.streakReminderEnabled && isStreakAtRisk(today)) {
             events += DayNotificationEvent.StreakRisk(
                 at = dayEndMoment(day).minus(STREAK_RISK_LEAD),
                 date = day.today,
@@ -257,17 +289,18 @@ object SessionNotificationPlanner {
     }
 
     /**
-     * Nothing finished today, and nothing running right now.
+     * Nothing finished today.
      *
-     * "Nothing finished" is the local stand-in for the streak, which is server-owned and not cached
-     * per-day. The running check keeps the warning off the screen while the live notification is
-     * already there saying the opposite.
+     * The local stand-in for the streak, which is server-owned and not cached per-day.
+     *
+     * Deliberately says nothing about a session *running*. A condition applied here decides whether
+     * the event exists at all, and an event that does not exist gets no alarm — so suppressing the
+     * warning for a session in progress meant a block running at the warning's moment silently threw
+     * the whole day's warning away, with nothing left to bring it back inside its grace window. A
+     * session that is merely running has still not finished, so the copy holds either way.
      */
-    private fun isStreakAtRisk(today: List<UpcomingSession>, now: LocalDateTime): Boolean {
-        val completedAny = today.any { it.status == SessionStatus.COMPLETED }
-        val running = today.any { !now.isBefore(it.start) && now.isBefore(it.end) }
-        return !completedAny && !running
-    }
+    private fun isStreakAtRisk(today: List<UpcomingSession>): Boolean =
+        today.none { it.status == SessionStatus.COMPLETED }
 
     /**
      * The moment the user's day is over.

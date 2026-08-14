@@ -45,6 +45,7 @@
     <string name="profile_notifications_rewards">Rewards and daily spin</string>
     <string name="profile_notifications_reminder_lead">Remind me (min)</string>
     <string name="profile_notifications_snooze_length">Snooze by (min)</string>
+    <string name="profile_notifications_snooze_ask">Ask</string>
     <string name="profile_notifications_follow_up_delay">Follow up after (min)</string>
     <!-- Segment label. The unit lives in the row title so four segments fit without wrapping. -->
     <string name="profile_notifications_minutes">%1$d</string>

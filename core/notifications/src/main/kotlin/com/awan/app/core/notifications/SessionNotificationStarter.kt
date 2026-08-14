@@ -3,6 +3,7 @@ package com.awan.app.core.notifications
 import android.util.Log
 import com.awan.app.core.common.di.ApplicationScope
 import com.awan.app.core.domain.notifications.usecase.GetNotificationPreferencesUseCase
+import com.awan.app.core.domain.notifications.usecase.ObserveScheduleKnownUseCase
 import com.awan.app.core.domain.notifications.usecase.ObserveUpcomingSessionsUseCase
 import java.time.Clock
 import java.time.LocalDate
@@ -26,6 +27,7 @@ import kotlinx.coroutines.launch
 class SessionNotificationStarter @Inject constructor(
     private val observeUpcomingSessions: ObserveUpcomingSessionsUseCase,
     private val getNotificationPreferences: GetNotificationPreferencesUseCase,
+    private val observeScheduleKnown: ObserveScheduleKnownUseCase,
     private val scheduler: SessionNotificationScheduler,
     private val channels: AwanNotificationChannels,
     private val clock: Clock,
@@ -42,7 +44,11 @@ class SessionNotificationStarter @Inject constructor(
             combine(
                 observeUpcomingSessions(today, today.plusDays(OBSERVED_DAYS)),
                 getNotificationPreferences(),
-            ) { sessions, preferences -> sessions to preferences }
+                // Watched separately from the sessions: a day that syncs empty writes the same
+                // nothing back to the sessions table and emits no change, so the day notifications
+                // gated on this flag would wait for the next app foreground to be planned at all.
+                observeScheduleKnown(today),
+            ) { sessions, preferences, scheduleKnown -> Triple(sessions, preferences, scheduleKnown) }
                 .distinctUntilChanged()
                 .catch { Log.e(TAG, "Session notification observation failed", it) }
                 .collect { scheduler.rescheduleAll() }

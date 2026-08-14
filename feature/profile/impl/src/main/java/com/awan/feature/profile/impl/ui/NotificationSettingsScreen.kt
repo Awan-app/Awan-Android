@@ -1,5 +1,7 @@
 package com.awan.feature.profile.impl.ui
 
+import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.HourglassEmpty
@@ -28,6 +31,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanBackButton
@@ -36,6 +40,7 @@ import com.awan.app.core.designsystem.AwanChoiceRow
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.model.NotificationPreferences
+import com.awan.feature.profile.impl.BuildConfig
 import com.awan.feature.profile.impl.presentation.NotificationSettingsAction
 import com.awan.feature.profile.impl.presentation.NotificationSettingsState
 import com.awan.feature.profile.impl.ui.components.PreferenceRow
@@ -96,6 +101,42 @@ fun NotificationSettingsScreen(
                         showDivider = true,
                         onCheckedChange = { onAction(NotificationSettingsAction.SetSessionReminders(it)) },
                     )
+                    // The two questions the reminder raises — how early, and how long "later" is —
+                    // sit under the switch that decides whether it happens at all, and go away with
+                    // it. A greyed-out row elsewhere on the screen is a setting the user has to
+                    // find and then discover is inert.
+                    AnimatedVisibility(visible = uiState.preferences.sessionRemindersEnabled) {
+                        Column {
+                            AwanChoiceRow(
+                                icon = Icons.Default.Alarm,
+                                title = stringResource(ProfileR.string.profile_notifications_reminder_lead),
+                                options = NotificationPreferences.REMINDER_LEAD_CHOICES,
+                                selected = uiState.preferences.reminderLeadMinutes,
+                                enabled = uiState.systemNotificationsEnabled,
+                                label = { stringResource(ProfileR.string.profile_notifications_minutes, it) },
+                                showDivider = true,
+                                onSelect = { onAction(NotificationSettingsAction.SetReminderLead(it)) },
+                            )
+                            // Snooze belongs to the reminder: it is a button on that notification
+                            // and on no other.
+                            AwanChoiceRow(
+                                icon = Icons.Default.Snooze,
+                                title = stringResource(ProfileR.string.profile_notifications_snooze_length),
+                                options = NotificationPreferences.SNOOZE_CHOICES,
+                                selected = uiState.preferences.snoozeMinutes,
+                                enabled = uiState.systemNotificationsEnabled,
+                                label = { minutes ->
+                                    if (minutes == NotificationPreferences.SNOOZE_ASK) {
+                                        stringResource(ProfileR.string.profile_notifications_snooze_ask)
+                                    } else {
+                                        stringResource(ProfileR.string.profile_notifications_minutes, minutes)
+                                    }
+                                },
+                                showDivider = true,
+                                onSelect = { onAction(NotificationSettingsAction.SetSnooze(it)) },
+                            )
+                        }
+                    }
                     SwitchRow(
                         icon = Icons.Default.Timelapse,
                         title = stringResource(ProfileR.string.profile_notifications_live_activity),
@@ -120,45 +161,20 @@ fun NotificationSettingsScreen(
                         checked = uiState.preferences.sessionFollowUpEnabled,
                         enabled = uiState.systemNotificationsEnabled,
                         iconColor = AwanTheme.colors.sky,
+                        showDivider = uiState.preferences.sessionFollowUpEnabled,
                         onCheckedChange = { onAction(NotificationSettingsAction.SetSessionFollowUp(it)) },
                     )
-                }
-            }
-
-            SectionTitle(stringResource(ProfileR.string.profile_notifications_section_timing))
-            AwanCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp)) {
-                Column {
-                    AwanChoiceRow(
-                        icon = Icons.Default.Alarm,
-                        title = stringResource(ProfileR.string.profile_notifications_reminder_lead),
-                        options = NotificationPreferences.REMINDER_LEAD_CHOICES,
-                        selected = uiState.preferences.reminderLeadMinutes,
-                        enabled = uiState.systemNotificationsEnabled &&
-                            uiState.preferences.sessionRemindersEnabled,
-                        label = { stringResource(ProfileR.string.profile_notifications_minutes, it) },
-                        showDivider = true,
-                        onSelect = { onAction(NotificationSettingsAction.SetReminderLead(it)) },
-                    )
-                    AwanChoiceRow(
-                        icon = Icons.Default.Snooze,
-                        title = stringResource(ProfileR.string.profile_notifications_snooze_length),
-                        options = NotificationPreferences.SNOOZE_CHOICES,
-                        selected = uiState.preferences.snoozeMinutes,
-                        enabled = uiState.systemNotificationsEnabled,
-                        label = { stringResource(ProfileR.string.profile_notifications_minutes, it) },
-                        showDivider = true,
-                        onSelect = { onAction(NotificationSettingsAction.SetSnooze(it)) },
-                    )
-                    AwanChoiceRow(
-                        icon = Icons.Default.HourglassEmpty,
-                        title = stringResource(ProfileR.string.profile_notifications_follow_up_delay),
-                        options = NotificationPreferences.FOLLOW_UP_CHOICES,
-                        selected = uiState.preferences.followUpDelayMinutes,
-                        enabled = uiState.systemNotificationsEnabled &&
-                            uiState.preferences.sessionFollowUpEnabled,
-                        label = { stringResource(ProfileR.string.profile_notifications_minutes, it) },
-                        onSelect = { onAction(NotificationSettingsAction.SetFollowUpDelay(it)) },
-                    )
+                    AnimatedVisibility(visible = uiState.preferences.sessionFollowUpEnabled) {
+                        AwanChoiceRow(
+                            icon = Icons.Default.HourglassEmpty,
+                            title = stringResource(ProfileR.string.profile_notifications_follow_up_delay),
+                            options = NotificationPreferences.FOLLOW_UP_CHOICES,
+                            selected = uiState.preferences.followUpDelayMinutes,
+                            enabled = uiState.systemNotificationsEnabled,
+                            label = { stringResource(ProfileR.string.profile_notifications_minutes, it) },
+                            onSelect = { onAction(NotificationSettingsAction.SetFollowUpDelay(it)) },
+                        )
+                    }
                 }
             }
 
@@ -207,9 +223,62 @@ fun NotificationSettingsScreen(
                     )
                 }
             }
+
+            if (BuildConfig.DEBUG) {
+                DebugNotificationsCard()
+            }
         }
     }
 }
+
+/**
+ * Fires each notification on the spot.
+ *
+ * Every one of these is time-gated — a lead time, a session's end, two hours before the user's day
+ * ends — and the emulator images this is developed against will not let their clock be moved, so
+ * without this the only way to see one is to wait for it.
+ *
+ * Sends the broadcast the debug-only receiver in `:core:notifications` listens for rather than
+ * calling the poster, so nothing about notifications leaks into a ViewModel and the module needs no
+ * new dependency. Same broadcast `adb shell am broadcast` sends.
+ */
+@Composable
+private fun DebugNotificationsCard() {
+    val context = LocalContext.current
+    // ponytail: hardcoded English. This card is compiled out of release builds, and a translated
+    // string in strings.xml would be shipped and translated for something no user will ever see.
+    val kinds = listOf(
+        "reminder" to "Session reminder",
+        "live" to "Running session",
+        "ended" to "Session ended",
+        "followup" to "Follow-up",
+        "streak" to "End of day nudge",
+        "brief" to "Daily brief",
+    )
+
+    SectionTitle("DEBUG")
+    AwanCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp)) {
+        Column {
+            kinds.forEachIndexed { index, (kind, title) ->
+                PreferenceRow(
+                    icon = Icons.Default.BugReport,
+                    title = title,
+                    showDivider = index < kinds.lastIndex,
+                    iconColor = AwanTheme.colors.meta,
+                    onClick = {
+                        context.sendBroadcast(
+                            Intent(DEBUG_NOTIFICATION_ACTION)
+                                .setPackage(context.packageName)
+                                .putExtra("kind", kind)
+                        )
+                    },
+                )
+            }
+        }
+    }
+}
+
+private const val DEBUG_NOTIFICATION_ACTION = "com.awan.app.DEBUG_NOTIFICATION"
 
 @Composable
 private fun SwitchRow(

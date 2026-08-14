@@ -36,4 +36,7 @@ class SessionNotificationRepositoryImpl @Inject constructor(
     override suspend fun isScheduleKnown(date: LocalDate): Boolean = withContext(ioDispatcher) {
         cachedScheduleDateDao.isDateCached(date.toString())
     }
+
+    override fun observeScheduleKnown(date: LocalDate): Flow<Boolean> =
+        cachedScheduleDateDao.observeIsDateCached(date.toString()).flowOn(ioDispatcher)
 }

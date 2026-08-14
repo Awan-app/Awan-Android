@@ -5,12 +5,12 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /**
- * How a "Stop" press is written down, and when it stops meaning anything.
+ * How a note about a notification is written down, and when it stops meaning anything.
  *
- * Pure and separate from [LiveNotificationDismissals] so the two rules that can actually break — the
- * round trip through storage, and which records are dead — are testable without a device.
+ * Pure and separate from [NotificationRecords] so the two rules that can actually break — the round
+ * trip through storage, and which records are dead — are testable without a device.
  */
-internal object LiveDismissalRecord {
+internal object NotificationRecord {
 
     private const val SEPARATOR = "|"
     private val ISO: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
@@ -29,8 +29,9 @@ internal object LiveDismissalRecord {
     }
 
     /**
-     * A dismissal only means something while the session it names is still running. Past that, the
-     * record is dead weight — and without dropping it the store is append-only.
+     * A record only means something while its window is still open — the session still running, or
+     * the event still inside the grace where it could be posted again. Past that it is dead weight,
+     * and without dropping it the store is append-only.
      */
     fun isExpired(window: SessionWindow, now: LocalDateTime): Boolean = !now.isBefore(window.end)
 }

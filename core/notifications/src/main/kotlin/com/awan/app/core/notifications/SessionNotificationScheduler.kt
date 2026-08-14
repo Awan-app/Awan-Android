@@ -13,9 +13,12 @@ import com.awan.app.core.domain.notifications.usecase.GetNotificationPreferences
 import com.awan.app.core.domain.notifications.usecase.GetUpcomingSessionsUseCase
 import com.awan.app.core.domain.notifications.usecase.IsScheduleKnownUseCase
 import com.awan.app.core.domain.profile.usecase.ObserveProfileUseCase
+import com.awan.app.core.model.NotificationPreferences
 import com.awan.app.core.notifications.model.AwanNotificationEvent
+import com.awan.app.core.notifications.model.DayNotificationEvent
 import com.awan.app.core.notifications.model.NotificationDayContext
 import com.awan.app.core.notifications.model.SessionNotificationEvent
+import com.awan.app.core.notifications.model.SessionWindow
 import com.awan.app.core.notifications.receiver.SessionAlarmReceiver
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Clock
@@ -61,7 +64,7 @@ class SessionNotificationScheduler @Inject constructor(
     private val isScheduleKnown: IsScheduleKnownUseCase,
     private val observeProfile: ObserveProfileUseCase,
     private val poster: SessionNotificationPoster,
-    private val dismissals: LiveNotificationDismissals,
+    private val records: NotificationRecords,
     private val clock: Clock,
     @ApplicationScope private val scope: CoroutineScope,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
@@ -84,31 +87,44 @@ class SessionNotificationScheduler @Inject constructor(
             val today = now.toLocalDate()
             val sessions = getUpcomingSessions(today, today.plusDays(LOOKAHEAD_DAYS))
 
+            val day = dayContext(today)
             val plan = SessionNotificationPlanner.plan(
                 sessions = sessions,
                 preferences = preferences,
                 now = now,
-                day = dayContext(today),
+                day = day,
                 // Reading also prunes: this runs on every alarm, every session write and every app
                 // foreground, so a dismissal outlives its session by one reschedule at most.
-                dismissedLive = dismissals.current(now),
+                dismissedLive = records.dismissals(now),
             )
 
             val due = plan.filter { SessionNotificationPlanner.isDue(it, now) }
 
-            // Snapshot before posting, so "already showing" means showing when we arrived.
+            // Snapshot before posting, so "already showing" and "already delivered" both mean what
+            // they meant when we arrived.
             val alreadyShowing = poster.postedSessionIds()
+            val alreadyPosted = records.posted(now)
+            logPlan(now, day, plan, due)
+
             due.forEach { event ->
                 // An event stays due for its whole grace window, and this runs on every session
                 // write, every preference change and every app foreground. Re-posting the same id
                 // updates the notification in place, which on an alerting channel means it buzzes
-                // and peeks again for something the user is already looking at.
+                // and peeks again for something the user is already looking at — and once the user
+                // taps or swipes it away, "still showing" no longer says it was ever delivered,
+                // which is why the delivery is written down separately.
                 //
-                // The live notification is the exception: redrawing it is the entire point, and its
-                // channel is silent and only-alert-once, so it costs nothing.
-                val isRedraw = event is SessionNotificationEvent.Live
-                if (isRedraw || NotificationIds.forEvent(event) !in alreadyShowing) {
-                    poster.post(event, now)
+                // The live notification is the exception: redrawing it is the entire point, its
+                // channel is silent and only-alert-once, and it is never written down.
+                val id = NotificationIds.forEvent(event)
+                val window = deliveryWindow(event)
+                when {
+                    event is SessionNotificationEvent.Live -> poster.post(event, now, preferences)
+                    id in alreadyShowing || alreadyPosted[id] == window -> Unit
+                    else -> {
+                        poster.post(event, now, preferences)
+                        records.markPosted(id, window)
+                    }
                 }
             }
             cancelStale(due, alreadyShowing)
@@ -125,7 +141,57 @@ class SessionNotificationScheduler @Inject constructor(
                 next = SessionNotificationPlanner.nextTickAfter(plan, now),
                 now = now,
             )
-            driveLiveWhileInProcess(due.filterIsInstance<SessionNotificationEvent.Live>().firstOrNull())
+            driveLiveWhileInProcess(
+                live = due.filterIsInstance<SessionNotificationEvent.Live>().firstOrNull(),
+                preferences = preferences,
+            )
+        }
+    }
+
+    /**
+     * How long a delivered notification stays written down: exactly as long as its event could be
+     * posted again.
+     *
+     * Keyed on the event's own moment, so a session that moves — snoozed, rescheduled, dragged —
+     * produces a different window and is correctly announced again at its new time.
+     */
+    private fun deliveryWindow(event: AwanNotificationEvent) = SessionWindow(
+        start = event.at,
+        end = event.at.plus(SessionNotificationPlanner.graceFor(event)),
+    )
+
+    /**
+     * What the engine decided, in one place.
+     *
+     * The failures this engine has are silent by nature — an event that was never planned looks
+     * exactly like one that fired and was dismissed. Anything time-gated is otherwise only
+     * observable by moving the device clock and waiting.
+     */
+    private fun logPlan(
+        now: LocalDateTime,
+        day: NotificationDayContext,
+        plan: List<AwanNotificationEvent>,
+        due: List<AwanNotificationEvent>,
+    ) {
+        Log.d(
+            TAG,
+            "reschedule at $now · wake=${day.wake} dayEnd=${day.dayEnd} " +
+                "scheduleKnown=${day.scheduleKnown}",
+        )
+        plan.forEach { event ->
+            val state = when {
+                event in due -> "DUE"
+                event.at.isAfter(now) -> "waiting"
+                // Its moment passed without it being posted — after a reboot, or with the app shut
+                // for longer than the event's grace.
+                else -> "missed"
+            }
+            Log.d(TAG, "  ${event.javaClass.simpleName} at ${event.at} · $state")
+        }
+        if (plan.none { it is DayNotificationEvent.StreakRisk }) {
+            // The commonest "why did nothing happen": the day already had something completed, so
+            // there is nothing to warn about. Silent otherwise, and indistinguishable from a bug.
+            Log.d(TAG, "  no StreakRisk planned · something is completed today, or it is switched off")
         }
     }
 
@@ -166,7 +232,10 @@ class SessionNotificationScheduler @Inject constructor(
      * Cancelled and restarted on every reschedule, so it always holds current session data, and it
      * stops itself at the end of the session rather than running for as long as the process does.
      */
-    private fun driveLiveWhileInProcess(live: SessionNotificationEvent.Live?) {
+    private fun driveLiveWhileInProcess(
+        live: SessionNotificationEvent.Live?,
+        preferences: NotificationPreferences,
+    ) {
         liveTicker?.cancel()
         if (live == null) return
 
@@ -175,7 +244,7 @@ class SessionNotificationScheduler @Inject constructor(
                 delay(IN_PROCESS_TICK_MS)
                 val now = LocalDateTime.now(clock)
                 if (!now.isBefore(live.session.end)) break
-                poster.post(live, now)
+                poster.post(live, now, preferences)
             }
         }
     }

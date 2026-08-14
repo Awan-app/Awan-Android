@@ -45,6 +45,7 @@
     <string name="profile_notifications_rewards">المكافآت والعجلة اليومية</string>
     <string name="profile_notifications_reminder_lead">ذكّرني قبل (دقيقة)</string>
     <string name="profile_notifications_snooze_length">مدة التأجيل (دقيقة)</string>
+    <string name="profile_notifications_snooze_ask">اسأل</string>
     <string name="profile_notifications_follow_up_delay">المتابعة بعد (دقيقة)</string>
     <!-- Segment label. The unit lives in the row title so four segments fit without wrapping. -->
     <string name="profile_notifications_minutes">%1$d</string>
