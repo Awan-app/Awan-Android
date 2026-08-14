@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -41,7 +42,7 @@ fun DailyZonesBottomActions(
             AwanButton(
                 onClick = { onCreateRoutineClick(null, selectedDate) },
                 modifier = Modifier.fillMaxWidth(),
-                icon = Icons.Default.Schedule
+                icon = { Icon(Icons.Default.Schedule, contentDescription = null) }
             ) {
                 AwanText(text = stringResource(R.string.profile_routine_create_for_day))
             }

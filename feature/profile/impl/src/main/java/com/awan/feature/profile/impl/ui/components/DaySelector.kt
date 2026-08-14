@@ -39,12 +39,17 @@ fun DaySelector(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceAround
     ) {
+        val currentWeekStart = today.minusDays((today.dayOfWeek.value - 1).toLong())
+
         DayOfWeek.entries.forEach { day ->
             val isSelected = selectedDays.contains(day)
             val isAssigned = assignedDays.contains(day)
             val isToday = if (showTodayIndicator) DailyZonesHelper.isToday(day, today) else false
             val templateColor = dayColors[day]
-            val abbreviation = stringResource(DailyZonesHelper.getDayAbbreviationRes(day))
+            
+            val dateForDay = currentWeekStart.plusDays(day.ordinal.toLong())
+            val dayOfMonth = dateForDay.dayOfMonth.toString()
+            val fullDayName = stringResource(DailyZonesHelper.getDayNameRes(day))
 
             val interactionSource = remember { MutableInteractionSource() }
             val isPressed by interactionSource.collectIsPressedAsState()
@@ -105,7 +110,7 @@ fun DaySelector(
                         contentAlignment = Alignment.Center
                     ) {
                         AwanText(
-                            text = abbreviation.take(1),
+                            text = dayOfMonth,
                             style = AwanTheme.styles.bodyText.copy(
                                 textStyle = AwanTheme.styles.bodyText.textStyle.copy(
                                     fontWeight = FontWeight.Bold,
@@ -133,7 +138,7 @@ fun DaySelector(
                 }
 
                 AwanText(
-                    text = abbreviation,
+                    text = fullDayName.take(3),
                     style = AwanTheme.styles.captionText.copy(
                         textStyle = AwanTheme.styles.captionText.textStyle.copy(fontSize = 10.sp),
                         color = when {
