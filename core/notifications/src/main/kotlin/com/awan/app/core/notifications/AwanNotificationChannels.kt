@@ -48,6 +48,16 @@ class AwanNotificationChannels @Inject constructor(
                 importance = NotificationManager.IMPORTANCE_HIGH,
             )
         )
+        // Its own channel, not `session_reminders`: someone who wants to be told a block is starting
+        // may still not want to be told their day looks empty, and the OS should let them say so.
+        manager.createNotificationChannel(
+            channel(
+                id = NUDGES,
+                nameRes = R.string.notifications_channel_nudges_name,
+                descriptionRes = R.string.notifications_channel_nudges_description,
+                importance = NotificationManager.IMPORTANCE_DEFAULT,
+            )
+        )
         manager.createNotificationChannel(
             channel(
                 id = REWARDS,
@@ -71,6 +81,7 @@ class AwanNotificationChannels @Inject constructor(
         const val SESSION_REMINDERS = "session_reminders"
         const val SESSION_LIVE = "session_live"
         const val SESSION_END = "session_end"
+        const val NUDGES = "nudges"
         const val REWARDS = "rewards"
     }
 }

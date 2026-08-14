@@ -8,6 +8,8 @@
     <string name="notifications_channel_session_live_description">تقدّم مباشر أثناء تشغيل الجلسة.</string>
     <string name="notifications_channel_session_end_name">الجلسات المنتهية</string>
     <string name="notifications_channel_session_end_description">تنبيه عند انتهاء وقت الجلسة.</string>
+    <string name="notifications_channel_nudges_name">تنبيهات يومية</string>
+    <string name="notifications_channel_nudges_description">نظرة صباحية على يومك، وتذكير قبل أن ينتهي.</string>
     <string name="notifications_channel_rewards_name">المكافآت والعجلة اليومية</string>
     <string name="notifications_channel_rewards_description">النقاط والسلاسل والعجلة اليومية.</string>
 
@@ -25,6 +27,24 @@
 
     <string name="notifications_session_ended_title">هل أنهيت %1$s؟</string>
     <string name="notifications_session_ended_text">انتهت جلستك للتو · %1$s</string>
+
+    <string name="notifications_follow_up_title">كيف سارت %1$s؟</string>
+    <string name="notifications_follow_up_text">ما زالت مفتوحة منذ وقت سابق · %1$s. حدّدها كمكتملة لتُحتسب.</string>
+
+    <!-- Never mentions a streak number: the streak is server-owned and this device cannot know it. -->
+    <string name="notifications_streak_risk_title">يومك يوشك على الانتهاء</string>
+    <string name="notifications_streak_risk_text">لم تُنهِ شيئاً اليوم بعد. جلسة قصيرة واحدة تكفي — مهما كانت صغيرة.</string>
+
+    <string name="notifications_daily_brief_title">صباح الخير</string>
+    <string name="notifications_daily_brief_empty_text">لا يوجد شيء مخطط اليوم. دقيقتان الآن، وبقية اليوم تُخطط نفسها.</string>
+    <plurals name="notifications_daily_brief_text">
+        <item quantity="zero">%1$d جلسة اليوم · %2$s في %3$s</item>
+        <item quantity="one">جلسة واحدة اليوم · %2$s في %3$s</item>
+        <item quantity="two">جلستان اليوم · %2$s أولاً، في %3$s</item>
+        <item quantity="few">%1$d جلسات اليوم · %2$s أولاً، في %3$s</item>
+        <item quantity="many">%1$d جلسة اليوم · %2$s أولاً، في %3$s</item>
+        <item quantity="other">%1$d جلسة اليوم · %2$s أولاً، في %3$s</item>
+    </plurals>
 
     <!-- Status bar chip on Android 16+; kept very short because the chip truncates hard. -->
     <string name="notifications_live_short_remaining">%1$d د</string>

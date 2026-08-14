@@ -10,6 +10,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.awan.app.core.designsystem.AwanToastManager
 import com.awan.app.core.domain.notifications.model.UpcomingSession
+import com.awan.app.core.notifications.model.AwanNotificationEvent
+import com.awan.app.core.notifications.model.DayNotificationEvent
 import com.awan.app.core.notifications.model.NotificationAction
 import com.awan.app.core.notifications.model.SessionNotificationEvent
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -32,12 +34,15 @@ class SessionNotificationPoster @Inject constructor(
 
     private val manager = NotificationManagerCompat.from(context)
 
-    fun post(event: SessionNotificationEvent, now: LocalDateTime) {
+    fun post(event: AwanNotificationEvent, now: LocalDateTime) {
         channels.ensureCreated()
         when (event) {
             is SessionNotificationEvent.Reminder -> postReminder(event.session, now)
             is SessionNotificationEvent.Live -> postLive(event.session, now)
             is SessionNotificationEvent.Ended -> postEnded(event.session, now)
+            is SessionNotificationEvent.FollowUp -> postFollowUp(event.session, now)
+            is DayNotificationEvent.StreakRisk -> postStreakRisk(event)
+            is DayNotificationEvent.DailyBrief -> postDailyBrief(event)
         }
     }
 
@@ -175,6 +180,95 @@ class SessionNotificationPoster @Inject constructor(
             toastMessage = text,
         )
     }
+
+    /**
+     * The softer second ask, well after the session ended and nobody answered the first one.
+     *
+     * Same actions as [postEnded], different tone: by now the user has moved on, so this asks how it
+     * went rather than announcing that the time is up.
+     */
+    private fun postFollowUp(session: UpcomingSession, now: LocalDateTime) {
+        val title = context.getString(R.string.notifications_follow_up_title, session.title)
+        val text = context.getString(
+            R.string.notifications_follow_up_text,
+            timeFormatter.timeRange(context, session),
+        )
+        val id = NotificationIds.followUp(session.id)
+
+        notify(
+            id = id,
+            builder = baseBuilder(AwanNotificationChannels.SESSION_END, session)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .addAction(
+                    action(
+                        iconRes = R.drawable.ic_notification_check,
+                        labelRes = R.string.notifications_action_complete,
+                        session = session,
+                        type = NotificationAction.COMPLETE,
+                        notificationId = id,
+                        now = now,
+                    )
+                )
+                .addAction(rescheduleAction(session)),
+            toastTitle = title,
+            toastMessage = text,
+        )
+    }
+
+    /**
+     * Nothing finished today and the day is nearly over.
+     *
+     * Says "finish one thing", never "your streak is N": the streak belongs to the server and this
+     * device only knows what it has seen completed locally.
+     */
+    private fun postStreakRisk(event: DayNotificationEvent.StreakRisk) {
+        val title = context.getString(R.string.notifications_streak_risk_title)
+        val text = context.getString(R.string.notifications_streak_risk_text)
+
+        notify(
+            id = NotificationIds.streakRisk(event.date),
+            builder = dayBuilder(title, text),
+            toastTitle = title,
+            toastMessage = text,
+        )
+    }
+
+    private fun postDailyBrief(event: DayNotificationEvent.DailyBrief) {
+        val title = context.getString(R.string.notifications_daily_brief_title)
+        val text = if (event.plannedCount == 0 || event.firstTitle == null) {
+            context.getString(R.string.notifications_daily_brief_empty_text)
+        } else {
+            context.resources.getQuantityString(
+                R.plurals.notifications_daily_brief_text,
+                event.plannedCount,
+                event.plannedCount,
+                event.firstTitle,
+                event.firstStart?.let { timeFormatter.time(context, it) }.orEmpty(),
+            )
+        }
+
+        notify(
+            id = NotificationIds.dailyBrief(event.date, event.slot),
+            builder = dayBuilder(title, text),
+            toastTitle = title,
+            toastMessage = text,
+        )
+    }
+
+    /** Shape shared by the notifications that are about the day rather than about one session. */
+    private fun dayBuilder(title: String, text: String) =
+        NotificationCompat.Builder(context, AwanNotificationChannels.NUDGES)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(launchIntent())
 
     private fun snoozeAction(session: UpcomingSession, notificationId: Int, now: LocalDateTime) =
         action(

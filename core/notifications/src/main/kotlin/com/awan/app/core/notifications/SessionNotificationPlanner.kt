@@ -3,7 +3,11 @@ package com.awan.app.core.notifications
 import com.awan.app.core.domain.notifications.model.UpcomingSession
 import com.awan.app.core.model.NotificationPreferences
 import com.awan.app.core.model.SessionStatus
+import com.awan.app.core.notifications.model.AwanNotificationEvent
+import com.awan.app.core.notifications.model.DayNotificationEvent
+import com.awan.app.core.notifications.model.NotificationDayContext
 import com.awan.app.core.notifications.model.SessionNotificationEvent
+import com.awan.app.core.notifications.model.SessionWindow
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -13,14 +17,27 @@ import java.time.LocalDateTime
  * Pure and Android-free so the timing rules — which are the part that actually goes wrong — can be
  * tested without a device, an alarm, or a clock.
  *
- * The scheduler posts the events that are already [due], and sets a single alarm for the first one
- * that is not.
+ * The scheduler posts the events that are already [isDue], and sets alarms for the ones that are not.
+ *
+ * Conditions that depend on more than one session — "nothing finished today", "the day is empty" —
+ * are decided here, at plan time, not in [isDue]. The plan is rebuilt on every session write, so a
+ * condition that stops holding simply stops producing its event, and the scheduler's reconciliation
+ * cancels whatever was already showing.
  */
 object SessionNotificationPlanner {
 
     /** How long after its moment an event is still worth firing. */
     val REMINDER_GRACE: Duration = Duration.ofMinutes(5)
     val ENDED_GRACE: Duration = Duration.ofMinutes(30)
+    val FOLLOW_UP_GRACE: Duration = Duration.ofMinutes(60)
+    val STREAK_RISK_GRACE: Duration = Duration.ofMinutes(45)
+    val DAILY_BRIEF_GRACE: Duration = Duration.ofMinutes(30)
+
+    /** How long before the end of the day the streak warning lands. */
+    val STREAK_RISK_LEAD: Duration = Duration.ofHours(2)
+
+    /** Long enough after waking that the morning brief is not the alarm clock. */
+    val BRIEF_AFTER_WAKE: Duration = Duration.ofHours(1)
 
     /**
      * Cadence of the live notification's progress bar.
@@ -36,14 +53,19 @@ object SessionNotificationPlanner {
         sessions: List<UpcomingSession>,
         preferences: NotificationPreferences,
         now: LocalDateTime,
-    ): List<SessionNotificationEvent> =
-        sessions.flatMap { eventsFor(it, preferences, now) }.sortedBy { it.at }
+        day: NotificationDayContext,
+        dismissedLive: Map<String, SessionWindow> = emptyMap(),
+    ): List<AwanNotificationEvent> {
+        val perSession = sessions.flatMap { eventsFor(it, preferences, now, dismissedLive) }
+        return (collapseFollowUps(perSession, now) + dayEventsFor(sessions, preferences, now, day))
+            .sortedBy { it.at }
+    }
 
     /**
      * A redraw of an already-running session's progress bar, as opposed to a moment the user is
      * waiting for. Cosmetic: missing one costs a stale bar for a minute and nothing else.
      */
-    fun isMidSessionTick(event: SessionNotificationEvent): Boolean =
+    fun isMidSessionTick(event: AwanNotificationEvent): Boolean =
         event is SessionNotificationEvent.Live && event.at.isAfter(event.session.start)
 
     /**
@@ -61,23 +83,23 @@ object SessionNotificationPlanner {
      * once, is still not due, and reschedules itself forever.
      */
     fun nextUserEventAfter(
-        plan: List<SessionNotificationEvent>,
+        plan: List<AwanNotificationEvent>,
         now: LocalDateTime,
-    ): SessionNotificationEvent? =
+    ): AwanNotificationEvent? =
         plan.filter { it.at.isAfter(now) && !isMidSessionTick(it) }.minByOrNull { it.at }
 
     /** The next progress redraw, on its own alarm so it cannot displace a user-facing one. */
     fun nextTickAfter(
-        plan: List<SessionNotificationEvent>,
+        plan: List<AwanNotificationEvent>,
         now: LocalDateTime,
-    ): SessionNotificationEvent? =
+    ): AwanNotificationEvent? =
         plan.filter { it.at.isAfter(now) && isMidSessionTick(it) }.minByOrNull { it.at }
 
     /**
      * True when [event] should be showing right now. Past events outside their grace window are
      * deliberately not replayed — after a reboot at noon, this morning's reminders are noise.
      */
-    fun isDue(event: SessionNotificationEvent, now: LocalDateTime): Boolean = when (event) {
+    fun isDue(event: AwanNotificationEvent, now: LocalDateTime): Boolean = when (event) {
         // Judged on the session running, not on `at`. For a live event `at` is the *next redraw*,
         // which is always a tick in the future while the session runs — requiring `at <= now` like
         // the others would mean the live notification could never be shown at all.
@@ -92,6 +114,17 @@ object SessionNotificationPlanner {
 
         is SessionNotificationEvent.Ended ->
             !event.at.isAfter(now) && withinGrace(event.at, now, ENDED_GRACE)
+
+        is SessionNotificationEvent.FollowUp ->
+            !event.at.isAfter(now) && withinGrace(event.at, now, FOLLOW_UP_GRACE)
+
+        // The conditions these two depend on — nothing finished today, the day being empty — are
+        // applied when the plan is built. Reaching here at all means they held.
+        is DayNotificationEvent.StreakRisk ->
+            !event.at.isAfter(now) && withinGrace(event.at, now, STREAK_RISK_GRACE)
+
+        is DayNotificationEvent.DailyBrief ->
+            !event.at.isAfter(now) && withinGrace(event.at, now, DAILY_BRIEF_GRACE)
     }
 
     private fun withinGrace(at: LocalDateTime, now: LocalDateTime, grace: Duration): Boolean =
@@ -101,6 +134,7 @@ object SessionNotificationPlanner {
         session: UpcomingSession,
         preferences: NotificationPreferences,
         now: LocalDateTime,
+        dismissedLive: Map<String, SessionWindow>,
     ): List<SessionNotificationEvent> {
         // A session the user already closed out, or the engine cancelled, has nothing left to say.
         if (session.status == SessionStatus.COMPLETED || session.status == SessionStatus.CANCELLED) {
@@ -121,7 +155,11 @@ object SessionNotificationPlanner {
         // Only while there is still session left to show. Without the end check a finished session
         // keeps producing a tick a minute into the future, and since that tick is never due, the
         // scheduler burns an exact alarm every minute on a session that is over.
-        if (preferences.sessionLiveActivityEnabled && now.isBefore(session.end)) {
+        if (
+            preferences.sessionLiveActivityEnabled &&
+            now.isBefore(session.end) &&
+            !isLiveDismissed(session, dismissedLive)
+        ) {
             events += SessionNotificationEvent.Live(nextLiveMoment(session, now), session)
         }
 
@@ -129,7 +167,113 @@ object SessionNotificationPlanner {
             events += SessionNotificationEvent.Ended(session.end, session)
         }
 
+        if (preferences.sessionFollowUpEnabled) {
+            val followUpAt = session.end.plusMinutes(preferences.followUpDelayMinutes.toLong())
+            events += SessionNotificationEvent.FollowUp(followUpAt, session)
+        }
+
         return events
+    }
+
+    /**
+     * The user pressed "Stop", and the session has not moved since.
+     *
+     * Scoped to the window rather than the id: a session that was moved, snoozed or rescheduled is a
+     * new thing to be told about, so the dismissal stops applying and the live notification returns.
+     */
+    private fun isLiveDismissed(
+        session: UpcomingSession,
+        dismissedLive: Map<String, SessionWindow>,
+    ): Boolean = dismissedLive[session.id] == SessionWindow(session.start, session.end)
+
+    /**
+     * Keeps at most one already-due follow-up: the most recent one.
+     *
+     * A day that got away from someone produces a follow-up per unanswered session, and three
+     * notifications saying the same thing is how an app gets muted. Future ones are all kept — each
+     * still needs its alarm — and this runs again when they come due.
+     */
+    private fun collapseFollowUps(
+        events: List<SessionNotificationEvent>,
+        now: LocalDateTime,
+    ): List<SessionNotificationEvent> {
+        val (followUps, rest) = events.partition { it is SessionNotificationEvent.FollowUp }
+        val (past, future) = followUps.partition { !it.at.isAfter(now) }
+        return rest + future + listOfNotNull(past.maxByOrNull { it.at })
+    }
+
+    private fun dayEventsFor(
+        sessions: List<UpcomingSession>,
+        preferences: NotificationPreferences,
+        now: LocalDateTime,
+        day: NotificationDayContext,
+    ): List<DayNotificationEvent> {
+        // Nothing to say about a day the app has never loaded. Without this a cold install is told
+        // its day is empty before the first sync has had a chance to fill it.
+        if (!day.scheduleKnown) return emptyList()
+
+        val today = sessions.filter { it.start.toLocalDate() == day.today }
+        val events = mutableListOf<DayNotificationEvent>()
+
+        if (preferences.streakReminderEnabled && isStreakAtRisk(today, now)) {
+            events += DayNotificationEvent.StreakRisk(
+                at = dayEndMoment(day).minus(STREAK_RISK_LEAD),
+                date = day.today,
+            )
+        }
+
+        if (preferences.dailyBriefEnabled) {
+            val wakeMoment = day.today.atTime(day.wake)
+            val first = today.minByOrNull { it.start }
+            fun brief(at: LocalDateTime, slot: DayNotificationEvent.DailyBrief.Slot) =
+                DayNotificationEvent.DailyBrief(
+                    at = at,
+                    date = day.today,
+                    slot = slot,
+                    plannedCount = today.size,
+                    firstTitle = first?.title,
+                    firstStart = first?.start,
+                )
+
+            val morningAt = wakeMoment.plus(BRIEF_AFTER_WAKE)
+            events += brief(morningAt, DayNotificationEvent.DailyBrief.Slot.MORNING)
+
+            // The second ask exists only for a day that is still empty — once anything is planned,
+            // the morning summary has already said everything there is to say.
+            val middayAt = wakeMoment.plusMinutes(
+                Duration.between(wakeMoment, dayEndMoment(day)).toMinutes() / 2
+            )
+            if (today.isEmpty() && middayAt.isAfter(morningAt)) {
+                events += brief(middayAt, DayNotificationEvent.DailyBrief.Slot.MIDDAY)
+            }
+        }
+
+        return events
+    }
+
+    /**
+     * Nothing finished today, and nothing running right now.
+     *
+     * "Nothing finished" is the local stand-in for the streak, which is server-owned and not cached
+     * per-day. The running check keeps the warning off the screen while the live notification is
+     * already there saying the opposite.
+     */
+    private fun isStreakAtRisk(today: List<UpcomingSession>, now: LocalDateTime): Boolean {
+        val completedAny = today.any { it.status == SessionStatus.COMPLETED }
+        val running = today.any { !now.isBefore(it.start) && now.isBefore(it.end) }
+        return !completedAny && !running
+    }
+
+    /**
+     * The moment the user's day is over.
+     *
+     * An overnight day — asleep at 01:00, awake at 07:00 — ends on the *following* date. Anchoring it
+     * to today would place the whole thing in this morning, hours before the day began, so the
+     * warning's alarm would sit permanently in the past and never fire.
+     */
+    private fun dayEndMoment(day: NotificationDayContext): LocalDateTime {
+        val sameDay = day.today.atTime(day.dayEnd)
+        return if (day.dayEnd > day.wake) sameDay else sameDay.plusDays(1)
     }
 
     /**

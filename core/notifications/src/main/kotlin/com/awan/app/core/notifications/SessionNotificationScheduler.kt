@@ -11,12 +11,17 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.domain.notifications.usecase.GetNotificationPreferencesUseCase
 import com.awan.app.core.domain.notifications.usecase.GetUpcomingSessionsUseCase
+import com.awan.app.core.domain.notifications.usecase.IsScheduleKnownUseCase
+import com.awan.app.core.domain.profile.usecase.ObserveProfileUseCase
+import com.awan.app.core.notifications.model.AwanNotificationEvent
+import com.awan.app.core.notifications.model.NotificationDayContext
 import com.awan.app.core.notifications.model.SessionNotificationEvent
 import com.awan.app.core.notifications.receiver.SessionAlarmReceiver
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,6 +30,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -52,6 +58,8 @@ class SessionNotificationScheduler @Inject constructor(
     @ApplicationContext private val context: Context,
     private val getUpcomingSessions: GetUpcomingSessionsUseCase,
     private val getNotificationPreferences: GetNotificationPreferencesUseCase,
+    private val isScheduleKnown: IsScheduleKnownUseCase,
+    private val observeProfile: ObserveProfileUseCase,
     private val poster: SessionNotificationPoster,
     private val clock: Clock,
     @ApplicationScope private val scope: CoroutineScope,
@@ -75,7 +83,12 @@ class SessionNotificationScheduler @Inject constructor(
             val today = now.toLocalDate()
             val sessions = getUpcomingSessions(today, today.plusDays(LOOKAHEAD_DAYS))
 
-            val plan = SessionNotificationPlanner.plan(sessions, preferences, now)
+            val plan = SessionNotificationPlanner.plan(
+                sessions = sessions,
+                preferences = preferences,
+                now = now,
+                day = dayContext(today),
+            )
 
             val due = plan.filter { SessionNotificationPlanner.isDue(it, now) }
 
@@ -113,6 +126,32 @@ class SessionNotificationScheduler @Inject constructor(
     }
 
     /**
+     * When the user's day starts and ends, and whether today's schedule has actually been fetched.
+     *
+     * The profile flow is Room-backed, so this stays correct with the radio off. A device that has
+     * never synced a profile — onboarding writes it to the backend, not to Room — has no wake or
+     * sleep time at all, and `CalendarLocalDataSourceImpl` can write an empty string, so both are
+     * treated as absent and fall back to the same defaults `DayBounds` uses.
+     */
+    private suspend fun dayContext(today: LocalDate): NotificationDayContext {
+        val preferences = runCatching { observeProfile().firstOrNull()?.preferences }
+            .onFailure { Log.w(TAG, "Could not read the profile; using default day bounds", it) }
+            .getOrNull()
+
+        return NotificationDayContext(
+            today = today,
+            wake = preferences?.wakeupTime.toLocalTimeOrNull()
+                ?: NotificationDayContext.DEFAULT_WAKE,
+            dayEnd = preferences?.sleepTime.toLocalTimeOrNull()
+                ?: NotificationDayContext.DEFAULT_DAY_END,
+            scheduleKnown = isScheduleKnown(today),
+        )
+    }
+
+    private fun String?.toLocalTimeOrNull(): LocalTime? =
+        this?.takeIf { it.isNotBlank() }?.let { runCatching { LocalTime.parse(it) }.getOrNull() }
+
+    /**
      * Redraws the running-session notification from inside the process, between alarm ticks.
      *
      * The alarm chain is what keeps the notification correct when nothing of ours is running, but it
@@ -148,12 +187,12 @@ class SessionNotificationScheduler @Inject constructor(
      * a deleted session contributes nothing to compare against, so anything keyed off the surviving
      * rows would strand exactly the notification this is meant to clear.
      */
-    private fun cancelStale(due: List<SessionNotificationEvent>, posted: Set<Int>) {
+    private fun cancelStale(due: List<AwanNotificationEvent>, posted: Set<Int>) {
         val shouldBeShowing = due.map { NotificationIds.forEvent(it) }.toSet()
         posted.filterNot { it in shouldBeShowing }.forEach(poster::cancel)
     }
 
-    private fun schedule(requestCode: Int, next: SessionNotificationEvent?, now: LocalDateTime) {
+    private fun schedule(requestCode: Int, next: AwanNotificationEvent?, now: LocalDateTime) {
         val pendingIntent = alarmPendingIntent(requestCode)
         if (next == null) {
             alarmManager.cancel(pendingIntent)
