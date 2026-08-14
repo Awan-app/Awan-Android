@@ -69,14 +69,7 @@ fun AwanBottomNavBar(
             .fillMaxWidth()
             .navigationBarsPadding()
             .pointerInput(Unit) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(pass = PointerEventPass.Initial)
-                    down.consume()
-                    do {
-                        val event = awaitPointerEvent(pass = PointerEventPass.Initial)
-                        event.changes.forEach { it.consume() }
-                    } while (event.changes.any { it.pressed })
-                }
+                detectTapGestures { }
             }
             .padding(horizontal = 16.dp, vertical = 8.dp),
         contentAlignment = Alignment.BottomCenter
@@ -195,7 +188,12 @@ private fun NavTabItem(
     val tileShape = RoundedCornerShape(12.dp)
 
     Box(
-        modifier = modifier,
+        modifier = modifier
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
         contentAlignment = Alignment.Center
     ) {
         Box(
@@ -215,11 +213,6 @@ private fun NavTabItem(
                     } else {
                         Modifier
                     }
-                )
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = onClick
                 ),
             contentAlignment = Alignment.Center
         ) {

@@ -315,6 +315,7 @@ class HomeViewModel @Inject constructor(
                 totalHours = totalHours,
                 progressSegments = progressSegments,
                 mascotExpression = MascotExpression.Idle,
+                isStreakActive = if (isToday) completedCount > 0 else state.isStreakActive,
             )
         }
     }
@@ -407,6 +408,7 @@ class HomeViewModel @Inject constructor(
                 completedHours = completedHours,
                 totalHours = totalHours,
                 progressSegments = buildProgressSegments(updated),
+                isStreakActive = if (state.isToday) completedCount > 0 else state.isStreakActive,
             )
         }
 
@@ -434,13 +436,15 @@ class HomeViewModel @Inject constructor(
             val updated = state.sessions.map { session ->
                 if (session.id == sessionId) session.copy(status = previousStatus) else session
             }
+            val completedCount = updated.count { it.status == TaskStatus.Completed }
             val (completedHours, totalHours) = calculateSessionHours(updated)
             state.copy(
                 sessions = updated,
-                completedSessionsCount = updated.count { it.status == TaskStatus.Completed },
+                completedSessionsCount = completedCount,
                 completedHours = completedHours,
                 totalHours = totalHours,
                 progressSegments = buildProgressSegments(updated),
+                isStreakActive = if (state.isToday) completedCount > 0 else state.isStreakActive,
             )
         }
     }

@@ -100,19 +100,23 @@ fun formatAbbreviatedPoints(points: Int): String {
 }
 
 /**
- * The streak badge in the home header. Reads its colours from the theme's streak tokens so it
- * matches the streak line on the calendar.
+ * The streak badge in the home header. Reads its colours from the theme's streak tokens when active,
+ * and renders in a muted gray when today's streak is not yet completed/taken.
  */
 @Composable
 fun AwanStreakBadge(
     streakCount: Int,
+    isStreakActive: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
+    val surfaceColor = if (isStreakActive) AwanTheme.colors.streakSurface else AwanTheme.colors.disabledSurface
+    val accentColor = if (isStreakActive) AwanTheme.colors.streakIcon else AwanTheme.colors.disabledContent
+
     AwanStatBadge(
         icon = Lucide.Flame,
         text = streakCount.toString(),
-        surface = AwanTheme.colors.streakSurface,
-        accent = AwanTheme.colors.streakIcon,
+        surface = surfaceColor,
+        accent = accentColor,
         modifier = modifier,
     )
 }

@@ -52,6 +52,7 @@ data class HomeUiState(
     val userName: String = "",
     val greetingPrefix: UiText = UiText.StringResource(R.string.home_greeting_afternoon),
     val streakCount: Int = 0,
+    val isStreakActive: Boolean = false,
     val pointsCount: Int = 0,
     val mascotExpression: MascotExpression = MascotExpression.Idle,
     val subtitleText: UiText = UiText.DynamicString(""),

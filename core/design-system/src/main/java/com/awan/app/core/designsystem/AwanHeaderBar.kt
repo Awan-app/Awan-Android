@@ -50,6 +50,7 @@ import com.composables.icons.lucide.Lucide
 fun AwanHeaderBar(
     userName: String,
     streakCount: Int,
+    isStreakActive: Boolean = true,
     pointsCount: Int = 0,
     mascotExpression: MascotExpression = MascotExpression.Greet,
     subtitleText: String = "Clear skies — 6 things floating today",
@@ -112,7 +113,10 @@ fun AwanHeaderBar(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    AwanStreakBadge(streakCount = streakCount)
+                    AwanStreakBadge(
+                        streakCount = streakCount,
+                        isStreakActive = isStreakActive,
+                    )
 
                     AwanPointsBadge(
                         pointsCount = pointsCount,

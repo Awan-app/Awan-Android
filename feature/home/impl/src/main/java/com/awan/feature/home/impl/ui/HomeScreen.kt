@@ -108,6 +108,7 @@ fun HomeScreen(
                 userName = uiState.userName,
                 greetingPrefix = uiState.greetingPrefix.asString(),
                 streakCount = uiState.streakCount,
+                isStreakActive = uiState.isStreakActive,
                 pointsCount = uiState.pointsCount,
                 mascotExpression = uiState.mascotExpression,
                 subtitleText = uiState.subtitleText.asString(),
