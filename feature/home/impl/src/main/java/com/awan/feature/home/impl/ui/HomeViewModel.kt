@@ -34,6 +34,7 @@ import com.awan.app.core.domain.home.usecase.UncompleteSessionUseCase
 import com.awan.app.core.domain.home.usecase.MoveSessionUseCase
 import com.awan.app.core.domain.home.usecase.UpdateSessionLockUseCase
 import com.awan.app.core.domain.profile.usecase.GetProfileUseCase
+import com.awan.app.core.domain.profile.usecase.ObserveProfileUseCase
 import com.awan.feature.home.impl.ui.components.calculateDurationMinutes
 import com.awan.feature.home.impl.ui.components.calculateEnd
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -72,6 +73,7 @@ class HomeViewModel @Inject constructor(
     private val moveSessionUseCase: MoveSessionUseCase,
     private val updateSessionLockUseCase: UpdateSessionLockUseCase,
     private val getProfileUseCase: GetProfileUseCase,
+    private val observeProfileUseCase: ObserveProfileUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -84,6 +86,7 @@ class HomeViewModel @Inject constructor(
         updateCurrentTime()
         startClockTimer()
         loadUserProfile()
+        observeUserProfile()
         observeGamificationProgress()
         loadWheelAvailability()
         loadScheduleForDate(LocalDate.now())
@@ -94,16 +97,25 @@ class HomeViewModel @Inject constructor(
             when (val result = getProfileUseCase()) {
                 is Result.Success -> {
                     val user = result.data
-                    val name = user.firstName?.takeIf { it.isNotBlank() } ?: "User"
+                    val name = user.firstName?.takeIf { it.isNotBlank() } ?: ""
                     _uiState.update { state ->
-                        state.copy(
-                            userName = name,
-                            streakCount = user.streak ?: 0,
-                            pointsCount = user.points ?: 0,
-                        )
+                        state.copy(userName = name)
                     }
                 }
                 else -> Unit
+            }
+        }
+    }
+
+    private fun observeUserProfile() {
+        viewModelScope.launch {
+            observeProfileUseCase().collect { profile ->
+                if (profile != null) {
+                    val name = profile.firstName?.takeIf { it.isNotBlank() } ?: ""
+                    _uiState.update { state ->
+                        state.copy(userName = name)
+                    }
+                }
             }
         }
     }
@@ -303,6 +315,7 @@ class HomeViewModel @Inject constructor(
                 totalHours = totalHours,
                 progressSegments = progressSegments,
                 mascotExpression = MascotExpression.Idle,
+                isStreakActive = if (isToday) completedCount > 0 else state.isStreakActive,
             )
         }
     }
@@ -395,6 +408,7 @@ class HomeViewModel @Inject constructor(
                 completedHours = completedHours,
                 totalHours = totalHours,
                 progressSegments = buildProgressSegments(updated),
+                isStreakActive = if (state.isToday) completedCount > 0 else state.isStreakActive,
             )
         }
 
@@ -422,13 +436,15 @@ class HomeViewModel @Inject constructor(
             val updated = state.sessions.map { session ->
                 if (session.id == sessionId) session.copy(status = previousStatus) else session
             }
+            val completedCount = updated.count { it.status == TaskStatus.Completed }
             val (completedHours, totalHours) = calculateSessionHours(updated)
             state.copy(
                 sessions = updated,
-                completedSessionsCount = updated.count { it.status == TaskStatus.Completed },
+                completedSessionsCount = completedCount,
                 completedHours = completedHours,
                 totalHours = totalHours,
                 progressSegments = buildProgressSegments(updated),
+                isStreakActive = if (state.isToday) completedCount > 0 else state.isStreakActive,
             )
         }
     }
@@ -675,8 +691,12 @@ class HomeViewModel @Inject constructor(
         _uiState.update { state ->
             val dialogState = state.selectedSessionDetailState ?: return@update state
             val detail = dialogState.detail ?: return@update state
-            val duration = calculateDurationMinutes(detail.session.start, detail.session.end)
-                ?: detail.task.estimatedDuration ?: 30
+            val calculatedDuration = calculateDurationMinutes(detail.session.start, detail.session.end)
+            val duration = if (calculatedDuration > 0) {
+                calculatedDuration
+            } else {
+                detail.task.estimatedDuration?.takeIf { it > 0 } ?: 30
+            }
 
             state.copy(
                 selectedSessionDetailState = dialogState.copy(

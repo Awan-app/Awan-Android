@@ -502,6 +502,43 @@ class HomeRepositoryImplTest {
         assertTrue(result is Result.Success)
         assertEquals(com.awan.app.core.model.SessionStatus.UNKNOWN, (result as Result.Success).data.session.status)
     }
+
+    @Test
+    fun `getDaySchedule calculates 0 duration when startTime 23 00 and endTime 23 00 00 resolve to same LocalTime`() = runTest {
+        val taskId = "task-same-time"
+        val local = FakeHomeLocalDataSource(
+            tasks = mapOf(
+                taskId to com.awan.app.core.database.model.TaskEntity(
+                    id = taskId,
+                    title = "Same Time Session",
+                    description = null,
+                    estimatedDuration = 30,
+                    status = "SCHEDULED",
+                    mandatory = false,
+                    estimatedPoints = 10,
+                    allowTaskSplitting = false,
+                )
+            )
+        )
+        local.sessions.value = listOf(
+            com.awan.app.core.database.model.SessionEntity(
+                id = "session-same-time",
+                taskId = taskId,
+                zoneId = null,
+                date = "2026-08-09",
+                startTime = "23:00",
+                endTime = "23:00:00",
+                status = "SCHEDULED",
+                locked = false,
+            )
+        )
+        val repository = createRepository(fakeRemote = FakeHomeRemoteDataSource(), local = local)
+        val result = repository.getDaySchedule(java.time.LocalDate.of(2026, 8, 9)).first()
+
+        assertTrue(result is Result.Success)
+        val session = (result as Result.Success).data.sessions.single()
+        assertEquals(0, session.durationMinutes)
+    }
 }
 
 private const val SESSION_ID = "session-1"

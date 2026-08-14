@@ -64,4 +64,13 @@
     <string name="ds_speech_settings_dialog_body">Microphone access is turned off. Please enable it in device settings to use speech recognition.</string>
     <string name="ds_speech_settings_dialog_confirm">Open Settings</string>
     <string name="ds_speech_settings_dialog_cancel">Cancel</string>
+    <!-- Points shortcuts -->
+    <string name="ds_points_thousand">%1$sk</string>
+    <string name="ds_points_million">%1$sM</string>
+    <string name="ds_points_billion">%1$sB</string>
+
+    <!-- Navigation & Combos -->
+    <string name="ds_next_day">Next day</string>
+    <string name="ds_previous_day">Previous day</string>
+    <string name="ds_combo_bonus">%1$d× COMBO BONUS!</string>
 </resources>

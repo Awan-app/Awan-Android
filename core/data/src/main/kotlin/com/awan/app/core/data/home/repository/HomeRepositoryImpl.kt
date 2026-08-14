@@ -31,6 +31,7 @@ import com.awan.app.core.common.result.map
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import com.awan.app.core.data.util.parseIsoDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.awan.app.core.model.SessionDetailInfo
@@ -121,7 +122,13 @@ class HomeRepositoryImpl @Inject constructor(
                     val startMinutes = startLocalTime.hour * 60 + startLocalTime.minute
                     val durationMinutes = run {
                         val endMinutes = endLocalTime.hour * 60 + endLocalTime.minute
-                        if (endMinutes > startMinutes) endMinutes - startMinutes else 0
+                        if (endMinutes > startMinutes) {
+                            endMinutes - startMinutes
+                        } else if (endMinutes < startMinutes) {
+                            (endMinutes + 24 * 60) - startMinutes
+                        } else {
+                            0
+                        }
                     }
 
                     DaySession(
@@ -166,10 +173,15 @@ class HomeRepositoryImpl @Inject constructor(
             }
 
             val sessionDetailInfo = if (sessionDto != null) {
+                val startDt = parseIsoDateTime(sessionDto.start) ?: LocalDateTime.parse(sessionDto.start)
+                var endDt = parseIsoDateTime(sessionDto.end) ?: LocalDateTime.parse(sessionDto.end)
+                if (!endDt.isAfter(startDt) && startDt != endDt && startDt.toLocalDate() == endDt.toLocalDate()) {
+                    endDt = endDt.plusDays(1)
+                }
                 SessionDetailInfo(
                     id = sessionDto.id,
-                    start = LocalDateTime.parse(sessionDto.start),
-                    end = LocalDateTime.parse(sessionDto.end),
+                    start = startDt,
+                    end = endDt,
                     status = mapStatus(sessionDto.status),
                     locked = sessionDto.locked,
                     zoneId = sessionDto.zoneId,
@@ -177,10 +189,15 @@ class HomeRepositoryImpl @Inject constructor(
                 )
             } else {
                 val cached = local.getSession(sessionId)!!
+                val startDt = LocalDateTime.parse("${cached.date}T${cached.startTime}")
+                var endDt = LocalDateTime.parse("${cached.date}T${cached.endTime}")
+                if (!endDt.isAfter(startDt) && startDt != endDt && startDt.toLocalDate() == endDt.toLocalDate()) {
+                    endDt = endDt.plusDays(1)
+                }
                 SessionDetailInfo(
                     id = cached.id,
-                    start = LocalDateTime.parse("${cached.date}T${cached.startTime}"),
-                    end = LocalDateTime.parse("${cached.date}T${cached.endTime}"),
+                    start = startDt,
+                    end = endDt,
                     status = mapStatus(cached.status),
                     locked = cached.locked,
                     zoneId = cached.zoneId,

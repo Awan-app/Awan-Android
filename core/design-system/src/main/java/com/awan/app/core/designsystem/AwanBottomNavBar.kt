@@ -9,6 +9,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +37,8 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -63,6 +68,9 @@ fun AwanBottomNavBar(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
+            .pointerInput(Unit) {
+                detectTapGestures { }
+            }
             .padding(horizontal = 16.dp, vertical = 8.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
@@ -180,7 +188,12 @@ private fun NavTabItem(
     val tileShape = RoundedCornerShape(12.dp)
 
     Box(
-        modifier = modifier,
+        modifier = modifier
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
         contentAlignment = Alignment.Center
     ) {
         Box(
@@ -200,11 +213,6 @@ private fun NavTabItem(
                     } else {
                         Modifier
                     }
-                )
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = onClick
                 ),
             contentAlignment = Alignment.Center
         ) {
