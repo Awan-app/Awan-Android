@@ -5,16 +5,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
 import com.awan.app.core.database.model.SessionEntity
-import com.awan.app.core.database.model.UpcomingSessionRow
 import kotlinx.coroutines.flow.Flow
-
-private const val UPCOMING_SESSIONS_QUERY = """
-    SELECT s.id, s.taskId, t.title, s.date, s.startTime, s.endTime, s.status, s.zoneId
-    FROM sessions s
-    INNER JOIN tasks t ON t.id = s.taskId
-    WHERE s.date >= :startDate AND s.date <= :endDate
-    ORDER BY s.date ASC, s.startTime ASC
-"""
 
 @Dao
 interface SessionDao {
@@ -39,12 +30,6 @@ interface SessionDao {
 
     @Query("SELECT * FROM sessions WHERE id = :id")
     suspend fun getSession(id: String): SessionEntity?
-
-    @Query(UPCOMING_SESSIONS_QUERY)
-    fun observeUpcomingSessions(startDate: String, endDate: String): Flow<List<UpcomingSessionRow>>
-
-    @Query(UPCOMING_SESSIONS_QUERY)
-    suspend fun getUpcomingSessions(startDate: String, endDate: String): List<UpcomingSessionRow>
 
     @Query("DELETE FROM sessions WHERE date IN (:dates)")
     suspend fun deleteSessionsForDates(dates: List<String>)

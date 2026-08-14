@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanCard
@@ -34,16 +32,16 @@ fun NotificationsStepBody(state: OnboardingState, @Suppress("UNUSED_PARAMETER") 
             CenteredHeadline(stringResource(R.string.onboarding_notifications_title))
         }
         CascadeItem(1, Modifier.fillMaxWidth()) {
-            SampleNotifications()
+            SampleNotification()
         }
         CascadeItem(2, Modifier.fillMaxWidth()) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                NotificationBullet(stringResource(R.string.onboarding_notifications_bullet_sessions))
-                NotificationBullet(stringResource(R.string.onboarding_notifications_bullet_checkin))
-                NotificationBullet(stringResource(R.string.onboarding_notifications_bullet_control))
+                NotificationBullet(stringResource(R.string.onboarding_notifications_bullet_starts))
+                NotificationBullet(stringResource(R.string.onboarding_notifications_bullet_fix))
+                NotificationBullet(stringResource(R.string.onboarding_notifications_bullet_spam))
             }
         }
         CascadeItem(3, Modifier.fillMaxWidth()) {
@@ -61,82 +59,30 @@ fun NotificationsStepBody(state: OnboardingState, @Suppress("UNUSED_PARAMETER") 
     }
 }
 
-/**
- * The three notifications the app actually sends, in the order a day produces them.
- *
- * Showing them beats describing them: the step is asking for a permission, and the honest answer to
- * "what will you send me" is the notifications themselves.
- */
 @Composable
-private fun SampleNotifications() {
-    Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-        SampleNotification(
-            emoji = "🔔",
-            accent = AwanTheme.colors.sky,
-            title = stringResource(R.string.onboarding_notifications_preview_reminder_title),
-            body = stringResource(R.string.onboarding_notifications_preview_reminder_body),
-        )
-        SampleNotification(
-            emoji = "⏳",
-            accent = AwanTheme.colors.zoneViolet,
-            title = stringResource(R.string.onboarding_notifications_preview_live_title),
-            body = stringResource(R.string.onboarding_notifications_preview_live_body),
-            progress = 0.55f,
-        )
-        SampleNotification(
-            emoji = "🌤",
-            accent = AwanTheme.colors.zoneTangerine,
-            title = stringResource(R.string.onboarding_notifications_preview_checkin_title),
-            body = stringResource(R.string.onboarding_notifications_preview_checkin_body),
-        )
-    }
-}
-
-@Composable
-private fun SampleNotification(
-    emoji: String,
-    accent: Color,
-    title: String,
-    body: String,
-    progress: Float? = null,
-) {
+private fun SampleNotification() {
     AwanCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
         ) {
             Box(
-                Modifier.size(38.dp).clip(RoundedCornerShape(11.dp)).background(accent),
+                Modifier.size(38.dp).clip(RoundedCornerShape(11.dp)).background(AwanTheme.colors.sky),
                 contentAlignment = Alignment.Center,
             ) {
-                AwanText(emoji, style = AwanTheme.styles.headingText)
+                AwanText("🔔", style = AwanTheme.styles.headingText)
             }
             Column(modifier = Modifier.weight(1f)) {
-                AwanText(title, style = AwanTheme.styles.headingText)
-                AwanText(body, style = AwanTheme.styles.bodySecondaryText)
-                if (progress != null) ProgressBar(fraction = progress, accent = accent)
+                AwanText(
+                    stringResource(R.string.onboarding_notifications_preview_sender),
+                    style = AwanTheme.styles.headingText,
+                )
+                AwanText(
+                    stringResource(R.string.onboarding_notifications_preview_body),
+                    style = AwanTheme.styles.bodySecondaryText,
+                )
             }
         }
-    }
-}
-
-/** Stands in for the running session's progress bar. Static — it is a picture, not a live update. */
-@Composable
-private fun ProgressBar(fraction: Float, accent: Color) {
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .height(4.dp)
-            .clip(CircleShape)
-            .background(accent.copy(alpha = 0.18f)),
-    ) {
-        Box(
-            Modifier
-                .fillMaxWidth(fraction)
-                .height(4.dp)
-                .clip(CircleShape)
-                .background(accent),
-        )
     }
 }
 

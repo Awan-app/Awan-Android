@@ -13,7 +13,6 @@ fun ProfileRouteScreen(
     onDailyZonesClick: () -> Unit,
     onInventoryClick: () -> Unit,
     onNavigateToMcpSettings: () -> Unit,
-    onNavigateToNotificationSettings: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -25,9 +24,8 @@ fun ProfileRouteScreen(
         onDailyZonesClick = onDailyZonesClick,
         onInventoryClick = onInventoryClick,
         onSettingsClick = { settingKey ->
-            when (settingKey) {
-                "mcp" -> onNavigateToMcpSettings()
-                "notifications" -> onNavigateToNotificationSettings()
+            if (settingKey == "mcp") {
+                onNavigateToMcpSettings()
             }
         },
         onLogout = onLogout,

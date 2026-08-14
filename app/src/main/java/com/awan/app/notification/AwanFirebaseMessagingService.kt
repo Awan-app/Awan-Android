@@ -1,29 +1,29 @@
 package com.awan.app.notification
 
-import android.util.Log
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
+import com.awan.app.MainActivity
 import com.awan.app.R
+import com.awan.app.core.designsystem.AwanToastManager
 import com.awan.app.core.datastore.auth.AuthTokenProvider
 import com.awan.app.core.domain.devicetoken.repository.DeviceTokenRepository
-import com.awan.app.core.domain.notifications.usecase.GetNotificationPreferencesUseCase
-import com.awan.app.core.notifications.SessionNotificationPoster
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * Push is no longer how session notifications reach the user.
- *
- * A push cannot arrive with the radio off, which made every session reminder unreliable exactly when
- * the schedule mattered most. Sessions are now driven entirely on-device from Room by
- * `:core:notifications`. What survives here is token registration, so the backend can still reach
- * this device, and delivery of the payloads it alone knows about — the daily wheel and rewards.
- */
 @AndroidEntryPoint
 class AwanFirebaseMessagingService : FirebaseMessagingService() {
 
@@ -33,18 +33,13 @@ class AwanFirebaseMessagingService : FirebaseMessagingService() {
     @Inject
     lateinit var authTokenProvider: AuthTokenProvider
 
-    @Inject
-    lateinit var notificationPoster: SessionNotificationPoster
-
-    @Inject
-    lateinit var getNotificationPreferences: GetNotificationPreferencesUseCase
-
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         serviceScope.launch {
             deviceTokenRepository.saveLocalFcmToken(token)
+            // If logged in, update token on backend immediately
             if (authTokenProvider.getAccessToken() != null) {
                 deviceTokenRepository.registerDeviceToken(token)
             }
@@ -54,47 +49,95 @@ class AwanFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
-        val type = remoteMessage.data[KEY_TYPE]
-        if (type in LOCALLY_OWNED_TYPES) {
-            // The device already schedules these itself. Showing the server's copy as well would
-            // double every reminder for as long as the backend keeps sending them.
-            Log.d(TAG, "Ignoring push of type $type; sessions are scheduled locally")
-            return
-        }
-
         val title = remoteMessage.notification?.title
-            ?: remoteMessage.data[KEY_TITLE]
+            ?: remoteMessage.data["title"]
             ?: getString(R.string.app_name)
         val body = remoteMessage.notification?.body
-            ?: remoteMessage.data[KEY_BODY]
-            ?: return
+            ?: remoteMessage.data["body"]
+            ?: ""
 
-        // The switch has to be honoured here, not by the server: everything that reaches this
-        // point is a reward or the daily wheel, and a "Rewards and daily spin" toggle that still
-        // let them through is the muted-the-whole-app failure the per-notification rule exists to
-        // prevent. Reading it is a suspend call, so the post moves onto the service's own scope.
-        serviceScope.launch {
-            if (!getNotificationPreferences().first().rewardsEnabled) {
-                Log.d(TAG, "Rewards notifications are switched off; dropping push")
-                return@launch
-            }
-            // Handles the in-app banner when the app is open and the tray notification otherwise.
-            notificationPoster.postRemote(title = title, body = body)
+        val type = remoteMessage.data["type"]
+        val sessionId = remoteMessage.data["sessionId"]
+
+        if (isAppInForeground()) {
+            // Display top in-app design-system Toast when app is in foreground
+            AwanToastManager.showToast(
+                title = title,
+                message = body,
+            )
+        } else {
+            // Post system tray notification when app is in background
+            showSystemNotification(
+                title = title,
+                body = body,
+                type = type,
+                sessionId = sessionId,
+            )
         }
     }
 
-    private companion object {
-        const val TAG = "AwanNotifications"
-        const val KEY_TYPE = "type"
-        const val KEY_TITLE = "title"
-        const val KEY_BODY = "body"
+    private fun isAppInForeground(): Boolean {
+        return ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+    }
 
-        /** Types the on-device scheduler owns; anything else is still the server's to deliver. */
-        val LOCALLY_OWNED_TYPES = setOf(
-            "session",
-            "session_reminder",
-            "session_start",
-            "session_end",
+    private fun showSystemNotification(
+        title: String,
+        body: String,
+        type: String?,
+        sessionId: String?,
+    ) {
+        createNotificationChannelIfNeeded()
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(EXTRA_NOTIFICATION_TYPE, type)
+            putExtra(EXTRA_SESSION_ID, sessionId)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            NOTIFICATION_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(this).notify(
+                System.currentTimeMillis().toInt(),
+                notification
+            )
+        } catch (e: SecurityException) {
+            // Missing POST_NOTIFICATIONS permission on Android 13+
+        }
+    }
+
+    private fun createNotificationChannelIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                getString(R.string.app_notification_channel_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = getString(R.string.app_notification_channel_description)
+            }
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    companion object {
+        const val CHANNEL_ID = "awan_push_notifications"
+        const val EXTRA_NOTIFICATION_TYPE = "extra_notification_type"
+        const val EXTRA_SESSION_ID = "extra_session_id"
+        private const val NOTIFICATION_REQUEST_CODE = 1001
     }
 }

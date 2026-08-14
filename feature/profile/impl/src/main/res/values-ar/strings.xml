@@ -29,30 +29,6 @@
 
     <string name="profile_section_settings">الإعدادات</string>
     <string name="profile_notifications">الإشعارات</string>
-
-    <!-- Notification settings -->
-    <string name="profile_notifications_title">الإشعارات</string>
-    <string name="profile_notifications_section_sessions">الجلسات</string>
-    <string name="profile_notifications_section_timing">التوقيت</string>
-    <string name="profile_notifications_section_nudges">التنبيهات</string>
-    <string name="profile_notifications_section_other">أخرى</string>
-    <string name="profile_notifications_reminders">قبل بدء الجلسة</string>
-    <string name="profile_notifications_live_activity">التقدّم المباشر أثناء الجلسة</string>
-    <string name="profile_notifications_session_end">عند انتهاء الجلسة</string>
-    <string name="profile_notifications_follow_up">إذا لم تردّ بعد الجلسة</string>
-    <string name="profile_notifications_streak">قبل أن ينتهي اليوم دون إنجاز</string>
-    <string name="profile_notifications_daily_brief">نظرة صباحية على يومك</string>
-    <string name="profile_notifications_rewards">المكافآت والعجلة اليومية</string>
-    <string name="profile_notifications_reminder_lead">ذكّرني قبل (دقيقة)</string>
-    <string name="profile_notifications_snooze_length">مدة التأجيل (دقيقة)</string>
-    <string name="profile_notifications_snooze_ask">اسأل</string>
-    <string name="profile_notifications_follow_up_delay">المتابعة بعد (دقيقة)</string>
-    <!-- Segment label. The unit lives in the row title so four segments fit without wrapping. -->
-    <string name="profile_notifications_minutes">%1$d</string>
-    <string name="profile_notifications_system_settings">إعدادات إشعارات النظام</string>
-    <string name="profile_notifications_blocked_title">الإشعارات مغلقة</string>
-    <string name="profile_notifications_blocked_body">لا يمكن لأوان تذكيرك بالجلسات حتى يتم السماح بالإشعارات لهذا التطبيق.</string>
-    <string name="profile_notifications_blocked_action">السماح بالإشعارات</string>
     <string name="profile_help_center">مركز المساعدة</string>
     <string name="profile_inventory">المقتنيات</string>
     <string name="profile_how_to_earn_points">كيفية كسب النقاط</string>

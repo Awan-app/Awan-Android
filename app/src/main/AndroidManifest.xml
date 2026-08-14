@@ -22,7 +22,6 @@
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|uiMode|locale|layoutDirection"
             android:exported="true"
             android:label="@string/app_name"
-            android:launchMode="singleTop"
             android:theme="@style/Theme.Awan"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>

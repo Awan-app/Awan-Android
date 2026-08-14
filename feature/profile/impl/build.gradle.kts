@@ -5,9 +5,6 @@ plugins {
 
 android {
     namespace = "com.awan.feature.profile.impl"
-    // For BuildConfig.DEBUG alone: the notification settings screen carries a debug-only card that
-    // fires each notification on demand, and it must not reach a release build.
-    buildFeatures { buildConfig = true }
 }
 
 dependencies {
