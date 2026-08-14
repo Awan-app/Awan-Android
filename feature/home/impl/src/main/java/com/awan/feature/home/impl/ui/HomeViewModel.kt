@@ -921,9 +921,14 @@ class HomeViewModel @Inject constructor(
                     )
                 }
             } else {
+                val errorMsg = (result as? Result.Error)?.error?.toReadableMessage()
+                    ?: UiText.StringResource(R.string.home_error_something_went_wrong)
                 _uiState.update { state ->
                     state.copy(
-                        selectedSessionDetailState = state.selectedSessionDetailState?.copy(isDeleting = false)
+                        selectedSessionDetailState = state.selectedSessionDetailState?.copy(
+                            isDeleting = false,
+                            errorMessage = errorMsg,
+                        )
                     )
                 }
             }
