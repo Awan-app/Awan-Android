@@ -79,8 +79,22 @@ class SessionNotificationScheduler @Inject constructor(
 
             val due = plan.filter { SessionNotificationPlanner.isDue(it, now) }
 
-            due.forEach { poster.post(it, now) }
-            cancelStale(due)
+            // Snapshot before posting, so "already showing" means showing when we arrived.
+            val alreadyShowing = poster.postedSessionIds()
+            due.forEach { event ->
+                // An event stays due for its whole grace window, and this runs on every session
+                // write, every preference change and every app foreground. Re-posting the same id
+                // updates the notification in place, which on an alerting channel means it buzzes
+                // and peeks again for something the user is already looking at.
+                //
+                // The live notification is the exception: redrawing it is the entire point, and its
+                // channel is silent and only-alert-once, so it costs nothing.
+                val isRedraw = event is SessionNotificationEvent.Live
+                if (isRedraw || NotificationIds.forEvent(event) !in alreadyShowing) {
+                    poster.post(event, now)
+                }
+            }
+            cancelStale(due, alreadyShowing)
             // Two slots, not one. See SessionNotificationPlanner.nextUserEventAfter: sharing a slot
             // means a running session's per-minute ticks keep the next reminder from ever reaching
             // the OS, so one dropped tick loses the reminder entirely.
@@ -134,11 +148,9 @@ class SessionNotificationScheduler @Inject constructor(
      * a deleted session contributes nothing to compare against, so anything keyed off the surviving
      * rows would strand exactly the notification this is meant to clear.
      */
-    private fun cancelStale(due: List<SessionNotificationEvent>) {
+    private fun cancelStale(due: List<SessionNotificationEvent>, posted: Set<Int>) {
         val shouldBeShowing = due.map { NotificationIds.forEvent(it) }.toSet()
-        poster.postedSessionIds()
-            .filterNot { it in shouldBeShowing }
-            .forEach(poster::cancel)
+        posted.filterNot { it in shouldBeShowing }.forEach(poster::cancel)
     }
 
     private fun schedule(requestCode: Int, next: SessionNotificationEvent?, now: LocalDateTime) {
