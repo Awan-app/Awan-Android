@@ -67,10 +67,12 @@ internal fun TaskInfoResponse.toTaskModel(): Task = Task(
     goalId = goalId,
     dependsOnTaskIds = dependsOnTaskIds.orEmpty(),
     category = category?.toModel(),
+    completedAt = completedAt,
 )
 
 internal fun com.awan.app.core.database.model.TaskEntity.toTaskModel(
-    dependsOnTaskIds: List<String> = emptyList()
+    dependsOnTaskIds: List<String> = emptyList(),
+    category: com.awan.app.core.model.Category? = null,
 ): Task = Task(
     id = id,
     title = title,
@@ -82,6 +84,8 @@ internal fun com.awan.app.core.database.model.TaskEntity.toTaskModel(
     allowTaskSplitting = allowTaskSplitting,
     goalId = goalId,
     dependsOnTaskIds = dependsOnTaskIds,
+    category = category,
+    completedAt = completedAt,
 )
 
 internal fun TaskProposalResponse.toModel(): TaskProposals = TaskProposals(
@@ -207,6 +211,7 @@ internal fun TaskInfoResponse.toEntity(
     allowTaskSplitting = allowTaskSplitting ?: false,
     goalId = goalId,
     categoryId = categoryId,
+    completedAt = completedAt,
     expiryTime = expiryTime,
 )
 

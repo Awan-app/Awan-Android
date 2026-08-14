@@ -10,4 +10,9 @@ data class GoalDetailsState(
     val isDeleting: Boolean = false,
     val isUpdating: Boolean = false,
     val showEditSheet: Boolean = false,
+    val completingTaskIds: Set<String> = emptySet(),
+    val movingTaskId: String? = null,
+    val availableGoals: List<Goal> = emptyList(),
+    val isLoadingGoals: Boolean = false,
+    val showAddTaskSheet: Boolean = false,
 )

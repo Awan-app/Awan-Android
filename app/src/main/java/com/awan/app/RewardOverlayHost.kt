@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import com.awan.app.core.designsystem.GoalAchievementOverlay
 import com.awan.app.core.designsystem.ItemFlightOverlay
 import com.awan.app.core.designsystem.LocalRewardAnchors
 import com.awan.app.core.designsystem.PointsFlightOverlay
@@ -71,6 +72,13 @@ fun RewardOverlayHost(
             newValue = event.newValue,
             maxStreakBroken = event.maxStreakBroken,
             maxStreakNew = event.maxStreakNew,
+            onDismiss = finish,
+            modifier = modifier,
+        )
+
+        is RewardEvent.GoalAchieved -> GoalAchievementOverlay(
+            goalTitle = event.title,
+            goalEmoji = event.emoji,
             onDismiss = finish,
             modifier = modifier,
         )

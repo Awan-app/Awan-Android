@@ -20,5 +20,7 @@ internal fun goalAccentColors(): List<Color> = with(AwanTheme.colors) {
 @Composable
 internal fun goalAccentColor(index: Int): Color {
     val palette = goalAccentColors()
-    return palette[index % palette.size]
+    if (palette.isEmpty()) return Color.Transparent
+    val safeIndex = (index % palette.size).let { if (it < 0) it + palette.size else it }
+    return palette[safeIndex]
 }

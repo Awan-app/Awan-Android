@@ -22,6 +22,7 @@ import com.awan.app.core.network.dto.task.ScheduleTaskRequest
 import com.awan.app.core.network.dto.task.ScheduledSessionResponse
 import com.awan.app.core.network.dto.task.SessionDraftDto
 import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.network.dto.task.TaskCompletionResponse
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
@@ -229,6 +230,13 @@ class TaskRepositoryImplTest {
                             end = "2026-07-25T10:30:00",
                         ),
                     ),
+                )
+            )
+
+        override suspend fun completeTask(taskId: String): Result<TaskCompletionResponse> =
+            Result.Success(
+                TaskCompletionResponse(
+                    task = TaskInfoResponse(id = taskId, title = "Completed Task", status = "COMPLETED"),
                 )
             )
 

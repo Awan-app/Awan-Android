@@ -8,6 +8,7 @@ import com.awan.app.core.common.result.map
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
 import com.awan.app.core.database.dao.GoalDao
 import com.awan.app.core.database.dao.TaskDao
+import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.domain.goal.repository.GoalRepository
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.model.Goal
@@ -28,9 +29,13 @@ import com.awan.app.core.data.task.toDependencyEntities
 import com.awan.app.core.data.task.toEntity
 import com.awan.app.core.data.task.toTaskModel
 import com.awan.app.core.common.result.suspendOnSuccess
+import com.awan.app.core.data.category.toModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -47,19 +52,60 @@ class GoalRepositoryImpl @Inject constructor(
     private val remoteDataSource: GoalRemoteDataSource,
     private val goalDao: GoalDao,
     private val taskDao: TaskDao,
+    private val categoryDao: CategoryDao,
     private val connectivityMonitor: NetworkConnectivityMonitor,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : GoalRepository {
 
     override fun observeGoals(): Flow<List<Goal>> {
-        return goalDao.observeAllGoals().map { entities ->
-            entities.map { entity ->
-                val tasks = taskDao.getTasksByGoal(entity.id).map { taskEntity ->
-                    taskEntity.toTaskModel(dependsOnTaskIds = taskDao.getDependsOnIds(taskEntity.id))
+        val goalsFlow = goalDao.observeAllGoals()
+        val categoriesFlow = categoryDao.observeAllCategories()
+
+        return combine(goalsFlow, categoriesFlow) { goalEntities, categoryEntities ->
+            val categoryMap = categoryEntities.associateBy { it.id }
+            goalEntities to categoryMap
+        }.flatMapLatest { (goalEntities, categoryMap) ->
+            if (goalEntities.isEmpty()) return@flatMapLatest kotlinx.coroutines.flow.flowOf(emptyList())
+
+            val goalFlows = goalEntities.map { entity ->
+                taskDao.observeTasksByGoal(entity.id).map { taskEntities ->
+                    val tasks = taskEntities.map { taskEntity ->
+                        val category = taskEntity.categoryId?.let { catId ->
+                            categoryMap[catId]?.let { it.toModel() }
+                        }
+                        taskEntity.toTaskModel(
+                            dependsOnTaskIds = taskDao.getDependsOnIds(taskEntity.id),
+                            category = category
+                        )
+                    }
+                    val goalModel = entity.toModel()
+                    goalModel.copy(tasks = tasks)
+                }
+            }
+            combine(goalFlows) { it.toList() }
+        }.flowOn(ioDispatcher)
+    }
+
+    override fun observeGoal(goalId: String): Flow<Goal?> {
+        val goalFlow = goalDao.observeGoal(goalId)
+        val categoriesFlow = categoryDao.observeAllCategories()
+
+        return combine(goalFlow, categoriesFlow) { entity, categoryEntities ->
+            if (entity == null) return@combine kotlinx.coroutines.flow.flowOf(null)
+            val categoryMap = categoryEntities.associateBy { it.id }
+
+            taskDao.observeTasksByGoal(entity.id).map { taskEntities ->
+                val tasks = taskEntities.map { taskEntity ->
+                    val category = taskEntity.categoryId?.let { categoryMap[it]?.toModel() }
+                    taskEntity.toTaskModel(
+                        dependsOnTaskIds = taskDao.getDependsOnIds(taskEntity.id),
+                        category = category
+                    )
                 }
                 entity.toModel().copy(tasks = tasks)
             }
-        }
+        }.flatMapLatest { it }
+            .flowOn(ioDispatcher)
     }
 
     override suspend fun getGoals(): Result<List<Goal>> = withContext(ioDispatcher) {
@@ -97,7 +143,7 @@ class GoalRepositoryImpl @Inject constructor(
 
     override suspend fun getGoal(goalId: String): Result<Goal> = withContext(ioDispatcher) {
         if (connectivityMonitor.isCurrentlyOnline()) {
-            remoteDataSource.getGoal(goalId).suspendOnSuccess { syncGoal(it) }
+            remoteDataSource.getGoal(goalId, expand = true).suspendOnSuccess { syncGoal(it) }
         }
         goalDao.getGoal(goalId)?.let {
             Result.Success(it.toModelWithTasks())
@@ -175,27 +221,39 @@ class GoalRepositoryImpl @Inject constructor(
     }
 
     private suspend fun GoalEntity.toModelWithTasks(): Goal {
+        val categoryEntities = categoryDao.getAllCategories()
+        val categoryMap = categoryEntities.associateBy { it.id }
+        
         val tasks = taskDao.getTasksByGoal(id).map { taskEntity ->
-            taskEntity.toTaskModel(dependsOnTaskIds = taskDao.getDependsOnIds(taskEntity.id))
+            val category = taskEntity.categoryId?.let { categoryMap[it]?.toModel() }
+            taskEntity.toTaskModel(
+                dependsOnTaskIds = taskDao.getDependsOnIds(taskEntity.id),
+                category = category
+            )
         }
-        return toModel().copy(tasks = tasks)
+        val goalModel = toModel()
+        return goalModel.copy(tasks = tasks)
     }
 
     private suspend fun syncGoal(dto: GoalInfoResponse) {
         val expiry = SyncTtl.computeExpiry(SyncTtl.GOALS_TTL_MS)
         goalDao.upsertGoal(dto.toEntity().copy(expiryTime = expiry))
-        val entities = dto.tasks.map { it.toEntity(expiryTime = expiry) }
-        val dependencies = dto.tasks.flatMap { it.toDependencyEntities() }
-        taskDao.replaceTasksForGoal(dto.id, entities, dependencies)
+        dto.tasks?.let { tasks ->
+            val entities = tasks.map { it.toEntity(expiryTime = expiry) }
+            val dependencies = tasks.flatMap { it.toDependencyEntities() }
+            taskDao.replaceTasksForGoal(dto.id, entities, dependencies)
+        }
     }
 
     private suspend fun syncGoals(dtos: List<GoalInfoResponse>) {
         val expiry = SyncTtl.computeExpiry(SyncTtl.GOALS_TTL_MS)
         goalDao.upsertGoals(dtos.map { it.toEntity().copy(expiryTime = expiry) })
         dtos.forEach { dto ->
-            val entities = dto.tasks.map { it.toEntity(expiryTime = expiry) }
-            val dependencies = dto.tasks.flatMap { it.toDependencyEntities() }
-            taskDao.replaceTasksForGoal(dto.id, entities, dependencies)
+            dto.tasks?.let { tasks ->
+                val entities = tasks.map { it.toEntity(expiryTime = expiry) }
+                val dependencies = tasks.flatMap { it.toDependencyEntities() }
+                taskDao.replaceTasksForGoal(dto.id, entities, dependencies)
+            }
         }
     }
 

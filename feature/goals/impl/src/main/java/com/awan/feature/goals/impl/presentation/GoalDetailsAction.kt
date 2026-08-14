@@ -12,4 +12,10 @@ sealed interface GoalDetailsAction {
         val status: String,
         val targetDate: String?
     ) : GoalDetailsAction
+    data class TaskChecked(val taskId: String) : GoalDetailsAction
+    data object AddTaskClicked : GoalDetailsAction
+    data object AddTaskDismissed : GoalDetailsAction
+    data class DeleteTaskClicked(val taskId: String) : GoalDetailsAction
+    data class MoveTaskConfirmed(val goalId: String) : GoalDetailsAction
+    data object MoveTaskDismissed : GoalDetailsAction
 }

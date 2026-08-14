@@ -60,10 +60,15 @@ fun HomeScreen(
     onNavigateToCalendar: () -> Unit = {},
     onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
     onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
+    onDateChanged: (LocalDate) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(uiState.selectedDate) {
+        onDateChanged(uiState.selectedDate)
+    }
 
     LaunchedEffect(Unit) {
         onRegisterSelectDate(viewModel::selectDate)

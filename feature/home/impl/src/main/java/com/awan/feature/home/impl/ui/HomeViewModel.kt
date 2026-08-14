@@ -363,27 +363,19 @@ class HomeViewModel @Inject constructor(
 
     fun toggleSessionStatus(sessionId: String) {
         var targetSession: ScheduleSession? = null
-        var isCompleting = false
 
         _uiState.update { state ->
             val target = state.sessions.find { it.id == sessionId } ?: return@update state
-            val sessionPoints = target.points
 
-            isCompleting = target.status != TaskStatus.Completed
+            // Prevent changing status if already completed
+            if (target.status == TaskStatus.Completed) return@update state
+
+            val sessionPoints = target.points
             targetSession = target
 
             val updated = state.sessions.map { session ->
                 if (session.id != sessionId) return@map session
-                if (isCompleting) {
-                    session.copy(status = TaskStatus.Completed, points = sessionPoints)
-                } else {
-                    val restoredStatus = if (session.isFixed || session.status is TaskStatus.Fixed) {
-                        TaskStatus.Fixed
-                    } else {
-                        TaskStatus.Pending
-                    }
-                    session.copy(status = restoredStatus)
-                }
+                session.copy(status = TaskStatus.Completed, points = sessionPoints)
             }
 
             val completedCount = updated.count { it.status == TaskStatus.Completed }
@@ -402,16 +394,10 @@ class HomeViewModel @Inject constructor(
         val previousStatus = sessionToSync.status
 
         viewModelScope.launch {
-            val result = if (isCompleting) {
-                completeSessionUseCase(sessionId)
-            } else {
-                uncompleteSessionUseCase(sessionId)
-            }
-            
+            val result = completeSessionUseCase(sessionId)
+
             if (result is Result.Error) {
                 restoreSessionStatus(sessionId, previousStatus)
-            } else if (!isCompleting) {
-                refreshGamificationProgressUseCase()
             }
         }
     }
@@ -600,9 +586,11 @@ class HomeViewModel @Inject constructor(
         val currentDetail = currentDialogState.detail ?: return
         val sessionId = currentDialogState.sessionId
 
-        val isCurrentlyCompleted = currentDetail.session.status == SessionStatus.COMPLETED
-        val newStatus = if (isCurrentlyCompleted) SessionStatus.SCHEDULED else SessionStatus.COMPLETED
-        val newTaskStatus = if (isCurrentlyCompleted) com.awan.app.core.model.TaskStatus.SCHEDULED else com.awan.app.core.model.TaskStatus.COMPLETED
+        // Prevent changing status if already completed
+        if (currentDetail.session.status == SessionStatus.COMPLETED) return
+
+        val newStatus = SessionStatus.COMPLETED
+        val newTaskStatus = com.awan.app.core.model.TaskStatus.COMPLETED
 
         toggleSessionStatus(sessionId)
 

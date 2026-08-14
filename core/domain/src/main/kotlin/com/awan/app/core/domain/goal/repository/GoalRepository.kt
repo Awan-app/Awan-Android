@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface GoalRepository {
     fun observeGoals(): Flow<List<Goal>>
+    fun observeGoal(goalId: String): Flow<Goal?>
     suspend fun getGoals(): Result<List<Goal>>
     suspend fun createGoal(title: String, description: String?, targetDate: String?): Result<Goal>
     suspend fun getInboxGoal(): Result<Goal>

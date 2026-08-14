@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.goal.usecase.GetGoalsUseCase
 import com.awan.app.core.domain.goal.usecase.ObserveGoalsUseCase
+import com.awan.app.core.domain.task.usecase.GetInboxTasksUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +20,7 @@ import javax.inject.Inject
 class GoalsViewModel @Inject constructor(
     private val getGoalsUseCase: GetGoalsUseCase,
     private val observeGoalsUseCase: ObserveGoalsUseCase,
+    private val getInboxTasksUseCase: GetInboxTasksUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(GoalsState())
@@ -30,19 +32,74 @@ class GoalsViewModel @Inject constructor(
     init {
         observeGoals()
         refreshGoals()
+        loadInboxCount()
     }
 
     fun onAction(action: GoalsAction) {
         when (action) {
             is GoalsAction.SearchQueryChanged -> _state.update { it.copy(searchQuery = action.query) }
-            GoalsAction.RetryClicked -> refreshGoals()
+            GoalsAction.RetryClicked -> {
+                refreshGoals()
+                loadInboxCount()
+            }
             is GoalsAction.GoalClicked -> {
                 viewModelScope.launch {
                     _events.send(GoalsEvent.NavigateToGoalDetails(action.goalId))
                 }
             }
 
-            is GoalsAction.TabSelected -> _state.update { it.copy(tab = action.tab) }
+            is GoalsAction.DeleteGoalClicked -> {
+                viewModelScope.launch {
+                    _events.send(GoalsEvent.NavigateToGoalDetails(action.goalId))
+                    // User requested to delete from outside, but we only allow from inside now.
+                    // Or we could trigger a confirmation dialog here if we really wanted to.
+                }
+            }
+
+            GoalsAction.FilterClicked -> _state.update { 
+                it.copy(
+                    isFilterSheetOpen = true,
+                    pendingFilters = it.appliedFilters
+                ) 
+            }
+            GoalsAction.DismissFilterSheet -> _state.update { it.copy(isFilterSheetOpen = false) }
+
+            is GoalsAction.PendingStatusFilterChanged -> _state.update { 
+                it.copy(pendingFilters = it.pendingFilters.copy(status = action.status))
+            }
+
+            is GoalsAction.PendingTypeFilterChanged -> _state.update { 
+                it.copy(pendingFilters = it.pendingFilters.copy(type = action.type))
+            }
+            
+            GoalsAction.ApplyFiltersClicked -> _state.update { 
+                it.copy(
+                    appliedFilters = it.pendingFilters,
+                    isFilterSheetOpen = false
+                )
+            }
+            
+            GoalsAction.ResetFiltersClicked -> _state.update { 
+                it.copy(pendingFilters = GoalFilters())
+            }
+
+            GoalsAction.ClearFiltersClicked -> _state.update { 
+                it.copy(
+                    appliedFilters = GoalFilters(),
+                    pendingFilters = GoalFilters()
+                )
+            }
+
+            GoalsAction.AddGoalClicked -> {
+                viewModelScope.launch {
+                    _events.send(GoalsEvent.NavigateToAddGoal)
+                }
+            }
+            GoalsAction.InboxClicked -> {
+                viewModelScope.launch {
+                    _events.send(GoalsEvent.NavigateToInbox)
+                }
+            }
         }
     }
 
@@ -50,6 +107,17 @@ class GoalsViewModel @Inject constructor(
         viewModelScope.launch {
             observeGoalsUseCase().collect { goals ->
                 _state.update { it.copy(goals = goals) }
+            }
+        }
+    }
+
+    private fun loadInboxCount() {
+        viewModelScope.launch {
+            when (val result = getInboxTasksUseCase()) {
+                is Result.Success -> {
+                    _state.update { it.copy(inboxTaskCount = result.data.size) }
+                }
+                else -> { /* Ignore errors for inbox count in goals list for now */ }
             }
         }
     }

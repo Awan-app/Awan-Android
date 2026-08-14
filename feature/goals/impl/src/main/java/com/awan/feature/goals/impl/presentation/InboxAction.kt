@@ -8,4 +8,5 @@ sealed interface InboxAction {
     data object FilterClicked : InboxAction
     data object FilterDismissed : InboxAction
     data object RetryClicked : InboxAction
+    data object BackClicked : InboxAction
 }

@@ -16,7 +16,7 @@ interface GoalRemoteDataSource {
     suspend fun getGoals(): Result<List<GoalInfoResponse>>
     suspend fun createGoal(request: CreateGoalRequest): Result<GoalInfoResponse>
     suspend fun getInboxGoal(): Result<GoalInfoResponse>
-    suspend fun getGoal(goalId: String): Result<GoalInfoResponse>
+    suspend fun getGoal(goalId: String, expand: Boolean = false): Result<GoalInfoResponse>
     suspend fun updateGoal(goalId: String, request: UpdateGoalRequest): Result<GoalInfoResponse>
     suspend fun deleteGoal(goalId: String): Result<Unit>
     suspend fun continueDecomposition(request: GoalDecomposeRequest): Result<GoalDecomposeResponse>

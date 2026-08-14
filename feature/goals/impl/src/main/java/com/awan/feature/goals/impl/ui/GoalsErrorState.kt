@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
@@ -28,32 +27,33 @@ internal fun GoalsErrorState(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = AwanTheme.colors
+    val spacing = AwanTheme.spacing
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 32.dp),
+            .padding(horizontal = spacing.xxl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        AwanText(text = stringResource(R.string.goals_error_emoji), style = AwanTheme.typography.display.copy(fontSize = 52.sp))
-        Spacer(modifier = Modifier.height(16.dp))
+        AwanText(
+            text = stringResource(R.string.goals_error_emoji),
+            style = AwanTheme.typography.display.copy(fontSize = 52.sp)
+        )
+        Spacer(modifier = Modifier.height(spacing.md))
         AwanText(
             text = stringResource(R.string.goals_error_title),
-            style = AwanTheme.typography.heading.copy(
-                fontSize = 16.sp,
-                color = colors.textPrimary,
+            style = AwanTheme.styles.headingText.textStyle.copy(
                 textAlign = TextAlign.Center,
             ),
         )
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(spacing.lg))
         AwanButton(
             onClick = onRetry,
             variant = AwanButtonVariant.Primary,
         ) {
             AwanText(
                 text = stringResource(R.string.goals_error_retry),
-                style = AwanTheme.typography.button,
+                style = AwanTheme.styles.buttonLabel,
             )
         }
     }

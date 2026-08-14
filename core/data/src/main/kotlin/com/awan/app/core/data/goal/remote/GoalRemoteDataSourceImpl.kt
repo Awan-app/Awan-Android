@@ -40,9 +40,9 @@ class GoalRemoteDataSourceImpl @Inject constructor(
             goalApiService.getInboxGoal()
         }
 
-    override suspend fun getGoal(goalId: String): Result<GoalInfoResponse> =
+    override suspend fun getGoal(goalId: String, expand: Boolean): Result<GoalInfoResponse> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
-            goalApiService.getGoal(goalId)
+            goalApiService.getGoal(goalId, expand = expand)
         }
 
     override suspend fun updateGoal(

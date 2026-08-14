@@ -8,6 +8,7 @@ data class Goal(
     val status: GoalStatus = GoalStatus.ACTIVE,
     val tasks: List<Task> = emptyList(),
     val targetDate: String? = null,
+    val createdAt: String = "",
 ) {
     val totalTasks: Int
         get() = tasks.size

@@ -6,6 +6,7 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.goal.usecase.ConfirmGoalDecompositionUseCase
 import com.awan.app.core.domain.goal.usecase.ContinueGoalDecompositionUseCase
+import com.awan.app.core.domain.zones.usecase.GetZonesForDateUseCase
 import com.awan.app.core.domain.profile.usecase.GetUserDataUseCase
 import com.awan.app.core.domain.profile.usecase.SetMicPermissionRequestedUseCase
 import com.awan.app.core.domain.task.parser.ParsedTaskInput
@@ -37,6 +38,7 @@ class AddTaskViewModel @Inject constructor(
     private val parseTaskInput: ParseTaskInputUseCase,
     private val applyTaskAttribute: ApplyTaskAttributeUseCase,
     private val getCategories: GetCategoriesUseCase,
+    private val getZonesForDate: GetZonesForDateUseCase,
     private val createTask: CreateTaskUseCase,
     private val continueGoalDecomposition: ContinueGoalDecompositionUseCase,
     private val confirmGoalDecomposition: ConfirmGoalDecompositionUseCase,
@@ -90,6 +92,37 @@ class AddTaskViewModel @Inject constructor(
             AddTaskAction.DiscardCancelled -> _state.update { it.copy(showDiscardConfirm = false) }
             AddTaskAction.Dismiss -> close(AddTaskEvent.Dismissed)
             is AddTaskAction.SetMicPermissionRequested -> setMicPermissionRequested(action.requested)
+            is AddTaskAction.Initialize -> initialize(action.goalId, action.zoneId, action.date)
+        }
+    }
+
+    private fun initialize(goalId: String?, zoneId: String?, date: LocalDate?) {
+        _state.update { 
+            AddTaskState(
+                today = LocalDate.now(clock),
+                goalId = goalId,
+                zoneId = zoneId,
+                pendingDate = date,
+                availableCategories = it.availableCategories // Preserve categories to avoid re-fetch
+            ) 
+        }
+        
+        viewModelScope.launch {
+            if (date != null) {
+                // Pre-select the date in the parser
+                applyAttribute(TaskAttribute.On(date))
+                
+                if (zoneId != null) {
+                    // Try to find the zone to pre-select category
+                    val zonesResult = getZonesForDate(date)
+                    if (zonesResult is Result.Success) {
+                        val zone = zonesResult.data.find { it.id == zoneId }
+                        zone?.category?.let { category ->
+                            applyAttribute(TaskAttribute.In(category.name))
+                        }
+                    }
+                }
+            }
         }
     }
 

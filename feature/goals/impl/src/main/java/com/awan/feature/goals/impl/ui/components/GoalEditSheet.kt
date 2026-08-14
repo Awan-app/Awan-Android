@@ -7,9 +7,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.model.Goal
+import com.awan.feature.goals.impl.R
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.X
 import java.time.LocalDate
@@ -24,16 +26,17 @@ fun GoalEditSheet(
 ) {
     var title by remember { mutableStateOf(goal.title) }
     var description by remember { mutableStateOf(goal.description ?: "") }
-    var status by remember { mutableStateOf(goal.status.name) }
     var targetDate by remember { mutableStateOf(goal.targetDate) }
 
     var showDatePicker by remember { mutableStateOf(false) }
+    val spacing = AwanTheme.spacing
+    val colors = AwanTheme.colors
 
     if (showDatePicker) {
         AwanDatePickerDialog(
             initialDate = targetDate?.let { LocalDate.parse(it) } ?: LocalDate.now(),
-            confirmLabel = "Set",
-            cancelLabel = "Cancel",
+            confirmLabel = stringResource(R.string.goals_date_picker_set),
+            cancelLabel = stringResource(R.string.goals_date_picker_cancel),
             onDismiss = { showDatePicker = false },
             onConfirm = { date ->
                 targetDate = date.toString()
@@ -45,16 +48,16 @@ fun GoalEditSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = AwanTheme.colors.surface,
-        dragHandle = { BottomSheetDefaults.DragHandle(color = AwanTheme.colors.line) }
+        containerColor = colors.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = colors.line) }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .padding(horizontal = spacing.md)
+                .padding(bottom = spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(spacing.md)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -62,91 +65,69 @@ fun GoalEditSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AwanText(
-                    text = "Edit Goal",
-                    style = AwanTheme.styles.titleText
+                    text = stringResource(R.string.goals_edit_title),
+                    style = AwanTheme.typography.title.copy(color = colors.textPrimary)
                 )
-                AwanIconButton(onClick = onDismiss, contentDescription = "Close") {
-                    Icon(Lucide.X, null, tint = AwanTheme.colors.textSecondary)
+                AwanIconButton(
+                    onClick = onDismiss, 
+                    contentDescription = stringResource(R.string.goals_close_content_description)
+                ) {
+                    Icon(Lucide.X, null, tint = colors.textSecondary)
                 }
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
                 AwanText(
-                    text = "Title",
-                    style = AwanTheme.typography.caption.copy(color = AwanTheme.colors.textSecondary)
+                    text = stringResource(R.string.goals_edit_field_title),
+                    style = AwanTheme.typography.caption.copy(color = colors.textSecondary)
                 )
                 AwanTextField(
                     value = title,
                     onValueChange = { title = it },
-                    placeholder = "Enter goal title"
+                    placeholder = stringResource(R.string.goals_edit_placeholder_title)
                 )
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
                 AwanText(
-                    text = "Description",
-                    style = AwanTheme.typography.caption.copy(color = AwanTheme.colors.textSecondary)
+                    text = stringResource(R.string.goals_edit_field_description),
+                    style = AwanTheme.typography.caption.copy(color = colors.textSecondary)
                 )
                 AwanTextField(
                     value = description,
                     onValueChange = { description = it },
-                    placeholder = "Enter goal description",
+                    placeholder = stringResource(R.string.goals_edit_placeholder_description),
                     singleLine = false
                 )
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
                 AwanText(
-                    text = "Status",
-                    style = AwanTheme.typography.caption.copy(color = AwanTheme.colors.textSecondary)
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    val statuses = listOf("ACTIVE", "ACHIEVED")
-                    statuses.forEach { s ->
-                        FilterChip(
-                            selected = status == s,
-                            onClick = { status = s },
-                            label = { 
-                                AwanText(
-                                    text = s, 
-                                    style = AwanTheme.typography.caption.copy(
-                                        color = if (status == s) AwanTheme.colors.onSky else AwanTheme.colors.textPrimary
-                                    )
-                                ) 
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = AwanTheme.colors.sky,
-                                selectedLabelColor = AwanTheme.colors.onSky
-                            )
-                        )
-                    }
-                }
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                AwanText(
-                    text = "Target Date",
-                    style = AwanTheme.typography.caption.copy(color = AwanTheme.colors.textSecondary)
+                    text = stringResource(R.string.goals_edit_field_target_date),
+                    style = AwanTheme.typography.caption.copy(color = colors.textSecondary)
                 )
                 AwanCard(
                     onClick = { showDatePicker = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Box(modifier = Modifier.padding(16.dp)) {
-                        AwanText(text = targetDate ?: "No date set", style = AwanTheme.typography.body)
+                    Box(modifier = Modifier.padding(spacing.md)) {
+                        AwanText(
+                            text = targetDate ?: stringResource(R.string.goals_edit_no_date), 
+                            style = AwanTheme.typography.body
+                        )
                     }
                 }
             }
 
             AwanButton(
                 onClick = {
-                    onConfirm(title, description.takeIf { it.isNotBlank() }, status, targetDate)
+                    onConfirm(title, description.takeIf { it.isNotBlank() }, goal.status.name, targetDate)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = title.isNotBlank() && !isSaving,
                 isLoading = isSaving
             ) {
-                AwanText(text = "Save Changes")
+                AwanText(text = stringResource(R.string.goals_edit_save))
             }
         }
     }

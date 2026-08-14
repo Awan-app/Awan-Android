@@ -78,6 +78,8 @@ data class AddTaskState(
     val showDiscardConfirm: Boolean = false,
     @StringRes val errorMessage: Int? = null,
     val hasRequestedMicPermission: Boolean = false,
+    val goalId: String? = null,
+    val zoneId: String? = null,
 ) {
     /**
      * While the parser is stood down there is no `parsed.title` to check, so the raw text — or a
@@ -164,5 +166,6 @@ data class AddTaskState(
         startAt = parsed.startAt,
         categoryToken = parsed.categoryToken,
         categoryId = resolvedCategory?.id,
+        goalId = goalId,
     )
 }

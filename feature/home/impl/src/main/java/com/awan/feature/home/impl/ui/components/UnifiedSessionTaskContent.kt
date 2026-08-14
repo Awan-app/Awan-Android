@@ -417,15 +417,15 @@ internal fun UnifiedSessionTaskContent(
                     .heightIn(min = 48.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(
-                        if (isCompleted) AwanTheme.colors.surface
+                        if (isCompleted) AwanTheme.colors.surface.copy(alpha = 0.5f)
                         else AwanTheme.colors.success
                     )
                     .border(
                         width = 1.dp,
-                        color = if (isCompleted) AwanTheme.colors.line else Color.Transparent,
+                        color = if (isCompleted) AwanTheme.colors.line.copy(alpha = 0.5f) else Color.Transparent,
                         shape = RoundedCornerShape(16.dp),
                     )
-                    .clickable(onClick = onToggleStatus)
+                    .then(if (!isCompleted) Modifier.clickable(onClick = onToggleStatus) else Modifier)
                     .padding(vertical = 8.dp, horizontal = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -434,20 +434,20 @@ internal fun UnifiedSessionTaskContent(
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     Icon(
-                        imageVector = if (isCompleted) Icons.AutoMirrored.Filled.Undo else Icons.Default.Check,
+                        imageVector = if (isCompleted) Icons.Default.CheckCircle else Icons.Default.Check,
                         contentDescription = null,
-                        tint = if (isCompleted) AwanTheme.colors.textPrimary else Color.White,
+                        tint = if (isCompleted) AwanTheme.colors.success.copy(alpha = 0.6f) else Color.White,
                         modifier = Modifier.size(16.dp),
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     AwanText(
-                        text = if (isCompleted) stringResource(R.string.home_action_mark_pending)
+                        text = if (isCompleted) stringResource(R.string.home_status_completed)
                         else stringResource(R.string.home_action_mark_done),
                         style = AwanTheme.typography.button.copy(
                             fontSize = 11.5.sp,
                             lineHeight = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isCompleted) AwanTheme.colors.textPrimary else Color.White,
+                            color = if (isCompleted) AwanTheme.colors.textSecondary.copy(alpha = 0.7f) else Color.White,
                             textAlign = TextAlign.Center,
                         ),
                         maxLines = 2,
