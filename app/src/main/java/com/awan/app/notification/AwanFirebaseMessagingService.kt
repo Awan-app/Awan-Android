@@ -4,6 +4,7 @@ import android.util.Log
 import com.awan.app.R
 import com.awan.app.core.datastore.auth.AuthTokenProvider
 import com.awan.app.core.domain.devicetoken.repository.DeviceTokenRepository
+import com.awan.app.core.domain.notifications.usecase.GetNotificationPreferencesUseCase
 import com.awan.app.core.notifications.SessionNotificationPoster
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -11,6 +12,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -33,6 +35,9 @@ class AwanFirebaseMessagingService : FirebaseMessagingService() {
 
     @Inject
     lateinit var notificationPoster: SessionNotificationPoster
+
+    @Inject
+    lateinit var getNotificationPreferences: GetNotificationPreferencesUseCase
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -64,8 +69,18 @@ class AwanFirebaseMessagingService : FirebaseMessagingService() {
             ?: remoteMessage.data[KEY_BODY]
             ?: return
 
-        // Handles the in-app banner when the app is open and the tray notification otherwise.
-        notificationPoster.postRemote(title = title, body = body)
+        // The switch has to be honoured here, not by the server: everything that reaches this
+        // point is a reward or the daily wheel, and a "Rewards and daily spin" toggle that still
+        // let them through is the muted-the-whole-app failure the per-notification rule exists to
+        // prevent. Reading it is a suspend call, so the post moves onto the service's own scope.
+        serviceScope.launch {
+            if (!getNotificationPreferences().first().rewardsEnabled) {
+                Log.d(TAG, "Rewards notifications are switched off; dropping push")
+                return@launch
+            }
+            // Handles the in-app banner when the app is open and the tray notification otherwise.
+            notificationPoster.postRemote(title = title, body = body)
+        }
     }
 
     private companion object {

@@ -67,7 +67,11 @@ class NotificationRecords @Inject constructor(
      * older build under no prefix at all are unreadable here and go the same way.
      */
     private fun current(prefix: String, now: LocalDateTime): Map<String, SessionWindow> {
-        val stored = preferences.all.mapNotNull { (key, raw) ->
+        // One snapshot, read once. Reading the map again below to work out what was unreadable would
+        // also pick up anything written in between — a "Stop" pressed on the main thread while this
+        // runs on the IO one — and delete it as unreadable the instant it was recorded.
+        val all = preferences.all
+        val stored = all.mapNotNull { (key, raw) ->
             val window = (raw as? String)?.let(NotificationRecord::decode)
             if (window == null) {
                 Log.w(TAG, "Dropping unreadable notification record for $key")
@@ -79,7 +83,7 @@ class NotificationRecords @Inject constructor(
             NotificationRecord.isExpired(window, now)
         }
 
-        val unreadable = preferences.all.keys - stored.map { it.first }.toSet()
+        val unreadable = all.keys - stored.map { it.first }.toSet()
         val drop = expired.map { it.first } + unreadable
         if (drop.isNotEmpty()) {
             preferences.edit().apply { drop.forEach(::remove) }.apply()

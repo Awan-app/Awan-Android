@@ -93,7 +93,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
             action = action,
             startIso = startIso,
             endIso = endIso,
-            nowIso = intent.getStringExtra(NotificationIntents.EXTRA_NOW_ISO),
+            // Stamped here, not when the notification was built: "Complete now" ends the
+            // session at this instant, and the receiver is the only place that runs at press time.
+            nowIso = LocalDateTime.now(clock).format(NotificationIntents.ISO),
             snoozeMinutes = snoozeMinutes,
         )
     }
@@ -121,7 +123,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 // Without a readable window there is nothing to re-post and nothing to move, so
                 // falling through to the worker at least fails somewhere that can log it.
                 if (session != null && stored == NotificationPreferences.SNOOZE_ASK) {
-                    poster.postSnoozeChoice(session, LocalDateTime.now(clock))
+                    poster.postSnoozeChoice(session)
                 } else {
                     if (notificationId != -1) poster.cancel(notificationId)
                     NotificationActionWorker.enqueue(
@@ -130,7 +132,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         action = NotificationAction.SNOOZE,
                         startIso = startIso,
                         endIso = endIso,
-                        nowIso = intent.getStringExtra(NotificationIntents.EXTRA_NOW_ISO),
+                        nowIso = LocalDateTime.now(clock).format(NotificationIntents.ISO),
                         snoozeMinutes = NotificationIntents.NO_SNOOZE_MINUTES,
                     )
                 }

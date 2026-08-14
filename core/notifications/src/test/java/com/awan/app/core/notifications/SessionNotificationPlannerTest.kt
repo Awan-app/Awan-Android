@@ -555,6 +555,41 @@ class SessionNotificationPlannerTest {
     }
 
     @Test
+    fun `a cancelled block is no longer part of the day`() {
+        val cancelled = session(
+            id = "cancelled",
+            start = now.plusHours(2),
+            end = now.plusHours(3),
+            status = SessionStatus.CANCELLED,
+        )
+        val real = session(id = "real", start = now.plusHours(4), end = now.plusHours(5), title = "Gym")
+
+        val brief = plan(listOf(cancelled, real), day = dayKnown)
+            .filterIsInstance<DayNotificationEvent.DailyBrief>()
+            .single { it.slot == DayNotificationEvent.DailyBrief.Slot.MORNING }
+
+        assertEquals(1, brief.plannedCount)
+        assertEquals("Gym", brief.firstTitle)
+    }
+
+    @Test
+    fun `a day whose only block was cancelled still gets the midday nudge`() {
+        // The whole point of the second ask: cancelling the last thing on the calendar is exactly
+        // when someone needs telling their day is now empty.
+        val cancelled = session(
+            start = now.plusHours(2),
+            end = now.plusHours(3),
+            status = SessionStatus.CANCELLED,
+        )
+
+        val briefs = plan(listOf(cancelled), day = dayKnown)
+            .filterIsInstance<DayNotificationEvent.DailyBrief>()
+
+        assertTrue(briefs.any { it.slot == DayNotificationEvent.DailyBrief.Slot.MIDDAY })
+        assertTrue(briefs.all { it.plannedCount == 0 })
+    }
+
+    @Test
     fun `the streak warning is due only within its grace window`() {
         val event = DayNotificationEvent.StreakRisk(now.minusMinutes(30), now.toLocalDate())
         val stale = DayNotificationEvent.StreakRisk(now.minusHours(3), now.toLocalDate())

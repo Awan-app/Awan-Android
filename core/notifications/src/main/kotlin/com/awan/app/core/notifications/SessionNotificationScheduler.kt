@@ -272,10 +272,12 @@ class SessionNotificationScheduler @Inject constructor(
             return
         }
 
-        val triggerAt = next.at.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        // The clock's zone, not the system's: `now` above already comes from the clock, and taking
+        // the offset from somewhere else is half a decision.
+        val triggerAt = next.at.atZone(clock.zone).toInstant().toEpochMilli()
             // An event in the past that was not due (outside its grace window) must not schedule an
             // alarm for a moment that has gone; nudge it forward so the chain keeps moving.
-            .coerceAtLeast(now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() + MIN_DELAY_MS)
+            .coerceAtLeast(now.atZone(clock.zone).toInstant().toEpochMilli() + MIN_DELAY_MS)
 
         if (canScheduleExact()) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)

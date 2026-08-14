@@ -23,7 +23,6 @@ object NotificationIntents {
     const val EXTRA_ACTION = "com.awan.app.extra.NOTIFICATION_ACTION"
     const val EXTRA_START_ISO = "com.awan.app.extra.START_ISO"
     const val EXTRA_END_ISO = "com.awan.app.extra.END_ISO"
-    const val EXTRA_NOW_ISO = "com.awan.app.extra.NOW_ISO"
     const val EXTRA_NOTIFICATION_ID = "com.awan.app.extra.NOTIFICATION_ID"
 
     /** Set only by the snooze picker's buttons; absent means "use the stored length". */
@@ -53,16 +52,18 @@ object NotificationIntents {
     }
 
     /**
-     * [now] is captured when the notification is built rather than read when the work finally runs:
-     * a "Stop Here" tapped offline may not reach the server for hours, and it must still end the
-     * session at the moment the user pressed it.
+     * Deliberately carries no timestamp.
+     *
+     * It used to carry the moment the notification was *built*, which "Complete now" then used as the
+     * session's end — so a session was cut back to whenever it was last redrawn rather than to the
+     * moment the button was pressed. The receiver runs at press time and stamps its own clock, which
+     * is the thing the worker actually needs and survives the tap being queued offline for hours.
      */
     fun action(
         context: Context,
         session: UpcomingSession,
         action: NotificationAction,
         notificationId: Int,
-        now: LocalDateTime,
         snoozeMinutes: Int = NO_SNOOZE_MINUTES,
     ): PendingIntent {
         val intent = Intent(context, NotificationActionReceiver::class.java).apply {
@@ -73,7 +74,6 @@ object NotificationIntents {
             putExtra(EXTRA_ACTION, action.name)
             putExtra(EXTRA_START_ISO, session.start.format(ISO))
             putExtra(EXTRA_END_ISO, session.end.format(ISO))
-            putExtra(EXTRA_NOW_ISO, now.format(ISO))
             putExtra(EXTRA_NOTIFICATION_ID, notificationId)
             putExtra(EXTRA_SNOOZE_MINUTES, snoozeMinutes)
         }

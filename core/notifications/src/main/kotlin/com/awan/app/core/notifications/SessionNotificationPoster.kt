@@ -93,7 +93,7 @@ class SessionNotificationPoster @Inject constructor(
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text))
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .addAction(snoozeAction(session, id, now, snoozeMinutes))
+                .addAction(snoozeAction(session, id, snoozeMinutes))
                 .addAction(rescheduleAction(session)),
             toastTitle = session.title,
             toastMessage = text,
@@ -108,7 +108,7 @@ class SessionNotificationPoster @Inject constructor(
      * answer belongs there. Dismissing it is the way out; a fourth "Cancel" action would push a
      * duration off the screen.
      */
-    fun postSnoozeChoice(session: UpcomingSession, now: LocalDateTime) {
+    fun postSnoozeChoice(session: UpcomingSession) {
         channels.ensureCreated()
         val id = NotificationIds.reminder(session.id)
         val builder = baseBuilder(AwanNotificationChannels.SESSION_REMINDERS, session)
@@ -128,7 +128,6 @@ class SessionNotificationPoster @Inject constructor(
                         session = session,
                         action = NotificationAction.SNOOZE,
                         notificationId = id,
-                        now = now,
                         snoozeMinutes = minutes,
                     ),
                 ).build()
@@ -191,7 +190,6 @@ class SessionNotificationPoster @Inject constructor(
                     session = session,
                     type = NotificationAction.COMPLETE_NOW,
                     notificationId = id,
-                    now = now,
                 )
             )
             // The way out that does not claim the session was finished. This notification is
@@ -204,7 +202,6 @@ class SessionNotificationPoster @Inject constructor(
                     session = session,
                     type = NotificationAction.DISMISS_LIVE,
                     notificationId = id,
-                    now = now,
                 )
             )
 
@@ -234,7 +231,6 @@ class SessionNotificationPoster @Inject constructor(
                         session = session,
                         type = NotificationAction.COMPLETE,
                         notificationId = id,
-                        now = now,
                     )
                 )
                 .addAction(rescheduleAction(session)),
@@ -272,7 +268,6 @@ class SessionNotificationPoster @Inject constructor(
                         session = session,
                         type = NotificationAction.COMPLETE,
                         notificationId = id,
-                        now = now,
                     )
                 )
                 .addAction(rescheduleAction(session)),
@@ -340,7 +335,6 @@ class SessionNotificationPoster @Inject constructor(
     private fun snoozeAction(
         session: UpcomingSession,
         notificationId: Int,
-        now: LocalDateTime,
         snoozeMinutes: Int,
     ) = NotificationCompat.Action.Builder(
         R.drawable.ic_notification_snooze,
@@ -354,7 +348,6 @@ class SessionNotificationPoster @Inject constructor(
             session = session,
             action = NotificationAction.SNOOZE,
             notificationId = notificationId,
-            now = now,
         ),
     ).build()
 
@@ -374,11 +367,10 @@ class SessionNotificationPoster @Inject constructor(
         session: UpcomingSession,
         type: NotificationAction,
         notificationId: Int,
-        now: LocalDateTime,
     ) = NotificationCompat.Action.Builder(
         iconRes,
         context.getString(labelRes),
-        NotificationIntents.action(context, session, type, notificationId, now),
+        NotificationIntents.action(context, session, type, notificationId),
     ).build()
 
     /** Posts a payload that arrived over FCM — rewards and the daily wheel. */

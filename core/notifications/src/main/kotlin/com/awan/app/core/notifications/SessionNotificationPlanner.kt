@@ -244,7 +244,13 @@ object SessionNotificationPlanner {
         // its day is empty before the first sync has had a chance to fill it.
         if (!day.scheduleKnown) return emptyList()
 
-        val today = sessions.filter { it.start.toLocalDate() == day.today }
+        // Cancelled blocks are not part of the day any more. Counting them makes the brief announce
+        // "3 blocks today" for a day with two, lets a cancelled one be named as the first thing up,
+        // and — worst of the three — makes an emptied day look full, which is exactly the day the
+        // midday "go plan something" nudge exists for.
+        val today = sessions.filter {
+            it.start.toLocalDate() == day.today && it.status != SessionStatus.CANCELLED
+        }
         val events = mutableListOf<DayNotificationEvent>()
 
         if (preferences.streakReminderEnabled && isStreakAtRisk(today)) {
