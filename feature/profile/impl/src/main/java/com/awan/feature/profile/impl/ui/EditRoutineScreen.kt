@@ -74,7 +74,7 @@ fun EditRoutineScreen(
                 id = null,
                 name = "",
                 startTime = uiState.zones.lastOrNull()?.endTime ?: "09:00:00",
-                endTime = uiState.zones.lastOrNull()?.endTime?.let { 
+                endTime = uiState.zones.lastOrNull()?.endTime?.let {
                     DailyZonesHelper.parseTimeToMinutes(it)?.let { minutes ->
                         DailyZonesHelper.formatMinutesToTime(minutes + 60)
                     }
@@ -122,11 +122,11 @@ fun EditRoutineScreen(
                 editingZone = null
             },
             secondaryLabel = stringResource(R.string.profile_cancel),
-            onSecondary = { 
+            onSecondary = {
                 showZoneDeleteConfirm = null
                 editingZone = null
             },
-            onDismiss = { 
+            onDismiss = {
                 showZoneDeleteConfirm = null
                 editingZone = null
             }
@@ -178,35 +178,51 @@ fun EditRoutineScreen(
                         modifier = Modifier.padding(vertical = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        val isEdit = if (uiState.isLoading) uiState.templateId != null 
+                                     else uiState.templateId != null || uiState.overrideId != null
+                        
                         AwanText(
-                            text = if (uiState.templateId == null && uiState.overrideId == null) 
-                                stringResource(R.string.profile_routine_create) 
-                            else stringResource(R.string.profile_routine_edit),
+                            text = if (isEdit) stringResource(R.string.profile_routine_edit)
+                            else stringResource(R.string.profile_routine_create),
                             style = AwanTheme.styles.titleText
                         )
-                        AwanText(
-                            text = if (uiState.overrideId != null)
-                                stringResource(R.string.profile_routine_summary_subtitle_today)
-                            else stringResource(R.string.profile_routine_summary_subtitle),
-                            style = AwanTheme.styles.metaText
-                        )
+                        
+                        if (!uiState.isLoading) {
+                            AwanText(
+                                text = if (uiState.overrideId != null)
+                                    stringResource(R.string.profile_routine_summary_subtitle_today)
+                                else stringResource(R.string.profile_routine_summary_subtitle),
+                                style = AwanTheme.styles.metaText
+                            )
+                        }
                     }
                 },
                 navigationIcon = {
                     Box(modifier = Modifier.padding(start = 12.dp)) {
-                        AwanIconButton(onClick = onBackClick, contentDescription = stringResource(R.string.profile_back)) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = AwanTheme.colors.textPrimary)
+                        AwanIconButton(
+                            onClick = onBackClick,
+                            contentDescription = stringResource(R.string.profile_back)
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                null,
+                                tint = AwanTheme.colors.textPrimary
+                            )
                         }
                     }
                 },
                 actions = {
-                    if (uiState.templateId != null || uiState.overrideId != null) {
+                    if (!uiState.isLoading && (uiState.templateId != null || uiState.overrideId != null)) {
                         Box(modifier = Modifier.padding(end = 12.dp)) {
                             AwanIconButton(
                                 onClick = { showDeleteConfirm = true },
                                 contentDescription = stringResource(R.string.profile_routine_delete)
                             ) {
-                                Icon(Icons.Default.Delete, null, tint = AwanTheme.colors.destructive)
+                                Icon(
+                                    Icons.Default.Delete,
+                                    null,
+                                    tint = AwanTheme.colors.destructive
+                                )
                             }
                         }
                     }
@@ -216,14 +232,20 @@ fun EditRoutineScreen(
         },
         containerColor = Color.Transparent,
         bottomBar = {
-            Box(modifier = Modifier.padding(20.dp).navigationBarsPadding()) {
-                AwanButton(
-                    onClick = { onAction(EditRoutineAction.SaveRoutine) },
-                    modifier = Modifier.fillMaxWidth(),
-                    isLoading = uiState.isSaving,
-                    icon = Icons.Default.Check
+            if (!uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .padding(20.dp)
+                        .navigationBarsPadding()
                 ) {
-                    AwanText(text = stringResource(R.string.profile_routine_save))
+                    AwanButton(
+                        onClick = { onAction(EditRoutineAction.SaveRoutine) },
+                        modifier = Modifier.fillMaxWidth(),
+                        isLoading = uiState.isSaving,
+                        icon = Icons.Default.Check
+                    ) {
+                        AwanText(text = stringResource(R.string.profile_routine_save))
+                    }
                 }
             }
         },
@@ -233,196 +255,213 @@ fun EditRoutineScreen(
             )
         )
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(28.dp)
-        ) {
-            // Routine Name
-            AwanCard(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(16.dp)
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AwanText(
-                        text = stringResource(R.string.profile_routine_name),
-                        style = AwanTheme.styles.bodyText.copy(
-                            textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
-                        )
-                    )
-                    AwanTextField(
-                        value = uiState.name,
-                        onValueChange = { onAction(EditRoutineAction.NameChange(it)) },
-                        placeholder = stringResource(R.string.profile_routine_name_placeholder),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                CircularProgressIndicator(color = AwanTheme.colors.sky)
             }
-
-            // Apply to Today Only (Checkbox) - Only show in creation mode or when editing an override
-            if (uiState.templateId == null) {
-                AwanCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(12.dp),
-                    onClick = { 
-                        if (uiState.date != null && uiState.overrideId == null) {
-                            onAction(EditRoutineAction.ToggleTodayOnly(!uiState.isTodayOnly)) 
-                        }
-                    }
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Checkbox(
-                            checked = uiState.isTodayOnly,
-                            onCheckedChange = { onAction(EditRoutineAction.ToggleTodayOnly(it)) },
-                            enabled = uiState.date != null && uiState.overrideId == null,
-                            colors = CheckboxDefaults.colors(checkedColor = AwanTheme.colors.sky)
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            AwanText(
-                                text = stringResource(R.string.profile_routine_apply_to_today_only),
-                                style = AwanTheme.styles.bodyText.copy(
-                                    textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
-                                )
-                            )
-                            if (uiState.date != null) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    modifier = Modifier.clickable { showDatePicker = true }
-                                ) {
-                                    AwanText(
-                                        text = uiState.date!!,
-                                        style = AwanTheme.styles.captionText.copy(color = AwanTheme.colors.sky)
-                                    )
-                                    Icon(
-                                        imageVector = Lucide.Calendar,
-                                        contentDescription = null,
-                                        tint = AwanTheme.colors.sky,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Days Selection
-            if (!uiState.isTodayOnly) {
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(28.dp)
+            ) {
+                // Routine Name
                 AwanCard(
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(16.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         AwanText(
-                            text = stringResource(R.string.profile_routine_apply_to_days),
+                            text = stringResource(R.string.profile_routine_name),
                             style = AwanTheme.styles.bodyText.copy(
                                 textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
                             )
                         )
-                        DaySelector(
-                            selectedDays = uiState.selectedDays,
-                            assignedDays = uiState.assignedDays,
-                            onDaySelected = { onAction(EditRoutineAction.ToggleDay(it)) },
-                            showTodayIndicator = false // Don't show "today" dot in routine creator
-                        )
-                    }
-                }
-            }
-
-            // Zones
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    AwanText(
-                        text = stringResource(R.string.profile_routine_zones),
-                        style = AwanTheme.styles.bodyText.copy(
-                            textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
-                        )
-                    )
-                    TextButton(onClick = { 
-                        editingZone = null
-                        showZoneSheet = true
-                    }) {
-                        Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        AwanText(text = stringResource(R.string.profile_routine_add_zone), style = AwanTheme.styles.bodyText.copy(color = AwanTheme.colors.sky))
-                    }
-                }
-
-                if (uiState.zones.isEmpty()) {
-                    val infiniteTransition = rememberInfiniteTransition(label = "mascot_float_edit")
-                    val animY by infiniteTransition.animateFloat(
-                        initialValue = -6f,
-                        targetValue = 6f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(1500, easing = LinearOutSlowInEasing),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "float"
-                    )
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(id = com.awan.app.core.designsystem.R.drawable.awan_mascot_idle),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(100.dp)
-                                .graphicsLayer { translationY = animY },
-                            tint = Color.Unspecified
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        AwanText(
-                            text = stringResource(R.string.profile_routine_no_zones),
-                            style = AwanTheme.styles.titleText.copy(
-                                textStyle = AwanTheme.styles.titleText.textStyle.copy(
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center
-                                )
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        AwanText(
-                            text = stringResource(R.string.profile_routine_no_zones_hint),
-                            style = AwanTheme.styles.bodyText.copy(
-                                color = AwanTheme.colors.textSecondary,
-                                textStyle = AwanTheme.styles.bodyText.textStyle.copy(textAlign = TextAlign.Center)
-                            ),
+                        AwanTextField(
+                            value = uiState.name,
+                            onValueChange = { onAction(EditRoutineAction.NameChange(it)) },
+                            placeholder = stringResource(R.string.profile_routine_name_placeholder),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
-                } else {
-                    DailyZoneReorderList(
-                        zones = uiState.zones,
-                        onOpen = { zone ->
-                            editingZone = zone
-                            showZoneSheet = true
-                        },
-                        onReorder = { from, to ->
-                            onAction(EditRoutineAction.ReorderZones(from, to))
+                }
+
+                // Apply to Today Only (Checkbox) - Only show in creation mode or when editing an override
+                if (uiState.templateId == null) {
+                    AwanCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(12.dp),
+                        onClick = {
+                            if (uiState.date != null && uiState.overrideId == null) {
+                                onAction(EditRoutineAction.ToggleTodayOnly(!uiState.isTodayOnly))
+                            }
                         }
-                    )
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Checkbox(
+                                checked = uiState.isTodayOnly,
+                                onCheckedChange = { onAction(EditRoutineAction.ToggleTodayOnly(it)) },
+                                enabled = uiState.date != null && uiState.overrideId == null,
+                                colors = CheckboxDefaults.colors(checkedColor = AwanTheme.colors.sky)
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                AwanText(
+                                    text = stringResource(R.string.profile_routine_apply_to_today_only),
+                                    style = AwanTheme.styles.bodyText.copy(
+                                        textStyle = AwanTheme.styles.bodyText.textStyle.copy(
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    )
+                                )
+                                if (uiState.date != null) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        modifier = Modifier.clickable { showDatePicker = true }
+                                    ) {
+                                        AwanText(
+                                            text = uiState.date!!,
+                                            style = AwanTheme.styles.captionText.copy(color = AwanTheme.colors.sky)
+                                        )
+                                        Icon(
+                                            imageVector = Lucide.Calendar,
+                                            contentDescription = null,
+                                            tint = AwanTheme.colors.sky,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+
+                // Days Selection
+                if (!uiState.isTodayOnly) {
+                    AwanCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(16.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            AwanText(
+                                text = stringResource(R.string.profile_routine_apply_to_days),
+                                style = AwanTheme.styles.bodyText.copy(
+                                    textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
+                                )
+                            )
+                            DaySelector(
+                                selectedDays = uiState.selectedDays,
+                                assignedDays = uiState.assignedDays,
+                                onDaySelected = { onAction(EditRoutineAction.ToggleDay(it)) },
+                                showTodayIndicator = false // Don't show "today" dot in routine creator
+                            )
+                        }
+                    }
+                }
+
+                // Zones
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AwanText(
+                            text = stringResource(R.string.profile_routine_zones),
+                            style = AwanTheme.styles.bodyText.copy(
+                                textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
+                            )
+                        )
+                        TextButton(onClick = {
+                            editingZone = null
+                            showZoneSheet = true
+                        }) {
+                            Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            AwanText(
+                                text = stringResource(R.string.profile_routine_add_zone),
+                                style = AwanTheme.styles.bodyText.copy(color = AwanTheme.colors.sky)
+                            )
+                        }
+                    }
+
+                    if (uiState.zones.isEmpty()) {
+                        val infiniteTransition =
+                            rememberInfiniteTransition(label = "mascot_float_edit")
+                        val animY by infiniteTransition.animateFloat(
+                            initialValue = -6f,
+                            targetValue = 6f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(1500, easing = LinearOutSlowInEasing),
+                                repeatMode = RepeatMode.Reverse
+                            ),
+                            label = "float"
+                        )
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(id = com.awan.app.core.designsystem.R.drawable.awan_mascot_idle),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .graphicsLayer { translationY = animY },
+                                tint = Color.Unspecified
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            AwanText(
+                                text = stringResource(R.string.profile_routine_no_zones),
+                                style = AwanTheme.styles.titleText.copy(
+                                    textStyle = AwanTheme.styles.titleText.textStyle.copy(
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center
+                                    )
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AwanText(
+                                text = stringResource(R.string.profile_routine_no_zones_hint),
+                                style = AwanTheme.styles.bodyText.copy(
+                                    color = AwanTheme.colors.textSecondary,
+                                    textStyle = AwanTheme.styles.bodyText.textStyle.copy(textAlign = TextAlign.Center)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    } else {
+                        DailyZoneReorderList(
+                            zones = uiState.zones,
+                            onOpen = { zone ->
+                                editingZone = zone
+                                showZoneSheet = true
+                            },
+                            onReorder = { from, to ->
+                                onAction(EditRoutineAction.ReorderZones(from, to))
+                            }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(100.dp))
             }
-            
-            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }

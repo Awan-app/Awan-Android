@@ -62,14 +62,15 @@ fun DailyZonesContent(
             isOverride = uiState.currentOverride != null
         )
 
-        if (uiState.currentTemplate != null || uiState.currentOverride != null) {
+        if (uiState.currentTemplate != null || uiState.currentOverride != null || uiState.templates.isNotEmpty()) {
             RoutinePicker(
                 templates = uiState.templates,
                 selectedTemplateId = uiState.currentTemplate?.id,
                 onTemplateSelected = { onAction(DailyZonesAction.SelectTemplate(it)) },
                 onCreateRoutineClick = onCreateRoutineClick,
                 selectedDate = uiState.selectedDate?.toString(),
-                currentOverrideName = uiState.currentOverride?.name
+                currentOverrideName = uiState.currentOverride?.name,
+                title = stringResource(R.string.profile_routine_select)
             )
         }
 

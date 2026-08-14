@@ -89,20 +89,19 @@ fun DaySelector(
                             .background(
                                 color = when {
                                     isAssigned -> AwanTheme.colors.disabledSurface
-                                    templateColor != null -> templateColor.copy(alpha = if (isSelected) 0.1f else 0.06f).compositeOver(surface)
                                     isSelected -> AwanTheme.colors.sky.copy(alpha = 0.08f).compositeOver(surface)
+                                    templateColor != null -> templateColor.copy(alpha = 0.06f).compositeOver(surface)
                                     else -> surface
                                 },
                                 shape = RoundedCornerShape(12.dp)
                             )
                             .border(
-                                width = 1.dp,
+                                width = if (isSelected) 2.dp else 1.dp,
                                 color = when {
-                                    isAssigned -> AwanTheme.colors.line.copy(alpha = 0.5f)
-                                    isSelected && templateColor != null -> templateColor
                                     isSelected -> AwanTheme.colors.sky
-                                    isToday -> AwanTheme.colors.sky
-                                    templateColor != null -> templateColor.copy(alpha = 0.3f).compositeOver(surface)
+                                    isAssigned -> AwanTheme.colors.line.copy(alpha = 0.5f)
+                                    isToday -> AwanTheme.colors.sky.copy(alpha = 0.6f)
+                                    templateColor != null -> templateColor.copy(alpha = 0.4f).compositeOver(surface)
                                     else -> AwanTheme.colors.line
                                 },
                                 shape = RoundedCornerShape(12.dp)

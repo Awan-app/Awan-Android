@@ -52,7 +52,7 @@ class EditRoutineViewModel @Inject constructor(
     private val deleteOverrideUseCase: DeleteOverrideUseCase,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(EditRoutineState())
+    private val _uiState = MutableStateFlow(EditRoutineState(isLoading = true))
     val uiState: StateFlow<EditRoutineState> = _uiState.asStateFlow()
 
     private val _events = Channel<EditRoutineEvent>(Channel.BUFFERED)
@@ -90,7 +90,7 @@ class EditRoutineViewModel @Inject constructor(
 
     private fun loadTemplate(templateId: String?, date: String?) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, templateId = templateId, date = date) }
+            _uiState.update { it.copy(isLoading = true, templateId = templateId, overrideId = null, date = date) }
 
             // 1. Fetch ALL templates, overrides, categories
             val templatesDeferred = async { getWeeklyTemplatesUseCase() }
