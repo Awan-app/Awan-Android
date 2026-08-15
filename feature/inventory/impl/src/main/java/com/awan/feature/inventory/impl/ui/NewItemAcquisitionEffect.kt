@@ -495,7 +495,7 @@ fun NewItemAcquisitionEffect(
 
 
 
-            
+
 
             // Use native android.graphics.Paint + android.graphics.LinearGradient.
             // Compose's drawLine(brush = Brush.linearGradient(...)) can produce a degenerate
