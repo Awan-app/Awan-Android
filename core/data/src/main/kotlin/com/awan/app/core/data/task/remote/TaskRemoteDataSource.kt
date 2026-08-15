@@ -1,14 +1,19 @@
 package com.awan.app.core.data.task.remote
 
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.network.dto.task.AddTaskSessionsRequest
 import com.awan.app.core.network.dto.task.AiTextToTasksRequest
 import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.TaskDependencyRequest
 import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskMoveRequest
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskUpdateRequest
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
 
@@ -38,9 +43,29 @@ interface TaskRemoteDataSource {
 
     suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse>
 
-    suspend fun deleteTask(taskId: String): Result<Unit>
+    suspend fun deleteTask(taskId: String, cascade: Boolean = false): Result<Unit>
 
     /** Fetches all inbox tasks (tasks with no goal) together with their sessions. */
     suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>>
+
+    // ── Task Details ─────────────────────────────────────────────────────────
+
+    suspend fun getTask(taskId: String): Result<TaskInfoResponse>
+
+    suspend fun updateTask(taskId: String, request: TaskUpdateRequest): Result<TaskInfoResponse>
+
+    suspend fun moveTask(taskId: String, request: TaskMoveRequest): Result<TaskInfoResponse>
+
+    suspend fun addDependency(taskId: String, request: TaskDependencyRequest): Result<Unit>
+
+    suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit>
+
+    suspend fun getTaskDependencies(taskId: String): Result<List<TaskInfoResponse>>
+
+    suspend fun getTaskDependents(taskId: String): Result<List<TaskInfoResponse>>
+
+    suspend fun getTaskSessions(taskId: String, status: String?): Result<List<SessionDto>>
+
+    suspend fun addTaskSessions(taskId: String, request: AddTaskSessionsRequest): Result<List<SessionDto>>
 }
 

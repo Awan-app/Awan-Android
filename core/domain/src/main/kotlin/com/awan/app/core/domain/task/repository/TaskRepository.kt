@@ -6,6 +6,7 @@ import com.awan.app.core.model.Task
 import com.awan.app.core.model.TaskDraft
 import com.awan.app.core.model.TaskProposals
 import com.awan.app.core.model.TaskSchedule
+import com.awan.app.core.model.TaskSession
 import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.model.TaskWithSessionsDraft
 
@@ -37,11 +38,63 @@ interface TaskRepository {
     /** Asks the scheduling engine to place an existing task. */
     suspend fun scheduleTask(taskId: String): Result<TaskSchedule>
 
-    suspend fun deleteTask(taskId: String): Result<Unit>
+    suspend fun deleteTask(taskId: String, cascade: Boolean = false): Result<Unit>
 
     /**
      * Returns all tasks whose [Task.goalId] is null (the Inbox), each bundled with their sessions.
      * Session list may be empty for drafted tasks.
      */
     suspend fun getInboxTasks(): Result<List<TaskWithSessions>>
+
+    // ── Task Details ──────────────────────────────────────────────────────────
+
+    /** Fetches a single task by its ID. */
+    suspend fun getTask(taskId: String): Result<Task>
+
+    /**
+     * Partially updates a task. Any field that is `null` is left unchanged by the backend.
+     * Returns the updated task.
+     */
+    suspend fun updateTask(
+        taskId: String,
+        title: String? = null,
+        description: String? = null,
+        estimatedDuration: Int? = null,
+        status: String? = null,
+        mandatory: Boolean? = null,
+        estimatedPoints: Int? = null,
+        allowTaskSplitting: Boolean? = null,
+        categoryId: String? = null,
+    ): Result<Task>
+
+    /**
+     * Moves a task to a different goal. The backend enforces that all dependency links on the task
+     * must be removed before a move is allowed (dependencies are same-goal only).
+     */
+    suspend fun moveTask(taskId: String, goalId: String): Result<Task>
+
+    // ── Dependencies ──────────────────────────────────────────────────────────
+
+    /**
+     * Creates a prerequisite link: [taskId] will depend on [dependsOnTaskId].
+     * Both tasks must be in the same goal. A cycle or self-reference is rejected by the backend.
+     */
+    suspend fun addDependency(taskId: String, dependsOnTaskId: String): Result<Unit>
+
+    /** Removes the dependency link between [taskId] and [dependsOnTaskId]. */
+    suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit>
+
+    /** Returns all tasks that [taskId] directly depends on (prerequisites). */
+    suspend fun getTaskDependencies(taskId: String): Result<List<Task>>
+
+    /** Returns all downstream tasks that depend on [taskId] (successors). */
+    suspend fun getTaskDependents(taskId: String): Result<List<Task>>
+
+    // ── Sessions ──────────────────────────────────────────────────────────────
+
+    /** Returns all sessions booked for [taskId], optionally filtered by [status]. */
+    suspend fun getTaskSessions(taskId: String, status: String? = null): Result<List<TaskSession>>
+
+    /** Adds new calendar sessions to an existing task. */
+    suspend fun addTaskSessions(taskId: String, sessions: List<SessionDraft>): Result<List<TaskSession>>
 }

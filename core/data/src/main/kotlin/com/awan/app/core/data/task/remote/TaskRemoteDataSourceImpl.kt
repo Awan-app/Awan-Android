@@ -4,14 +4,19 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.TaskApiService
+import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.network.dto.task.AddTaskSessionsRequest
 import com.awan.app.core.network.dto.task.AiTextToTasksRequest
 import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.TaskDependencyRequest
 import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskMoveRequest
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskUpdateRequest
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
 import com.awan.app.core.network.error.safeApiCall
@@ -84,13 +89,60 @@ class TaskRemoteDataSourceImpl @Inject constructor(
         }
 
 
-    override suspend fun deleteTask(taskId: String): Result<Unit> =
+    override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
-            taskApiService.deleteTask(taskId)
+            taskApiService.deleteTask(taskId, cascade)
         }
 
     override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             taskApiService.getInboxTasks().tasks.map { TaskWithSessionsDto(task = it) }
+        }
+
+    // ── Task Details ─────────────────────────────────────────────────────────
+
+    override suspend fun getTask(taskId: String): Result<TaskInfoResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.getTask(taskId)
+        }
+
+    override suspend fun updateTask(taskId: String, request: TaskUpdateRequest): Result<TaskInfoResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.updateTask(taskId, request)
+        }
+
+    override suspend fun moveTask(taskId: String, request: TaskMoveRequest): Result<TaskInfoResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.moveTask(taskId, request)
+        }
+
+    override suspend fun addDependency(taskId: String, request: TaskDependencyRequest): Result<Unit> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.addDependency(taskId, request)
+        }
+
+    override suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.removeDependency(taskId, dependsOnTaskId)
+        }
+
+    override suspend fun getTaskDependencies(taskId: String): Result<List<TaskInfoResponse>> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.getTaskDependencies(taskId)
+        }
+
+    override suspend fun getTaskDependents(taskId: String): Result<List<TaskInfoResponse>> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.getTaskDependents(taskId)
+        }
+
+    override suspend fun getTaskSessions(taskId: String, status: String?): Result<List<SessionDto>> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.getTaskSessions(taskId, status)
+        }
+
+    override suspend fun addTaskSessions(taskId: String, request: AddTaskSessionsRequest): Result<List<SessionDto>> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.addTaskSessions(taskId, request)
         }
 }

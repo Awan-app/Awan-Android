@@ -15,6 +15,7 @@ fun EntryProviderScope<Route>.homeEntry(
     // the pending session down — makes every caller depend on a value that changes after this entry
     // was first composed.
     onRegisterOpenSession: ((String) -> Unit) -> Unit = {},
+    onNavigateToTaskDetails: (String) -> Unit = {},
 ) {
     entry<HomeRoute> {
         HomeScreen(
@@ -23,6 +24,7 @@ fun EntryProviderScope<Route>.homeEntry(
             onRegisterSelectDate = onRegisterSelectDate,
             onNavigateToAddTask = onNavigateToAddTask,
             onRegisterOpenSession = onRegisterOpenSession,
+            onNavigateToTaskDetails = onNavigateToTaskDetails,
         )
     }
 }
