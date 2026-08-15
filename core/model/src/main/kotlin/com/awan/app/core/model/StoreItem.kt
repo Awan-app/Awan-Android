@@ -21,7 +21,8 @@ data class StoreItem(
 data class OwnedItem(
     val id: String,
     val item: StoreItem,
-    val boughtAt: String
+    val boughtAt: String,
+    val isSeen: Boolean = true,
 )
 
 data class EquippedItem(
