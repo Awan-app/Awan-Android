@@ -303,7 +303,7 @@ private fun DefaultItemCard(
         ) {
             AwanMascot(
                 expression = MascotExpression.Idle,
-                width = 48.dp,
+                width = 80.dp,
             )
             if (isUnequipping) {
                 CircularProgressIndicator(
