@@ -47,6 +47,7 @@ import com.awan.app.core.designsystem.BottomNavItem
 import com.awan.app.core.common.R as CommonR
 import com.awan.app.core.designsystem.ObserveAsEvents
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import com.awan.app.core.domain.gamification.model.RewardEvent
 import com.awan.core.navigation.NavigationState
 import com.awan.core.navigation.Navigator
@@ -58,6 +59,7 @@ import com.awan.feature.aitasks.api.AiTaskProposalsRoute
 import com.awan.feature.aitasks.impl.navigation.aiTasksEntry
 import com.awan.feature.auth.api.LoginRoute
 import com.awan.feature.auth.impl.navigation.authEntry
+import com.awan.feature.calendar.api.CalendarRoute
 import com.awan.feature.calendar.impl.navigation.calendarEntry
 import com.awan.feature.chat.impl.navigation.chatEntry
 import com.awan.feature.goals.api.GoalsRoute
@@ -74,6 +76,7 @@ import com.awan.feature.profile.api.DailyZonesRoute
 import com.awan.feature.profile.api.EditRoutineRoute
 import com.awan.feature.profile.api.McpInfoRoute
 import com.awan.feature.profile.api.McpSettingsRoute
+import com.awan.feature.profile.api.NotificationSettingsRoute
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.splash.api.SplashRoute
 import com.awan.feature.splash.impl.navigation.splashEntry
@@ -120,12 +123,36 @@ fun AwanApp(
     rewardEvents: Flow<RewardEvent>,
     modifier: Modifier = Modifier,
     isOnline: Boolean = true,
+    deepLinkEvents: Flow<SessionDeepLink> = emptyFlow(),
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
     var onSelectHomeDate by remember { mutableStateOf<((LocalDate) -> Unit)?>(null) }
+    var onOpenHomeSession by remember { mutableStateOf<((String) -> Unit)?>(null) }
+    var pendingDeepLink by remember { mutableStateOf<SessionDeepLink?>(null) }
     val currentRoute = appState.navigationState.currentKey
     val showOfflineBanner = !isOnline && currentRoute != SplashRoute
+
+    ObserveAsEvents(deepLinkEvents) { pendingDeepLink = it }
+
+    /**
+     * Held until Home has registered its opener, then acted on once and dropped.
+     *
+     * Deliberately not keyed on the current tab. It was, and since the link stayed set until Home
+     * cleared it, every tab change re-ran this and navigated straight back to Home — the tapped
+     * screen flashed and bounced, and no other screen could be reached at all.
+     */
+    androidx.compose.runtime.LaunchedEffect(pendingDeepLink, onOpenHomeSession) {
+        val link = pendingDeepLink ?: return@LaunchedEffect
+        val openSession = onOpenHomeSession ?: return@LaunchedEffect
+
+        navigator.navigate(HomeRoute())
+        link.date
+            ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            ?.let { onSelectHomeDate?.invoke(it) }
+        openSession(link.sessionId)
+        pendingDeepLink = null
+    }
 
     val offlineExplanation = stringResource(R.string.app_offline_lock_explanation)
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -229,13 +256,13 @@ fun AwanApp(
                 )
                 homeEntry(
                     onLogout = { navigator.replaceAll(LoginRoute) },
-                    onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
+                    onNavigateToCalendar = { navigator.navigate(CalendarRoute()) },
                     onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
                     onNavigateToAddTask = { _, _ ->
                         showAddTask = true
                     },
+                    onRegisterOpenSession = { callback -> onOpenHomeSession = callback },
                 )
-
                 calendarEntry(
                     onDateSelected = { date ->
                         onSelectHomeDate?.invoke(date)
@@ -257,28 +284,29 @@ fun AwanApp(
                     onNavigateToInventory = { navigator.navigate(InventoryRoute) },
                     onNavigateToMcpSettings = { navigator.navigate(McpSettingsRoute) },
                     onNavigateToMcpInfo = { navigator.navigate(McpInfoRoute) },
+                    onNavigateToNotificationSettings = { navigator.navigate(NotificationSettingsRoute) },
                 )
                 goalPreviewEntry(
                     onBack = { navigator.goBack() },
                     onNavigateToGoals = { navigator.replaceAll(GoalsRoute) },
                 )
             }
-        BackHandler(
-            enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack
-        ) {
-            navigator.goBack()
+
+            BackHandler(
+                enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack
+            ) {
+                navigator.goBack()
+            }
+
+            NavDisplay(
+                entries = appState.navigationState.rememberDecoratedEntries(entryProvider),
+                onBack = { navigator.goBack() },
+                modifier = Modifier.weight(1f)
+            )
         }
 
-        NavDisplay(
-            entries = appState.navigationState.rememberDecoratedEntries(entryProvider),
-            onBack = { navigator.goBack() },
-            modifier = Modifier.weight(1f)
-        )
-    }
-
-
-        val currentRoute = appState.navigationState.currentKey
-        val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route == currentRoute }
+        val currentTopLevelKey = appState.navigationState.currentTopLevelKey
+        val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route::class == currentRoute::class }
 
         if (isTopLevel) {
             val navItems = remember(appState.topLevelDestinations) {
@@ -292,7 +320,9 @@ fun AwanApp(
                     )
                 }
             }
-            val selectedDest = appState.topLevelDestinations.find { it.route == appState.navigationState.currentTopLevelKey }
+            val selectedDest = remember(currentTopLevelKey, appState.topLevelDestinations) {
+                appState.topLevelDestinations.find { dest -> dest.route != null && dest.route::class == currentTopLevelKey::class }
+            }
 
             AwanBottomNavBar(
                 items = navItems,

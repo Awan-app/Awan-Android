@@ -23,10 +23,11 @@ fun SettingsCard(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(0.dp)
         ) {
+            // No `value`: PreferenceRow swaps the chevron for an ExpandMore whenever both a value
+            // and an onClick are given, which made this row look expandable rather than navigable.
             PreferenceRow(
                 icon = Icons.Default.NotificationsActive,
                 title = stringResource(ProfileR.string.profile_notifications),
-                value = stringResource(ProfileR.string.profile_enabled),
                 onClick = { onSettingsClick("notifications") },
                 showDivider = true,
                 iconColor = AwanTheme.colors.zoneTangerine

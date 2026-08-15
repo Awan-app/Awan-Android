@@ -11,6 +11,10 @@ fun EntryProviderScope<Route>.homeEntry(
     onNavigateToCalendar: () -> Unit = {},
     onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
     onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
+    // Home hands its opener up, the same way it does for date selection. The alternative — passing
+    // the pending session down — makes every caller depend on a value that changes after this entry
+    // was first composed.
+    onRegisterOpenSession: ((String) -> Unit) -> Unit = {},
 ) {
     entry<HomeRoute> {
         HomeScreen(
@@ -18,6 +22,7 @@ fun EntryProviderScope<Route>.homeEntry(
             onNavigateToCalendar = onNavigateToCalendar,
             onRegisterSelectDate = onRegisterSelectDate,
             onNavigateToAddTask = onNavigateToAddTask,
+            onRegisterOpenSession = onRegisterOpenSession,
         )
     }
 }

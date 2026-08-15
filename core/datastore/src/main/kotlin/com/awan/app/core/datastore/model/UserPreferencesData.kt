@@ -1,5 +1,7 @@
 package com.awan.app.core.datastore.model
 
+import com.awan.app.core.model.NotificationPreferences
+
 data class UserPreferencesData(
     val darkThemeEnabled: Boolean = false,
 
@@ -14,4 +16,6 @@ data class UserPreferencesData(
     val defaultRegion: String = "",
 
     val micPermissionRequested: Boolean = false,
+
+    val notificationPreferences: NotificationPreferences = NotificationPreferences(),
 )

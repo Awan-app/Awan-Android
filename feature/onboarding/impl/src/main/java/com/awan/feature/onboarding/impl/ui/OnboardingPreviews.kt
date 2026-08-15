@@ -49,3 +49,8 @@ private fun FirstTaskPreview() = PreviewStep(
 )
 
 @Preview(name = "Notifications") @Composable private fun NotificationsPreview() = PreviewStep(OnboardingStep.Notifications)
+
+// The mock notifications are the widest thing in the flow, and Arabic is wider still.
+@Preview(name = "Notifications · RTL", locale = "ar")
+@Composable
+private fun NotificationsRtlPreview() = PreviewStep(OnboardingStep.Notifications)
