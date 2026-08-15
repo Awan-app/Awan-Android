@@ -56,8 +56,6 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.layout.ContentScale
@@ -688,58 +686,41 @@ private fun Modifier.gridItemArtworkGradient(accent: Color): Modifier = drawWith
 private fun Modifier.bowlGradientBackdrop(
     accent: Color,
 ): Modifier = drawWithCache {
-    val fullAccent = accent.copy(alpha = 0.45f)
+    // The Gemini-style glow is soft, diffuse, and ambient.
+    // We achieve this using overlapping large radial gradients from the bottom corners,
+    // plus a soft vertical base.
+    val maxAlpha = 0.45f
+    val fullAccent = accent.copy(alpha = maxAlpha)
+    
+    // Large radius so the glow extends well into the screen and meets in the middle
+    val cornerRadius = size.width * 0.95f
 
-    val horizontalBrush = Brush.horizontalGradient(
-        0.00f to fullAccent,
-        0.10f to fullAccent,
-        0.30f to Color.Transparent,
-        0.70f to Color.Transparent,
-        0.90f to fullAccent,
-        1.00f to fullAccent,
-        startX = 0f,
-        endX = size.width,
+    val leftRadial = Brush.radialGradient(
+        0.0f to fullAccent,
+        1.0f to Color.Transparent,
+        center = Offset(0f, size.height),
+        radius = cornerRadius
     )
 
-    val verticalMaskBrush = Brush.verticalGradient(
-        0.00f to Color.Transparent,
-        1.00f to Color.Black,
-        startY = 0f,
-        endY = size.height,
+    val rightRadial = Brush.radialGradient(
+        0.0f to fullAccent,
+        1.0f to Color.Transparent,
+        center = Offset(size.width, size.height),
+        radius = cornerRadius
     )
 
-    val bounds = Rect(0f, 0f, size.width, size.height)
-    val layerPaint = Paint()
-
-    val bowlPath = Path().apply {
-        moveTo(0f, size.height)
-        lineTo(0f, 0f)
-        
-        quadraticBezierTo(
-            size.width * 0.15f, size.height * 0.4f,
-            size.width * 0.30f, size.height
-        )
-        
-        lineTo(size.width * 0.70f, size.height)
-        
-        quadraticBezierTo(
-            size.width * 0.85f, size.height * 0.4f,
-            size.width, 0f
-        )
-        
-        lineTo(size.width, size.height)
-        close()
-    }
+    // Soft vertical gradient to ensure the bottom edge is a solid anchor
+    val baseVertical = Brush.verticalGradient(
+        0.0f to Color.Transparent,
+        1.0f to accent.copy(alpha = maxAlpha * 0.6f),
+        startY = size.height - (size.width * 0.6f),
+        endY = size.height
+    )
 
     onDrawBehind {
-        clipPath(bowlPath) {
-            drawIntoCanvas { canvas ->
-                canvas.saveLayer(bounds, layerPaint)
-                drawRect(brush = horizontalBrush)
-                drawRect(brush = verticalMaskBrush, blendMode = BlendMode.DstIn)
-                canvas.restore()
-            }
-        }
+        drawRect(brush = baseVertical)
+        drawRect(brush = leftRadial)
+        drawRect(brush = rightRadial)
     }
 }
 
