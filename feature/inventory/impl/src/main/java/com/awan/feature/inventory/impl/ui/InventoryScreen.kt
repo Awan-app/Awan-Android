@@ -686,20 +686,21 @@ private fun Modifier.gridItemArtworkGradient(accent: Color): Modifier = drawWith
 private fun Modifier.bowlGradientBackdrop(
     accent: Color,
 ): Modifier = drawWithCache {
-    val maxAlpha = 0.45f
-    val fullAccent = accent.copy(alpha = maxAlpha)
+    val debugColor = Color(0xFFAA00FF) // Static purple for debugging
+    val maxAlpha = 0.65f // Increased slightly for debugging visibility
+    val fullAccent = debugColor.copy(alpha = maxAlpha)
     
     // By using 3 smaller radial points (left, center, right), we can keep the 
     // glow wide across the bottom but severely restrict how high it travels vertically.
-    val edgeRadius = size.width * 0.40f
-    val centerRadius = size.width * 0.30f
+    val edgeRadius = size.width * 0.45f // Slightly increased
+    val centerRadius = size.width * 0.35f
 
-    // Sharp fade-out stops to prevent the glow from bleeding up the sheet
+    // Relaxed fade-out stops so the glow is clearly visible and doesn't disappear too early
     val radialStops = arrayOf(
         0.00f to fullAccent,
-        0.25f to accent.copy(alpha = maxAlpha * 0.7f),
-        0.55f to accent.copy(alpha = maxAlpha * 0.25f),
-        0.80f to accent.copy(alpha = maxAlpha * 0.05f),
+        0.40f to fullAccent,
+        0.70f to debugColor.copy(alpha = maxAlpha * 0.5f),
+        0.90f to debugColor.copy(alpha = maxAlpha * 0.15f),
         1.00f to Color.Transparent
     )
 
