@@ -38,5 +38,8 @@
     <string name="inventory_filtered_empty_body">جرّب فلترًا مختلفًا.</string>
     <string name="inventory_error_title">تعذّر تحميل المقتنيات</string>
     <string name="inventory_retry">حاول مرة أخرى</string>
+    <string name="inventory_details_cost">%1$d نقطة</string>
+    <string name="inventory_pick">اختيار</string>
+    <string name="inventory_already_equipped">مجهّز بالفعل</string>
     <string name="inventory_default">الافتراضي</string>
 </resources>

@@ -38,5 +38,8 @@
     <string name="inventory_filtered_empty_body">Try a different filter.</string>
     <string name="inventory_error_title">We couldn\'t load your inventory</string>
     <string name="inventory_retry">Try again</string>
+    <string name="inventory_details_cost">%1$d points</string>
+    <string name="inventory_pick">Pick</string>
+    <string name="inventory_already_equipped">Already Equipped</string>
     <string name="inventory_default">Default</string>
 </resources>

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -25,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -45,19 +48,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
+import com.awan.app.core.designsystem.AwanChip
+import com.awan.app.core.designsystem.AwanChipTone
 import com.awan.app.core.designsystem.AwanIconButton
 import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanRemoteImage
@@ -450,12 +454,19 @@ internal fun CustomizationDetailsSheet(
 ) {
     val isEquipped = item.item.id in state.equippedItemIds
     val rarity = CustomizationRarity.fromInfo(item.item.info)
+    val accent = rarityAccent(rarity)
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .verticalScroll(rememberScrollState()),
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1.4f)
+                .ellipticalRarityGradient(accent = accent),
+        )
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -477,15 +488,28 @@ internal fun CustomizationDetailsSheet(
                 )
             }
             AwanText(item.item.name, style = AwanTheme.styles.headingText)
-            AwanText(
-                stringResource(R.string.inventory_details_rarity, rarityLabel(rarity)),
-                style = AwanTheme.styles.metaText.copy(color = rarityAccent(rarity)),
+            AwanChip(
+                label = rarityLabel(rarity),
+                tone = rarityChipTone(rarity),
             )
             AwanText(
                 stringResource(R.string.inventory_details_type, typeLabel(item.item.type)),
                 style = AwanTheme.styles.metaText,
             )
             AwanText(item.item.description, style = AwanTheme.styles.bodySecondaryText)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Payments,
+                    contentDescription = null,
+                    tint = AwanTheme.colors.zoneSun,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(AwanTheme.spacing.xxs))
+                AwanText(
+                    stringResource(R.string.inventory_details_cost, item.item.price),
+                    style = AwanTheme.styles.bodyText,
+                )
+            }
             AwanButton(
                 onClick = onEquip,
                 modifier = Modifier.fillMaxWidth(),
@@ -494,23 +518,22 @@ internal fun CustomizationDetailsSheet(
                 variant = if (isEquipped) AwanButtonVariant.Secondary else AwanButtonVariant.Primary,
             ) {
                 AwanText(
-                    stringResource(if (isEquipped) R.string.inventory_equipped else R.string.inventory_equip),
+                    stringResource(
+                        if (isEquipped) R.string.inventory_already_equipped else R.string.inventory_pick,
+                    ),
                 )
             }
         }
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .detailsSheetEdgeShadow(
-                    accent = rarityAccent(rarity),
-                    artworkAspectRatio = 1.4f,
-                    horizontalPadding = AwanTheme.spacing.md,
-                    topPadding = AwanTheme.spacing.sm,
-                    edgeDepth = AwanTheme.spacing.lg,
-                    bottomBlendDepth = AwanTheme.spacing.sm,
-                ),
-        )
     }
+}
+
+private fun rarityChipTone(rarity: CustomizationRarity): AwanChipTone = when (rarity) {
+    CustomizationRarity.COMMON -> AwanChipTone.Neutral
+    CustomizationRarity.UNCOMMON -> AwanChipTone.Neutral
+    CustomizationRarity.RARE -> AwanChipTone.Sky
+    CustomizationRarity.EPIC -> AwanChipTone.Violet
+    CustomizationRarity.LEGENDARY -> AwanChipTone.Tangerine
+    CustomizationRarity.UNKNOWN -> AwanChipTone.Neutral
 }
 
 @Composable
@@ -549,58 +572,25 @@ private fun CustomizationArt(
     }
 }
 
-private fun Modifier.detailsSheetEdgeShadow(
+private fun Modifier.ellipticalRarityGradient(
     accent: Color,
-    artworkAspectRatio: Float,
-    horizontalPadding: Dp,
-    topPadding: Dp,
-    edgeDepth: Dp,
-    bottomBlendDepth: Dp,
+    alpha: Float = 0.30f,
 ) = drawWithCache {
-    val artworkWidth = (size.width - (horizontalPadding.toPx() * 2f)).coerceAtLeast(0f)
-    val artworkBottom = (topPadding.toPx() + artworkWidth / artworkAspectRatio)
-        .coerceAtMost(size.height)
-    val edgeSize = edgeDepth.toPx().coerceAtMost(size.width / 2f)
-    val bottomBlendSize = bottomBlendDepth.toPx()
-    val visibleBottomBlendSize = (size.height - artworkBottom)
-        .coerceAtLeast(0f)
-        .coerceAtMost(bottomBlendSize)
-    val edgeColor = accent.copy(alpha = 0.24f)
-    val leftBrush = Brush.horizontalGradient(
-        colors = listOf(edgeColor, Color.Transparent),
-        startX = 0f,
-        endX = edgeSize,
-    )
-    val rightBrush = Brush.horizontalGradient(
-        colors = listOf(Color.Transparent, edgeColor),
-        startX = size.width - edgeSize,
-        endX = size.width,
-    )
-    val topBrush = Brush.verticalGradient(
-        colors = listOf(edgeColor, Color.Transparent),
-        startY = 0f,
-        endY = edgeSize,
-    )
-    val bottomBrush = Brush.verticalGradient(
-        colors = listOf(edgeColor, Color.Transparent),
-        startY = artworkBottom,
-        endY = artworkBottom + bottomBlendSize,
+    val center = Offset(size.width / 2f, size.height)
+    val horizontalRadius = size.width * 0.9f
+    val verticalRadius = size.height * 0.6f
+    val scaleX = if (verticalRadius > 0f) horizontalRadius / verticalRadius else 1f
+
+    val brush = Brush.radialGradient(
+        colors = listOf(accent.copy(alpha = alpha), Color.Transparent),
+        center = center,
+        radius = if (verticalRadius > 0f) verticalRadius else 1f,
     )
 
-    onDrawWithContent {
-        drawContent()
-        drawRect(leftBrush, topLeft = Offset.Zero, size = Size(edgeSize, artworkBottom))
-        drawRect(
-            rightBrush,
-            topLeft = Offset(size.width - edgeSize, 0f),
-            size = Size(edgeSize, artworkBottom),
-        )
-        drawRect(topBrush, topLeft = Offset.Zero, size = Size(size.width, edgeSize))
-        drawRect(
-            bottomBrush,
-            topLeft = Offset(0f, artworkBottom),
-            size = Size(size.width, visibleBottomBlendSize),
-        )
+    onDrawBehind {
+        scale(scaleX = scaleX, scaleY = 1f, pivot = center) {
+            drawRect(brush = brush)
+        }
     }
 }
 
