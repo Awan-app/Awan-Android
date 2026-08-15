@@ -614,7 +614,7 @@ private fun rarityChipTone(rarity: CustomizationRarity): AwanChipTone = when (ra
     CustomizationRarity.RARE -> AwanChipTone.Sky
     CustomizationRarity.EPIC -> AwanChipTone.Violet
     CustomizationRarity.LEGENDARY -> AwanChipTone.Tangerine
-    CustomizationRarity.UNKNOWN -> AwanChipTone.Neutral
+    CustomizationRarity.UNKNOWN -> AwanChipTone.Violet
 }
 
 @Composable
@@ -731,7 +731,7 @@ private fun Modifier.bowlGradientBackdrop(
 
 @Composable
 private fun rarityAccent(rarity: CustomizationRarity): Color = when (rarity) {
-    CustomizationRarity.UNKNOWN -> AwanTheme.colors.textSecondary
+    CustomizationRarity.UNKNOWN -> Color(0xFF4B2874)
     CustomizationRarity.COMMON -> AwanTheme.colors.zoneBlue
     CustomizationRarity.UNCOMMON -> AwanTheme.colors.zoneGreen
     CustomizationRarity.RARE -> AwanTheme.colors.sky

@@ -24,7 +24,7 @@
     <string name="inventory_rarity_rare">نادر</string>
     <string name="inventory_rarity_epic">ملحمي</string>
     <string name="inventory_rarity_legendary">أسطوري</string>
-    <string name="inventory_rarity_unknown">غير معروف</string>
+    <string name="inventory_rarity_unknown">غامض</string>
     <string name="inventory_details_rarity">الندرة: %1$s</string>
     <string name="inventory_details_type">النوع: %1$s</string>
     <string name="inventory_equip">تجهيز</string>

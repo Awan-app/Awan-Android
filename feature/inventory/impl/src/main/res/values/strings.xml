@@ -24,7 +24,7 @@
     <string name="inventory_rarity_rare">Rare</string>
     <string name="inventory_rarity_epic">Epic</string>
     <string name="inventory_rarity_legendary">Legendary</string>
-    <string name="inventory_rarity_unknown">Unknown</string>
+    <string name="inventory_rarity_unknown">Mysterious</string>
     <string name="inventory_details_rarity">Rarity: %1$s</string>
     <string name="inventory_details_type">Type: %1$s</string>
     <string name="inventory_equip">Equip</string>
