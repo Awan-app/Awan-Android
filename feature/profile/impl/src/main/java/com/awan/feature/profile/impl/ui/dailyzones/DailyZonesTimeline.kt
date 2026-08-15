@@ -14,7 +14,6 @@ import com.awan.feature.profile.impl.ui.components.ZoneTimelineItem
 @Composable
 fun DailyZonesTimeline(
     zones: List<DailyZone>,
-    onEditZone: (DailyZone) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -29,7 +28,7 @@ fun DailyZonesTimeline(
             ZoneTimelineItem(
                 zone = zone,
                 isLast = index == zones.size - 1,
-                onClick = { onEditZone(zone) }
+                onClick = { /* Read-only */ }
             )
         }
     }

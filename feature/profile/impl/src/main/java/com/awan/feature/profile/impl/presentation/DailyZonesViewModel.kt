@@ -52,7 +52,43 @@ class DailyZonesViewModel @Inject constructor(
             is DailyZonesAction.DeleteZone -> deleteZone(action.zone)
             is DailyZonesAction.CreateCategory -> createCategory(action.name)
             DailyZonesAction.ClearError -> clearError()
+            DailyZonesAction.NextWeek -> shiftWeek(1)
+            DailyZonesAction.PreviousWeek -> shiftWeek(-1)
+            DailyZonesAction.GoToToday -> goToToday()
+            is DailyZonesAction.DateSelected -> selectDate(action.date)
         }
+    }
+
+    private fun shiftWeek(weeks: Int) {
+        _uiState.update { state ->
+            val newDate = (state.selectedDate ?: LocalDate.now()).plusWeeks(weeks.toLong())
+            state.copy(
+                selectedDate = newDate,
+                selectedDay = DailyZonesHelper.getCurrentDay(newDate)
+            )
+        }
+        updateSelectedDayData()
+    }
+
+    private fun goToToday() {
+        val today = LocalDate.now()
+        _uiState.update { state ->
+            state.copy(
+                selectedDate = today,
+                selectedDay = DailyZonesHelper.getCurrentDay(today)
+            )
+        }
+        updateSelectedDayData()
+    }
+
+    private fun selectDate(date: LocalDate) {
+        _uiState.update { state ->
+            state.copy(
+                selectedDate = date,
+                selectedDay = DailyZonesHelper.getCurrentDay(date)
+            )
+        }
+        updateSelectedDayData()
     }
 
     private fun loadData() {
@@ -98,14 +134,14 @@ class DailyZonesViewModel @Inject constructor(
     }
 
     private fun selectDay(day: DayOfWeek) {
-        val today = LocalDate.now()
-        val currentDay = DailyZonesHelper.getCurrentDay(today)
-        
-        // Calculate the date for the selected day of week relative to today
-        val diff = (day.ordinal - currentDay.ordinal).let { if (it < 0) it + 7 else it }
-        val date = today.plusDays(diff.toLong())
-
-        _uiState.update { it.copy(selectedDay = day, selectedDate = date, selectedTemplateId = null) }
+        _uiState.update { state ->
+            val reference = state.selectedDate ?: LocalDate.now()
+            // Find the date of the given day in the same week as the currently visible date
+            val currentWeekStart = reference.minusDays((reference.dayOfWeek.value.toLong() - 1))
+            val date = currentWeekStart.plusDays(day.ordinal.toLong())
+            
+            state.copy(selectedDay = day, selectedDate = date, selectedTemplateId = null)
+        }
         updateSelectedDayData()
     }
 

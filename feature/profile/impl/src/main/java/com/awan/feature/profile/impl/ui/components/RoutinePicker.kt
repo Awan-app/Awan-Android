@@ -29,7 +29,7 @@ fun RoutinePicker(
     templates: List<WeeklyTemplate>,
     selectedTemplateId: String?,
     onTemplateSelected: (String) -> Unit,
-    onCreateRoutineClick: (String?, String?) -> Unit,
+    onCreateRoutineClick: (String?, String?, String?) -> Unit,
     selectedDate: String? = null,
     currentOverrideName: String? = null,
     title: String? = null
@@ -139,7 +139,7 @@ fun RoutinePicker(
 
             item {
                 AwanButton(
-                    onClick = { onCreateRoutineClick(null, selectedDate) },
+                    onClick = { onCreateRoutineClick(null, null, selectedDate) },
                     variant = AwanButtonVariant.Chip,
                     modifier = Modifier.wrapContentWidth()
                 ) {

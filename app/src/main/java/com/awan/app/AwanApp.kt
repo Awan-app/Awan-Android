@@ -276,8 +276,8 @@ fun AwanApp(
                 inventoryEntry(onBack = { navigator.goBack() })
                 profileEntry(
                     onNavigateToDailyZones = { navigator.navigate(DailyZonesRoute) },
-                    onNavigateToEditRoutine = { templateId, date ->
-                        navigator.navigate(EditRoutineRoute(templateId = templateId, date = date))
+                    onNavigateToEditRoutine = { templateId, overrideId, date ->
+                        navigator.navigate(EditRoutineRoute(templateId = templateId, overrideId = overrideId, date = date))
                     },
                     onLogout = { navigator.replaceAll(LoginRoute) },
                     onBack = { navigator.goBack() },

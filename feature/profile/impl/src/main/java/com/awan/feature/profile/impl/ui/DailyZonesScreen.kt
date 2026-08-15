@@ -15,7 +15,6 @@ import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import com.awan.feature.profile.impl.presentation.DailyZonesAction
 import com.awan.feature.profile.impl.presentation.DailyZonesState
-import com.awan.feature.profile.impl.ui.dailyzones.AddEditZoneSheet
 import com.awan.feature.profile.impl.ui.dailyzones.DailyZonesContent
 import com.awan.feature.profile.impl.ui.dailyzones.DailyZonesTopBar
 import java.time.LocalDate
@@ -25,13 +24,12 @@ import java.time.LocalDate
 fun DailyZonesScreen(
     uiState: DailyZonesState,
     onAction: (DailyZonesAction) -> Unit,
-    onNavigateToRoutineDetails: (String?, String?) -> Unit,
-    onCreateRoutineClick: (String?, String?) -> Unit,
+    onNavigateToRoutineDetails: (String?, String?, String?) -> Unit,
+    onCreateRoutineClick: (String?, String?, String?) -> Unit,
     onBackClick: () -> Unit,
 ) {
-    var showAddZoneSheet by remember { mutableStateOf(false) }
-    var editingZone by remember { mutableStateOf<DailyZone?>(null) }
     var showDeleteConfirm by remember { mutableStateOf<DailyZone?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val colors = AwanTheme.colors
     val dayColors = remember(uiState.templates, uiState.overrides, colors) {
@@ -70,34 +68,16 @@ fun DailyZonesScreen(
         mapping
     }
 
-    if (showAddZoneSheet) {
-        AddEditZoneSheet(
-            zone = editingZone,
-            availableCategories = uiState.availableCategories,
-            defaultStartTime = uiState.selectedDayZones.lastOrNull()?.endTime,
-            onDismiss = {
-                showAddZoneSheet = false
-                editingZone = null
-            },
-            onConfirm = { zone ->
-                if (editingZone == null) {
-                    onAction(DailyZonesAction.AddZone(zone))
-                } else {
-                    onAction(DailyZonesAction.UpdateZone(zone))
-                }
-                showAddZoneSheet = false
-                editingZone = null
-            },
-            onAddCategory = { name ->
-                onAction(DailyZonesAction.CreateCategory(name))
-            },
-            onDelete = { zone ->
-                showAddZoneSheet = false
-                editingZone = null
-                showDeleteConfirm = zone
-            },
-            canDelete = uiState.selectedDayZones.size > 1,
-            isSaving = uiState.isSaving
+    if (showDatePicker) {
+        AwanDatePickerDialog(
+            initialDate = uiState.selectedDate ?: LocalDate.now(),
+            confirmLabel = stringResource(R.string.profile_ok),
+            cancelLabel = stringResource(R.string.profile_cancel),
+            onDismiss = { showDatePicker = false },
+            onConfirm = { date ->
+                onAction(DailyZonesAction.DateSelected(date))
+                showDatePicker = false
+            }
         )
     }
 
@@ -127,11 +107,7 @@ fun DailyZonesScreen(
             onAction = onAction,
             onNavigateToRoutineDetails = onNavigateToRoutineDetails,
             onCreateRoutineClick = onCreateRoutineClick,
-            onAddZoneClick = { showAddZoneSheet = true },
-            onEditZone = { zone ->
-                editingZone = zone
-                showAddZoneSheet = true
-            },
+            onShowDatePicker = { showDatePicker = true },
             padding = padding
         )
     }

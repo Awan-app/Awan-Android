@@ -11,7 +11,7 @@ import com.awan.feature.profile.api.ProfileRoute
 
 fun EntryProviderScope<Route>.profileEntry(
     onNavigateToDailyZones: () -> Unit,
-    onNavigateToEditRoutine: (String?, String?) -> Unit,
+    onNavigateToEditRoutine: (String?, String?, String?) -> Unit,
     onNavigateToInventory: () -> Unit,
     onNavigateToMcpSettings: () -> Unit,
     onNavigateToMcpInfo: () -> Unit,
@@ -31,8 +31,8 @@ fun EntryProviderScope<Route>.profileEntry(
 
     entry<DailyZonesRoute> {
         DailyZonesRouteScreen(
-            onRoutineClick = { templateId, date -> onNavigateToEditRoutine(templateId, date) },
-            onCreateRoutineClick = { templateId, date -> onNavigateToEditRoutine(templateId, date) },
+            onRoutineClick = { templateId, overrideId, date -> onNavigateToEditRoutine(templateId, overrideId, date) },
+            onCreateRoutineClick = { templateId, overrideId, date -> onNavigateToEditRoutine(templateId, overrideId, date) },
             onBack = onBack
         )
     }
@@ -40,6 +40,7 @@ fun EntryProviderScope<Route>.profileEntry(
     entry<EditRoutineRoute> { route ->
         EditRoutineRouteScreen(
             templateId = route.templateId,
+            overrideId = route.overrideId,
             date = route.date,
             onBack = onBack
         )

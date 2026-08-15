@@ -1,7 +1,6 @@
 package com.awan.feature.profile.impl.ui
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,9 +39,9 @@ import com.awan.feature.profile.impl.presentation.EditRoutineState
 import com.awan.feature.profile.impl.ui.components.DailyZoneReorderList
 import com.awan.feature.profile.impl.ui.components.DaySelector
 import com.awan.feature.profile.impl.ui.components.ZoneEditSheet
-import com.composables.icons.lucide.Calendar
-import com.composables.icons.lucide.Lucide
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -294,13 +294,13 @@ fun EditRoutineScreen(
                     }
                 }
 
-                // Apply to Today Only (Checkbox) - Only show in creation mode or when editing an override
-                if (uiState.templateId == null) {
+                // Apply to Today Only (Checkbox) - Show if we have a date context
+                if (uiState.date != null) {
                     AwanCard(
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(12.dp),
                         onClick = {
-                            if (uiState.date != null && uiState.overrideId == null) {
+                            if (uiState.overrideId == null && uiState.templateId != null) {
                                 onAction(EditRoutineAction.ToggleTodayOnly(!uiState.isTodayOnly))
                             }
                         }
@@ -313,7 +313,7 @@ fun EditRoutineScreen(
                             Checkbox(
                                 checked = uiState.isTodayOnly,
                                 onCheckedChange = { onAction(EditRoutineAction.ToggleTodayOnly(it)) },
-                                enabled = uiState.date != null && uiState.overrideId == null,
+                                enabled = uiState.overrideId == null && uiState.templateId != null,
                                 colors = CheckboxDefaults.colors(checkedColor = AwanTheme.colors.sky)
                             )
                             Column(modifier = Modifier.weight(1f)) {
@@ -325,23 +325,29 @@ fun EditRoutineScreen(
                                         )
                                     )
                                 )
-                                if (uiState.date != null) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                        modifier = Modifier.clickable { showDatePicker = true }
-                                    ) {
-                                        AwanText(
-                                            text = uiState.date!!,
-                                            style = AwanTheme.styles.captionText.copy(color = AwanTheme.colors.sky)
+                                if (uiState.templateId == null && uiState.overrideId == null) {
+                                    AwanText(
+                                        text = stringResource(R.string.profile_daily_zones_customize_day_hint),
+                                        style = AwanTheme.styles.captionText.copy(
+                                            color = AwanTheme.colors.textSecondary
                                         )
-                                        Icon(
-                                            imageVector = Lucide.Calendar,
-                                            contentDescription = null,
-                                            tint = AwanTheme.colors.sky,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                    }
+                                    )
+                                }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    modifier = Modifier.clickable { showDatePicker = true }
+                                ) {
+                                    AwanText(
+                                        text = uiState.date!!,
+                                        style = AwanTheme.styles.captionText.copy(color = AwanTheme.colors.sky)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.CalendarToday,
+                                        contentDescription = null,
+                                        tint = AwanTheme.colors.sky,
+                                        modifier = Modifier.size(14.dp)
+                                    )
                                 }
                             }
                         }
@@ -354,18 +360,62 @@ fun EditRoutineScreen(
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(16.dp)
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            AwanText(
-                                text = stringResource(R.string.profile_routine_apply_to_days),
-                                style = AwanTheme.styles.bodyText.copy(
-                                    textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
-                                )
-                            )
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(
+                                    modifier = Modifier.clickable { onAction(EditRoutineAction.DateChange(LocalDate.now().toString())) }
+                                ) {
+                                    val referenceDate = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
+                                    val dayNum = referenceDate.dayOfMonth
+                                    val suffix = getDayOfMonthSuffix(dayNum)
+                                    val formatter = DateTimeFormatter.ofPattern("MMMM d'$suffix' EEEE", Locale.ENGLISH)
+                                    val dateStr = referenceDate.format(formatter)
+                                    
+                                    AwanText(
+                                        text = dateStr,
+                                        style = AwanTheme.styles.bodyText.copy(
+                                            textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
+                                        )
+                                    )
+                                }
+
+                                AwanIconButton(
+                                    onClick = { showDatePicker = true },
+                                    contentDescription = null,
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CalendarToday,
+                                        contentDescription = null,
+                                        tint = AwanTheme.colors.sky,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+
                             DaySelector(
                                 selectedDays = uiState.selectedDays,
                                 assignedDays = uiState.assignedDays,
                                 onDaySelected = { onAction(EditRoutineAction.ToggleDay(it)) },
-                                showTodayIndicator = false // Don't show "today" dot in routine creator
+                                onNextWeek = { 
+                                    val current = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
+                                    onAction(EditRoutineAction.DateChange(current.plusWeeks(1).toString()))
+                                },
+                                onPreviousWeek = { 
+                                    val current = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
+                                    onAction(EditRoutineAction.DateChange(current.minusWeeks(1).toString()))
+                                },
+                                showTodayIndicator = false,
+                                referenceDate = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now()),
+                                today = LocalDate.now()
                             )
                         }
                     }
@@ -463,5 +513,15 @@ fun EditRoutineScreen(
                 Spacer(modifier = Modifier.height(100.dp))
             }
         }
+    }
+}
+
+private fun getDayOfMonthSuffix(n: Int): String {
+    if (n in 11..13) return "th"
+    return when (n % 10) {
+        1 -> "st"
+        2 -> "nd"
+        3 -> "rd"
+        else -> "th"
     }
 }

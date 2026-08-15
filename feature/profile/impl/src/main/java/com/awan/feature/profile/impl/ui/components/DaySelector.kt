@@ -8,6 +8,10 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.awan.app.core.designsystem.AwanIconButton
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.domain.zones.model.DayOfWeek
@@ -29,126 +34,168 @@ import java.time.LocalDate
 fun DaySelector(
     selectedDays: Set<DayOfWeek>,
     onDaySelected: (DayOfWeek) -> Unit,
+    onNextWeek: () -> Unit,
+    onPreviousWeek: () -> Unit,
     modifier: Modifier = Modifier,
     assignedDays: Set<DayOfWeek> = emptySet(),
     dayColors: Map<DayOfWeek, Color> = emptyMap(),
     showTodayIndicator: Boolean = true,
-    today: LocalDate = LocalDate.now()
+    today: LocalDate = LocalDate.now(),
+    referenceDate: LocalDate = LocalDate.now()
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceAround
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        val currentWeekStart = today.minusDays((today.dayOfWeek.value - 1).toLong())
+        AwanIconButton(
+            onClick = onPreviousWeek,
+            contentDescription = null,
+            modifier = Modifier.size(32.dp)
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = null,
+                tint = AwanTheme.colors.textSecondary,
+                modifier = Modifier.size(16.dp)
+            )
+        }
 
-        DayOfWeek.entries.forEach { day ->
-            val isSelected = selectedDays.contains(day)
-            val isAssigned = assignedDays.contains(day)
-            val isToday = if (showTodayIndicator) DailyZonesHelper.isToday(day, today) else false
-            val templateColor = dayColors[day]
-            
-            val dateForDay = currentWeekStart.plusDays(day.ordinal.toLong())
-            val dayOfMonth = dateForDay.dayOfMonth.toString()
-            val fullDayName = stringResource(DailyZonesHelper.getDayNameRes(day))
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.SpaceAround
+        ) {
+            val currentWeekStart = referenceDate.minusDays((referenceDate.dayOfWeek.value.toLong() - 1))
 
-            val interactionSource = remember { MutableInteractionSource() }
-            val isPressed by interactionSource.collectIsPressedAsState()
+            DayOfWeek.entries.forEach { day ->
+                val isSelected = selectedDays.contains(day)
+                val isAssigned = assignedDays.contains(day)
+                val isToday = if (showTodayIndicator) {
+                    DailyZonesHelper.isToday(day, today) && referenceDate.year == today.year && referenceDate.dayOfYear == today.dayOfYear
+                } else false
+                val templateColor = dayColors[day]
+                
+                val dateForDay = currentWeekStart.plusDays(day.ordinal.toLong())
+                val dayOfMonth = dateForDay.dayOfMonth.toString()
+                val fullDayName = stringResource(DailyZonesHelper.getDayNameRes(day))
 
-            val rimDepth = 4.dp
-            val rimColor = AwanTheme.colors.line
-            val surface = AwanTheme.colors.surface
+                val interactionSource = remember { MutableInteractionSource() }
+                val isPressed by interactionSource.collectIsPressedAsState()
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                        enabled = !isAssigned,
-                        onClick = { onDaySelected(day) }
-                    )
-            ) {
-                Box(modifier = Modifier.size(38.dp, 44.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = if (isPressed && !isAssigned) rimDepth else 0.dp)
-                            .background(
-                                if (isAssigned) AwanTheme.colors.disabledSurface.copy(alpha = 0.5f) else rimColor,
-                                RoundedCornerShape(12.dp)
-                            )
-                    )
+                val rimDepth = 4.dp
+                val rimColor = AwanTheme.colors.line
+                val surface = AwanTheme.colors.surface
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(bottom = if ((isPressed || isAssigned) && !isSelected) 0.dp else rimDepth)
-                            .background(
-                                color = when {
-                                    isAssigned -> AwanTheme.colors.disabledSurface
-                                    isSelected -> AwanTheme.colors.sky.copy(alpha = 0.08f).compositeOver(surface)
-                                    templateColor != null -> templateColor.copy(alpha = 0.06f).compositeOver(surface)
-                                    else -> surface
-                                },
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .border(
-                                width = if (isSelected) 2.dp else 1.dp,
-                                color = when {
-                                    isSelected -> AwanTheme.colors.sky
-                                    isAssigned -> AwanTheme.colors.line.copy(alpha = 0.5f)
-                                    isToday -> AwanTheme.colors.sky.copy(alpha = 0.6f)
-                                    templateColor != null -> templateColor.copy(alpha = 0.4f).compositeOver(surface)
-                                    else -> AwanTheme.colors.line
-                                },
-                                shape = RoundedCornerShape(12.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            onClick = { onDaySelected(day) }
+                        )
+                ) {
+                    if (isToday) {
                         AwanText(
-                            text = dayOfMonth,
-                            style = AwanTheme.styles.bodyText.copy(
-                                textStyle = AwanTheme.styles.bodyText.textStyle.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
-                                ),
-                                color = when {
-                                    isAssigned -> AwanTheme.colors.disabledContent
-                                    templateColor != null -> templateColor
-                                    isSelected -> AwanTheme.colors.sky
-                                    else -> AwanTheme.colors.textPrimary
-                                }
+                            text = "Today",
+                            style = AwanTheme.styles.captionText.copy(
+                                color = AwanTheme.colors.sky,
+                                textStyle = AwanTheme.styles.captionText.textStyle.copy(
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             )
                         )
+                    } else {
+                        Spacer(modifier = Modifier.height(10.dp))
                     }
-                }
-                if (isToday && !isSelected) {
-                    Box(
-                        modifier = Modifier
-                            .size(4.dp)
-                            .clip(CircleShape)
-                            .background(if (isAssigned) AwanTheme.colors.disabledContent else AwanTheme.colors.sky)
-                    )
-                } else {
-                    Spacer(modifier = Modifier.size(4.dp))
-                }
 
-                AwanText(
-                    text = fullDayName.take(3),
-                    style = AwanTheme.styles.captionText.copy(
-                        textStyle = AwanTheme.styles.captionText.textStyle.copy(fontSize = 10.sp),
-                        color = when {
-                            isAssigned -> AwanTheme.colors.disabledContent
-                            templateColor != null -> templateColor
-                            isSelected -> AwanTheme.colors.sky
-                            else -> AwanTheme.colors.textSecondary
+                    Box(modifier = Modifier.size(38.dp, 44.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = if (isPressed) rimDepth else 0.dp)
+                                .background(
+                                    if (isAssigned) AwanTheme.colors.disabledSurface.copy(alpha = 0.5f) else rimColor,
+                                    RoundedCornerShape(12.dp)
+                                )
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(bottom = if (isPressed && !isSelected) 0.dp else rimDepth)
+                                .background(
+                                    color = when {
+                                        isSelected -> AwanTheme.colors.sky
+                                        isToday -> AwanTheme.colors.sky.copy(alpha = 0.2f).compositeOver(surface)
+                                        templateColor != null -> templateColor.copy(alpha = 0.12f).compositeOver(surface)
+                                        else -> surface
+                                    },
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .border(
+                                    width = if (isSelected || isToday) 2.dp else 1.dp,
+                                    color = when {
+                                        isSelected -> AwanTheme.colors.sky
+                                        isToday -> AwanTheme.colors.sky
+                                        isAssigned -> AwanTheme.colors.line.copy(alpha = 0.5f)
+                                        templateColor != null -> templateColor.copy(alpha = 0.4f).compositeOver(surface)
+                                        else -> AwanTheme.colors.line
+                                    },
+                                    shape = RoundedCornerShape(12.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AwanText(
+                                text = dayOfMonth,
+                                style = AwanTheme.styles.bodyText.copy(
+                                    textStyle = AwanTheme.styles.bodyText.textStyle.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    ),
+                                    color = when {
+                                        isSelected -> Color.White
+                                        isToday -> AwanTheme.colors.sky
+                                        isAssigned -> AwanTheme.colors.disabledContent
+                                        templateColor != null -> templateColor
+                                        else -> AwanTheme.colors.textPrimary
+                                    }
+                                )
+                            )
                         }
+                    }
+
+                    AwanText(
+                        text = fullDayName.take(3),
+                        style = AwanTheme.styles.captionText.copy(
+                            textStyle = AwanTheme.styles.captionText.textStyle.copy(fontSize = 10.sp),
+                            color = when {
+                                isSelected -> AwanTheme.colors.sky
+                                isToday -> AwanTheme.colors.sky
+                                isAssigned -> AwanTheme.colors.disabledContent
+                                templateColor != null -> templateColor
+                                else -> AwanTheme.colors.textSecondary
+                            }
+                        )
                     )
-                )
+                }
             }
+        }
+
+        AwanIconButton(
+            onClick = onNextWeek,
+            contentDescription = null,
+            modifier = Modifier.size(32.dp)
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = AwanTheme.colors.textSecondary,
+                modifier = Modifier.size(16.dp)
+            )
         }
     }
 }

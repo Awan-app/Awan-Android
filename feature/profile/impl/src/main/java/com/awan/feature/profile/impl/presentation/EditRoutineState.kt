@@ -14,6 +14,7 @@ data class EditRoutineState(
     val assignedDays: Set<DayOfWeek> = emptySet(),
     val zones: List<DailyZone> = emptyList(),
     val availableCategories: List<Category> = emptyList(),
+    val dates: Set<String> = emptySet(),
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val isTodayOnly: Boolean = false,
