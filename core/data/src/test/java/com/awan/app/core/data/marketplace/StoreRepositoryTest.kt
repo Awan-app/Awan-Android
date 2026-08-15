@@ -114,6 +114,34 @@ class StoreRepositoryTest {
         assertTrue((result as Result.Error).error is AppError.Unknown)
     }
 
+    @Test
+    fun `markInventorySeen calls DAO to mark all items seen`() = runTest(testDispatcher) {
+        repository.markInventorySeen()
+        assertTrue(fakeStoreDao.markAllOwnedItemsSeenCalled)
+    }
+
+    @Test
+    fun `refreshInventory preserves isSeen status of existing items`() = runTest(testDispatcher) {
+        fakeConnectivityMonitor.online = true
+        fakeStoreDao.ownedItems = listOf(
+            OwnedItemEntity(id = "o1", itemId = "1", boughtAt = "earlier", isSeen = true)
+        )
+        fakeRemoteDataSource.inventoryResponse = Result.Success(listOf(
+            OwnedItemDto("o1", StoreItemDto("1", "Item 1", type = "FRAME"), "now"),
+            OwnedItemDto("o2", StoreItemDto("2", "Item 2", type = "SKIN"), "now")
+        ))
+
+        val result = repository.refreshInventory()
+
+        assertTrue(result is Result.Success<*>)
+        val items = fakeStoreDao.ownedItems
+        assertEquals(2, items.size)
+        val o1 = items.first { it.id == "o1" }
+        val o2 = items.first { it.id == "o2" }
+        assertTrue(o1.isSeen)
+        org.junit.Assert.assertFalse(o2.isSeen)
+    }
+
     // Fakes
     private class FakeStoreRemoteDataSource : StoreRemoteDataSource {
         var buyCalled = false
@@ -134,6 +162,7 @@ class StoreRepositoryTest {
         var storeItems = listOf<StoreItemEntity>()
         var ownedItems = listOf<OwnedItemEntity>()
         var equippedItems = listOf<EquippedItemEntity>()
+        var markAllOwnedItemsSeenCalled = false
 
         override suspend fun upsertStoreItems(items: List<StoreItemEntity>) { storeItems = items }
         override fun observeStoreItems(): Flow<List<StoreItemEntity>> = flowOf(storeItems)
@@ -142,6 +171,13 @@ class StoreRepositoryTest {
         override suspend fun upsertOwnedItems(items: List<OwnedItemEntity>) { ownedItems = items }
         override fun observeOwnedItems(): Flow<List<OwnedItemEntity>> = flowOf(ownedItems)
         override suspend fun deleteAllOwnedItems() { ownedItems = emptyList() }
+        override suspend fun markAllOwnedItemsSeen() {
+            markAllOwnedItemsSeenCalled = true
+            ownedItems = ownedItems.map { it.copy(isSeen = true) }
+        }
+        override fun observeUnseenOwnedCount(): Flow<Int> = flowOf(ownedItems.count { !it.isSeen })
+        override suspend fun getSeenOwnedItemIds(): List<String> = ownedItems.filter { it.isSeen }.map { it.id }
+        override suspend fun getOwnedItemIds(): List<String> = ownedItems.map { it.id }
         override suspend fun upsertEquippedItems(items: List<EquippedItemEntity>) { equippedItems = items }
         override fun observeEquippedItems(): Flow<List<EquippedItemEntity>> = flowOf(equippedItems)
         override suspend fun deleteAllEquippedItems() { equippedItems = emptyList() }

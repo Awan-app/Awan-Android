@@ -149,7 +149,7 @@ class StoreRepositoryImpl @Inject constructor(
                     expiryTime = expiry
                 )
             }
-            storeDao.replaceOwnedItems(entities)
+            storeDao.replaceOwnedItemsPreservingSeen(entities)
 
             // Also ensure store items from inventory are in store_items table
             val storeItems = result.data.mapNotNull { it.item.asExternalModel()?.asEntity(expiry) }
@@ -184,4 +184,8 @@ class StoreRepositoryImpl @Inject constructor(
             Result.Error((result as Result.Error).error)
         }
     }
-}
+
+    override suspend fun markInventorySeen() = withContext(ioDispatcher) {
+        storeDao.markAllOwnedItemsSeen()
+    }
+}

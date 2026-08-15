@@ -99,7 +99,8 @@ fun OwnedItemEntity.asExternalModel(items: List<StoreItem>): OwnedItem? {
     return OwnedItem(
         id = id,
         item = storeItem,
-        boughtAt = boughtAt
+        boughtAt = boughtAt,
+        isSeen = isSeen
     )
 }
 
@@ -107,7 +108,8 @@ fun OwnedItem.asEntity(expiryTime: Long = 0L): OwnedItemEntity = OwnedItemEntity
     id = id,
     itemId = item.id,
     boughtAt = boughtAt,
-    expiryTime = expiryTime
+    expiryTime = expiryTime,
+    isSeen = isSeen
 )
 
 fun EquippedItemEntity.asExternalModel(items: List<StoreItem>): EquippedItem? {

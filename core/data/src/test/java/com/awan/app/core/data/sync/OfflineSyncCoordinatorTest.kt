@@ -257,6 +257,12 @@ private class FakeStoreDao : StoreDao {
     override suspend fun upsertOwnedItems(items: List<OwnedItemEntity>) { ownedItems = items }
     override fun observeOwnedItems(): Flow<List<OwnedItemEntity>> = flowOf(ownedItems)
     override suspend fun deleteAllOwnedItems() { ownedItems = emptyList() }
+    override suspend fun markAllOwnedItemsSeen() {
+        ownedItems = ownedItems.map { it.copy(isSeen = true) }
+    }
+    override fun observeUnseenOwnedCount(): Flow<Int> = flowOf(ownedItems.count { !it.isSeen })
+    override suspend fun getSeenOwnedItemIds(): List<String> = ownedItems.filter { it.isSeen }.map { it.id }
+    override suspend fun getOwnedItemIds(): List<String> = ownedItems.map { it.id }
     override suspend fun upsertEquippedItems(items: List<EquippedItemEntity>) { equippedItems = items }
     override fun observeEquippedItems(): Flow<List<EquippedItemEntity>> = flowOf(equippedItems)
     override suspend fun deleteAllEquippedItems() { equippedItems = emptyList() }
