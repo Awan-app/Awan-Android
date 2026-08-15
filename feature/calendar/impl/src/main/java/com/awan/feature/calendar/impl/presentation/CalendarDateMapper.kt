@@ -77,8 +77,10 @@ object CalendarDateMapper {
         while (!current.isAfter(end)) {
             if (current !in overrideDates) {
                 val targetDayOfWeek = DayOfWeek.valueOf(current.dayOfWeek.name)
-                val template = templates.find { it.daysOfWeek.contains(targetDayOfWeek) }
-                if (template != null && template.zones.isNotEmpty()) {
+                val hasRoutine = templates.any {
+                    it.daysOfWeek.contains(targetDayOfWeek) && it.zones.isNotEmpty()
+                }
+                if (hasRoutine) {
                     routineDates.add(current)
                 }
             }

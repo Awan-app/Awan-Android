@@ -160,6 +160,15 @@ class ZonesRepositoryImpl @Inject constructor(
         ).map { list -> list.map { it.toDomain() } }.suspendOnSuccess { refreshZones() }
     }
 
+    /**
+     * Creates a date-specific override.
+     *
+     * TODO(offline-first): This operation is currently online-gated, consistent with all other
+     *  zone mutations (createTemplate, updateTemplate, etc.). To support offline-first, all zone
+     *  mutations should write to Room first and enqueue a pending sync operation, then flush to
+     *  the server when connectivity resumes. This is a cross-cutting architectural change that
+     *  should be tackled in a dedicated PR.
+     */
     override suspend fun createOverride(
         date: String,
         zones: List<DailyZone>,

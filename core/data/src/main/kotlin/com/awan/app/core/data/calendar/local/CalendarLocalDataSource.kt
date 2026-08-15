@@ -42,46 +42,68 @@ class CalendarLocalDataSourceImpl @Inject constructor(
     private val templateOverrideDao: TemplateOverrideDao,
     private val zoneDao: ZoneDao,
 ) : CalendarLocalDataSource {
-    override fun observeCalendar(userId: String): Flow<CalendarSnapshot?> = combine(
-        userDao.observeUser(userId),
-        userDao.observePreferences(userId),
-        goalDao.observeGoalsByStatus("ACTIVE"),
-        templateDao.observeAllTemplates(),
-        templateDao.observeAllDayAssignments(),
-        templateOverrideDao.observeAllOverrides(),
-        zoneDao.observeAllZones(),
-    ) { flowArray: Array<Any?> ->
-        val user = flowArray[0] as? UserEntity
-        val preferences = flowArray[1] as? UserPreferencesEntity
-        @Suppress("UNCHECKED_CAST")
-        val goals = flowArray[2] as List<GoalEntity>
-        @Suppress("UNCHECKED_CAST")
-        val templates = flowArray[3] as List<TemplateEntity>
-        @Suppress("UNCHECKED_CAST")
-        val dayAssignments = flowArray[4] as List<TemplateDayOfWeekEntity>
-        @Suppress("UNCHECKED_CAST")
-        val overrides = flowArray[5] as List<TemplateOverrideEntity>
-        @Suppress("UNCHECKED_CAST")
-        val allZones = flowArray[6] as List<ZoneEntity>
 
-        user?.let {
-            CalendarSnapshot(
-                user = com.awan.app.core.model.CalendarUser(it.id, it.streak, preferences?.timezone.orEmpty()),
-                goals = goals.filterNot(GoalEntity::isInbox).map(GoalEntity::asCalendarGoal),
-                templates = templates.map { entity ->
-                    entity.toDomain(
-                        days = dayAssignments.filter { assignment -> assignment.templateId == entity.id },
-                        zones = allZones.filter { zone -> zone.templateId == entity.id }
-                    )
-                },
-                overrides = overrides.map { entity ->
-                    entity.toDomain(
-                        zones = allZones.filter { zone -> zone.templateOverrideId == entity.id }
-                    )
-                }
-            )
+    /**
+     * Observes the full calendar snapshot by combining all required Room flows.
+     *
+     * Uses two nested [combine] calls so that every flow is received with its concrete
+     * type — no `Array<Any?>` or unchecked casts.
+     *
+     * We load all zones via [ZoneDao.observeAllZones] and filter in-memory by
+     * templateId / templateOverrideId. The zone table is inherently small (bounded by
+     * templates × zones-per-template), and dynamically combining N per-parent flows
+     * would require flatMapLatest chains that are significantly more complex without
+     * a meaningful performance gain.
+     */
+    override fun observeCalendar(userId: String): Flow<CalendarSnapshot?> {
+        // Inner combine: 5 typed flows → intermediate data holder
+        val coreFlows = combine(
+            userDao.observeUser(userId),
+            userDao.observePreferences(userId),
+            goalDao.observeGoalsByStatus("ACTIVE"),
+            templateDao.observeAllTemplates(),
+            templateDao.observeAllDayAssignments(),
+        ) { user, preferences, goals, templates, dayAssignments ->
+            CoreCalendarData(user, preferences, goals, templates, dayAssignments)
+        }
+
+        // Outer combine: core + overrides + zones → CalendarSnapshot
+        return combine(
+            coreFlows,
+            templateOverrideDao.observeAllOverrides(),
+            zoneDao.observeAllZones(),
+        ) { core, overrides, allZones ->
+            core.user?.let { user ->
+                CalendarSnapshot(
+                    user = com.awan.app.core.model.CalendarUser(
+                        user.id, user.streak, core.preferences?.timezone.orEmpty(),
+                    ),
+                    goals = core.goals.filterNot(GoalEntity::isInbox)
+                        .map(GoalEntity::asCalendarGoal),
+                    templates = core.templates.map { entity ->
+                        entity.toDomain(
+                            days = core.dayAssignments.filter { it.templateId == entity.id },
+                            zones = allZones.filter { it.templateId == entity.id },
+                        )
+                    },
+                    overrides = overrides.map { entity ->
+                        entity.toDomain(
+                            zones = allZones.filter { it.templateOverrideId == entity.id },
+                        )
+                    },
+                )
+            }
         }
     }
+
+    /** Typed holder so the inner [combine] can return all five values without an array. */
+    private data class CoreCalendarData(
+        val user: UserEntity?,
+        val preferences: UserPreferencesEntity?,
+        val goals: List<GoalEntity>,
+        val templates: List<TemplateEntity>,
+        val dayAssignments: List<TemplateDayOfWeekEntity>,
+    )
 
     private fun TemplateEntity.toDomain(days: List<TemplateDayOfWeekEntity>, zones: List<ZoneEntity>): WeeklyTemplate =
         WeeklyTemplate(

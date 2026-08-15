@@ -31,15 +31,10 @@ class CalendarViewModel @Inject constructor(
     private val events = Channel<CalendarEvent>(Channel.BUFFERED)
     val event = events.receiveAsFlow()
 
-    private var lastSnapshot: CalendarSnapshot? = null
-
     init {
         viewModelScope.launch {
-            repository.observeCalendar().collect { snapshot -> 
-                snapshot?.let { 
-                    lastSnapshot = it
-                    render(it) 
-                } 
+            repository.observeCalendar().collect { snapshot ->
+                snapshot?.let { render(it) }
             }
         }
         viewModelScope.launch {
@@ -60,9 +55,9 @@ class CalendarViewModel @Inject constructor(
 
     private fun selectDate(date: LocalDate) {
         _state.update { current ->
-            val routineDates = lastSnapshot?.let { 
-                CalendarDateMapper.calculateRoutineDates(current.currentYearMonth, it.templates, it.overrides)
-            } ?: emptySet()
+            val routineDates = CalendarDateMapper.calculateRoutineDates(
+                current.currentYearMonth, current.templates, current.overrides,
+            )
 
             current.copy(
                 selectedDate = date,
@@ -117,6 +112,8 @@ class CalendarViewModel @Inject constructor(
             currentYearMonth = month,
             streakDates = streakDates,
             upcomingGoals = goals,
+            templates = snapshot.templates,
+            overrides = snapshot.overrides,
             monthDays = CalendarDateMapper.buildMonthDays(
                 yearMonth = month, 
                 today = today, 
@@ -133,9 +130,9 @@ class CalendarViewModel @Inject constructor(
     private fun changeMonth(delta: Long) {
         _state.update { state ->
             val month = state.currentYearMonth.plusMonths(delta)
-            val routineDates = lastSnapshot?.let { 
-                CalendarDateMapper.calculateRoutineDates(month, it.templates, it.overrides)
-            } ?: emptySet()
+            val routineDates = CalendarDateMapper.calculateRoutineDates(
+                month, state.templates, state.overrides,
+            )
 
             state.copy(
                 currentYearMonth = month, 
@@ -169,9 +166,9 @@ class CalendarViewModel @Inject constructor(
         if (result !is Result.Success) return@launch
 
         _state.update { state ->
-            val routineDates = lastSnapshot?.let { 
-                CalendarDateMapper.calculateRoutineDates(state.currentYearMonth, it.templates, it.overrides)
-            } ?: emptySet()
+            val routineDates = CalendarDateMapper.calculateRoutineDates(
+                state.currentYearMonth, state.templates, state.overrides,
+            )
 
             state.copy(
                 streakDates = result.data,
@@ -209,3 +206,4 @@ class CalendarViewModel @Inject constructor(
 }
 
 sealed interface CalendarEvent { data class DateSelected(val date: LocalDate) : CalendarEvent }
+
