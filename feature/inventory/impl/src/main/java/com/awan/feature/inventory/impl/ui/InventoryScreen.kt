@@ -291,12 +291,14 @@ private fun DefaultItemCard(
             .semantics { stateDescription = defaultDescription },
         selected = isCurrentlyDefault,
         onClick = if (canUnequip) onUnequip else null,
+        contentPadding = PaddingValues(0.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .background(AwanTheme.colors.surface),
+                .background(AwanTheme.colors.surface)
+                .gridItemArtworkGradient(rarityAccent(CustomizationRarity.UNCOMMON)),
             contentAlignment = Alignment.Center,
         ) {
             AwanMascot(
@@ -312,16 +314,21 @@ private fun DefaultItemCard(
                 )
             }
         }
-        Spacer(Modifier.height(AwanTheme.spacing.xs))
-        AwanText(
-            stringResource(R.string.inventory_default),
-            style = AwanTheme.styles.bodyText,
-            maxLines = 1,
-        )
-        AwanText(
-            defaultDescription,
-            style = AwanTheme.styles.metaText,
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
+        ) {
+            AwanText(
+                stringResource(R.string.inventory_default),
+                style = AwanTheme.styles.bodyText,
+                maxLines = 1,
+            )
+            AwanText(
+                rarityLabel(CustomizationRarity.UNCOMMON),
+                style = AwanTheme.styles.metaText.copy(color = rarityAccent(CustomizationRarity.UNCOMMON)),
+            )
+        }
     }
 }
 
@@ -435,6 +442,7 @@ private fun CustomizationCard(
             .semantics { stateDescription = equippedDescription },
         selected = item.isEquipped,
         onClick = if (canEquip) onEquip else null,
+        contentPadding = PaddingValues(0.dp),
     ) {
         Box(
             modifier = Modifier
@@ -456,7 +464,9 @@ private fun CustomizationCard(
             AwanIconButton(
                 onClick = onInfo,
                 contentDescription = stringResource(R.string.inventory_view_details, item.name),
-                modifier = Modifier.align(Alignment.TopEnd),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 4.dp, end = 4.dp),
             ) {
                 Icon(Icons.Default.Info, contentDescription = null)
             }
@@ -469,12 +479,17 @@ private fun CustomizationCard(
                 )
             }
         }
-        Spacer(Modifier.height(AwanTheme.spacing.xs))
-        AwanText(item.name, style = AwanTheme.styles.bodyText, maxLines = 1)
-        AwanText(
-            rarityLabel(item.rarity),
-            style = AwanTheme.styles.metaText.copy(color = rarityAccent(item.rarity)),
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
+        ) {
+            AwanText(item.name, style = AwanTheme.styles.bodyText, maxLines = 1)
+            AwanText(
+                rarityLabel(item.rarity),
+                style = AwanTheme.styles.metaText.copy(color = rarityAccent(item.rarity)),
+            )
+        }
     }
 }
 
