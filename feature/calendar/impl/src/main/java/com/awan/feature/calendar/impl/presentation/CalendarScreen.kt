@@ -48,6 +48,7 @@ import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -815,45 +816,36 @@ private fun DayCell(
             }
 
             // ------------------------------------------------------------------
-            // streak day (not today, may or may not have deadline)
-            // Static fire host + anchored fire-surface number circle
+            // streak day (not today, previous streak day)
+            // Bright orange gradient circle + top-right flame badge + white number
             // ------------------------------------------------------------------
             dayState.isStreakDay -> {
                 Box(
-                    modifier = Modifier.size(fireHostSize),
+                    modifier = Modifier.size(dayCellCircleSize),
                     contentAlignment = Alignment.Center,
                 ) {
-                    // Static fire placeholder (Lottie will replace only this host later)
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_flame_filled),
-                        contentDescription = null,
-                        tint = colors.zoneSun,
-                        modifier = Modifier
-                            .size(fireHostSize)
-                            .testTag(streakFireTag),
-                    )
-                    // Anchored fire-surface number circle
                     Box(
                         modifier = Modifier
-                            .size(fireNumberCircleSize)
-                            .align(
-                                BiasAlignment(
-                                    horizontalBias = fireNumberAnchorX * 2f - 1f,
-                                    verticalBias = fireNumberAnchorY * 2f - 1f,
+                            .size(dayCellCircleSize)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color(0xFFFF9E1B), Color(0xFFFF5722))
                                 )
                             )
-                            .clip(CircleShape)
-                            .background(colors.streakSurface)
                             .testTag(streakNumberTag),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        DayNumberText(
-                            dayNumber = dayNumber,
-                            textColor = colors.streakIcon,
-                            numberTag = numberTag,
-                            dateDescription = dateDescription,
-                        )
-                    }
+                    )
+                    DayNumberText(
+                        dayNumber = dayNumber,
+                        textColor = Color.White,
+                        numberTag = numberTag,
+                        dateDescription = dateDescription,
+                    )
+                    FireBadge(
+                        tint = colors.streakIcon,
+                        testTag = streakBadgeTag,
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    )
                 }
             }
 
