@@ -43,6 +43,7 @@ import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.awan.app.core.designsystem.AwanBottomNavBar
+import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.BottomNavItem
 import com.awan.app.core.common.R as CommonR
 import com.awan.app.core.designsystem.ObserveAsEvents
@@ -220,11 +221,11 @@ fun AwanApp(
                             modifier = Modifier.size(14.dp),
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
+                        AwanText(
                             text = stringResource(R.string.app_offline_banner_text),
-                            color = AwanTheme.colors.streakIcon,
-                            style = AwanTheme.typography.caption,
+                            style = AwanTheme.styles.captionText.copy(color = AwanTheme.colors.streakIcon),
                             textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }

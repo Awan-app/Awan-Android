@@ -6,6 +6,7 @@ import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.datastore.UserPreferencesDataSource
 import com.awan.app.core.datastore.model.UserPreferencesData
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
+import com.awan.app.core.model.DarkThemeConfig
 import com.awan.app.core.model.NotificationPreferences
 import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.domain.onboarding.model.DayBounds
@@ -223,7 +224,7 @@ class OnboardingRepositoryImplTest {
 
         override val userPreferences: Flow<UserPreferencesData> = prefs
 
-        override suspend fun setDarkThemeEnabled(enabled: Boolean) {}
+        override suspend fun setDarkThemeConfig(config: DarkThemeConfig) {}
         override suspend fun setDynamicColorEnabled(enabled: Boolean) {}
         override suspend fun setOnboardingCompleted(completed: Boolean) {
             isOnboardingCompleted = completed

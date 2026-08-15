@@ -1,8 +1,10 @@
 package com.awan.feature.profile.impl.presentation
 
+import com.awan.app.core.model.DarkThemeConfig
+
 sealed interface ProfileAction {
     data object Refresh : ProfileAction
-    data class SetTheme(val useDarkTheme: Boolean) : ProfileAction
+    data class SetTheme(val config: DarkThemeConfig) : ProfileAction
     data class SetLanguage(val languageCode: String) : ProfileAction
     data class UpdateSleepSchedule(val wakeupTime: String, val sleepTime: String) : ProfileAction
     data class UpdateSessionDuration(val duration: Int) : ProfileAction

@@ -26,6 +26,7 @@ import com.awan.app.core.domain.zones.model.WeeklyTemplate
 import com.awan.app.core.domain.zones.repository.ZonesRepository
 import com.awan.app.core.domain.zones.usecase.GetZonesForDateUseCase
 import com.awan.app.core.model.Category
+import com.awan.app.core.model.DarkThemeConfig
 import com.awan.app.core.model.DayZone
 import com.awan.app.core.model.Goal
 import com.awan.app.core.model.GoalDecompositionBlock
@@ -197,11 +198,11 @@ class AddTaskViewModelTest {
     }
 
     private class FakeUserDataRepository : UserDataRepository {
-        val _userData = MutableStateFlow(UserData(darkThemeEnabled = false, locale = "en", micPermissionRequested = false))
+        val _userData = MutableStateFlow(UserData(darkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM, locale = "en", micPermissionRequested = false))
         override val userData: Flow<UserData> = _userData
 
-        override suspend fun setDarkThemeEnabled(enabled: Boolean) {
-            _userData.update { it.copy(darkThemeEnabled = enabled) }
+        override suspend fun setDarkThemeConfig(config: DarkThemeConfig) {
+            _userData.update { it.copy(darkThemeConfig = config) }
         }
 
         override suspend fun setLocale(locale: String) {
