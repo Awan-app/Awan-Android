@@ -664,17 +664,17 @@ private fun Modifier.gridItemArtworkGradient(accent: Color): Modifier = drawWith
 }
 
 /**
- * Bottom-to-top "bowl" gradient applied to the details bottom sheet.
+ * Bottom-to-top edge gradient backdrop for the customization details bottom sheet.
  *
- * The gradient has two distinct intensity sections:
- * - **Section 1 (intense)**: High-alpha accent at the bottom edge and lateral edges,
- *   created by a radial gradient whose centre sits slightly below centre ("climbing" effect).
- *   This produces a concave / bowl shape that hugs the bottom and sides of the sheet.
- * - **Section 2 (fade)**: The radial gradient naturally falls off toward the upper half,
- *   creating a smooth, organic transition to full transparency at the top.
- *
- * Drawn via `onDrawBehind` so every element rendered on top (image, text, buttons)
- * is never tinted or covered by the gradient colours.
+ * Breakpoint specifications:
+ * - **0% - 10% from edges (0.00-0.10 & 0.90-1.00 of width)**: Intense gradient starting at
+ *   the very left and right borders and transitioning across the first 10% of width.
+ * - **10% - 30% from edges (0.10-0.30 & 0.70-0.90 of width)**: Smoothly fades out over the
+ *   next 20% of width to fully transparent.
+ * - **30% - 70% of width (Central 40%)**: Fully transparent (`Color.Transparent`), showing
+ *   the clean white/background without any gradient.
+ * - **Vertical dimension**: Bottom-to-top fade so the edge glow is strongest near the bottom
+ *   and naturally fades out as it ascends toward the top.
  */
 private fun Modifier.bowlGradientBackdrop(
     accent: Color,
@@ -682,66 +682,49 @@ private fun Modifier.bowlGradientBackdrop(
     val w = size.width
     val h = size.height
 
-    // 1. Base bottom-to-top gradient: intense at the bottom (Section 1),
-    // smoothly fading out towards the upper half (Section 2).
-    val baseVerticalBrush = Brush.verticalGradient(
-        0.0f to Color.Transparent,
-        0.30f to Color.Transparent,
-        0.58f to accent.copy(alpha = 0.08f),
-        0.80f to accent.copy(alpha = 0.22f),
-        1.0f to accent.copy(alpha = 0.38f),
-        startY = 0f,
-        endY = h,
+    // ── 1. Left Edge Gradient (0% to 30% of total width) ───────────────────
+    // • Direction: from bottom-left corner (0, h) to top of 30% boundary (w*0.30, h*0.15).
+    // • 0% - 10% width (0.0f - 0.333f of vector): intense start at edge (alpha 0.40 -> 0.30)
+    // • 10% - 30% width (0.333f - 1.0f of vector): smoothly fades out over the next 20% width
+    // • >30% width: fully transparent (Color.Transparent)
+    val leftEdgeBrush = Brush.linearGradient(
+        0.0f to accent.copy(alpha = 0.40f),     // Left edge start: intense
+        0.333f to accent.copy(alpha = 0.30f),   // First 10% width breakpoint
+        1.0f to Color.Transparent,              // 30% width breakpoint: fully transparent
+        start = Offset(0f, h),
+        end = Offset(w * 0.30f, h * 0.15f),
     )
 
-    // 2. Left climbing wall: color climbs up along the left edge (up to ~20% from the top)
-    // and fades inward towards the center, giving the climbing / bowl shape.
-    val leftClimbBrush = Brush.linearGradient(
-        0.0f to accent.copy(alpha = 0.35f),
-        0.35f to accent.copy(alpha = 0.20f),
-        0.70f to accent.copy(alpha = 0.06f),
-        1.0f to Color.Transparent,
-        start = Offset(0f, h * 0.80f),
-        end = Offset(w * 0.55f, h * 0.20f),
-    )
-
-    // 3. Right climbing wall: color climbs up along the right edge (up to ~20% from the top)
-    // and fades inward towards the center.
-    val rightClimbBrush = Brush.linearGradient(
-        0.0f to accent.copy(alpha = 0.35f),
-        0.35f to accent.copy(alpha = 0.20f),
-        0.70f to accent.copy(alpha = 0.06f),
-        1.0f to Color.Transparent,
-        start = Offset(w, h * 0.80f),
-        end = Offset(w * 0.45f, h * 0.20f),
-    )
-
-    // 4. Lateral edge accents (Section 1): high intensity near the screen borders
-    val leftEdgeBrush = Brush.horizontalGradient(
-        0.0f to accent.copy(alpha = 0.28f),
-        0.45f to accent.copy(alpha = 0.12f),
-        1.0f to Color.Transparent,
-        startX = 0f,
-        endX = w * 0.35f,
-    )
-
-    val rightEdgeBrush = Brush.horizontalGradient(
-        0.0f to Color.Transparent,
-        0.55f to accent.copy(alpha = 0.12f),
-        1.0f to accent.copy(alpha = 0.28f),
-        startX = w * 0.65f,
-        endX = w,
+    // ── 2. Right Edge Gradient (70% to 100% of total width) ────────────────
+    // • Direction: from bottom-right corner (w, h) to top of 30% boundary (w*0.70, h*0.15).
+    // • 90% - 100% width (0.0f - 0.333f of vector): intense start at right edge (alpha 0.40 -> 0.30)
+    // • 70% - 90% width (0.333f - 1.0f of vector): smoothly fades out over the next 20% width
+    // • <70% width: fully transparent (Color.Transparent)
+    val rightEdgeBrush = Brush.linearGradient(
+        0.0f to accent.copy(alpha = 0.40f),     // Right edge start: intense
+        0.333f to accent.copy(alpha = 0.30f),   // 10% from right (90% width) breakpoint
+        1.0f to Color.Transparent,              // 30% from right (70% width) breakpoint: fully transparent
+        start = Offset(w, h),
+        end = Offset(w * 0.70f, h * 0.15f),
     )
 
     onDrawBehind {
-        // 1. Base bottom-to-top gradient
-        drawRect(brush = baseVerticalBrush)
-        // 2. Left & right climbing walls (edges climb higher, center dips down)
-        drawRect(brush = leftClimbBrush)
-        drawRect(brush = rightClimbBrush)
-        // 3. Border edge intensity boost
-        drawRect(brush = leftEdgeBrush)
-        drawRect(brush = rightEdgeBrush)
+        // Left edge strip (0% to 30% width):
+        drawRect(
+            brush = leftEdgeBrush,
+            topLeft = Offset(0f, 0f),
+            size = androidx.compose.ui.geometry.Size(w * 0.30f, h),
+        )
+
+        // Right edge strip (70% to 100% width):
+        drawRect(
+            brush = rightEdgeBrush,
+            topLeft = Offset(w * 0.70f, 0f),
+            size = androidx.compose.ui.geometry.Size(w * 0.30f, h),
+        )
+
+        // Central 40% area [w * 0.30f .. w * 0.70f]:
+        // No drawing occurs here, keeping the center 100% white / background.
     }
 }
 
