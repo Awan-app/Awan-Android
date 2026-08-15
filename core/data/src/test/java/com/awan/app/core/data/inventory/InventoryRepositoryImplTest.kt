@@ -101,7 +101,7 @@ class InventoryRepositoryImplTest {
             equipCalled = true
             return equipResult
         }
-        override suspend fun unequipItem(itemId: String): Result<Unit> = Result.Success(Unit)
+        override suspend fun unequipItem(type: String): Result<Unit> = Result.Success(Unit)
     }
 
     private class FakeStoreDao : StoreDao {

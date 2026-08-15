@@ -142,6 +142,29 @@ class StoreRepositoryTest {
         org.junit.Assert.assertFalse(o2.isSeen)
     }
 
+    @Test
+    fun `unequipItem calls remote with type name and deletes equipped item from dao`() = runTest(testDispatcher) {
+        fakeConnectivityMonitor.online = true
+        fakeStoreDao.equippedItems = listOf(
+            EquippedItemEntity(type = "FRAME", itemId = "frame-1", equippedAt = "2026-08-01T00:00:00Z")
+        )
+
+        val result = repository.unequipItem(StoreItemType.FRAME)
+
+        assertTrue(result is Result.Success<*>)
+        assertTrue(fakeStoreDao.equippedItems.isEmpty())
+    }
+
+    @Test
+    fun `unequipItem returns network error when offline`() = runTest(testDispatcher) {
+        fakeConnectivityMonitor.online = false
+
+        val result = repository.unequipItem(StoreItemType.FRAME)
+
+        assertTrue(result is Result.Error)
+        assertEquals(AppError.Network, (result as Result.Error).error)
+    }
+
     // Fakes
     private class FakeStoreRemoteDataSource : StoreRemoteDataSource {
         var buyCalled = false
@@ -155,7 +178,7 @@ class StoreRepositoryTest {
         }
         override suspend fun getEquippedItems(): Result<List<EquippedItemDto>> = Result.Success(emptyList())
         override suspend fun equipItem(itemId: String): Result<Unit> = Result.Success(Unit)
-        override suspend fun unequipItem(itemId: String): Result<Unit> = Result.Success(Unit)
+        override suspend fun unequipItem(type: String): Result<Unit> = Result.Success(Unit)
     }
 
     private class FakeStoreDao : StoreDao {
