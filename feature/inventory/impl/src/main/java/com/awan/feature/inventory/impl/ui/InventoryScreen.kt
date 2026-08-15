@@ -692,28 +692,41 @@ private fun Modifier.bowlGradientBackdrop(
     val maxAlpha = 0.45f
     val fullAccent = accent.copy(alpha = maxAlpha)
     
-    // Large radius so the glow extends well into the screen and meets in the middle
-    val cornerRadius = size.width * 0.95f
+    // Adjusted radius to ensure it doesn't reach the absolute top of the bottom sheet
+    val cornerRadius = size.width * 0.85f
+
+    // Explicit breakpoints to concentrate the glow near the bottom and fade out smoothly
+    val radialStops = arrayOf(
+        0.00f to fullAccent,
+        0.20f to fullAccent,
+        0.45f to accent.copy(alpha = maxAlpha * 0.6f),
+        0.75f to accent.copy(alpha = maxAlpha * 0.15f),
+        1.00f to Color.Transparent
+    )
 
     val leftRadial = Brush.radialGradient(
-        0.0f to fullAccent,
-        1.0f to Color.Transparent,
+        colorStops = radialStops,
         center = Offset(0f, size.height),
         radius = cornerRadius
     )
 
     val rightRadial = Brush.radialGradient(
-        0.0f to fullAccent,
-        1.0f to Color.Transparent,
+        colorStops = radialStops,
         center = Offset(size.width, size.height),
         radius = cornerRadius
     )
 
-    // Soft vertical gradient to ensure the bottom edge is a solid anchor
-    val baseVertical = Brush.verticalGradient(
+    // Soft vertical gradient to ensure the bottom edge is a solid anchor.
+    // Adding breakpoints here as well to keep it tight to the bottom edge.
+    val verticalStops = arrayOf(
         0.0f to Color.Transparent,
-        1.0f to accent.copy(alpha = maxAlpha * 0.6f),
-        startY = size.height - (size.width * 0.6f),
+        0.4f to accent.copy(alpha = maxAlpha * 0.1f),
+        1.0f to accent.copy(alpha = maxAlpha * 0.6f)
+    )
+    
+    val baseVertical = Brush.verticalGradient(
+        colorStops = verticalStops,
+        startY = size.height - (size.width * 0.45f),
         endY = size.height
     )
 
