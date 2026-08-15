@@ -359,6 +359,34 @@ class InventoryViewModelTest {
         val section = viewModel.state.value.sections.single { it.type == StoreItemType.FRAME }
         val commonItem = section.items.single { it.itemId == "common" }
         assertTrue(commonItem.isEquipped)
+        assertTrue(viewModel.state.value.isTypeEquipped(StoreItemType.FRAME))
+        assertFalse(viewModel.state.value.isTypeEquipped(StoreItemType.SKIN))
+    }
+
+    @Test
+    fun `isTypeEquipped returns true when item of that type is equipped even if filtered out of sections`() = runTest(testDispatcher) {
+        repository.inventory.value = listOf(
+            item("common", "Common frame", "2026-08-01T00:00:00Z", StoreItemType.FRAME, info = "rarity: common"),
+            item("epic", "Epic frame", "2026-08-02T00:00:00Z", StoreItemType.FRAME, info = "rarity: epic"),
+        )
+        val viewModel = viewModel()
+        val commonItem = repository.inventory.value.first()
+        repository.equipped.value = listOf(
+            EquippedItem(
+                type = StoreItemType.FRAME,
+                item = commonItem.item,
+                equippedAt = "2026-08-05T00:00:00Z",
+            ),
+        )
+
+        // Filter for EPIC rarity only — sections only contain the epic item which is not equipped
+        viewModel.onAction(InventoryAction.ToggleRarity(CustomizationRarity.EPIC))
+        val frameSection = viewModel.state.value.sections.single { it.type == StoreItemType.FRAME }
+        assertEquals(1, frameSection.items.size)
+        assertFalse(frameSection.items.single().isEquipped)
+
+        // isTypeEquipped still accurately reports that a FRAME is equipped
+        assertTrue(viewModel.state.value.isTypeEquipped(StoreItemType.FRAME))
     }
 
     private fun item(

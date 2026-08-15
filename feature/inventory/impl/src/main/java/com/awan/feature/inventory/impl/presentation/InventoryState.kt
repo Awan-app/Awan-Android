@@ -49,6 +49,9 @@ data class InventoryState(
 
     val detailsItem: OwnedItem?
         get() = items.firstOrNull { it.item.id == detailsItemId }
+
+    fun isTypeEquipped(type: StoreItemType): Boolean =
+        items.any { it.item.type == type && it.item.id in equippedItemIds }
 }
 
 internal fun inventorySections(

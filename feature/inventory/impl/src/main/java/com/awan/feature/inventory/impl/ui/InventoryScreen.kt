@@ -220,7 +220,7 @@ private fun InventoryContent(
                 item(key = "default-${section.type}") {
                     DefaultItemCard(
                         type = section.type,
-                        isCurrentlyDefault = section.items.none { it.isEquipped },
+                        isCurrentlyDefault = !state.isTypeEquipped(section.type),
                         isOnline = state.isOnline,
                         isUnequipping = state.unequippingType == section.type,
                         onUnequip = { onAction(InventoryAction.Unequip(section.type)) },
@@ -547,7 +547,7 @@ private fun CustomizationArt(
     val backdropModifier = if (showRarityBackdrop) {
         Modifier.background(
             Brush.radialGradient(
-                colors = listOf(accent.copy(alpha = 0.4f), AwanTheme.colors.surface),
+                colors = listOf(accent.copy(alpha = CardBackdropAlpha), AwanTheme.colors.surface),
             ),
         )
     } else {
@@ -574,7 +574,7 @@ private fun CustomizationArt(
 
 private fun Modifier.ellipticalRarityGradient(
     accent: Color,
-    alpha: Float = 0.30f,
+    alpha: Float = SheetGradientAlpha,
 ) = drawWithCache {
     val center = Offset(size.width / 2f, size.height)
     val horizontalRadius = size.width * 0.9f
@@ -679,3 +679,7 @@ private fun sortLabel(sort: InventorySort): String = stringResource(
         InventorySort.NAME -> R.string.inventory_sort_name
     },
 )
+
+private const val CardBackdropAlpha = 0.4f
+private const val SheetGradientAlpha = 0.30f
+
