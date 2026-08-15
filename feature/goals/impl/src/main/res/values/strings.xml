@@ -40,6 +40,11 @@
     <string name="goals_move_task_choose_goal">Choose Goal:</string>
     <string name="goals_move_task_empty">No active goals found</string>
     <string name="goals_empty_state_none">No goals found</string>
+    <string name="goals_empty_matching_results">No matching results</string>
+    <string name="goals_empty_matching_results_subtitle">Try changing or clearing your filters.</string>
+    <string name="goals_filter_clear">Clear Filters</string>
+    <string name="goals_created_at_format">Created %1$s</string>
+    <string name="goals_action_add_task">Add Task</string>
     <string name="goals_close_content_description">Close</string>
     <string name="goals_date_picker_set">Set</string>
     <string name="goals_date_picker_cancel">Cancel</string>

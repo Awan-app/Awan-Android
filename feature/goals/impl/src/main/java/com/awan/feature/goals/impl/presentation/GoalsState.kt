@@ -19,6 +19,7 @@ data class GoalsState(
     val isFilterSheetOpen: Boolean = false,
     val appliedFilters: GoalFilters = GoalFilters(),
     val pendingFilters: GoalFilters = GoalFilters(),
+    val deletingGoalId: String? = null,
 ) {
     val filteredGoals: List<Goal>
         get() {

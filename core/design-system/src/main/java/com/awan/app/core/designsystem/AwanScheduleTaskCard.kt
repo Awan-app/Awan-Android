@@ -349,7 +349,6 @@ fun CalendarStyleCheckbox(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                enabled = !isCompleted,
                 onClick = {
                     rewardAnchors.lastTapOrigin = checkboxBounds
                     isPressed = true

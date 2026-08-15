@@ -33,8 +33,13 @@ fun GoalEditSheet(
     val colors = AwanTheme.colors
 
     if (showDatePicker) {
+        val initialDate = remember(targetDate) {
+            targetDate?.let {
+                runCatching { LocalDate.parse(it) }.getOrNull()
+            } ?: LocalDate.now()
+        }
         AwanDatePickerDialog(
-            initialDate = targetDate?.let { LocalDate.parse(it) } ?: LocalDate.now(),
+            initialDate = initialDate,
             confirmLabel = stringResource(R.string.goals_date_picker_set),
             cancelLabel = stringResource(R.string.goals_date_picker_cancel),
             onDismiss = { showDatePicker = false },

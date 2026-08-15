@@ -82,7 +82,7 @@ internal fun GoalTaskTimelineItem(
                     if (!isGoalAchieved) {
                         AwanIconButton(
                             onClick = onDelete,
-                            contentDescription = "Delete Task",
+                            contentDescription = stringResource(R.string.goals_dialog_delete_task_title),
                             icon = {
                                 Icon(
                                     imageVector = Lucide.Trash2,

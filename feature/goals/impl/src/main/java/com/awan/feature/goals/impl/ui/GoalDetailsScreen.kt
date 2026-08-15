@@ -70,7 +70,7 @@ fun GoalDetailsScreen(
         containerColor = Color.Transparent,
         modifier = modifier
             .fillMaxSize()
-            .styleable(null, AwanTheme.styles.screen)
+            .styleable(null, AwanTheme.styles.flatScreen)
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when {

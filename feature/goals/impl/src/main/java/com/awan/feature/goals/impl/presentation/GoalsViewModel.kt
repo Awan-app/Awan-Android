@@ -3,6 +3,7 @@ package com.awan.feature.goals.impl.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.domain.goal.usecase.DeleteGoalUseCase
 import com.awan.app.core.domain.goal.usecase.GetGoalsUseCase
 import com.awan.app.core.domain.goal.usecase.ObserveGoalsUseCase
 import com.awan.app.core.domain.task.usecase.GetInboxTasksUseCase
@@ -21,6 +22,7 @@ class GoalsViewModel @Inject constructor(
     private val getGoalsUseCase: GetGoalsUseCase,
     private val observeGoalsUseCase: ObserveGoalsUseCase,
     private val getInboxTasksUseCase: GetInboxTasksUseCase,
+    private val deleteGoalUseCase: DeleteGoalUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(GoalsState())
@@ -49,11 +51,23 @@ class GoalsViewModel @Inject constructor(
             }
 
             is GoalsAction.DeleteGoalClicked -> {
+                _state.update { it.copy(deletingGoalId = action.goalId) }
+            }
+
+            GoalsAction.DeleteGoalConfirmed -> {
+                val goalId = _state.value.deletingGoalId ?: return
+                _state.update { it.copy(deletingGoalId = null, isLoading = true) }
                 viewModelScope.launch {
-                    _events.send(GoalsEvent.NavigateToGoalDetails(action.goalId))
-                    // User requested to delete from outside, but we only allow from inside now.
-                    // Or we could trigger a confirmation dialog here if we really wanted to.
+                    when (val result = deleteGoalUseCase(goalId)) {
+                        is Result.Success -> refreshGoals()
+                        is Result.Error -> _state.update { it.copy(isLoading = false, isError = true) }
+                        Result.Loading -> {}
+                    }
                 }
+            }
+
+            GoalsAction.DeleteGoalCancelled -> {
+                _state.update { it.copy(deletingGoalId = null) }
             }
 
             GoalsAction.FilterClicked -> _state.update { 

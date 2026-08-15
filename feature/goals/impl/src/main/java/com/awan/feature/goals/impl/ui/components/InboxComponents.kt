@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -21,6 +22,8 @@ import com.awan.app.core.designsystem.*
 import com.awan.feature.goals.impl.R
 import com.awan.feature.goals.impl.presentation.InboxTaskUiModel
 import com.awan.feature.goals.impl.presentation.InboxSessionUiModel
+import com.composables.icons.lucide.ChevronDown
+import com.composables.icons.lucide.Lucide
 
 @Composable
 internal fun InboxTaskCard(
@@ -75,9 +78,10 @@ internal fun InboxTaskCard(
                     modifier = Modifier.size(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    AwanText(
-                        text = "▼",
-                        style = AwanTheme.typography.button.copy(color = colors.textSecondary),
+                    Icon(
+                        imageVector = Lucide.ChevronDown,
+                        contentDescription = null,
+                        tint = colors.textSecondary,
                         modifier = Modifier.rotate(rotation)
                     )
                 }

@@ -12,17 +12,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.style.styleable
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.style.styleable
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
+import com.awan.app.core.designsystem.AwanConfirmDialog
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.feature.goals.impl.R
 import com.awan.feature.goals.impl.presentation.GoalsAction
 import com.awan.feature.goals.impl.presentation.GoalsState
 import com.awan.feature.goals.impl.ui.components.*
@@ -36,10 +39,22 @@ fun GoalsScreen(
     val colors = AwanTheme.colors
     val spacing = AwanTheme.spacing
 
+    if (state.deletingGoalId != null) {
+        AwanConfirmDialog(
+            title = stringResource(R.string.goals_dialog_delete_goal_title),
+            body = stringResource(R.string.goals_dialog_delete_goal_body),
+            confirmLabel = stringResource(R.string.goals_dialog_delete_confirm),
+            confirmVariant = AwanButtonVariant.Destructive,
+            dismissLabel = stringResource(R.string.goals_dialog_delete_cancel),
+            onConfirm = { onAction(GoalsAction.DeleteGoalConfirmed) },
+            onDismiss = { onAction(GoalsAction.DeleteGoalCancelled) }
+        )
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .styleable(null, AwanTheme.styles.screen)
+            .styleable(null, AwanTheme.styles.flatScreen)
             .statusBarsPadding(),
     ) {
         Column(
@@ -94,12 +109,12 @@ fun GoalsScreen(
                             verticalArrangement = Arrangement.Center
                         ) {
                             AwanText(
-                                text = "No matching results",
+                                text = stringResource(R.string.goals_empty_matching_results),
                                 style = AwanTheme.typography.heading.copy(color = colors.textPrimary)
                             )
                             Spacer(modifier = Modifier.height(spacing.xs))
                             AwanText(
-                                text = "Try changing or clearing your filters.",
+                                text = stringResource(R.string.goals_empty_matching_results_subtitle),
                                 style = AwanTheme.typography.body.copy(
                                     color = colors.textSecondary,
                                     textAlign = TextAlign.Center
@@ -111,7 +126,7 @@ fun GoalsScreen(
                                 onClick = { onAction(GoalsAction.ClearFiltersClicked) },
                                 variant = AwanButtonVariant.Secondary
                             ) {
-                                AwanText("Clear Filters")
+                                AwanText(stringResource(R.string.goals_filter_clear))
                             }
                         }
                     } else {

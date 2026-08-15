@@ -21,12 +21,13 @@ import com.awan.feature.addtask.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
@@ -50,8 +51,8 @@ class AddTaskViewModel @Inject constructor(
     private val _state = MutableStateFlow(AddTaskState(today = LocalDate.now(clock)))
     val state: StateFlow<AddTaskState> = _state.asStateFlow()
 
-    private val _events = Channel<AddTaskEvent>(Channel.BUFFERED)
-    val events = _events.receiveAsFlow()
+    private val _events = MutableSharedFlow<AddTaskEvent>(extraBufferCapacity = 1)
+    val events: SharedFlow<AddTaskEvent> = _events.asSharedFlow()
 
     private var activeGoalJob: Job? = null
 
@@ -504,6 +505,6 @@ class AddTaskViewModel @Inject constructor(
         activeGoalJob = null
         _state.value = AddTaskState(today = LocalDate.now(clock))
         loadCategories()
-        viewModelScope.launch { _events.send(event) }
+        viewModelScope.launch { _events.emit(event) }
     }
 }

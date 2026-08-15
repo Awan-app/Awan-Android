@@ -40,6 +40,11 @@
     <string name="goals_move_task_choose_goal">اختر الهدف:</string>
     <string name="goals_move_task_empty">لم يتم العثور على أهداف نشطة</string>
     <string name="goals_empty_state_none">لم يتم العثور على أهداف</string>
+    <string name="goals_empty_matching_results">لا توجد نتائج مطابقة</string>
+    <string name="goals_empty_matching_results_subtitle">جرب تغيير أو مسح الفلاتر.</string>
+    <string name="goals_filter_clear">مسح الفلاتر</string>
+    <string name="goals_created_at_format">تم الإنشاء في %1$s</string>
+    <string name="goals_action_add_task">إضافة مهمة</string>
     <string name="goals_close_content_description">إغلاق</string>
     <string name="goals_date_picker_set">تعيين</string>
     <string name="goals_date_picker_cancel">إلغاء</string>

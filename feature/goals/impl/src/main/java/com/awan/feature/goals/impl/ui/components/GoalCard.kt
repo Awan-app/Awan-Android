@@ -170,7 +170,7 @@ internal fun GoalCard(
             if (goal.createdAt.isNotEmpty()) {
                 val date = goal.createdAt.take(10) // Simple YYYY-MM-DD for now
                 AwanText(
-                    text = "Created $date",
+                    text = stringResource(R.string.goals_created_at_format, date),
                     style = AwanTheme.typography.caption.copy(
                         fontSize = 10.sp,
                         color = colors.meta,

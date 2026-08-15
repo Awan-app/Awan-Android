@@ -36,7 +36,7 @@ fun InboxScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .styleable(null, AwanTheme.styles.screen)
+            .styleable(null, AwanTheme.styles.flatScreen)
             .statusBarsPadding(),
     ) {
         Column(

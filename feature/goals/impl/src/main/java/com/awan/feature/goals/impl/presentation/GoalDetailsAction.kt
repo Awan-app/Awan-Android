@@ -16,6 +16,7 @@ sealed interface GoalDetailsAction {
     data object AddTaskClicked : GoalDetailsAction
     data object AddTaskDismissed : GoalDetailsAction
     data class DeleteTaskClicked(val taskId: String) : GoalDetailsAction
+    data class MoveTaskClicked(val taskId: String) : GoalDetailsAction
     data class MoveTaskConfirmed(val goalId: String) : GoalDetailsAction
     data object MoveTaskDismissed : GoalDetailsAction
 }

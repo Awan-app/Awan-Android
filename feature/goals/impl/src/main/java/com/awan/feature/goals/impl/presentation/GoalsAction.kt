@@ -7,6 +7,8 @@ sealed interface GoalsAction {
     data object RetryClicked : GoalsAction
     data class GoalClicked(val goalId: String) : GoalsAction
     data class DeleteGoalClicked(val goalId: String) : GoalsAction
+    data object DeleteGoalConfirmed : GoalsAction
+    data object DeleteGoalCancelled : GoalsAction
     data object FilterClicked : GoalsAction
     data object DismissFilterSheet : GoalsAction
     data object AddGoalClicked : GoalsAction

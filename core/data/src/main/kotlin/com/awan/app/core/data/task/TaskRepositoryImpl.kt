@@ -196,13 +196,15 @@ class TaskRepositoryImpl @Inject constructor(
         // The backend's v1/tasks/{taskId} PATCH endpoint accepts goalId in the body.
         val request = com.awan.app.core.network.dto.task.TaskUpdateRequest(goalId = goalId)
         val result = remoteDataSource.updateTask(taskId, request)
-        if (result is Result.Success<*>) {
-            val dto = result.data as com.awan.app.core.network.dto.task.TaskInfoResponse
-            val taskEntity = dto.toEntity()
-            taskDao.upsertTask(taskEntity)
-            Result.Success(dto.toTaskModel())
-        } else {
-            Result.Error((result as Result.Error).error)
+        when (result) {
+            is Result.Success -> {
+                val dto = result.data
+                val taskEntity = dto.toEntity()
+                taskDao.upsertTask(taskEntity)
+                Result.Success(dto.toTaskModel())
+            }
+            is Result.Error -> Result.Error(result.error)
+            Result.Loading -> Result.Loading
         }
     }
 

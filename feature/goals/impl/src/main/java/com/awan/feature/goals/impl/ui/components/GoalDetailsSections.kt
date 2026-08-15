@@ -120,7 +120,7 @@ internal fun GoalDetailsContent(
                 if (!isAchieved) {
                     AwanIconButton(
                         onClick = onAddTaskClick,
-                        contentDescription = "Add Task",
+                        contentDescription = stringResource(R.string.goals_action_add_task),
                         icon = {
                             Icon(
                                 imageVector = Lucide.Plus,

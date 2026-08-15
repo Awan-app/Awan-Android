@@ -3,6 +3,7 @@ package com.awan.feature.goals.impl.presentation
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.goal.repository.GoalRepository
+import com.awan.app.core.domain.goal.usecase.DeleteGoalUseCase
 import com.awan.app.core.domain.goal.usecase.GetGoalsUseCase
 import com.awan.app.core.domain.goal.usecase.ObserveGoalsUseCase
 import com.awan.app.core.domain.task.repository.TaskRepository
@@ -278,6 +279,7 @@ class GoalsViewModelTest {
     ) = GoalsViewModel(
         getGoalsUseCase = GetGoalsUseCase(goalRepo),
         observeGoalsUseCase = ObserveGoalsUseCase(goalRepo),
-        getInboxTasksUseCase = GetInboxTasksUseCase(taskRepo)
+        getInboxTasksUseCase = GetInboxTasksUseCase(taskRepo),
+        deleteGoalUseCase = DeleteGoalUseCase(goalRepo)
     )
 }

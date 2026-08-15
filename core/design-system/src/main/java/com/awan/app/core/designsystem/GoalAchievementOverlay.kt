@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -143,7 +144,7 @@ fun GoalAchievementOverlay(
             Spacer(modifier = Modifier.height(16.dp))
 
             AwanText(
-                text = "Goal Achieved!",
+                text = stringResource(R.string.goal_achieved_title),
                 style = AwanTheme.typography.display.copy(
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Black,
@@ -168,7 +169,7 @@ fun GoalAchievementOverlay(
             Spacer(modifier = Modifier.height(12.dp))
             
             AwanText(
-                text = "You're making amazing progress!",
+                text = stringResource(R.string.goal_achieved_encouragement),
                 style = AwanTheme.typography.body.copy(
                     color = colors.sky,
                     textAlign = TextAlign.Center

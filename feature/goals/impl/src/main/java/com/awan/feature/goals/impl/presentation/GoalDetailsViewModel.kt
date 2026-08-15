@@ -119,6 +119,7 @@ class GoalDetailsViewModel @Inject constructor(
             GoalDetailsAction.AddTaskClicked -> _state.update { it.copy(showAddTaskSheet = true) }
             GoalDetailsAction.AddTaskDismissed -> _state.update { it.copy(showAddTaskSheet = false) }
             is GoalDetailsAction.DeleteTaskClicked -> deleteTask(action.taskId)
+            is GoalDetailsAction.MoveTaskClicked -> loadAvailableGoals(action.taskId)
             is GoalDetailsAction.MoveTaskConfirmed -> moveTask(action.goalId)
             GoalDetailsAction.MoveTaskDismissed -> _state.update { it.copy(movingTaskId = null) }
         }
