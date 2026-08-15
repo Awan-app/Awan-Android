@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!--
+        Without this, package visibility filtering hides every RecognitionService from API 30 up and
+        SpeechRecognizer.isRecognitionAvailable() reports false on devices that do have one.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
+</manifest>

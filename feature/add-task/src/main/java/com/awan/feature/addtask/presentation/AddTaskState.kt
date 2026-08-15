@@ -38,6 +38,12 @@ sealed interface GoalStep {
 }
 
 /**
+ * What the goal side of the sheet is showing, as opposed to which question it is on. Fully derived
+ * from [AddTaskState] — see [AddTaskState.goalPhase].
+ */
+enum class GoalPhase { Editing, Thinking, PlanReady }
+
+/**
  * What actually got created, held so the sheet can show it back rather than vanishing. [firstSession]
  * is null for an Inbox task — nothing is scheduled, and saying "waiting in your Inbox" is the honest
  * answer rather than inventing a time.
@@ -102,6 +108,18 @@ data class AddTaskState(
             }
         }
 
+    /**
+     * Inside the sheet, GOAL + [isSubmitting] can only be an in-flight decomposition: a direct task
+     * create is TASK mode, and accepting a proposal happens on the preview route, not here.
+     */
+    val goalPhase: GoalPhase
+        get() = when {
+            mode != AddTaskMode.GOAL -> GoalPhase.Editing
+            goalStep is GoalStep.Preview -> GoalPhase.PlanReady
+            isSubmitting -> GoalPhase.Thinking
+            else -> GoalPhase.Editing
+        }
+
     val canAcceptGoal: Boolean
         get() = mode == AddTaskMode.GOAL &&
             goalStep is GoalStep.Preview &&
@@ -151,6 +169,9 @@ data class AddTaskState(
     val mascot: MascotExpression
         get() = when {
             isCelebrating || confirmation != null -> MascotExpression.Celebrate
+            goalPhase == GoalPhase.PlanReady -> MascotExpression.Celebrate
+            // Plain, not curious: Awan is working, not asking.
+            goalPhase == GoalPhase.Thinking -> MascotExpression.Idle
             mode == AddTaskMode.GOAL -> MascotExpression.Curious
             aiEnabled -> MascotExpression.Curious
             parsed.startAt != null || parsed.categoryToken != null -> MascotExpression.Curious

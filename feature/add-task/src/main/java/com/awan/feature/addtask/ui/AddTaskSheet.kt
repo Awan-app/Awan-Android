@@ -1,14 +1,28 @@
 package com.awan.feature.addtask.ui
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
@@ -21,16 +35,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -40,6 +58,8 @@ import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanConfirmDialog
 import com.awan.app.core.designsystem.AwanDatePickerDialog
 import com.awan.app.core.designsystem.AwanMascot
+import com.awan.app.core.designsystem.AwanMicButton
+import com.awan.app.core.designsystem.AwanSegmentedControl
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
@@ -49,6 +69,7 @@ import com.awan.app.core.designsystem.CloudDrift
 import com.awan.app.core.designsystem.ObserveAsEvents
 import com.awan.app.core.designsystem.SparkleBurst
 import com.awan.app.core.designsystem.reducedMotion
+import com.awan.app.core.designsystem.rememberSpeechRecognizer
 import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskAction
 import com.awan.feature.addtask.presentation.AddTaskEvent
@@ -56,20 +77,23 @@ import com.awan.feature.addtask.presentation.AddTaskMode
 import com.awan.feature.addtask.presentation.AddTaskPicker
 import com.awan.feature.addtask.presentation.AddTaskState
 import com.awan.feature.addtask.presentation.AddTaskViewModel
+import com.awan.feature.addtask.presentation.GoalPhase
 import com.awan.feature.addtask.presentation.GoalStep
 import com.awan.feature.addtask.presentation.TaskConfirmation
-import com.awan.feature.addtask.ui.components.AddTaskModeSelector
 import com.awan.feature.addtask.ui.components.AiToggle
-import com.awan.feature.addtask.ui.components.GoalForm
+import com.awan.feature.addtask.ui.components.GoalFormContent
 import com.awan.feature.addtask.ui.components.ImageAttachment
 import com.awan.feature.addtask.ui.components.TaskAttributeChips
 import com.awan.feature.addtask.ui.components.TaskConfirmationPanel
 import com.awan.feature.addtask.ui.components.rememberTokenHighlight
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 private val MascotWidth = 108.dp
 private val SkyHeight = 116.dp
 private val DragHandleWidth = 36.dp
 private val DragHandleHeight = 4.dp
+private val PlanReadyDwell = 1000.milliseconds
 
 /**
  * Quick capture. Opened from the `+` in the bottom bar; it is deliberately not a navigation
@@ -107,8 +131,12 @@ fun AddTaskSheet(
         },
     )
 
-    LaunchedEffect(state.goalStep) {
-        if (state.goalStep is GoalStep.Preview) {
+    // The dwell is what lets the plan-ready beat be seen at all; without it the sheet leaves on the
+    // frame the proposal arrives. It also lets the sheet shrink to the small ready panel first,
+    // rather than growing to full preview height while it slides away.
+    LaunchedEffect(state.goalPhase) {
+        if (state.goalPhase == GoalPhase.PlanReady) {
+            delay(PlanReadyDwell)
             sheetState.hide()          // suspends until SheetValue.Hidden
             onDismiss()                // sets showAddTask = false
             onNavigateToGoalPreview()  // navigator.navigate(GoalPreviewRoute)
@@ -143,12 +171,15 @@ fun AddTaskSheet(
         containerColor = AwanTheme.colors.background,
         contentColor = AwanTheme.colors.textPrimary,
         dragHandle = null,
+        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) },
         modifier = modifier,
     ) {
+        // No imePadding here: ModalBottomSheet's own root already applies it, and repeating it just
+        // makes the inset look like it is being paid twice.
         AddTaskSheetContent(
             state = state,
             onAction = viewModel::onAction,
-            modifier = Modifier.fillMaxWidth().imePadding(),
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 
@@ -198,48 +229,135 @@ private fun AttributePickers(state: AddTaskState, onAction: (AddTaskAction) -> U
     }
 }
 
+/**
+ * One recognizer for the whole sheet. Both modes dictate into the same `state.input`, so a
+ * recognizer per form would be two microphones competing for one field.
+ */
 @Composable
 private fun AddTaskSheetContent(
     state: AddTaskState,
     onAction: (AddTaskAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
-        SkyHeader(state = state)
+    val currentInput by rememberUpdatedState(state.input)
+    val speechState = rememberSpeechRecognizer(
+        onTranscript = { transcript -> onAction(AddTaskAction.InputChanged(transcript)) },
+        currentText = { currentInput },
+        hasRequestedMicPermission = state.hasRequestedMicPermission,
+        onSetMicPermissionRequested = { requested ->
+            onAction(AddTaskAction.SetMicPermissionRequested(requested))
+        },
+    )
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = AwanTheme.spacing.lg)
-                .padding(top = AwanTheme.spacing.md, bottom = AwanTheme.spacing.xl),
-            verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
-        ) {
-            if (state.showsModeSelector) {
-                CascadeItem(0, Modifier.fillMaxWidth()) {
-                    AddTaskModeSelector(
-                        selected = state.mode,
-                        onSelect = { onAction(AddTaskAction.ModeChanged(it)) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+    LaunchedEffect(state.isSubmitting) {
+        if (state.isSubmitting && speechState.isListening) {
+            speechState.stopListening()
+        }
+    }
+
+    val toggleMic = {
+        if (speechState.isListening) speechState.stopListening() else speechState.startListening()
+    }
+
+    val handleAction: (AddTaskAction) -> Unit = { action ->
+        if (action is AddTaskAction.InputChanged || action is AddTaskAction.GoalOptionSelected || action is AddTaskAction.ModeChanged) {
+            speechState.clearError()
+        }
+        onAction(action)
+    }
+
+    val isReduced = reducedMotion()
+    val standardMillis = AwanTheme.motion.standardMillis
+    val fastMillis = AwanTheme.motion.fastMillis
+    val bodySizeSpec = if (isReduced) snap() else AwanTheme.motion.settle.spec<IntSize>()
+
+    /**
+     * The cap is what stops the sheet flickering, and it is not cosmetic. `ModalBottomSheet`
+     * consumes `top = sheetState.offset` and then pays the top safeDrawing inset back out of the
+     * content, while its Expanded anchor is `fullHeight - contentHeight`. Any sheet tall enough to
+     * reach the status bar therefore feeds its own height into its own anchor with a loop gain of
+     * exactly one, and has no stable resting height at all. Staying clear of the inset keeps the
+     * loop open. `asPaddingValues()` reads the raw inset, blind to that consumption — which is why
+     * `statusBarsPadding()` cannot be used here.
+     */
+    BoxWithConstraints(modifier) {
+        val topInset = WindowInsets.safeDrawing.only(WindowInsetsSides.Top).asPaddingValues().calculateTopPadding()
+
+        Column(Modifier.heightIn(max = (maxHeight - topInset - AwanTheme.spacing.sm).coerceAtLeast(0.dp))) {
+            SkyHeader(state = state)
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .animateContentSize(animationSpec = bodySizeSpec)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = AwanTheme.spacing.lg)
+                    .padding(top = AwanTheme.spacing.md, bottom = AwanTheme.spacing.xl),
+                verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
+            ) {
+                if (state.showsModeSelector) {
+                    CascadeItem(0, Modifier.fillMaxWidth()) {
+                        AwanSegmentedControl(
+                            options = AddTaskMode.entries,
+                            selected = state.mode,
+                            onSelect = { onAction(AddTaskAction.ModeChanged(it)) },
+                            label = { mode ->
+                                stringResource(
+                                    when (mode) {
+                                        AddTaskMode.TASK -> R.string.add_task_mode_task
+                                        AddTaskMode.GOAL -> R.string.add_task_mode_goal
+                                    },
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
-            }
 
-            val body = state.confirmation ?: state.mode
-            Crossfade(targetState = body, label = "addTaskBody") { target ->
-                when (target) {
-                    is TaskConfirmation -> TaskConfirmationPanel(
-                        confirmation = target,
-                        today = state.today,
-                        onDone = { onAction(AddTaskAction.DismissRequested) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                // Crossfade held both children and jumped to max(old, new); AnimatedContent with a
+                // snapping SizeTransform reports the incoming size at once and leaves the height to
+                // the animateContentSize above, so there is only ever one size authority.
+                val body = state.confirmation ?: state.mode
+                AnimatedContent(
+                    targetState = body,
+                    transitionSpec = {
+                        val enter = fadeIn(if (isReduced) snap() else tween(standardMillis))
+                        val exit = fadeOut(if (isReduced) snap() else tween(fastMillis))
+                        enter togetherWith exit using SizeTransform { _, _ -> snap() }
+                    },
+                    label = "addTaskBody",
+                ) { target ->
+                    when (target) {
+                        is TaskConfirmation -> TaskConfirmationPanel(
+                            confirmation = target,
+                            today = state.today,
+                            onDone = { onAction(AddTaskAction.DismissRequested) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
 
-                    AddTaskMode.TASK -> TaskForm(state = state, onAction = onAction)
-                    AddTaskMode.GOAL -> GoalForm(state = state, onAction = onAction)
-                    else -> Unit
+                        AddTaskMode.TASK -> TaskForm(
+                            state = state,
+                            onAction = handleAction,
+                            isListening = speechState.isListening,
+                            onToggleMic = toggleMic,
+                            micAmplitude = speechState.amplitude,
+                            speechError = speechState.errorMessage,
+                            isPermissionError = speechState.isPermissionError,
+                        )
+
+                        AddTaskMode.GOAL -> GoalFormContent(
+                            state = state,
+                            onAction = handleAction,
+                            isListening = speechState.isListening,
+                            onToggleMic = toggleMic,
+                            micAmplitude = speechState.amplitude,
+                            speechError = speechState.errorMessage,
+                            isPermissionError = speechState.isPermissionError,
+                        )
+
+                        else -> Unit
+                    }
                 }
-
             }
         }
     }
@@ -267,7 +385,11 @@ private fun SkyHeader(state: AddTaskState) {
             contentAlignment = Alignment.Center,
         ) {
             Crossfade(targetState = state.mascot, label = "addTaskMascot") { expression ->
-                AwanMascot(expression = expression, width = MascotWidth)
+                AwanMascot(
+                    expression = expression,
+                    width = MascotWidth,
+                    thinking = state.goalPhase == GoalPhase.Thinking,
+                )
             }
             Box(Modifier.size(MascotWidth)) {
                 SparkleBurst(celebrate = state.isCelebrating)
@@ -280,6 +402,11 @@ private fun SkyHeader(state: AddTaskState) {
 private fun TaskForm(
     state: AddTaskState,
     onAction: (AddTaskAction) -> Unit,
+    isListening: Boolean,
+    onToggleMic: () -> Unit,
+    micAmplitude: () -> Float,
+    speechError: String?,
+    isPermissionError: Boolean,
 ) {
     val composing = state.aiEnabled
 
@@ -309,11 +436,28 @@ private fun TaskForm(
                     // Empty while the parser is stood down, which is what hides the highlights.
                     visualTransformation = rememberTokenHighlight(state.parsed.tokens),
                     enabled = !state.isSubmitting,
+                    isError = isPermissionError,
                     capitalization = KeyboardCapitalization.Sentences,
                     imeAction = ImeAction.Next,
+                    trailingContent = {
+                        AwanMicButton(
+                            isListening = isListening,
+                            onToggle = onToggleMic,
+                            enabled = !state.isSubmitting,
+                            amplitude = micAmplitude,
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
+        }
+
+        if (speechError != null) {
+            AwanText(
+                text = speechError,
+                style = AwanTheme.styles.errorText,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
         }
 
         if (!state.aiEnabled) {
