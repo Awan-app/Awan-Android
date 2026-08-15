@@ -15,6 +15,7 @@ import com.awan.app.core.model.StoreItemType
 import com.awan.feature.inventory.impl.presentation.InventoryAction
 import com.awan.feature.inventory.impl.presentation.InventoryState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -72,7 +73,7 @@ class InventoryScreenTest {
 
         composeRule.onNodeWithTag("inventory-details-artwork").assertIsDisplayed()
         composeRule.onNodeWithText(ownedItem.item.description).assertIsDisplayed()
-        composeRule.onNodeWithText("Equip").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("Pick").assertIsDisplayed().performClick()
         assertEquals(InventoryAction.Equip(ownedItem.item.id), action)
     }
 
@@ -96,7 +97,7 @@ class InventoryScreenTest {
         }
 
         composeRule.onNodeWithTag("inventory-details-artwork").assertIsDisplayed()
-        composeRule.onNodeWithText("Equipped").assertIsNotEnabled()
+        composeRule.onNodeWithText("Already Equipped").assertIsNotEnabled()
     }
 
     @Test
@@ -122,6 +123,29 @@ class InventoryScreenTest {
         assertEquals(InventoryAction.Unequip(StoreItemType.FRAME), action)
     }
 
+    @Test
+    fun tappingDefaultCardWhenAlreadyDefaultDoesNotDispatchUnequipAction() {
+        val ownedItem = item()
+        var action: InventoryAction? = null
+
+        composeRule.setContent {
+            AwanTheme {
+                InventoryScreen(
+                    state = InventoryState(
+                        items = listOf(ownedItem),
+                        equippedItemIds = emptySet(),
+                        isLoading = false,
+                    ),
+                    onAction = { action = it },
+                    onBack = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("inventory-card-default-frame").performClick()
+        assertNull(action)
+    }
+
     private fun item() = OwnedItem(
         id = "inventory-frame",
         item = StoreItem(
@@ -129,7 +153,7 @@ class InventoryScreenTest {
             name = "Gold Frame",
             description = "A warm frame for milestone moments.",
             image = "",
-            info = "rare",
+            info = "rarity: rare",
             price = 500,
             version = "1.0",
             type = StoreItemType.FRAME,
