@@ -9,6 +9,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 
 /**
@@ -23,6 +24,7 @@ fun AwanText(
     text: String,
     modifier: Modifier = Modifier,
     style: AwanTextStyle? = null,
+    textAlign: TextAlign = TextAlign.Unspecified,
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Ellipsis,
 ) {
@@ -31,7 +33,7 @@ fun AwanText(
     BasicText(
         text = text,
         modifier = modifier,
-        style = resolved.textStyle.copy(color = color),
+        style = resolved.textStyle.copy(color = color, textAlign = textAlign),
         maxLines = maxLines,
         overflow = overflow,
     )
@@ -42,6 +44,7 @@ fun AwanText(
     text: String,
     style: TextStyle,
     modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Unspecified,
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Ellipsis,
 ) {
@@ -49,7 +52,7 @@ fun AwanText(
     BasicText(
         text = text,
         modifier = modifier,
-        style = style.copy(color = color),
+        style = style.copy(color = color, textAlign = textAlign),
         maxLines = maxLines,
         overflow = overflow,
     )
@@ -60,6 +63,7 @@ fun AwanText(
     text: String,
     style: Style,
     modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Unspecified,
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Ellipsis,
 ) {
@@ -68,7 +72,7 @@ fun AwanText(
     BasicText(
         text = text,
         modifier = modifier.styleable(null, style),
-        style = resolved.textStyle.copy(color = color),
+        style = resolved.textStyle.copy(color = color, textAlign = textAlign),
         maxLines = maxLines,
         overflow = overflow,
     )

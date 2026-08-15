@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.AwanCloud
 import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.MascotExpression
@@ -28,7 +29,7 @@ internal fun GoalsMascotHeader(modifier: Modifier = Modifier) {
         // Left decorative cloud
         AwanCloud(
             size = 80.dp,
-            baseColor = Color.White.copy(alpha = 0.65f),
+            baseColor = AwanTheme.colors.surface.copy(alpha = 0.65f),
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .padding(start = 16.dp)
@@ -36,7 +37,7 @@ internal fun GoalsMascotHeader(modifier: Modifier = Modifier) {
         // Right decorative cloud
         AwanCloud(
             size = 80.dp,
-            baseColor = Color.White.copy(alpha = 0.65f),
+            baseColor = AwanTheme.colors.surface.copy(alpha = 0.65f),
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 16.dp)

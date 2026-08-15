@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">Awan</string>
     <string name="ds_no_sessions_in_zone">No scheduled sessions in this zone</string>
     <string name="ds_done_count">%1$d/%2$d done</string>
     <string name="ds_tasks_count">%1$d/%2$d sessions</string>

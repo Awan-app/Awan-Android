@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.ComposeFoundationFlags
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
@@ -123,10 +124,12 @@ class MainActivity : AppCompatActivity() {
                 is Success -> state.language
             }
 
-            if (uiState is Success) {
-                val appLocale: LocaleListCompat =
-                    LocaleListCompat.forLanguageTags((uiState as Success).language)
-                AppCompatDelegate.setApplicationLocales(appLocale)
+            LaunchedEffect(currentLanguage) {
+                if (currentLanguage.isNotBlank()) {
+                    val appLocale: LocaleListCompat =
+                        LocaleListCompat.forLanguageTags(currentLanguage)
+                    AppCompatDelegate.setApplicationLocales(appLocale)
+                }
             }
 
             val locale = remember(currentLanguage) {

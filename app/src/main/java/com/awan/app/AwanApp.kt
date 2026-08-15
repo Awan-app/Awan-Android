@@ -224,6 +224,7 @@ fun AwanApp(
                         AwanText(
                             text = stringResource(R.string.app_offline_banner_text),
                             style = AwanTheme.styles.captionText.copy(color = AwanTheme.colors.streakIcon),
+                            textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }

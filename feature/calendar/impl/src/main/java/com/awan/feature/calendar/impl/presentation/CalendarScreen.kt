@@ -139,10 +139,11 @@ fun CalendarScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             AwanBackButton(onClick = onBack)
             Spacer(modifier = Modifier.width(AwanTheme.spacing.sm))
+            val titleStyle = AwanTheme.styles.titleText
             AwanText(
                 text = stringResource(R.string.calendar_title),
-                style = AwanTheme.styles.titleText.copy(
-                    textStyle = AwanTheme.styles.titleText.textStyle.copy(fontSize = 26.sp)
+                style = titleStyle.copy(
+                    textStyle = titleStyle.textStyle.copy(fontSize = 26.sp)
                 ),
                 modifier = Modifier.testTag("calendar_title"),
             )

@@ -1,8 +1,5 @@
 package com.awan.feature.splash.impl.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -22,6 +20,7 @@ import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.MascotExpression
+import com.awan.app.core.designsystem.R
 import com.awan.core.navigation.Route
 import com.awan.feature.splash.api.SplashRoute
 import com.awan.feature.splash.impl.ui.SplashDestination
@@ -63,7 +62,7 @@ fun SplashRouteScreen(
             )
             Spacer(modifier = Modifier.height(24.dp))
             AwanText(
-                text = "AWAN",
+                text = stringResource(R.string.app_name),
                 style = AwanTheme.styles.displayText
             )
         }

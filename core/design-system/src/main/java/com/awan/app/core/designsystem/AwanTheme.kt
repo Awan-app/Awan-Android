@@ -50,12 +50,10 @@ object AwanTheme {
     @Composable
     operator fun invoke(
         dark: Boolean = isSystemInDarkTheme(),
-        light: Boolean = false,
         content: @Composable () -> Unit,
     ) {
-        val isDark = if (light) false else dark
-        val colors = if (isDark) DarkAwanColors else LightAwanColors
-        val colorScheme = if (isDark) {
+        val colors = if (dark) DarkAwanColors else LightAwanColors
+        val colorScheme = if (dark) {
             darkColorScheme(
                 primary = colors.filledControl,
                 onPrimary = colors.onFilledControl,
@@ -140,7 +138,7 @@ object AwanTheme {
             shapes = AwanShapeTokens,
             spacing = AwanSpacingTokens,
             motion = AwanMotionTokens,
-            isDark = isDark,
+            isDark = dark,
         )
 
         androidx.compose.runtime.CompositionLocalProvider(LocalAwanTheme provides values) {
