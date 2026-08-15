@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.reducedMotion
 import kotlinx.coroutines.coroutineScope
@@ -31,21 +32,32 @@ import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val PARTICLE_COUNT = 8
-private val BrightYellow = Color(0xFFFFEE58)
-private val DarkYellow = Color(0xFFF57F17)
+
+// Rich golden gradient tokens: radiant bright yellow -> rich amber orange
+private val GoldenYellow = Color(0xFFFFEB3B)
+private val GoldenOrange = Color(0xFFFF8F00)
+
+private data class ParticleTrajectory(
+    val angle: Float,
+    val speedMultiplier: Float,
+    val lineLength: Float,
+)
 
 /**
- * First-time item acquisition animation for new inventory items (seen == false).
+ * First-time item acquisition animation for newly obtained inventory items.
  *
- * Sequence:
- * 1. Hover & Slam: Item slides upward slightly (-16dp, scale 1.05x), then slams down into default place.
- * 2. Golden Particle Burst: Upon slam impact, emits exactly 8 short line particles (1.5dp stroke)
- *    in a 360° radial spread with a bright-to-dark golden gradient.
- * 3. White Shine: A brief, fast white glass-like highlight sweeps diagonally across the item,
- *    leaving it in its pristine normal appearance.
+ * Requirements fulfilled:
+ * 1. Particles originate from the exact horizontal & vertical center of each grid item.
+ * 2. Particles are layered BEHIND their own card (so only visible once extending beyond card edges)
+ *    while zIndex elevates them in front of neighboring grid items.
+ * 3. Particle color is a bright yellow to deep golden-orange gradient.
+ * 4. Particles radiate in independent, randomized organic trajectories (not a static star).
+ * 5. Particles fade out rapidly after traveling past the card perimeter.
+ * 6. Brief diagonal white shine highlights the card on impact.
  */
 @Composable
 fun NewItemAcquisitionEffect(
@@ -59,6 +71,21 @@ fun NewItemAcquisitionEffect(
     val scaleAnim = remember { Animatable(1f) }
     val particleProgress = remember { Animatable(0f) }
     val shineProgress = remember { Animatable(0f) }
+
+    // Generate randomized organic particle trajectories for each item
+    val trajectories = remember {
+        val baseStep = (2f * PI.toFloat()) / PARTICLE_COUNT
+        List(PARTICLE_COUNT) { i ->
+            val jitter = (Random.nextFloat() - 0.5f) * (baseStep * 0.55f)
+            val speed = 0.85f + Random.nextFloat() * 0.45f
+            val length = 8f + Random.nextFloat() * 6f
+            ParticleTrajectory(
+                angle = i * baseStep + jitter,
+                speedMultiplier = speed,
+                lineLength = length,
+            )
+        }
+    }
 
     LaunchedEffect(Unit) {
         if (reduced) return@LaunchedEffect
@@ -82,7 +109,6 @@ fun NewItemAcquisitionEffect(
             }
         }
 
-        // Slight hover pause at apex
         delay(40.milliseconds)
 
         // 2. Slam crashing into default place (0dp, scale 1.0)
@@ -104,13 +130,13 @@ fun NewItemAcquisitionEffect(
             }
         }
 
-        // 3. Trigger Particle Burst & Fast White Shine upon slam impact
+        // 3. Trigger Particle Burst & Fast Glass Shine upon slam
         coroutineScope {
             launch {
                 particleProgress.snapTo(0f)
                 particleProgress.animateTo(
                     targetValue = 1f,
-                    animationSpec = tween(durationMillis = 480, easing = FastOutSlowInEasing),
+                    animationSpec = tween(durationMillis = 520, easing = FastOutSlowInEasing),
                 )
             }
             launch {
@@ -124,23 +150,68 @@ fun NewItemAcquisitionEffect(
     }
 
     if (reduced) {
-        Box(modifier = modifier) {
-            content()
-        }
+        Box(modifier = modifier) { content() }
         return
     }
 
+    val isBurstActive = particleProgress.value > 0f && particleProgress.value < 1f
     val shape = AwanTheme.shapes.card
 
     Box(
         modifier = modifier
+            // Elevate above neighboring grid items during particle burst
+            .zIndex(if (isBurstActive) 2f else 0f)
             .graphicsLayer {
                 translationY = translationYAnim.value * density
                 scaleX = scaleAnim.value
                 scaleY = scaleAnim.value
             },
     ) {
-        // Main Item Content with White Shine Overlay
+        // LAYER 1 (BEHIND CARD): Centered Golden Particle Burst Canvas
+        // Rendered behind its own card; particles emerge once extending beyond the card boundaries
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val p = particleProgress.value
+            if (p > 0f && p < 1f) {
+                // Exact horizontal and vertical center of the grid item
+                val center = Offset(size.width / 2f, size.height / 2f)
+                val maxReach = size.minDimension * 0.95f
+                val alpha = (1f - p).coerceIn(0f, 1f)
+
+                trajectories.forEach { trajectory ->
+                    val distance = maxReach * p * trajectory.speedMultiplier
+                    val lineLenPx = trajectory.lineLength.dp.toPx()
+
+                    val startX = center.x + cos(trajectory.angle) * distance
+                    val startY = center.y + sin(trajectory.angle) * distance
+
+                    val endX = center.x + cos(trajectory.angle) * (distance + lineLenPx)
+                    val endY = center.y + sin(trajectory.angle) * (distance + lineLenPx)
+
+                    val startPoint = Offset(startX, startY)
+                    val endPoint = Offset(endX, endY)
+
+                    // Rich yellow-to-orange golden gradient
+                    val goldGradient = Brush.linearGradient(
+                        colors = listOf(
+                            GoldenYellow.copy(alpha = alpha),
+                            GoldenOrange.copy(alpha = alpha),
+                        ),
+                        start = startPoint,
+                        end = endPoint,
+                    )
+
+                    drawLine(
+                        brush = goldGradient,
+                        start = startPoint,
+                        end = endPoint,
+                        strokeWidth = 1.5.dp.toPx(),
+                        cap = StrokeCap.Round,
+                    )
+                }
+            }
+        }
+
+        // LAYER 2 (ON TOP OF PARTICLES): Main Item Card with White Shine Overlay
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -166,47 +237,6 @@ fun NewItemAcquisitionEffect(
         ) {
             content()
         }
-
-        // 8-Particle Golden Line Burst Canvas
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val p = particleProgress.value
-            if (p > 0f && p < 1f) {
-                val center = Offset(size.width / 2f, size.height / 2f)
-                val maxRadius = size.minDimension * 0.65f
-                val lineLength = 10.dp.toPx()
-                val alpha = (1f - p).coerceIn(0f, 1f)
-
-                repeat(PARTICLE_COUNT) { i ->
-                    val angle = (i.toFloat() / PARTICLE_COUNT) * 2f * PI.toFloat()
-                    val distance = maxRadius * p
-
-                    val startX = center.x + cos(angle) * (distance * 0.6f)
-                    val startY = center.y + sin(angle) * (distance * 0.6f)
-
-                    val endX = center.x + cos(angle) * (distance * 0.6f + lineLength)
-                    val endY = center.y + sin(angle) * (distance * 0.6f + lineLength)
-
-                    val startOffset = Offset(startX, startY)
-                    val endOffset = Offset(endX, endY)
-
-                    val goldBrush = Brush.linearGradient(
-                        colors = listOf(
-                            BrightYellow.copy(alpha = alpha),
-                            DarkYellow.copy(alpha = alpha),
-                        ),
-                        start = startOffset,
-                        end = endOffset,
-                    )
-
-                    drawLine(
-                        brush = goldBrush,
-                        start = startOffset,
-                        end = endOffset,
-                        strokeWidth = 1.5.dp.toPx(),
-                        cap = StrokeCap.Round,
-                    )
-                }
-            }
-        }
     }
 }
+
