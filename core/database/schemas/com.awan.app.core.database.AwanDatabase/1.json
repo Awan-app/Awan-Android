@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "9ec46d8c94844c2fe0b1333f20dc32d2",
+    "identityHash": "214bb9030f5005818a9afce75b49e7b1",
     "entities": [
       {
         "tableName": "users",
@@ -848,7 +848,7 @@
       },
       {
         "tableName": "owned_items",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `itemId` TEXT NOT NULL, `boughtAt` TEXT NOT NULL, `expiryTime` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `itemId` TEXT NOT NULL, `boughtAt` TEXT NOT NULL, `expiryTime` INTEGER NOT NULL, `isSeen` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -871,6 +871,12 @@
           {
             "fieldPath": "expiryTime",
             "columnName": "expiryTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSeen",
+            "columnName": "isSeen",
             "affinity": "INTEGER",
             "notNull": true
           }
@@ -962,7 +968,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9ec46d8c94844c2fe0b1333f20dc32d2')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '214bb9030f5005818a9afce75b49e7b1')"
     ]
   }
 }
