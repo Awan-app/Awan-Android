@@ -56,6 +56,8 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.layout.ContentScale
@@ -709,12 +711,34 @@ private fun Modifier.bowlGradientBackdrop(
     val bounds = Rect(0f, 0f, size.width, size.height)
     val layerPaint = Paint()
 
+    val bowlPath = Path().apply {
+        moveTo(0f, size.height)
+        lineTo(0f, 0f)
+        
+        quadraticBezierTo(
+            size.width * 0.15f, size.height * 0.4f,
+            size.width * 0.30f, size.height
+        )
+        
+        lineTo(size.width * 0.70f, size.height)
+        
+        quadraticBezierTo(
+            size.width * 0.85f, size.height * 0.4f,
+            size.width, 0f
+        )
+        
+        lineTo(size.width, size.height)
+        close()
+    }
+
     onDrawBehind {
-        drawIntoCanvas { canvas ->
-            canvas.saveLayer(bounds, layerPaint)
-            drawRect(brush = horizontalBrush)
-            drawRect(brush = verticalMaskBrush, blendMode = BlendMode.DstIn)
-            canvas.restore()
+        clipPath(bowlPath) {
+            drawIntoCanvas { canvas ->
+                canvas.saveLayer(bounds, layerPaint)
+                drawRect(brush = horizontalBrush)
+                drawRect(brush = verticalMaskBrush, blendMode = BlendMode.DstIn)
+                canvas.restore()
+            }
         }
     }
 }
