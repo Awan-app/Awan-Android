@@ -85,6 +85,7 @@ Any entity change needs a `Migration` **and** a version bump. `fallbackToDestruc
 - **Points and streak are server-owned.** Never compute a balance client-side. They change only via session completion, the daily wheel, and store purchases; read them back from the response or `GET v1/gamification/progress`. A reward's `awarded`/`updated` flags — not its amounts — say whether anything was actually earned.
 - No change is committed without user approval — conflicts surface an Intelligent Nudge (Skip / Double Up / Reschedule / Approve).
 - Nightly Sweep runs via WorkManager but must always catch up on app foreground; never assume the background job ran.
+- **Every notification needs its own switch.** Any notification added or changed — a new kind, a new trigger, a new channel — ships in the *same* change with a toggle on the notification settings screen (`feature/profile/impl/.../ui/NotificationSettingsScreen.kt`), a field on `NotificationPreferences` (`:core:model`), and a proto field in `user_preferences.proto` stored **negated** so it defaults to on. A notification the user cannot turn off on its own is a bug, not a preference gap — users read unmutable notifications as spam and mute the whole app, which takes the session reminders with it. The scheduler already collects the preferences flow, so a new toggle retimes the alarms with no extra wiring.
 
 ## Feature plans
 

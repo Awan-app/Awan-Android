@@ -1,6 +1,7 @@
 package com.awan.app.core.data.profile.repository
 
 import com.awan.app.core.datastore.UserPreferencesDataSource
+import com.awan.app.core.model.NotificationPreferences
 import com.awan.app.core.domain.profile.model.UserData
 import com.awan.app.core.domain.profile.repository.UserDataRepository
 import com.awan.app.core.model.DarkThemeConfig
@@ -16,6 +17,7 @@ class UserDataRepositoryImpl @Inject constructor(
             darkThemeConfig = it.darkThemeConfig,
             locale = it.locale,
             micPermissionRequested = it.micPermissionRequested,
+            notificationPreferences = it.notificationPreferences,
         )
     }
 
@@ -29,5 +31,9 @@ class UserDataRepositoryImpl @Inject constructor(
 
     override suspend fun setMicPermissionRequested(requested: Boolean) {
         userPreferencesDataSource.setMicPermissionRequested(requested)
+    }
+
+    override suspend fun setNotificationPreferences(preferences: NotificationPreferences) {
+        userPreferencesDataSource.setNotificationPreferences(preferences)
     }
 }

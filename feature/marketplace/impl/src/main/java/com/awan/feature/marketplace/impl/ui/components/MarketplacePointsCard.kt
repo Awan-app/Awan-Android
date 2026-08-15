@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.formatAbbreviatedPoints
 import com.awan.feature.marketplace.impl.R
 
 @Composable
@@ -67,7 +68,7 @@ fun MarketplacePointsCard(
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         AwanText(
-                            text = points.toString(),
+                            text = formatAbbreviatedPoints(points),
                             style = AwanTheme.typography.heading.copy(
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold,

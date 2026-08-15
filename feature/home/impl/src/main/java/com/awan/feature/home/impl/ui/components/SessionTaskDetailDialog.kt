@@ -1,5 +1,7 @@
 package com.awan.feature.home.impl.ui.components
 
+import androidx.activity.compose.BackHandler
+import java.time.LocalDate
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -8,6 +10,8 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,18 +24,26 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,14 +53,15 @@ import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.home.impl.R
 import com.awan.feature.home.impl.ui.SessionDetailDialogState
+import kotlinx.coroutines.launch
 
-private enum class SheetScreen { DETAIL, EDIT, DELETE, LOADING, ERROR }
+private enum class SheetScreen { DETAIL, DISMISS_WARNING, DELETE, LOADING, ERROR }
 
-private fun SessionDetailDialogState.currentScreen(): SheetScreen = when {
-    isLoading -> SheetScreen.LOADING
+private fun SessionDetailDialogState.currentScreen(showDismissWarningScreen: Boolean): SheetScreen = when {
+    isLoading || isSaving -> SheetScreen.LOADING
     errorMessage != null -> SheetScreen.ERROR
+    showDismissWarningScreen -> SheetScreen.DISMISS_WARNING
     showDeleteConfirmDialog -> SheetScreen.DELETE
-    isEditing -> SheetScreen.EDIT
     else -> SheetScreen.DETAIL
 }
 
@@ -57,25 +70,65 @@ private fun SessionDetailDialogState.currentScreen(): SheetScreen = when {
 fun SessionTaskDetailDialog(
     state: SessionDetailDialogState,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    onSaveChanges: () -> Unit = {},
     onRetry: () -> Unit,
     onToggleStatus: () -> Unit,
     onToggleLock: () -> Unit,
-    onStartEditing: () -> Unit = {},
-    onCancelEditing: () -> Unit = {},
-    onTitleChange: (String) -> Unit = {},
-    onDescriptionChange: (String) -> Unit = {},
+    onStartMinutesChange: (Int) -> Unit = {},
+    onEndMinutesChange: (Int) -> Unit = {},
     onDurationChange: (Int) -> Unit = {},
-    onSaveEdits: () -> Unit = {},
+    onDateChange: (LocalDate) -> Unit = {},
     onDeleteClick: () -> Unit = {},
-    onSelectDeleteTarget: (com.awan.feature.home.impl.ui.DeleteTargetType) -> Unit = {},
     onConfirmDelete: () -> Unit = {},
     onCancelDelete: () -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val coroutineScope = rememberCoroutineScope()
+    var isExplicitDismissing by remember { mutableStateOf(false) }
+    var showDismissWarningScreen by remember { mutableStateOf(false) }
+
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { newValue ->
+            if (newValue == SheetValue.Hidden) {
+                if (isExplicitDismissing) {
+                    true
+                } else {
+                    showDismissWarningScreen = true
+                    false
+                }
+            } else {
+                true
+            }
+        },
+    )
+
+    val handleDismissAttempt = {
+        showDismissWarningScreen = true
+    }
+
+    val executeDismiss: () -> Unit = {
+        isExplicitDismissing = true
+        coroutineScope.launch {
+            try {
+                sheetState.hide()
+            } catch (_: Exception) {
+            } finally {
+                onDismiss()
+            }
+        }
+    }
+
+    BackHandler(enabled = true) {
+        if (showDismissWarningScreen) {
+            showDismissWarningScreen = false
+        } else {
+            handleDismissAttempt()
+        }
+    }
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = handleDismissAttempt,
         sheetState = sheetState,
         containerColor = AwanTheme.colors.surface,
         scrimColor = Color.Black.copy(alpha = 0.50f),
@@ -91,11 +144,11 @@ fun SessionTaskDetailDialog(
         },
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         properties = ModalBottomSheetProperties(
-            shouldDismissOnBackPress = true,
+            shouldDismissOnBackPress = false,
         ),
         modifier = modifier,
     ) {
-        val currentScreen = state.currentScreen()
+        val currentScreen = state.currentScreen(showDismissWarningScreen)
 
         AnimatedContent(
             targetState = currentScreen,
@@ -177,27 +230,18 @@ fun SessionTaskDetailDialog(
                     }
                 }
 
-                SheetScreen.DELETE -> {
-                    DeleteSessionTaskContent(
-                        selectedTarget = state.deleteTargetType,
-                        isDeleting = state.isDeleting,
-                        onSelectTarget = onSelectDeleteTarget,
-                        onConfirmDelete = onConfirmDelete,
-                        onCancel = onCancelDelete,
+                SheetScreen.DISMISS_WARNING -> {
+                    DismissWarningContent(
+                        onKeepEditing = { showDismissWarningScreen = false },
+                        onDiscardAndClose = executeDismiss,
                     )
                 }
 
-                SheetScreen.EDIT -> {
-                    EditSessionTaskContent(
-                        editTitle = state.editTitle,
-                        editDescription = state.editDescription,
-                        editDurationMinutes = state.editDurationMinutes,
-                        isSaving = state.isSaving,
-                        onTitleChange = onTitleChange,
-                        onDescriptionChange = onDescriptionChange,
-                        onDurationChange = onDurationChange,
-                        onSave = onSaveEdits,
-                        onCancel = onCancelEditing,
+                SheetScreen.DELETE -> {
+                    DeleteSessionTaskContent(
+                        isDeleting = state.isDeleting,
+                        onConfirmDelete = onConfirmDelete,
+                        onCancel = onCancelDelete,
                     )
                 }
 
@@ -205,15 +249,115 @@ fun SessionTaskDetailDialog(
                     if (state.detail != null) {
                         UnifiedSessionTaskContent(
                             detail = state.detail,
+                            editDate = state.editDate,
+                            editStartMinutes = state.editStartMinutes,
+                            editEndMinutes = state.editEndMinutes,
+                            editDurationMinutes = state.editDurationMinutes,
                             onToggleStatus = onToggleStatus,
                             onToggleLock = onToggleLock,
-                            onEditClick = onStartEditing,
+                            onDateChange = onDateChange,
+                            onStartMinutesChange = onStartMinutesChange,
+                            onEndMinutesChange = onEndMinutesChange,
+                            onDurationChange = onDurationChange,
                             onDeleteClick = onDeleteClick,
+                            onConfirmClose = onSaveChanges,
                         )
                     } else {
                         Spacer(modifier = Modifier.height(1.dp))
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DismissWarningContent(
+    onKeepEditing: () -> Unit,
+    onDiscardAndClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        // Friendly Alert Icon Badge
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .clip(CircleShape)
+                .background(AwanTheme.colors.zoneTangerine.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.WarningAmber,
+                contentDescription = null,
+                tint = AwanTheme.colors.zoneTangerine,
+                modifier = Modifier.size(26.dp),
+            )
+        }
+
+        // Title
+        AwanText(
+            text = stringResource(R.string.home_dismiss_warning_title),
+            style = AwanTheme.typography.heading.copy(
+                fontSize = 19.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = AwanTheme.colors.textPrimary,
+                textAlign = TextAlign.Center,
+            ),
+        )
+
+        // Friendly Subtitle
+        AwanText(
+            text = stringResource(R.string.home_dismiss_warning_subtitle),
+            style = AwanTheme.typography.body.copy(
+                fontSize = 14.sp,
+                color = AwanTheme.colors.textSecondary,
+                textAlign = TextAlign.Center,
+                lineHeight = 20.sp,
+            ),
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Action Buttons
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            // Primary Keep Editing Button
+            AwanButton(
+                onClick = onKeepEditing,
+                variant = AwanButtonVariant.Primary,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                AwanText(
+                    text = stringResource(R.string.home_dismiss_warning_keep_editing),
+                    style = AwanTheme.typography.button.copy(
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                )
+            }
+
+            // Secondary Discard & Close Button
+            AwanButton(
+                onClick = onDiscardAndClose,
+                variant = AwanButtonVariant.Secondary,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                AwanText(
+                    text = stringResource(R.string.home_dismiss_warning_close_anyway),
+                    style = AwanTheme.typography.button.copy(
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AwanTheme.colors.destructive,
+                    ),
+                )
             }
         }
     }

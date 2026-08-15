@@ -15,6 +15,7 @@ import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
 import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
 import com.awan.app.core.domain.profile.model.UserData
 import com.awan.app.core.domain.profile.repository.UserDataRepository
+import com.awan.app.core.model.NotificationPreferences
 import com.awan.app.core.domain.profile.usecase.GetUserDataUseCase
 import com.awan.app.core.domain.profile.usecase.SetMicPermissionRequestedUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
@@ -210,6 +211,10 @@ class AddTaskViewModelTest {
 
         override suspend fun setMicPermissionRequested(requested: Boolean) {
             _userData.update { it.copy(micPermissionRequested = requested) }
+        }
+
+        override suspend fun setNotificationPreferences(preferences: NotificationPreferences) {
+            _userData.update { it.copy(notificationPreferences = preferences) }
         }
     }
 

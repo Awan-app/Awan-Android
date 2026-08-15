@@ -1,7 +1,6 @@
 package com.awan.feature.home.impl.ui
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,24 +13,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
@@ -66,6 +65,7 @@ fun HomeScreen(
     onNavigateToCalendar: () -> Unit = {},
     onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
     onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
+    onRegisterOpenSession: ((String) -> Unit) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
 
@@ -73,10 +73,24 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         onRegisterSelectDate(viewModel::selectDate)
+        // Registered, not received: the caller holds any pending notification tap until this runs,
+        // so a tap during splash still opens its session once Home finally composes.
+        onRegisterOpenSession(viewModel::onSessionClicked)
     }
 
     val timelineScrollState = rememberScrollState()
-    val isHeaderCollapsed by remember { derivedStateOf { timelineScrollState.value > 80 } }
+    var isHeaderCollapsed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(timelineScrollState) {
+        snapshotFlow { timelineScrollState.value }
+            .collect { scroll ->
+                if (!isHeaderCollapsed && scroll > 80) {
+                    isHeaderCollapsed = true
+                } else if (isHeaderCollapsed && scroll < 40) {
+                    isHeaderCollapsed = false
+                }
+            }
+    }
 
     val contentState: TimelineContentState = when {
         uiState.isLoading                 -> TimelineContentState.Loading
@@ -98,11 +112,13 @@ fun HomeScreen(
                 userName = uiState.userName,
                 greetingPrefix = uiState.greetingPrefix.asString(),
                 streakCount = uiState.streakCount,
+                isStreakActive = uiState.isStreakActive,
                 pointsCount = uiState.pointsCount,
                 mascotExpression = uiState.mascotExpression,
                 subtitleText = uiState.subtitleText.asString(),
                 selectedDateText = uiState.selectedDateText.asString(),
                 isCollapsed = isHeaderCollapsed,
+                isToday = uiState.isToday,
                 totalSessionsCount = uiState.sessions.size,
                 completedSessionsCount = uiState.completedSessionsCount,
                 completedHours = uiState.completedHours,
@@ -121,10 +137,8 @@ fun HomeScreen(
 
             Crossfade(
                 targetState = contentState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                label = "timeline_content",
+                label = "TimelineContentStateTransition",
+                modifier = Modifier.weight(1f),
             ) { state ->
                 when (state) {
                     TimelineContentState.Loading -> {
@@ -137,11 +151,11 @@ fun HomeScreen(
                                 verticalArrangement = Arrangement.Center,
                             ) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(48.dp),
                                     color = AwanTheme.colors.sky,
                                     strokeWidth = 3.dp,
+                                    modifier = Modifier.size(36.dp),
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
                                 AwanText(
                                     text = stringResource(R.string.loading_your_schedule),
                                     style = AwanTheme.typography.body.copy(
@@ -215,25 +229,24 @@ fun HomeScreen(
             SessionTaskDetailDialog(
                 state = dialogState,
                 onDismiss = viewModel::dismissSessionDetail,
+                onSaveChanges = viewModel::saveSessionDetailEdits,
                 onRetry = viewModel::retryLoadSessionDetail,
                 onToggleStatus = viewModel::toggleSessionStatusFromDialog,
                 onToggleLock = viewModel::toggleSessionLockFromDialog,
-                onStartEditing = viewModel::startEditingSessionDetail,
-                onCancelEditing = viewModel::cancelEditingSessionDetail,
-                onTitleChange = viewModel::onEditTitleChanged,
-                onDescriptionChange = viewModel::onEditDescriptionChanged,
+                onStartMinutesChange = viewModel::onEditStartMinutesChanged,
+                onEndMinutesChange = viewModel::onEditEndMinutesChanged,
                 onDurationChange = viewModel::onEditDurationChanged,
-                onSaveEdits = viewModel::saveSessionDetailEdits,
+                onDateChange = viewModel::onEditDateChanged,
                 onDeleteClick = viewModel::requestDeleteSession,
-                onSelectDeleteTarget = viewModel::selectDeleteTargetType,
                 onConfirmDelete = viewModel::confirmDeleteAction,
                 onCancelDelete = viewModel::dismissDeleteConfirmDialog,
             )
         }
 
-        if (!uiState.isWheelOpen) {
+        if (!uiState.isWheelOpen && uiState.hasFreeSpin) {
             AwanWheelBadge(
                 hasFreeSpin = uiState.hasFreeSpin,
+                isCollapsed = isHeaderCollapsed,
                 onClick = viewModel::openWheel,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
