@@ -678,31 +678,70 @@ private fun Modifier.gridItemArtworkGradient(accent: Color): Modifier = drawWith
  */
 private fun Modifier.bowlGradientBackdrop(
     accent: Color,
-) = drawWithCache {
-    // Place the radial centre slightly below the vertical midpoint.
-    // This makes the gradient "climb" upward from the bottom, giving
-    // the bowl / concave impression described in the spec.
-    val center = Offset(size.width / 2f, size.height * 0.75f)
-    val radius = size.height * 0.85f
+): Modifier = drawWithCache {
+    val w = size.width
+    val h = size.height
 
-    // Horizontal stretch so intensity hugs the left and right edges of the sheet.
-    val scaleX = if (radius > 0f) (size.width * 0.55f) / radius else 1f
+    // 1. Base bottom-to-top gradient: intense at the bottom (Section 1),
+    // smoothly fading out towards the upper half (Section 2).
+    val baseVerticalBrush = Brush.verticalGradient(
+        0.0f to Color.Transparent,
+        0.30f to Color.Transparent,
+        0.58f to accent.copy(alpha = 0.08f),
+        0.80f to accent.copy(alpha = 0.22f),
+        1.0f to accent.copy(alpha = 0.38f),
+        startY = 0f,
+        endY = h,
+    )
 
-    val brush = Brush.radialGradient(
-        // Section 1 – intense core (bottom & edges)
-        0.0f to accent.copy(alpha = 0.40f),
-        0.30f to accent.copy(alpha = 0.28f),
-        // Section 2 – natural fade
-        0.60f to accent.copy(alpha = 0.12f),
+    // 2. Left climbing wall: color climbs up along the left edge (up to ~20% from the top)
+    // and fades inward towards the center, giving the climbing / bowl shape.
+    val leftClimbBrush = Brush.linearGradient(
+        0.0f to accent.copy(alpha = 0.35f),
+        0.35f to accent.copy(alpha = 0.20f),
+        0.70f to accent.copy(alpha = 0.06f),
         1.0f to Color.Transparent,
-        center = center,
-        radius = if (radius > 0f) radius else 1f,
+        start = Offset(0f, h * 0.80f),
+        end = Offset(w * 0.55f, h * 0.20f),
+    )
+
+    // 3. Right climbing wall: color climbs up along the right edge (up to ~20% from the top)
+    // and fades inward towards the center.
+    val rightClimbBrush = Brush.linearGradient(
+        0.0f to accent.copy(alpha = 0.35f),
+        0.35f to accent.copy(alpha = 0.20f),
+        0.70f to accent.copy(alpha = 0.06f),
+        1.0f to Color.Transparent,
+        start = Offset(w, h * 0.80f),
+        end = Offset(w * 0.45f, h * 0.20f),
+    )
+
+    // 4. Lateral edge accents (Section 1): high intensity near the screen borders
+    val leftEdgeBrush = Brush.horizontalGradient(
+        0.0f to accent.copy(alpha = 0.28f),
+        0.45f to accent.copy(alpha = 0.12f),
+        1.0f to Color.Transparent,
+        startX = 0f,
+        endX = w * 0.35f,
+    )
+
+    val rightEdgeBrush = Brush.horizontalGradient(
+        0.0f to Color.Transparent,
+        0.55f to accent.copy(alpha = 0.12f),
+        1.0f to accent.copy(alpha = 0.28f),
+        startX = w * 0.65f,
+        endX = w,
     )
 
     onDrawBehind {
-        scale(scaleX = scaleX, scaleY = 1f, pivot = center) {
-            drawRect(brush = brush)
-        }
+        // 1. Base bottom-to-top gradient
+        drawRect(brush = baseVerticalBrush)
+        // 2. Left & right climbing walls (edges climb higher, center dips down)
+        drawRect(brush = leftClimbBrush)
+        drawRect(brush = rightClimbBrush)
+        // 3. Border edge intensity boost
+        drawRect(brush = leftEdgeBrush)
+        drawRect(brush = rightEdgeBrush)
     }
 }
 
