@@ -11,6 +11,12 @@
     <string name="auth_continue_with_google">Continue with Google</string>
     <string name="auth_rate_limited_banner">Too many attempts. Try again in %1$s.</string>
     <string name="auth_offline_banner">You\'re offline — we\'ll send the code when you reconnect.</string>
+    <string name="auth_error_firebase_token_invalid">Invalid sign-in token. Please try again.</string>
+    <string name="auth_error_firebase_provider_not_allowed">Google sign-in is not available.</string>
+    <string name="auth_error_firebase_email_missing">No email associated with this account.</string>
+    <string name="auth_error_firebase_email_not_verified">Please verify your Google email.</string>
+    <string name="auth_error_firebase_not_configured">Service unavailable, try later.</string>
+    <string name="auth_error_google_sign_in_failed">Google sign-in failed. Please try again.</string>
 
     <!-- OTP Screen -->
     <string name="auth_otp_title">Check your inbox!</string>

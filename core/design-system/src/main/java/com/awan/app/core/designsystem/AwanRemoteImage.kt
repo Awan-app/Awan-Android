@@ -15,6 +15,8 @@ fun AwanRemoteImage(
     contentDescription: String? = null,
     contentScale: ContentScale = ContentScale.Crop,
 ) {
+    if (url.isNullOrBlank()) return
+
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
             .data(url)

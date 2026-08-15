@@ -1,7 +1,6 @@
 package com.awan.feature.home.impl.ui
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,24 +13,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.awan.app.core.common.text.UiText
@@ -42,6 +44,10 @@ import com.awan.app.core.designsystem.AwanScheduleAlertCard
 import com.awan.app.core.designsystem.AwanScheduleTimeline
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.AwanWheelBadge
+import com.awan.app.core.designsystem.AwanWheelOverlay
+import com.awan.app.core.designsystem.WheelSegmentUi
+import com.awan.app.core.designsystem.R as DesignSystemR
 import com.awan.feature.home.impl.R
 import com.awan.feature.home.impl.ui.components.SessionTaskDetailDialog
 import java.time.LocalDate
@@ -59,6 +65,7 @@ fun HomeScreen(
     onNavigateToCalendar: () -> Unit = {},
     onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
     onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
+    onRegisterOpenSession: ((String) -> Unit) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
 
@@ -66,10 +73,24 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         onRegisterSelectDate(viewModel::selectDate)
+        // Registered, not received: the caller holds any pending notification tap until this runs,
+        // so a tap during splash still opens its session once Home finally composes.
+        onRegisterOpenSession(viewModel::onSessionClicked)
     }
 
     val timelineScrollState = rememberScrollState()
-    val isHeaderCollapsed by remember { derivedStateOf { timelineScrollState.value > 80 } }
+    var isHeaderCollapsed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(timelineScrollState) {
+        snapshotFlow { timelineScrollState.value }
+            .collect { scroll ->
+                if (!isHeaderCollapsed && scroll > 80) {
+                    isHeaderCollapsed = true
+                } else if (isHeaderCollapsed && scroll < 40) {
+                    isHeaderCollapsed = false
+                }
+            }
+    }
 
     val contentState: TimelineContentState = when {
         uiState.isLoading                 -> TimelineContentState.Loading
@@ -91,11 +112,13 @@ fun HomeScreen(
                 userName = uiState.userName,
                 greetingPrefix = uiState.greetingPrefix.asString(),
                 streakCount = uiState.streakCount,
+                isStreakActive = uiState.isStreakActive,
                 pointsCount = uiState.pointsCount,
                 mascotExpression = uiState.mascotExpression,
                 subtitleText = uiState.subtitleText.asString(),
                 selectedDateText = uiState.selectedDateText.asString(),
                 isCollapsed = isHeaderCollapsed,
+                isToday = uiState.isToday,
                 totalSessionsCount = uiState.sessions.size,
                 completedSessionsCount = uiState.completedSessionsCount,
                 completedHours = uiState.completedHours,
@@ -114,10 +137,8 @@ fun HomeScreen(
 
             Crossfade(
                 targetState = contentState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                label = "timeline_content",
+                label = "TimelineContentStateTransition",
+                modifier = Modifier.weight(1f),
             ) { state ->
                 when (state) {
                     TimelineContentState.Loading -> {
@@ -130,11 +151,11 @@ fun HomeScreen(
                                 verticalArrangement = Arrangement.Center,
                             ) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(48.dp),
                                     color = AwanTheme.colors.sky,
                                     strokeWidth = 3.dp,
+                                    modifier = Modifier.size(36.dp),
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
                                 AwanText(
                                     text = stringResource(R.string.loading_your_schedule),
                                     style = AwanTheme.typography.body.copy(
@@ -208,20 +229,68 @@ fun HomeScreen(
             SessionTaskDetailDialog(
                 state = dialogState,
                 onDismiss = viewModel::dismissSessionDetail,
+                onSaveChanges = viewModel::saveSessionDetailEdits,
                 onRetry = viewModel::retryLoadSessionDetail,
                 onToggleStatus = viewModel::toggleSessionStatusFromDialog,
                 onToggleLock = viewModel::toggleSessionLockFromDialog,
-                onStartEditing = viewModel::startEditingSessionDetail,
-                onCancelEditing = viewModel::cancelEditingSessionDetail,
-                onTitleChange = viewModel::onEditTitleChanged,
-                onDescriptionChange = viewModel::onEditDescriptionChanged,
+                onStartMinutesChange = viewModel::onEditStartMinutesChanged,
+                onEndMinutesChange = viewModel::onEditEndMinutesChanged,
                 onDurationChange = viewModel::onEditDurationChanged,
-                onSaveEdits = viewModel::saveSessionDetailEdits,
+                onDateChange = viewModel::onEditDateChanged,
                 onDeleteClick = viewModel::requestDeleteSession,
-                onSelectDeleteTarget = viewModel::selectDeleteTargetType,
                 onConfirmDelete = viewModel::confirmDeleteAction,
                 onCancelDelete = viewModel::dismissDeleteConfirmDialog,
             )
+        }
+
+        if (!uiState.isWheelOpen && uiState.hasFreeSpin) {
+            AwanWheelBadge(
+                hasFreeSpin = uiState.hasFreeSpin,
+                isCollapsed = isHeaderCollapsed,
+                onClick = viewModel::openWheel,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 4.dp, end = 16.dp),
+            )
+        }
+
+        if (uiState.isWheelOpen) {
+            val itemWedgeLabel = stringResource(DesignSystemR.string.ds_wheel_item_wedge)
+            // In its own window so it covers the app's bottom bar, which is drawn above this screen
+            // by the shell — otherwise the user can tab away mid-spin and strand the gift.
+            Dialog(
+                onDismissRequest = {
+                    // Back is ignored while the request is out; there is nothing to go back to yet
+                    // and the spin has already been charged against today.
+                    if (!uiState.isSpinning) viewModel.closeWheel()
+                },
+                properties = DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    decorFitsSystemWindows = false,
+                ),
+            ) {
+                // The overlay draws its own scrim, so the window's dim is switched off rather than
+                // stacked on top of it — two dims read as a much darker screen than either intends.
+                val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
+                SideEffect { dialogWindow?.setDimAmount(0f) }
+
+                AwanWheelOverlay(
+                    segments = uiState.wheelSegments.map { segment ->
+                        WheelSegmentUi(
+                            id = segment.id,
+                            label = if (segment.isItem) itemWedgeLabel else segment.coins.toString(),
+                            isItem = segment.isItem,
+                        )
+                    },
+                    landingSegmentId = uiState.landingSegmentId,
+                    resultText = uiState.wheelResult?.asString(),
+                    isSpinning = uiState.isSpinning,
+                    canSpin = uiState.hasFreeSpin,
+                    onSpin = viewModel::spinWheel,
+                    onClose = viewModel::closeWheel,
+                )
+            }
         }
 
         if (uiState.hasConflict) {

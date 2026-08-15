@@ -6,25 +6,36 @@ import com.awan.app.core.data.auth.repository.AuthRepositoryImpl
 import com.awan.app.core.data.calendar.CalendarRepositoryImpl
 import com.awan.app.core.data.calendar.local.CalendarLocalDataSource
 import com.awan.app.core.data.calendar.local.CalendarLocalDataSourceImpl
+import com.awan.app.core.data.home.local.HomeLocalDataSource
+import com.awan.app.core.data.home.local.HomeLocalDataSourceImpl
+import com.awan.app.core.data.zones.local.ZonesLocalDataSource
+import com.awan.app.core.data.zones.local.ZonesLocalDataSourceImpl
+import com.awan.app.core.data.auth.LocalDataCleaner
+import com.awan.app.core.data.auth.RoomLocalDataCleaner
+import com.awan.app.core.data.sync.OfflineSyncCoordinator
+import com.awan.app.core.data.sync.ScheduleSynchronizer
 import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSource
 import com.awan.app.core.data.calendar.remote.CalendarRemoteDataSourceImpl
 import com.awan.app.core.data.category.CategoryRepositoryImpl
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSourceImpl
+import com.awan.app.core.data.gamification.remote.GamificationRemoteDataSource
+import com.awan.app.core.data.gamification.remote.GamificationRemoteDataSourceImpl
+import com.awan.app.core.data.gamification.repository.GamificationRepositoryImpl
 import com.awan.app.core.data.home.remote.HomeRemoteDataSource
 import com.awan.app.core.data.home.remote.HomeRemoteDataSourceImpl
 import com.awan.app.core.data.home.repository.HomeRepositoryImpl
+import com.awan.app.core.data.notifications.repository.SessionNotificationRepositoryImpl
 import com.awan.app.core.data.image.ImageRepositoryImpl
-import com.awan.app.core.data.inventory.InventoryRepositoryImpl
-import com.awan.app.core.data.inventory.remote.InventoryRemoteDataSource
-import com.awan.app.core.data.inventory.remote.InventoryRemoteDataSourceImpl
 import com.awan.app.core.domain.image.repository.ImageRepository
-import com.awan.app.core.domain.inventory.repository.InventoryRepository
 import com.awan.app.core.domain.onboarding.repository.OnboardingRepository
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSourceImpl
 import com.awan.app.core.data.profile.repository.ProfileRepositoryImpl
 import com.awan.app.core.data.profile.repository.UserDataRepositoryImpl
+import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSource
+import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSourceImpl
+import com.awan.app.core.data.marketplace.repository.StoreRepositoryImpl
 import com.awan.app.core.data.onboarding.OnboardingRepositoryImpl
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSourceImpl
@@ -50,15 +61,25 @@ import com.awan.app.core.domain.profile.repository.ProfileRepository
 import com.awan.app.core.domain.profile.repository.UserDataRepository
 import com.awan.app.core.domain.task.repository.AiTaskRepository
 import com.awan.app.core.domain.template.repository.TemplateRepository
+import com.awan.app.core.domain.gamification.repository.GamificationRepository
 import com.awan.app.core.domain.home.repository.HomeRepository
+import com.awan.app.core.domain.notifications.repository.SessionNotificationRepository
 import com.awan.app.core.domain.zones.repository.ZonesRepository
+import com.awan.app.core.domain.marketplace.repository.StoreRepository
 import com.awan.app.core.data.network.NetworkConnectivityMonitorImpl
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
+import com.awan.app.core.data.zones.remote.SessionRemoteDataSource
+import com.awan.app.core.data.zones.remote.SessionRemoteDataSourceImpl
+import com.awan.app.core.data.zones.repository.SessionRepositoryImpl
+import com.awan.app.core.domain.zones.repository.SessionRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+
+import com.awan.app.core.data.devicetoken.remote.DeviceTokenRemoteDataSource
+import com.awan.app.core.data.devicetoken.remote.DeviceTokenRemoteDataSourceImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -75,6 +96,30 @@ internal abstract class DataModule {
     abstract fun bindCalendarLocalDataSource(
         impl: CalendarLocalDataSourceImpl,
     ): CalendarLocalDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindHomeLocalDataSource(
+        impl: HomeLocalDataSourceImpl,
+    ): HomeLocalDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindZonesLocalDataSource(
+        impl: ZonesLocalDataSourceImpl,
+    ): ZonesLocalDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindScheduleSynchronizer(
+        impl: OfflineSyncCoordinator,
+    ): ScheduleSynchronizer
+
+    @Binds
+    @Singleton
+    abstract fun bindLocalDataCleaner(
+        impl: RoomLocalDataCleaner,
+    ): LocalDataCleaner
 
     @Binds
     @Singleton
@@ -131,18 +176,6 @@ internal abstract class DataModule {
 
     @Binds
     @Singleton
-    abstract fun bindInventoryRemoteDataSource(
-        impl: InventoryRemoteDataSourceImpl,
-    ): InventoryRemoteDataSource
-
-    @Binds
-    @Singleton
-    abstract fun bindInventoryRepository(
-        impl: InventoryRepositoryImpl,
-    ): InventoryRepository
-
-    @Binds
-    @Singleton
     abstract fun bindTemplateRemoteDataSource(
         impl: TemplateRemoteDataSourceImpl,
     ): TemplateRemoteDataSource
@@ -195,6 +228,18 @@ internal abstract class DataModule {
         impl: ZonesRepositoryImpl,
     ): ZonesRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindSessionRemoteDataSource(
+        impl: SessionRemoteDataSourceImpl,
+    ): SessionRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindSessionRepository(
+        impl: SessionRepositoryImpl,
+    ): SessionRepository
+
 
     @Binds
     @Singleton
@@ -210,6 +255,18 @@ internal abstract class DataModule {
 
     @Binds
     @Singleton
+    abstract fun bindGamificationRemoteDataSource(
+        impl: GamificationRemoteDataSourceImpl,
+    ): GamificationRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindGamificationRepository(
+        impl: GamificationRepositoryImpl,
+    ): GamificationRepository
+
+    @Binds
+    @Singleton
     abstract fun bindGoalRemoteDataSource(
         impl: GoalRemoteDataSourceImpl,
     ): GoalRemoteDataSource
@@ -217,8 +274,20 @@ internal abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindGoalRepository(
-impl: GoalRepositoryImpl,
+        impl: GoalRepositoryImpl,
     ): GoalRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindStoreRemoteDataSource(
+        impl: StoreRemoteDataSourceImpl,
+    ): StoreRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindStoreRepository(
+        impl: StoreRepositoryImpl,
+    ): StoreRepository
 
     @Binds
     @Singleton
@@ -226,5 +295,22 @@ impl: GoalRepositoryImpl,
         impl: NetworkConnectivityMonitorImpl,
     ): NetworkConnectivityMonitor
 
+    @Binds
+    @Singleton
+    abstract fun bindDeviceTokenRemoteDataSource(
+        impl: DeviceTokenRemoteDataSourceImpl,
+    ): DeviceTokenRemoteDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindDeviceTokenRepository(
+        impl: com.awan.app.core.data.devicetoken.repository.DeviceTokenRepositoryImpl,
+    ): com.awan.app.core.domain.devicetoken.repository.DeviceTokenRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSessionNotificationRepository(
+        impl: SessionNotificationRepositoryImpl,
+    ): SessionNotificationRepository
 }
 

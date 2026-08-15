@@ -2,10 +2,12 @@ package com.awan.app.core.network.di
 
 import android.content.Context
 import com.awan.app.core.network.BuildConfig
+import com.awan.app.core.network.api.McpApiService
 import com.awan.app.core.network.api.AuthApiService
 import com.awan.app.core.network.api.CategoryApiService
 import com.awan.app.core.network.api.GoalApiService
 import com.awan.app.core.network.api.OnboardingApiService
+import com.awan.app.core.network.api.GamificationApiService
 import com.awan.app.core.network.api.ProfileApiService
 import com.awan.app.core.network.api.StoreApiService
 import com.awan.app.core.network.api.TaskApiService
@@ -162,6 +164,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun providesGamificationApiService(retrofit: Retrofit): GamificationApiService =
+        retrofit.create(GamificationApiService::class.java)
+
+    @Provides
+    @Singleton
     fun providesTemplateApiService(retrofit: Retrofit): TemplateApiService =
         retrofit.create(TemplateApiService::class.java)
 
@@ -170,6 +177,15 @@ object NetworkModule {
     fun providesGoalApiService(retrofit: Retrofit): GoalApiService =
         retrofit.create(GoalApiService::class.java)
 
+    @Provides
+    @Singleton
+    fun providesDeviceTokenApiService(retrofit: Retrofit): com.awan.app.core.network.api.DeviceTokenApiService =
+        retrofit.create(com.awan.app.core.network.api.DeviceTokenApiService::class.java)
+        
+    @Provides
+    @Singleton
+    fun providesMcpApiService(retrofit: Retrofit): McpApiService =
+        retrofit.create(McpApiService::class.java)
 
     @Provides
     @Singleton

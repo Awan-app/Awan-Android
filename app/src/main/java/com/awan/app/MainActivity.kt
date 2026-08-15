@@ -1,19 +1,15 @@
 package com.awan.app
 
-import android.Manifest
-import android.content.pm.PackageManager
+import android.content.Intent
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.View
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.content.ContextCompat
 import androidx.compose.foundation.ComposeFoundationFlags
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
@@ -30,7 +26,16 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.awan.app.MainActivityUiState.*
+import com.awan.app.core.data.sync.SyncWorker.Companion.enqueueImmediateSync
+import com.awan.app.core.data.sync.SyncWorker.Companion.schedulePeriodicSync
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.LocalRewardAnchors
+import com.awan.app.core.designsystem.RewardAnchors
+import com.awan.app.core.notifications.NotificationIntents
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
+import com.awan.app.core.notifications.SessionNotificationScheduler
+import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import com.awan.feature.calendar.api.CalendarRoute
@@ -47,30 +52,56 @@ class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainActivityViewModel by viewModels()
 
-    private val requestNotificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { /* Permission response handled by system */ }
+    @Inject
+    lateinit var notificationScheduler: SessionNotificationScheduler
+
+    /**
+     * One-shot, not state. A tap is an event: held as state it stays true after it has been acted
+     * on, and anything re-reading it later acts on it again.
+     */
+    private val deepLinks = Channel<SessionDeepLink>(Channel.BUFFERED)
+    private val deepLinkEvents = deepLinks.receiveAsFlow()
+
+    /**
+     * The Activity is `singleTop`, so a second notification tap while it is already showing arrives
+     * here rather than creating another instance.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        readDeepLink(intent)
+    }
+
+    private fun readDeepLink(intent: Intent?) {
+        val sessionId = intent?.getStringExtra(NotificationIntents.EXTRA_SESSION_ID) ?: return
+        val date = intent.getStringExtra(NotificationIntents.EXTRA_SESSION_DATE)
+
+        // Consumed off the Intent so a rotation does not reopen the sheet the user just dismissed.
+        intent.removeExtra(NotificationIntents.EXTRA_SESSION_ID)
+        intent.removeExtra(NotificationIntents.EXTRA_SESSION_DATE)
+
+        deepLinks.trySend(SessionDeepLink(sessionId = sessionId, date = date))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
+        readDeepLink(intent)
 
         var uiState: MainActivityUiState by mutableStateOf(Loading)
         var isOnline by mutableStateOf(true)
 
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Never assume the alarm fired: a force-stop, an OEM battery manager or a dropped
+                // exact alarm all leave the chain broken until something rebuilds it.
+                launch { notificationScheduler.rescheduleAll() }
                 launch {
                     viewModel.isOnline.collectLatest { online ->
                         isOnline = online
                         if (online) {
-                            com.awan.app.core.data.sync.SyncWorker.schedulePeriodicSync(this@MainActivity)
-                            com.awan.app.core.data.sync.SyncWorker.enqueueImmediateSync(this@MainActivity)
+                            schedulePeriodicSync(this@MainActivity)
+                            enqueueImmediateSync(this@MainActivity)
                         }
                     }
                 }
@@ -116,9 +147,13 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+            // App-scoped so a reward earned on one screen can still fly to a badge on another.
+            val rewardAnchors = remember { RewardAnchors() }
+
             CompositionLocalProvider(
                 LocalConfiguration provides updatedConfiguration,
                 LocalLayoutDirection provides layoutDirection,
+                LocalRewardAnchors provides rewardAnchors,
             ) {
                 val appState = rememberAwanAppState(
                     startKey = SplashRoute,
@@ -139,7 +174,13 @@ class MainActivity : AppCompatActivity() {
                     dark = useDarkTheme,
                     light = !useDarkTheme
                 ) {
-                    AwanApp(appState = appState, isOnline = isOnline)
+                    AwanApp(
+                        appState = appState,
+                        isOnline = isOnline,
+                        sessionExpiredEvents = viewModel.sessionExpired,
+                        rewardEvents = viewModel.rewardEvents,
+                        deepLinkEvents = deepLinkEvents,
+                    )
                 }
             }
         }

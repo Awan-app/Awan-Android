@@ -5,26 +5,33 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
+import com.awan.app.core.domain.category.usecase.CreateCategoryUseCase
+import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplatesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
 import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
+import com.awan.feature.profile.impl.helpers.ProfileErrorMapper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 @HiltViewModel
 class DailyZonesViewModel @Inject constructor(
     private val getWeeklyTemplatesUseCase: GetWeeklyTemplatesUseCase,
+    private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val createCategoryUseCase: CreateCategoryUseCase,
     private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(DailyZonesState(selectedDay = DailyZonesHelper.getCurrentDay()))
+    private val _uiState = MutableStateFlow(DailyZonesState(selectedDay = DailyZonesHelper.getCurrentDay(LocalDate.now())))
     val uiState: StateFlow<DailyZonesState> = _uiState.asStateFlow()
 
     fun onAction(action: DailyZonesAction) {
@@ -35,6 +42,7 @@ class DailyZonesViewModel @Inject constructor(
             is DailyZonesAction.AddZone -> addZone(action.zone)
             is DailyZonesAction.UpdateZone -> updateZone(action.zone)
             is DailyZonesAction.DeleteZone -> deleteZone(action.zone)
+            is DailyZonesAction.CreateCategory -> createCategory(action.name)
             DailyZonesAction.ClearError -> clearError()
         }
     }
@@ -43,29 +51,36 @@ class DailyZonesViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            when (val result = getWeeklyTemplatesUseCase()) {
-                is Result.Success -> {
-                    val templates = result.data
-                    _uiState.update { state ->
-                        val defaultTemplate = templates.find { it.name.equals("Default", ignoreCase = true) }
-                            ?: templates.find { it.name.equals("My Week", ignoreCase = true) }
-                            ?: templates.firstOrNull()
+            val templatesDeferred = async { getWeeklyTemplatesUseCase() }
+            val categoriesDeferred = async { getCategoriesUseCase() }
 
-                        state.copy(
-                            isLoading = false,
-                            templates = templates,
-                            selectedTemplateId = state.selectedTemplateId ?: defaultTemplate?.id
-                        )
-                    }
-                    updateSelectedDayData()
-                }
-                is Result.Error -> {
-                    _uiState.update { it.copy(
+            val templatesResult = templatesDeferred.await()
+            val categoriesResult = categoriesDeferred.await()
+            if (templatesResult is Result.Success && categoriesResult is Result.Success) {
+                val templates = templatesResult.data
+                val categories = categoriesResult.data
+
+                _uiState.update { state ->
+                    val defaultTemplate = templates.find { it.name.equals("Default", ignoreCase = true) }
+                        ?: templates.find { it.name.equals("My Week", ignoreCase = true) }
+                        ?: templates.firstOrNull()
+
+                    state.copy(
                         isLoading = false,
-                        error = DailyZonesHelper.zonesErrorToUiText(result.error)
-                    ) }
+                        templates = templates,
+                        availableCategories = categories,
+                        selectedTemplateId = state.selectedTemplateId ?: defaultTemplate?.id
+                    )
                 }
-                Result.Loading -> Unit
+                updateSelectedDayData()
+            } else {
+                val error = (templatesResult as? Result.Error)?.error
+                    ?: (categoriesResult as? Result.Error)?.error
+
+                _uiState.update { it.copy(
+                    isLoading = false,
+                    error = error?.let { ProfileErrorMapper.mapToUiText(it) }
+                ) }
             }
         }
     }
@@ -103,7 +118,6 @@ class DailyZonesViewModel @Inject constructor(
         }
 
         val newZones = (currentZones + zone).sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
-        _uiState.update { it.copy(selectedDayZones = newZones) }
         saveZones(newZones)
     }
 
@@ -117,29 +131,43 @@ class DailyZonesViewModel @Inject constructor(
 
         val newZones = currentZones.map { if (it.id == zone.id) zone else it }
             .sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
-        _uiState.update { it.copy(selectedDayZones = newZones) }
         saveZones(newZones)
     }
 
     private fun deleteZone(zone: DailyZone) {
-        val newZones = _uiState.value.selectedDayZones.filter { it.id != zone.id }
-        _uiState.update { it.copy(selectedDayZones = newZones) }
+        val currentZones = _uiState.value.selectedDayZones
+        if (currentZones.size <= 1) {
+            _uiState.update { it.copy(error = UiText.StringResource(R.string.profile_validation_at_least_one_zone)) }
+            return
+        }
+        val newZones = currentZones.filter { it.id != zone.id }
         saveZones(newZones)
     }
 
     private fun saveZones(zones: List<DailyZone>) {
-        val templateId = _uiState.value.currentTemplate?.id ?: return
+        if (zones.isEmpty()) {
+            _uiState.update { it.copy(error = UiText.StringResource(R.string.profile_validation_at_least_one_zone)) }
+            return
+        }
+        val state = _uiState.value
+        val templateId = state.currentTemplate?.id
+
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
-            when (val result = updateTemplateZonesUseCase(templateId, zones)) {
+
+            val result = if (templateId != null) {
+                updateTemplateZonesUseCase(templateId, zones)
+            } else {
+                _uiState.update { it.copy(isSaving = false, error = UiText.StringResource(R.string.profile_daily_zones_error_generic)) }
+                return@launch
+            }
+
+            when (result) {
                 is Result.Success -> {
-                    // Replace local zones with server response to preserve generated IDs
                     val updatedZones = result.data.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
                     _uiState.update { state ->
-                        val updatedTemplates = state.templates.map { template ->
-                            if (template.id == templateId) {
-                                template.copy(zones = result.data)
-                            } else template
+                        val updatedTemplates = state.templates.map { 
+                            if (it.id == templateId) it.copy(zones = result.data) else it
                         }
                         state.copy(
                             isSaving = false,
@@ -149,7 +177,30 @@ class DailyZonesViewModel @Inject constructor(
                         )
                     }
                 }
-                is Result.Error -> _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
+                is Result.Error -> _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
+                Result.Loading -> Unit
+            }
+        }
+    }
+
+    private fun createCategory(name: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true, error = null) }
+            when (val result = createCategoryUseCase(name)) {
+                is Result.Success -> {
+                    when (val catResult = getCategoriesUseCase()) {
+                        is Result.Success -> {
+                            _uiState.update { it.copy(isSaving = false, availableCategories = catResult.data) }
+                        }
+                        is Result.Error -> {
+                            _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(catResult.error)) }
+                        }
+                        Result.Loading -> Unit
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
+                }
                 Result.Loading -> Unit
             }
         }

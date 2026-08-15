@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
+import com.awan.app.core.domain.category.usecase.CreateCategoryUseCase
+import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.usecase.CreateWeeklyTemplateUseCase
@@ -14,7 +16,9 @@ import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateWeeklyTemplateUseCase
 import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
+import com.awan.feature.profile.impl.helpers.ProfileErrorMapper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +32,8 @@ import javax.inject.Inject
 class EditRoutineViewModel @Inject constructor(
     private val getWeeklyTemplatesUseCase: GetWeeklyTemplatesUseCase,
     private val getWeeklyTemplateUseCase: GetWeeklyTemplateUseCase,
+    private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val createCategoryUseCase: CreateCategoryUseCase,
     private val createWeeklyTemplateUseCase: CreateWeeklyTemplateUseCase,
     private val updateWeeklyTemplateUseCase: UpdateWeeklyTemplateUseCase,
     private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase,
@@ -49,6 +55,7 @@ class EditRoutineViewModel @Inject constructor(
             is EditRoutineAction.UpdateZone -> updateZone(action.oldZone, action.newZone)
             is EditRoutineAction.DeleteZone -> deleteZone(action.zone)
             is EditRoutineAction.ReorderZones -> reorderZones(action.from, action.to)
+            is EditRoutineAction.CreateCategory -> createCategory(action.name)
             EditRoutineAction.SaveRoutine -> saveRoutine()
             EditRoutineAction.DeleteRoutine -> deleteRoutine()
         }
@@ -58,9 +65,15 @@ class EditRoutineViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, templateId = templateId) }
 
-            // 1. Fetch ALL templates to see which days are already assigned elsewhere
-            val templatesResult = getWeeklyTemplatesUseCase()
+            // 1. Fetch ALL templates, categories
+            val templatesDeferred = async { getWeeklyTemplatesUseCase() }
+            val categoriesDeferred = async { getCategoriesUseCase() }
+
+            val templatesResult = templatesDeferred.await()
+            val categoriesResult = categoriesDeferred.await()
+
             val allTemplates = (templatesResult as? Result.Success)?.data ?: emptyList()
+            val categories = (categoriesResult as? Result.Success)?.data ?: emptyList()
             
             val otherAssigned = allTemplates
                 .asSequence()
@@ -77,7 +90,8 @@ class EditRoutineViewModel @Inject constructor(
                         name = "",
                         selectedDays = emptySet(),
                         assignedDays = otherAssigned,
-                        zones = emptyList()
+                        zones = emptyList(),
+                        availableCategories = categories
                     ) 
                 }
             } else {
@@ -91,14 +105,16 @@ class EditRoutineViewModel @Inject constructor(
                             name = template.name,
                             selectedDays = template.daysOfWeek.toSet(),
                             assignedDays = otherAssigned,
-                            zones = sortedZones
+                            zones = sortedZones,
+                            availableCategories = categories
                         ) }
                     }
                     is Result.Error -> {
                         _uiState.update { it.copy(
                             isLoading = false,
                             assignedDays = otherAssigned,
-                            error = DailyZonesHelper.zonesErrorToUiText(result.error)
+                            error = ProfileErrorMapper.mapToUiText(result.error),
+                            availableCategories = categories
                         ) }
                     }
                     Result.Loading -> Unit
@@ -153,13 +169,20 @@ class EditRoutineViewModel @Inject constructor(
             // Recalculate times to stay sequential
             val updated = mutableListOf<DailyZone>()
             list.forEachIndexed { index, zone ->
-                val startMins = DailyZonesHelper.parseTimeToMinutes(zone.startTime) ?: 0
-                val endMins = DailyZonesHelper.parseTimeToMinutes(zone.endTime) ?: 0
-                val duration = endMins - startMins
-                val newStart = if (index == 0) "09:00" else updated[index - 1].endTime
-                val newEnd = DailyZonesHelper.formatMinutesToTime(
-                    (DailyZonesHelper.parseTimeToMinutes(newStart) ?: 0) + duration
-                )
+                val startMins = DailyZonesHelper.parseTimeToMinutes(zone.startTime) ?: 540
+                val endMins = DailyZonesHelper.parseTimeToMinutes(zone.endTime) ?: 600
+                
+                // Ensure duration is positive and at least 15 minutes to avoid negative/zero times
+                val duration = (endMins - startMins).coerceAtLeast(15)
+                
+                val newStart = if (index == 0) "09:00:00" else updated[index - 1].endTime
+                val newStartMins = DailyZonesHelper.parseTimeToMinutes(newStart) ?: 540
+                
+                // Ensure total minutes don't exceed a day
+                val newEndMins = newStartMins + duration
+                if (newEndMins > 1439) return@update state
+                val newEnd = DailyZonesHelper.formatMinutesToTime(newEndMins)
+
                 updated.add(zone.copy(startTime = newStart, endTime = newEnd))
             }
             state.copy(zones = updated)
@@ -218,14 +241,14 @@ class EditRoutineViewModel @Inject constructor(
                         _events.send(EditRoutineEvent.SaveSuccess)
                     }
                     is Result.Error -> {
-                        _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
+                        _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
                     }
                     Result.Loading -> Unit
                 }
             } else {
                 val updateNameRes = updateWeeklyTemplateUseCase(templateId, state.name, state.selectedDays.toList())
                 if (updateNameRes is Result.Error) {
-                    _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(updateNameRes.error)) }
+                    _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(updateNameRes.error)) }
                     return@launch
                 }
                 
@@ -235,10 +258,33 @@ class EditRoutineViewModel @Inject constructor(
                         _events.send(EditRoutineEvent.SaveSuccess)
                     }
                     is Result.Error -> {
-                        _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(updateZonesRes.error)) }
+                        _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(updateZonesRes.error)) }
                     }
                     Result.Loading -> Unit
                 }
+            }
+        }
+    }
+
+    private fun createCategory(name: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true, error = null) }
+            when (val result = createCategoryUseCase(name)) {
+                is Result.Success -> {
+                    when (val catResult = getCategoriesUseCase()) {
+                        is Result.Success -> {
+                            _uiState.update { it.copy(isSaving = false, availableCategories = catResult.data) }
+                        }
+                        is Result.Error -> {
+                            _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(catResult.error)) }
+                        }
+                        Result.Loading -> Unit
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
+                }
+                Result.Loading -> Unit
             }
         }
     }
@@ -253,7 +299,7 @@ class EditRoutineViewModel @Inject constructor(
                     _events.send(EditRoutineEvent.DeleteSuccess)
                 }
                 is Result.Error -> {
-                    _uiState.update { it.copy(isSaving = false, error = DailyZonesHelper.zonesErrorToUiText(result.error)) }
+                    _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
                 }
                 Result.Loading -> Unit
             }

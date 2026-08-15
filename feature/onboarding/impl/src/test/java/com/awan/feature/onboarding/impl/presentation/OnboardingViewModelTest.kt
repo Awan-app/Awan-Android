@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -106,6 +107,59 @@ class OnboardingViewModelTest {
         assertEquals(4, vm.state.value.zones.size)
         assertTrue(vm.state.value.availableCategories.isEmpty())
         assertTrue(vm.state.value.zones.all { it.categoryId == null })
+    }
+
+    /** The whole point of Skip is being fast, so it beats the category fetch every time. */
+    @Test
+    fun `skipping the setup still sends the default zones with their categories`() = runTest(testDispatcher) {
+        val vm = viewModel(FakeCategoryRepository(loadDelayMillis = 1_000))
+
+        vm.onAction(OnboardingAction.SkipSetup)
+        advanceUntilIdle()
+
+        val sent = repository.lastCompletedData?.zones.orEmpty()
+        assertEquals(4, sent.size)
+        assertTrue(sent.all { it.categoryId != null })
+    }
+
+    @Test
+    fun `a category load that came back empty is retried before the hand-off`() = runTest(testDispatcher) {
+        val categoryRepository = FakeCategoryRepository(categories = emptyList())
+        val vm = viewModel(categoryRepository)
+
+        vm.onAction(OnboardingAction.SkipSetup)
+        advanceUntilIdle()
+
+        assertEquals(2, categoryRepository.callCount)
+    }
+
+    /**
+     * `isSubmittingTask` only disables the buttons from the next frame, and `EnableNotifications`
+     * never sets it — so a second tap lands while the first submit is still suspended, reads
+     * `isBackendOnboarded` before the first has set it, and onboards the account twice.
+     */
+    @Test
+    fun `a second submit while one is in flight is dropped rather than onboarding twice`() =
+        runTest(testDispatcher) {
+            val vm = viewModel(FakeCategoryRepository(loadDelayMillis = 1_000))
+
+            vm.onAction(OnboardingAction.SkipSetup)
+            vm.onAction(OnboardingAction.SkipSetup)
+            advanceUntilIdle()
+
+            assertEquals(1, repository.callCount)
+        }
+
+    @Test
+    fun `a submit that has finished does not block the next one`() = runTest(testDispatcher) {
+        repository.failWith = AppError.Network
+
+        viewModel.onAction(OnboardingAction.SkipSetup)
+        advanceUntilIdle()
+        viewModel.onAction(OnboardingAction.SkipSetup)
+        advanceUntilIdle()
+
+        assertEquals(2, repository.callCount)
     }
 
     @Test

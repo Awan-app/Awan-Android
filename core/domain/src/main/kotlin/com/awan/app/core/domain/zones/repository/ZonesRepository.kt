@@ -10,6 +10,13 @@ import com.awan.app.core.model.DayZone
 import java.time.LocalDate
 
 interface ZonesRepository {
+
+    /**
+     * Pulls the whole zone model into Room, replacing what is there. Every mutation ends with it, so
+     * screens only need it when they open — before that, they render whatever Room already holds.
+     */
+    suspend fun refreshZones(): Result<Unit>
+
     suspend fun getZonesForDate(date: LocalDate): Result<List<DayZone>>
 
     // Templates

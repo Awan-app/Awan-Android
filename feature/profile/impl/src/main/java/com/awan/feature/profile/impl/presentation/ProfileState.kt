@@ -2,6 +2,7 @@ package com.awan.feature.profile.impl.presentation
 
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.profile.model.Profile
+import com.awan.app.core.model.Category
 
 sealed interface PendingPicture {
     data object Clear : PendingPicture
@@ -18,5 +19,6 @@ data class ProfileState(
     val isUploadingPicture: Boolean = false,
     val fieldError: UiText? = null,
     val pendingPicture: PendingPicture? = null,
+    val categories: List<Category> = emptyList(),
     val equippedFrameImageUrl: String? = null,
 )

@@ -13,4 +13,48 @@
     <string name="ds_pts">+%1$d نقطة</string>
     <string name="ds_friend">صديقي</string>
     <string name="ds_back">رجوع</string>
+
+    <!-- Streak celebration -->
+    <string name="ds_streak_days">يوم متتالي</string>
+    <string name="ds_streak_headline">أنت مشتعل!</string>
+    <string name="ds_streak_best_headline">رقم قياسي جديد!</string>
+    <string name="ds_streak_best_subtitle">%1$d يوم — أطول سلسلة لك حتى الآن.</string>
+    <string name="ds_streak_flame">شعلة السلسلة</string>
+    <string-array name="ds_streak_motivations">
+        <item>اليوم الأول هو الأصعب، وقد تجاوزته.</item>
+        <item>يومان متتاليان. هكذا تبدأ العادة.</item>
+        <item>أنت تواظب — والنتيجة واضحة.</item>
+        <item>الثبات هو السر. أبقِ الشعلة مشتعلة.</item>
+        <item>هكذا يبدو الالتزام الحقيقي.</item>
+        <item>لا يمكن إيقافك. نلتقي غداً؟</item>
+    </string-array>
+
+    <!-- Daily wheel -->
+    <string name="ds_wheel_badge">هدية اليوم — لديك لفة مجانية</string>
+    <string name="ds_wheel_title">هدية اليوم</string>
+    <string name="ds_wheel_subtitle_available">أدر العجلة واكتشف مكافأتك</string>
+    <string name="ds_wheel_subtitle_claimed">عد غداً للحصول على هدية أخرى</string>
+    <string name="ds_wheel_claimed_title">تم استلام هدية اليوم</string>
+    <string name="ds_wheel_todays_reward">مكافأة اليوم</string>
+    <string name="ds_wheel_see_you_tomorrow">نلتقي غداً!</string>
+    <string name="ds_wheel_you_won_headline">لقد فزت!</string>
+    <string name="ds_wheel_awesome">رائع!</string>
+    <string name="ds_wheel_tap_to_spin">اضغط على العجلة لتدويرها</string>
+    <string name="ds_wheel_spinning">جارٍ التدوير…</string>
+    <string name="ds_wheel_won_coins">لقد ربحت %1$d نقطة!</string>
+    <string name="ds_wheel_won_item">لقد ربحت %1$s!</string>
+    <string name="ds_wheel_claimed">لقد استخدمت لفة اليوم. عد غداً!</string>
+    <string name="ds_wheel_collect">استلام</string>
+    <string name="ds_wheel_close">إغلاق</string>
+    <string name="ds_wheel_item_wedge">هدية</string>
+
+    <!-- Points shortcuts -->
+    <string name="ds_points_thousand">%1$s ألف</string>
+    <string name="ds_points_million">%1$s مليون</string>
+    <string name="ds_points_billion">%1$s مليار</string>
+
+    <!-- Navigation & Combos -->
+    <string name="ds_next_day">اليوم التالي</string>
+    <string name="ds_previous_day">اليوم السابق</string>
+    <string name="ds_combo_bonus">مكافأة تتابع %1$d×!</string>
 </resources>

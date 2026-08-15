@@ -4,8 +4,6 @@ import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.network.api.ProfileApiService
-import com.awan.app.core.network.dto.profile.AwardPointsRequest
-import com.awan.app.core.network.dto.profile.DeductPointsRequest
 import com.awan.app.core.network.dto.profile.ProfilePictureResponse
 import com.awan.app.core.network.dto.profile.ProfileResponse
 import com.awan.app.core.network.dto.profile.UpdateBirthDateRequest
@@ -132,41 +130,5 @@ class ProfileRemoteDataSourceImpl @Inject constructor(
             json = json,
         ) {
             profileApiService.updateSchedulingType(request)
-        }
-
-    override suspend fun incrementStreak(): Result<ProfileResponse> =
-        safeApiCall(
-            dispatcher = ioDispatcher,
-            json = json,
-        ) {
-            profileApiService.incrementStreak()
-        }
-
-    override suspend fun resetStreak(): Result<ProfileResponse> =
-        safeApiCall(
-            dispatcher = ioDispatcher,
-            json = json,
-        ) {
-            profileApiService.resetStreak()
-        }
-
-    override suspend fun awardPoints(
-        request: AwardPointsRequest,
-    ): Result<ProfileResponse> =
-        safeApiCall(
-            dispatcher = ioDispatcher,
-            json = json,
-        ) {
-            profileApiService.awardPoints(request)
-        }
-
-    override suspend fun deductPoints(
-        request: DeductPointsRequest,
-    ): Result<ProfileResponse> =
-        safeApiCall(
-            dispatcher = ioDispatcher,
-            json = json,
-        ) {
-            profileApiService.deductPoints(request)
         }
 }

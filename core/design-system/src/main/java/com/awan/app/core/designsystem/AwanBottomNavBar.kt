@@ -9,7 +9,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,7 +23,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -34,8 +35,11 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 data class BottomNavItem(
     val id: String,
@@ -52,9 +56,12 @@ fun AwanBottomNavBar(
     onItemSelected: (BottomNavItem) -> Unit,
     onFabClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Id of the tab a won item should fly to. Null leaves the anchor unregistered. */
+    anchoredItemId: String? = null,
 ) {
     val navBarShape = RoundedCornerShape(22.dp)
     val navBarRimDepth = 4.dp
+    val rewardAnchors = LocalRewardAnchors.current
 
     Box(
         modifier = modifier
@@ -115,7 +122,18 @@ fun AwanBottomNavBar(
                                 item = item,
                                 isSelected = isSelected,
                                 onClick = { onItemSelected(item) },
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .then(
+                                        if (item.id == anchoredItemId) {
+                                            Modifier.rewardAnchor(
+                                                anchor = RewardAnchor.ProfileTab,
+                                                anchors = rewardAnchors,
+                                            )
+                                        } else {
+                                            Modifier
+                                        }
+                                    ),
                             )
                         }
                     }
@@ -143,30 +161,42 @@ private fun NavTabItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
     val scale by animateFloatAsState(
         targetValue = when {
-            isPressed -> 0.86f
-            isSelected -> 1.08f
+            isPressed -> 0.90f
+            isFocused -> 1.12f
+            isSelected -> 1.06f
             else -> 1.0f
         },
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessHigh
         ),
         label = "tabScale"
     )
 
     val iconColor by animateColorAsState(
-        targetValue = if (isSelected) AwanTheme.colors.sky else AwanTheme.colors.textSecondary.copy(alpha = 0.65f),
-        animationSpec = tween(durationMillis = 180),
+        targetValue = if (isSelected || isFocused) AwanTheme.colors.sky else AwanTheme.colors.textSecondary.copy(alpha = 0.65f),
+        animationSpec = tween(durationMillis = 120),
         label = "tabIconColor"
     )
 
     val tileShape = RoundedCornerShape(12.dp)
 
     Box(
-        modifier = modifier,
+        modifier = modifier
+            .semantics {
+                role = Role.Tab
+                selected = isSelected
+            }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .focusable(interactionSource = interactionSource),
         contentAlignment = Alignment.Center
     ) {
         Box(
@@ -175,22 +205,17 @@ private fun NavTabItem(
                 .size(width = 42.dp, height = 42.dp)
                 .clip(tileShape)
                 .then(
-                    if (isSelected) {
+                    if (isSelected || isFocused) {
                         Modifier
-                            .background(AwanTheme.colors.sky.copy(alpha = 0.12f))
+                            .background(AwanTheme.colors.sky.copy(alpha = if (isFocused) 0.20f else 0.12f))
                             .border(
                                 width = 1.5.dp,
-                                color = AwanTheme.colors.sky.copy(alpha = 0.35f),
+                                color = AwanTheme.colors.sky.copy(alpha = if (isFocused) 0.60f else 0.35f),
                                 shape = tileShape
                             )
                     } else {
                         Modifier
                     }
-                )
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = onClick
                 ),
             contentAlignment = Alignment.Center
         ) {
@@ -216,14 +241,15 @@ private fun SquareRounded3dPrimaryButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
     val buttonShape = RoundedCornerShape(18.dp)
     val rimDepth = 4.dp
     val pressOffsetY by animateDpAsState(
         targetValue = if (isPressed) 4.dp else 0.dp,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessHigh
         ),
         label = "buttonPressOffset"
     )
@@ -234,11 +260,15 @@ private fun SquareRounded3dPrimaryButton(
     Box(
         modifier = modifier
             .size(width = 56.dp, height = 56.dp + rimDepth)
+            .semantics {
+                role = Role.Button
+            }
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
-            ),
+            )
+            .focusable(interactionSource = interactionSource),
         contentAlignment = Alignment.TopCenter
     ) {
         // Bottom 3D Rim Base Layer
@@ -263,8 +293,8 @@ private fun SquareRounded3dPrimaryButton(
                 .clip(buttonShape)
                 .background(primaryColor)
                 .border(
-                    width = 1.5.dp,
-                    color = Color.White.copy(alpha = 0.4f),
+                    width = if (isFocused) 2.5.dp else 1.5.dp,
+                    color = if (isFocused) AwanTheme.colors.sky else Color.White.copy(alpha = 0.4f),
                     shape = buttonShape
                 ),
             contentAlignment = Alignment.Center

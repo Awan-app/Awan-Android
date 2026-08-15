@@ -12,6 +12,8 @@ fun ProfileRouteScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
     onDailyZonesClick: () -> Unit,
     onInventoryClick: () -> Unit,
+    onNavigateToMcpSettings: () -> Unit,
+    onNavigateToNotificationSettings: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -22,7 +24,12 @@ fun ProfileRouteScreen(
         onAction = viewModel::onAction,
         onDailyZonesClick = onDailyZonesClick,
         onInventoryClick = onInventoryClick,
-        onSettingsClick = { },
+        onSettingsClick = { settingKey ->
+            when (settingKey) {
+                "mcp" -> onNavigateToMcpSettings()
+                "notifications" -> onNavigateToNotificationSettings()
+            }
+        },
         onLogout = onLogout,
     )
 }

@@ -1,25 +1,25 @@
 package com.awan.app.core.domain.inventory.model
 
-enum class CustomizationRarity(
-    val rank: Int,
-) {
-    UNKNOWN(0),
-    COMMON(1),
-    UNCOMMON(2),
-    RARE(3),
-    EPIC(4),
-    LEGENDARY(5),
-    ;
+enum class CustomizationRarity {
+    COMMON,
+    UNCOMMON,
+    RARE,
+    EPIC,
+    LEGENDARY,
+    UNKNOWN;
 
     companion object {
-        private val rarityLabel = Regex("^\\s*rarity\\s*:\\s*(\\w+)\\s*$", RegexOption.IGNORE_CASE)
-
-        fun fromInfo(info: String?): CustomizationRarity =
-            rarityLabel.matchEntire(info ?: return UNKNOWN)
-                ?.groupValues
-                ?.getOrNull(1)
-                ?.uppercase()
-                ?.let { value -> entries.firstOrNull { it.name == value } }
-                ?: UNKNOWN
+        fun fromInfo(info: String?): CustomizationRarity {
+            if (info == null) return UNKNOWN
+            val lower = info.lowercase()
+            return when {
+                lower.contains("legendary") -> LEGENDARY
+                lower.contains("epic") -> EPIC
+                lower.contains("rare") -> RARE
+                lower.contains("uncommon") -> UNCOMMON
+                lower.contains("common") -> COMMON
+                else -> UNKNOWN
+            }
+        }
     }
 }

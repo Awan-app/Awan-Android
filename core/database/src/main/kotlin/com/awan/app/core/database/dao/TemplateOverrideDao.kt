@@ -30,4 +30,8 @@ interface TemplateOverrideDao {
 
     @Query("DELETE FROM template_overrides WHERE id = :overrideId")
     suspend fun deleteOverride(overrideId: String)
+
+    /** Clears the table. Override-owned zones CASCADE away with it. For `replaceAll` only. */
+    @Query("DELETE FROM template_overrides")
+    suspend fun deleteAllOverrides()
 }

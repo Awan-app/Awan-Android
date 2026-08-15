@@ -5,6 +5,7 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.UpcomingSessionRow
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
@@ -86,6 +87,8 @@ class AiTaskRepositoryImplTest {
             error("not used")
 
         override suspend fun deleteTask(taskId: String): Result<Unit> = error("not used")
+
+        override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = error("not used")
     }
 
     private val fakeTaskDao = object : TaskDao {
@@ -116,6 +119,8 @@ class AiTaskRepositoryImplTest {
         override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<SessionEntity>> = flowOf(emptyList())
         override suspend fun getSessionsForDate(date: String): List<SessionEntity> = emptyList()
         override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = emptyList()
+        override fun observeUpcomingSessions(startDate: String, endDate: String): Flow<List<UpcomingSessionRow>> = flowOf(emptyList())
+        override suspend fun getUpcomingSessions(startDate: String, endDate: String): List<UpcomingSessionRow> = emptyList()
         override suspend fun getSession(id: String): SessionEntity? = null
         override suspend fun deleteSessionsForDates(dates: List<String>) {}
         override suspend fun deleteSession(id: String) {}

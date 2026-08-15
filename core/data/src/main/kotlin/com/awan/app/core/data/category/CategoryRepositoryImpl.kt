@@ -29,8 +29,19 @@ class CategoryRepositoryImpl @Inject constructor(
 ) : CategoryRepository {
 
     override suspend fun getCategories(): Result<List<Category>> {
-        val entities = categoryDao.getAllCategories()
-        return Result.Success(entities.map { it.toModel() })
+        val cached = categoryDao.getAllCategories()
+        // Room is empty until SyncWorker lands, and onboarding needs the list before that: a zone
+        // sent without a categoryId is rejected, so an empty table there costs the user their zones.
+        // The network still only refills Room — the read below is what the caller gets.
+        if (cached.isEmpty() && connectivityMonitor.isCurrentlyOnline()) {
+            return safeApiCall {
+                val entities = categoryApiService.getCategories()
+                    .map { CategoryEntity(id = it.id, name = it.name) }
+                categoryDao.upsertCategories(entities)
+                entities.map { it.toModel() }
+            }
+        }
+        return Result.Success(cached.map { it.toModel() })
     }
 
     override suspend fun createCategory(name: String): Result<Category> {
@@ -64,4 +75,6 @@ class CategoryRepositoryImpl @Inject constructor(
             entity.toModel()
         }
     }
+
+
 }

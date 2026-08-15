@@ -17,6 +17,9 @@ interface AuthTokenProvider {
 
     suspend fun setLoggedIn(loggedIn: Boolean)
 
+    suspend fun saveFcmToken(token: String)
+    suspend fun getFcmToken(): String?
+
     val sessionExpired: Flow<Unit>
 
     fun notifySessionExpired()

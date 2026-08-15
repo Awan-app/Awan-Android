@@ -1,5 +1,6 @@
 package com.awan.app.core.data.sync
 
+import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.database.dao.CachedScheduleDateDao
 import com.awan.app.core.database.dao.CategoryDao
@@ -8,12 +9,17 @@ import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.dao.TemplateDao
 import com.awan.app.core.database.dao.TemplateOverrideDao
+import com.awan.app.core.database.dao.StoreDao
 import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.CachedScheduleDateEntity
 import com.awan.app.core.database.model.CategoryEntity
+import com.awan.app.core.database.model.EquippedItemEntity
 import com.awan.app.core.database.model.GoalEntity
+import com.awan.app.core.database.model.OwnedItemEntity
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.UpcomingSessionRow
+import com.awan.app.core.database.model.StoreItemEntity
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
 import com.awan.app.core.database.model.TemplateDayOfWeekEntity
@@ -25,6 +31,7 @@ import com.awan.app.core.database.model.UserWithPreferences
 import com.awan.app.core.database.model.ZoneEntity
 import com.awan.app.core.data.category.remote.CategoryRemoteDataSource
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
+import com.awan.app.core.data.marketplace.remote.StoreRemoteDataSource
 import com.awan.app.core.data.profile.remote.ProfileRemoteDataSource
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.data.zones.remote.ZonesRemoteDataSource
@@ -33,8 +40,6 @@ import com.awan.app.core.network.dto.GoalDecomposeRequest
 import com.awan.app.core.network.dto.GoalDecomposeResponse
 import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.category.CategoryDto
-import com.awan.app.core.network.dto.profile.AwardPointsRequest
-import com.awan.app.core.network.dto.profile.DeductPointsRequest
 import com.awan.app.core.network.dto.profile.ProfileResponse
 import com.awan.app.core.network.dto.profile.UpdateBirthDateRequest
 import com.awan.app.core.network.dto.profile.UpdateNameRequest
@@ -44,6 +49,10 @@ import com.awan.app.core.network.dto.profile.UpdateSessionSettingsRequest
 import com.awan.app.core.network.dto.profile.UpdateSleepScheduleRequest
 import com.awan.app.core.network.dto.profile.UpdateTimezoneRequest
 import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.network.dto.store.EquippedItemDto
+import com.awan.app.core.network.dto.store.OwnedItemDto
+import com.awan.app.core.network.dto.store.StoreItemDto
+import com.awan.app.core.network.dto.store.StoreItemTypeDto
 import com.awan.app.core.network.dto.task.AiTextToTasksRequest
 import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
@@ -88,6 +97,7 @@ private class FakeTaskRemoteDataSource(
     override suspend fun proposeTasksFromText(request: AiTextToTasksRequest) = error("not used")
     override suspend fun proposeTasksFromImage(image: ByteArray, mimeType: String, note: String?) = error("not used")
     override suspend fun getTasksByRange(startDate: String, endDate: String) = rangeResult
+    override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = Result.Success(emptyList())
     override suspend fun scheduleTask(request: ScheduleTaskRequest) = error("not used")
     override suspend fun deleteTask(taskId: String) = error("not used")
 }
@@ -119,6 +129,15 @@ private class FakeCategoryRemoteDataSource(
     override suspend fun updateCategory(categoryId: String, name: String): Result<CategoryDto> = error("not used")
 }
 
+private class FakeStoreRemoteDataSource : StoreRemoteDataSource {
+    override suspend fun getStoreItems(type: StoreItemTypeDto?): Result<List<StoreItemDto>> = Result.Success(emptyList())
+    override suspend fun getInventory(): Result<List<OwnedItemDto>> = Result.Success(emptyList())
+    override suspend fun buyItem(itemId: String): Result<Unit> = Result.Success(Unit)
+    override suspend fun getEquippedItems(): Result<List<EquippedItemDto>> = Result.Success(emptyList())
+    override suspend fun equipItem(itemId: String): Result<Unit> = Result.Success(Unit)
+    override suspend fun unequipItem(itemId: String): Result<Unit> = Result.Success(Unit)
+}
+
 private class FakeProfileRemoteDataSource : ProfileRemoteDataSource {
     override suspend fun getProfileInfo(): Result<ProfileResponse> = Result.Success(ProfileResponse())
     override suspend fun updateProfileName(request: UpdateNameRequest) = error("not used")
@@ -128,17 +147,17 @@ private class FakeProfileRemoteDataSource : ProfileRemoteDataSource {
     override suspend fun updateSessionSettings(request: UpdateSessionSettingsRequest) = error("not used")
     override suspend fun updateSleepSchedule(request: UpdateSleepScheduleRequest) = error("not used")
     override suspend fun updateSchedulingType(request: UpdateSchedulingTypeRequest) = error("not used")
-    override suspend fun incrementStreak() = error("not used")
-    override suspend fun resetStreak() = error("not used")
-    override suspend fun awardPoints(request: AwardPointsRequest) = error("not used")
-    override suspend fun deductPoints(request: DeductPointsRequest) = error("not used")
     override suspend fun updateProfilePicture(imageBytes: ByteArray, mimeType: String) = error("not used")
     override suspend fun deleteProfilePicture() = error("not used")
 }
 
-private class FakeZonesRemoteDataSource : ZonesRemoteDataSource {
+private class FakeZonesRemoteDataSource(
+    private val templatesFail: Boolean = false,
+    private val overridesFail: Boolean = false,
+) : ZonesRemoteDataSource {
     override suspend fun getZonesByDate(date: String) = Result.Success(emptyList<ZoneDto>())
-    override suspend fun getTemplates() = Result.Success(emptyList<WeeklyTemplateDto>())
+    override suspend fun getTemplates(): Result<List<WeeklyTemplateDto>> =
+        if (templatesFail) Result.Error(AppError.Network) else Result.Success(emptyList())
     override suspend fun createTemplate(request: CreateTemplateRequest) = error("not used")
     override suspend fun getTemplate(templateId: String) = error("not used")
     override suspend fun updateTemplate(templateId: String, request: UpdateTemplateRequest) = error("not used")
@@ -147,7 +166,8 @@ private class FakeZonesRemoteDataSource : ZonesRemoteDataSource {
     override suspend fun getTemplateZones(templateId: String) = Result.Success(emptyList<ZoneDto>())
     override suspend fun updateTemplateZones(templateId: String, request: UpdateZonesRequest) = Result.Success(emptyList<ZoneDto>())
     override suspend fun createOverride(request: CreateOverrideRequest) = error("not used")
-    override suspend fun getOverrides() = Result.Success(emptyList<TemplateOverrideDto>())
+    override suspend fun getOverrides(): Result<List<TemplateOverrideDto>> =
+        if (overridesFail) Result.Error(AppError.Network) else Result.Success(emptyList())
     override suspend fun getOverride(overrideId: String) = error("not used")
     override suspend fun updateOverride(overrideId: String, request: UpdateOverrideRequest) = error("not used")
     override suspend fun deleteOverride(overrideId: String) = error("not used")
@@ -204,6 +224,8 @@ private class FakeSessionDao : SessionDao {
     override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<SessionEntity>> = flowOf(emptyList())
     override suspend fun getSessionsForDate(date: String): List<SessionEntity> = emptyList()
     override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = emptyList()
+    override fun observeUpcomingSessions(startDate: String, endDate: String): Flow<List<UpcomingSessionRow>> = flowOf(emptyList())
+    override suspend fun getUpcomingSessions(startDate: String, endDate: String): List<UpcomingSessionRow> = emptyList()
     override suspend fun getSession(id: String): SessionEntity? = null
     override suspend fun deleteSessionsForDates(dates: List<String>) { replacedDates += dates }
     override suspend fun deleteSession(id: String) {}
@@ -222,6 +244,29 @@ private class FakeGoalDao : GoalDao {
     override suspend fun deleteGoal(goalId: String) {}
     override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
     override suspend fun getMinExpiryTime(): Long? = null
+}
+
+private class FakeStoreDao : StoreDao {
+    var storeItems = listOf<StoreItemEntity>()
+    var ownedItems = listOf<OwnedItemEntity>()
+    var equippedItems = listOf<EquippedItemEntity>()
+    override suspend fun upsertStoreItems(items: List<StoreItemEntity>) { storeItems = items }
+    override fun observeStoreItems(): Flow<List<StoreItemEntity>> = flowOf(storeItems)
+    override fun observeStoreItemsByType(type: String): Flow<List<StoreItemEntity>> = flowOf(storeItems.filter { it.type == type })
+    override suspend fun deleteAllStoreItems() { storeItems = emptyList() }
+    override suspend fun upsertOwnedItems(items: List<OwnedItemEntity>) { ownedItems = items }
+    override fun observeOwnedItems(): Flow<List<OwnedItemEntity>> = flowOf(ownedItems)
+    override suspend fun deleteAllOwnedItems() { ownedItems = emptyList() }
+    override suspend fun upsertEquippedItems(items: List<EquippedItemEntity>) { equippedItems = items }
+    override fun observeEquippedItems(): Flow<List<EquippedItemEntity>> = flowOf(equippedItems)
+    override suspend fun deleteAllEquippedItems() { equippedItems = emptyList() }
+    override suspend fun deleteEquippedItemByType(type: String) { equippedItems = equippedItems.filter { it.type != type } }
+    override suspend fun replaceStoreItems(items: List<StoreItemEntity>) { storeItems = items }
+    override suspend fun replaceOwnedItems(items: List<OwnedItemEntity>) { ownedItems = items }
+    override suspend fun replaceEquippedItems(items: List<EquippedItemEntity>) { equippedItems = items }
+    override suspend fun getMinExpiryTime(): Long? = null
+    override suspend fun getMinOwnedExpiryTime(): Long? = null
+    override suspend fun getMinEquippedExpiryTime(): Long? = null
 }
 
 private class FakeUserDao : UserDao {
@@ -251,6 +296,8 @@ private class FakeZoneDao : ZoneDao {
     override suspend fun deleteZone(zoneId: String) {}
     override suspend fun deleteZonesForTemplate(templateId: String) {}
     override suspend fun deleteZonesForOverride(overrideId: String) {}
+    override fun observeEffectiveZonesForDate(date: String, dayOfWeek: String): Flow<List<ZoneEntity>> =
+        flowOf(emptyList())
 }
 
 private class FakeTemplateDao : TemplateDao {
@@ -262,6 +309,7 @@ private class FakeTemplateDao : TemplateDao {
     override fun observeTemplate(templateId: String): Flow<TemplateEntity?> = MutableStateFlow(null)
     override suspend fun getTemplate(templateId: String): TemplateEntity? = null
     override suspend fun deleteTemplate(templateId: String) {}
+    override suspend fun deleteAllTemplates() {}
     override suspend fun upsertDays(days: List<TemplateDayOfWeekEntity>) { upsertedDays += days }
     override fun observeDaysForTemplate(templateId: String): Flow<List<TemplateDayOfWeekEntity>> = flowOf(emptyList())
     override suspend fun getDayAssignment(dayOfWeek: String): TemplateDayOfWeekEntity? = null
@@ -278,6 +326,31 @@ private class FakeTemplateOverrideDao : TemplateOverrideDao {
     override suspend fun getOverride(overrideId: String): TemplateOverrideEntity? = null
     override suspend fun getOverrideForDate(date: String): TemplateOverrideEntity? = null
     override suspend fun deleteOverride(overrideId: String) {}
+    override suspend fun deleteAllOverrides() {}
+}
+
+private class FakeZonesLocalDataSource : com.awan.app.core.data.zones.local.ZonesLocalDataSource {
+    var replaceCount = 0
+        private set
+    var templates: List<com.awan.app.core.network.dto.zone.WeeklyTemplateDto> = emptyList()
+        private set
+    var overrides: List<com.awan.app.core.network.dto.zone.TemplateOverrideDto> = emptyList()
+        private set
+
+    override suspend fun replaceAll(
+        templates: List<com.awan.app.core.network.dto.zone.WeeklyTemplateDto>,
+        overrides: List<com.awan.app.core.network.dto.zone.TemplateOverrideDto>,
+        expiryTime: Long,
+    ) {
+        replaceCount++
+        this.templates = templates
+        this.overrides = overrides
+    }
+
+    override fun observeEffectiveZonesForDate(
+        date: String,
+        dayOfWeek: String,
+    ): Flow<List<ZoneEntity>> = flowOf(emptyList())
 }
 
 private class FakeCachedScheduleDateDao : CachedScheduleDateDao {
@@ -318,32 +391,34 @@ class OfflineSyncCoordinatorTest {
         taskRemoteDataSource: TaskRemoteDataSource = FakeTaskRemoteDataSource(),
         goalRemoteDataSource: GoalRemoteDataSource = FakeGoalRemoteDataSource(),
         categoryRemoteDataSource: CategoryRemoteDataSource = FakeCategoryRemoteDataSource(),
+        storeRemoteDataSource: StoreRemoteDataSource = FakeStoreRemoteDataSource(),
         profileRemoteDataSource: ProfileRemoteDataSource = FakeProfileRemoteDataSource(),
         zonesRemoteDataSource: ZonesRemoteDataSource = FakeZonesRemoteDataSource(),
         taskDao: TaskDao = FakeTaskDao(),
         categoryDao: CategoryDao = FakeCategoryDao(),
         sessionDao: SessionDao = FakeSessionDao(),
         goalDao: GoalDao = FakeGoalDao(),
+        storeDao: StoreDao = FakeStoreDao(),
         userDao: UserDao = FakeUserDao(),
-        zoneDao: ZoneDao = FakeZoneDao(),
         templateDao: TemplateDao = FakeTemplateDao(),
-        templateOverrideDao: TemplateOverrideDao = FakeTemplateOverrideDao(),
+        zonesLocalDataSource: com.awan.app.core.data.zones.local.ZonesLocalDataSource = FakeZonesLocalDataSource(),
         cachedScheduleDateDao: CachedScheduleDateDao = FakeCachedScheduleDateDao(),
         connectivityMonitor: NetworkConnectivityMonitor = onlineMonitor,
     ) = OfflineSyncCoordinator(
         taskRemoteDataSource = taskRemoteDataSource,
         goalRemoteDataSource = goalRemoteDataSource,
         categoryRemoteDataSource = categoryRemoteDataSource,
+        storeRemoteDataSource = storeRemoteDataSource,
         profileRemoteDataSource = profileRemoteDataSource,
         zonesRemoteDataSource = zonesRemoteDataSource,
         taskDao = taskDao,
         categoryDao = categoryDao,
         sessionDao = sessionDao,
         goalDao = goalDao,
+        storeDao = storeDao,
         userDao = userDao,
-        zoneDao = zoneDao,
         templateDao = templateDao,
-        templateOverrideDao = templateOverrideDao,
+        zonesLocalDataSource = zonesLocalDataSource,
         cachedScheduleDateDao = cachedScheduleDateDao,
         connectivityMonitor = connectivityMonitor,
         ioDispatcher = testDispatcher,
@@ -492,4 +567,38 @@ class OfflineSyncCoordinatorTest {
 
         assertFalse(result)
     }
+
+    // ── Zones: replace, all-or-nothing ────────────────────────────────────────
+
+    @Test
+    fun syncZonesAndTemplates_replacesTheWholeModelOnce() = runTest(testDispatcher) {
+        val local = FakeZonesLocalDataSource()
+        val coordinator = buildCoordinator(zonesLocalDataSource = local)
+
+        assertTrue(coordinator.syncZonesAndTemplates(forceRefresh = true))
+        assertEquals(1, local.replaceCount)
+    }
+
+    /** A half-written replace would delete the templates this sync could not refetch. */
+    @Test
+    fun syncZonesAndTemplates_writesNothingAndFailsWhenEitherCallFails() = runTest(testDispatcher) {
+        val templatesDown = FakeZonesLocalDataSource()
+        assertFalse(
+            buildCoordinator(
+                zonesRemoteDataSource = FakeZonesRemoteDataSource(templatesFail = true),
+                zonesLocalDataSource = templatesDown,
+            ).syncZonesAndTemplates(forceRefresh = true)
+        )
+        assertEquals(0, templatesDown.replaceCount)
+
+        val overridesDown = FakeZonesLocalDataSource()
+        assertFalse(
+            buildCoordinator(
+                zonesRemoteDataSource = FakeZonesRemoteDataSource(overridesFail = true),
+                zonesLocalDataSource = overridesDown,
+            ).syncZonesAndTemplates(forceRefresh = true)
+        )
+        assertEquals(0, overridesDown.replaceCount)
+    }
+
 }

@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## Project
 
@@ -52,15 +52,28 @@ Dependency direction is always `presentation → domain ← data`. Domain depend
 
 - `build-logic/` convention plugins own shared Gradle config: `awan.android.application`, `awan.android.library`, `awan.jvm.library`, `awan.android.compose`, `awan.android.hilt`, `awan.android.feature`, `awan.android.room`, `awan.android.navigation`. Module build files stay declarative — apply these instead of repeating config.
 - `:core:*` modules: `model` (domain models), `domain` (repository contracts + use cases), `data` (repository impls, data sources, DTOs/mappers), `database` (Room), `common` (dispatchers, `Result`, `AppError`), `datastore` + `datastore-proto` (Proto DataStore prefs, encrypted token storage), `network` (Retrofit/OkHttp, auth interceptor + token authenticator), `design-system` (Awan components, Styles API themes, tokens), `navigation` (`Navigator`, `NavigationState`, `Route`).
-- `:feature:*` modules with **api/impl split** (api = routes only, impl = EntryProvider + screens): splash, onboarding, auth, home, calendar, chat, goals, profile, marketplace. Features depend on core and other features' `api` modules, never on their `impl`. Exception: `:feature:add-task` has no split — it's a state-driven sheet, not a navigation destination, so it exports no Route and only `:app` consumes it.
+- `:feature:*` modules with **api/impl split** (api = routes only, impl = EntryProvider + screens): splash, onboarding, auth, home, calendar, chat, goals, profile, marketplace, ai-tasks. Features depend on core and other features' `api` modules, never on their `impl`. Exception: `:feature:add-task` has no split — it's a state-driven sheet, not a navigation destination, so it exports no Route and only `:app` consumes it.
 - `:app` hosts the Navigation 3 shell: `AwanApp`, `AwanAppState`, `TopLevelDestination`, `MainActivity`.
 - Hilt DI throughout; UDF ViewModels exposing `StateFlow` of sealed UI state.
 - Packages: `com.awan.app` (app), `com.awan.app.core.*` (core), `com.awan.feature.*` (features).
 
+### Offline-first — Room is the single source of truth
+
+Built. Repositories return `Flow` from DAOs and the UI observes that; the network only ever refills Room.
+
+- **A write that doesn't land in Room is invisible.** After a successful remote call, mirror the response into the DAO — the screen is watching Room, not the call. Returning `Result.Success` without upserting leaves the UI on stale data until something forces a refresh.
+- **Gate writes on `NetworkConnectivityMonitor.isCurrentlyOnline()`** and return `AppError.Network` when offline, instead of letting the call fail deep in the stack.
+- Freshness is per-row: entities carry `expiryTime`, filled from `SyncTtl` (schedule 15 min, goals 30 min, profile/categories/templates 1 h). Background refresh runs through `SyncWorker` (WorkManager) driven by `OfflineSyncCoordinator`.
+
+### Room migrations — silent data loss if skipped
+
+`AwanDatabase` is at **version 4**, with real migrations and schemas exported to `core/database/schemas/`.
+
+Any entity change needs a `Migration` **and** a version bump. `fallbackToDestructiveMigration(dropAllTables = true)` is still enabled as a backstop, so a missing or wrong migration **wipes the user's database instead of failing loudly** — it will look fine on a clean install and destroy data on upgrade. Migrations have needed follow-up fixes before; add the column to both the entity and the migration SQL, and check the exported schema JSON.
+
 ### Still to build
 
 - `:core:ui` (shared stateless UI + UI models).
-- Offline-first: Room is the single source of truth, UI observes it reactively, sync (Last-Write-Wins with server timestamps) runs in background via WorkManager.
 - Local Conflict Engine module (see constraints below).
 
 ### Project-specific constraints
@@ -68,8 +81,11 @@ Dependency direction is always `presentation → domain ← data`. Domain depend
 - **Local Conflict Engine** must be a pure-Kotlin module (no Android dependencies) so it's unit-testable and byte-identical with the iOS Swift engine against a shared QA test-vector suite. Algorithms are specified in the spec §9: interval-sweep overlap detection, Kahn's topological sort over `depends_on`, greedy slot-filling within zone windows respecting max focus-session length, Nightly Sweep with foreground catch-up.
 - The **JSON Contract** (spec §8) is frozen: `goal_title`, `goal_deadline`, `tasks[]` with `id`, `title`, `zone`, `estimated_duration_minutes`, `priority` (low|medium|high), `deadline` (nullable), `depends_on`, `is_splittable`. Treat changes as breaking.
 - **Zones**: four defaults (Study, Work, Play, Personal) with editable windows; every task carries a zone and the engine only places it inside that zone's window.
+- **Session status changes only through the dedicated endpoints** — `POST v1/sessions/{id}/complete|uncomplete|cancel`. The generic `PUT v1/sessions/{id}` moves times only and must never carry a status; `status` in create/edit bodies is ignored by the backend. Only `complete` returns a reward.
+- **Points and streak are server-owned.** Never compute a balance client-side. They change only via session completion, the daily wheel, and store purchases; read them back from the response or `GET v1/gamification/progress`. A reward's `awarded`/`updated` flags — not its amounts — say whether anything was actually earned.
 - No change is committed without user approval — conflicts surface an Intelligent Nudge (Skip / Double Up / Reschedule / Approve).
 - Nightly Sweep runs via WorkManager but must always catch up on app foreground; never assume the background job ran.
+- **Every notification needs its own switch.** Any notification added or changed — a new kind, a new trigger, a new channel — ships in the *same* change with a toggle on the notification settings screen (`feature/profile/impl/.../ui/NotificationSettingsScreen.kt`), a field on `NotificationPreferences` (`:core:model`), and a proto field in `user_preferences.proto` stored **negated** so it defaults to on. A notification the user cannot turn off on its own is a bug, not a preference gap — users read unmutable notifications as spam and mute the whole app, which takes the session reminders with it. The scheduler already collects the preferences flow, so a new toggle retimes the alarms with no extra wiring.
 
 ## Feature plans
 

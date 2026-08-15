@@ -15,5 +15,4 @@ data class SessionDraftDto(
     @SerialName("start") val start: String,
     @SerialName("end") val end: String,
     @SerialName("zoneId") val zoneId: String? = null,
-    @SerialName("status") val status: String? = null,
 )

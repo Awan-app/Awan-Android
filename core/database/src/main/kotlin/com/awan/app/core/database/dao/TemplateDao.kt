@@ -31,6 +31,13 @@ interface TemplateDao {
     @Query("DELETE FROM templates WHERE id = :templateId")
     suspend fun deleteTemplate(templateId: String)
 
+    /**
+     * Clears the table. `template_days_of_week` and template-owned zones CASCADE away with it — as
+     * would any future entity holding an FK to `templates`. For `replaceAll` only.
+     */
+    @Query("DELETE FROM templates")
+    suspend fun deleteAllTemplates()
+
     @Query("SELECT MIN(expiryTime) FROM templates")
     suspend fun getMinExpiryTime(): Long?
 

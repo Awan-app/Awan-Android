@@ -91,12 +91,18 @@
 
     <string name="onboarding_notifications_turn_on">TURN ON NUDGES</string>
     <string name="onboarding_notifications_not_now">Not now</string>
-    <string name="onboarding_notifications_title">Want a gentle nudge when it\'s time?</string>
-    <string name="onboarding_notifications_bullet_starts">Only when a block starts — no buzzing all day.</string>
-    <string name="onboarding_notifications_bullet_fix">Only when a plan needs a tiny fix you\'d want to know.</string>
-    <string name="onboarding_notifications_bullet_spam">Never spam — turn it off in one tap, anytime.</string>
+    <string name="onboarding_notifications_title">Want Awan to nudge you through the day?</string>
+    <string name="onboarding_notifications_bullet_sessions">A heads-up before a block, and a countdown while you\'re in it.</string>
+    <string name="onboarding_notifications_bullet_checkin">A friendly check-in if a session slips, or the day is still empty.</string>
+    <string name="onboarding_notifications_bullet_control">Every one of these has its own switch, in Profile → Notifications.</string>
     <string name="onboarding_notifications_permission_note">The system will ask next — this is just so you know why.</string>
     <string name="onboarding_notifications_denied">Notifications are off in system settings — tap \"Turn on nudges\" to open them.</string>
-    <string name="onboarding_notifications_preview_sender">Awan · now</string>
-    <string name="onboarding_notifications_preview_body">Work starts in 5 min — Design review is up first.</string>
+
+    <!-- Mock notifications. Wording tracks the real ones in :core:notifications. -->
+    <string name="onboarding_notifications_preview_reminder_title">Design review</string>
+    <string name="onboarding_notifications_preview_reminder_body">Starts in 10 minutes · 9:30 – 10:30</string>
+    <string name="onboarding_notifications_preview_live_title">Design review</string>
+    <string name="onboarding_notifications_preview_live_body">27 minutes left</string>
+    <string name="onboarding_notifications_preview_checkin_title">How did Design review go?</string>
+    <string name="onboarding_notifications_preview_checkin_body">Mark it done and it counts.</string>
 </resources>

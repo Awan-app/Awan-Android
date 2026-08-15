@@ -44,6 +44,11 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.awan.app.core.designsystem.AwanBottomNavBar
 import com.awan.app.core.designsystem.BottomNavItem
+import com.awan.app.core.common.R as CommonR
+import com.awan.app.core.designsystem.ObserveAsEvents
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import com.awan.app.core.domain.gamification.model.RewardEvent
 import com.awan.core.navigation.NavigationState
 import com.awan.core.navigation.Navigator
 import com.awan.core.navigation.Route
@@ -54,6 +59,7 @@ import com.awan.feature.aitasks.api.AiTaskProposalsRoute
 import com.awan.feature.aitasks.impl.navigation.aiTasksEntry
 import com.awan.feature.auth.api.LoginRoute
 import com.awan.feature.auth.impl.navigation.authEntry
+import com.awan.feature.calendar.api.CalendarRoute
 import com.awan.feature.calendar.impl.navigation.calendarEntry
 import com.awan.feature.chat.impl.navigation.chatEntry
 import com.awan.feature.goals.api.GoalsRoute
@@ -68,6 +74,9 @@ import com.awan.feature.onboarding.api.OnboardingRoute
 import com.awan.feature.onboarding.impl.navigation.onboardingEntry
 import com.awan.feature.profile.api.DailyZonesRoute
 import com.awan.feature.profile.api.EditRoutineRoute
+import com.awan.feature.profile.api.McpInfoRoute
+import com.awan.feature.profile.api.McpSettingsRoute
+import com.awan.feature.profile.api.NotificationSettingsRoute
 import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.splash.api.SplashRoute
 import com.awan.feature.splash.impl.navigation.splashEntry
@@ -92,7 +101,7 @@ private fun NavigationState.rememberDecoratedEntries(
     entryProvider: (Route) -> NavEntry<Route>,
 ): List<NavEntry<Route>> {
     val decoratedStacks = subStacks.mapValues { (topLevelKey, stack) ->
-        key(topLevelKey) {
+        key(generation, topLevelKey) {
             rememberDecoratedNavEntries(
                 backStack = stack,
                 entryDecorators = listOf(
@@ -110,14 +119,40 @@ private fun NavigationState.rememberDecoratedEntries(
 @Composable
 fun AwanApp(
     appState: AwanAppState,
+    sessionExpiredEvents: Flow<Unit>,
+    rewardEvents: Flow<RewardEvent>,
     modifier: Modifier = Modifier,
     isOnline: Boolean = true,
+    deepLinkEvents: Flow<SessionDeepLink> = emptyFlow(),
 ) {
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
     var onSelectHomeDate by remember { mutableStateOf<((LocalDate) -> Unit)?>(null) }
+    var onOpenHomeSession by remember { mutableStateOf<((String) -> Unit)?>(null) }
+    var pendingDeepLink by remember { mutableStateOf<SessionDeepLink?>(null) }
     val currentRoute = appState.navigationState.currentKey
     val showOfflineBanner = !isOnline && currentRoute != SplashRoute
+
+    ObserveAsEvents(deepLinkEvents) { pendingDeepLink = it }
+
+    /**
+     * Held until Home has registered its opener, then acted on once and dropped.
+     *
+     * Deliberately not keyed on the current tab. It was, and since the link stayed set until Home
+     * cleared it, every tab change re-ran this and navigated straight back to Home — the tapped
+     * screen flashed and bounced, and no other screen could be reached at all.
+     */
+    androidx.compose.runtime.LaunchedEffect(pendingDeepLink, onOpenHomeSession) {
+        val link = pendingDeepLink ?: return@LaunchedEffect
+        val openSession = onOpenHomeSession ?: return@LaunchedEffect
+
+        navigator.navigate(HomeRoute())
+        link.date
+            ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            ?.let { onSelectHomeDate?.invoke(it) }
+        openSession(link.sessionId)
+        pendingDeepLink = null
+    }
 
     val offlineExplanation = stringResource(R.string.app_offline_lock_explanation)
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -130,6 +165,19 @@ fun AwanApp(
             ).show()
             showAddTask = false
         }
+    }
+
+    // An expired token has to bounce the user out from wherever they are, so this stays at the
+    // shell rather than on any one screen.
+    val sessionExpiredMessage = stringResource(CommonR.string.error_unauthorized)
+    ObserveAsEvents(sessionExpiredEvents) {
+        android.widget.Toast.makeText(
+            context,
+            sessionExpiredMessage,
+            android.widget.Toast.LENGTH_LONG,
+        ).show()
+        showAddTask = false
+        navigator.replaceAll(LoginRoute)
     }
 
     if (showAddTask && isOnline) {
@@ -203,14 +251,17 @@ fun AwanApp(
                 onComplete = { navigator.replaceAll(HomeRoute()) },
                 onExit = { navigator.replaceAll(LoginRoute) }
             )
-            marketplaceEntry()
+            marketplaceEntry(
+                onNavigateToHome = { navigator.navigate(HomeRoute()) }
+            )
             homeEntry(
                 onLogout = { navigator.replaceAll(LoginRoute) },
-                onNavigateToCalendar = { navigator.navigate(com.awan.feature.calendar.api.CalendarRoute()) },
+                onNavigateToCalendar = { navigator.navigate(CalendarRoute()) },
                 onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
                 onNavigateToAddTask = { _, _ ->
                     showAddTask = true
                 },
+                onRegisterOpenSession = { callback -> onOpenHomeSession = callback },
             )
 
             calendarEntry(
@@ -227,9 +278,12 @@ fun AwanApp(
             profileEntry(
                 onNavigateToDailyZones = { navigator.navigate(DailyZonesRoute) },
                 onNavigateToEditRoutine = { templateId -> navigator.navigate(EditRoutineRoute(templateId)) },
+                onLogout = { navigator.replaceAll(LoginRoute) },
+                onBack = { navigator.goBack()},
                 onNavigateToInventory = { navigator.navigate(InventoryRoute) },
-                onLogout = { navigator.replaceAll(com.awan.feature.auth.api.LoginRoute) },
-                onBack = { navigator.goBack() },
+                onNavigateToMcpSettings = { navigator.navigate(McpSettingsRoute) },
+                onNavigateToMcpInfo = { navigator.navigate(McpInfoRoute) },
+                onNavigateToNotificationSettings = { navigator.navigate(NotificationSettingsRoute) },
             )
             goalPreviewEntry(
                 onBack = { navigator.goBack() },
@@ -252,7 +306,8 @@ fun AwanApp(
 
 
         val currentRoute = appState.navigationState.currentKey
-        val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route == currentRoute }
+        val currentTopLevelKey = appState.navigationState.currentTopLevelKey
+        val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route::class == currentRoute::class }
 
         if (isTopLevel) {
             val navItems = remember(appState.topLevelDestinations) {
@@ -266,7 +321,9 @@ fun AwanApp(
                     )
                 }
             }
-            val selectedDest = appState.topLevelDestinations.find { it.route == appState.navigationState.currentTopLevelKey }
+            val selectedDest = remember(currentTopLevelKey, appState.topLevelDestinations) {
+                appState.topLevelDestinations.find { dest -> dest.route != null && dest.route::class == currentTopLevelKey::class }
+            }
 
             AwanBottomNavBar(
                 items = navItems,
@@ -284,8 +341,15 @@ fun AwanApp(
                 onFabClick = {
                     showAddTask = true
                 },
+                anchoredItemId = TopLevelDestination.PROFILE.name,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
+
+        // Last child of the root Box: above every screen and the bottom bar, and in the same
+        // coordinate space as the anchors it animates between — which a Dialog would not be.
+        RewardOverlayHost(rewardEvents = rewardEvents)
+
+        com.awan.app.core.designsystem.AwanTopToastHost()
     }
 }

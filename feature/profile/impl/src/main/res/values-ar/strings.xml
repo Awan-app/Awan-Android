@@ -29,6 +29,30 @@
 
     <string name="profile_section_settings">الإعدادات</string>
     <string name="profile_notifications">الإشعارات</string>
+
+    <!-- Notification settings -->
+    <string name="profile_notifications_title">الإشعارات</string>
+    <string name="profile_notifications_section_sessions">الجلسات</string>
+    <string name="profile_notifications_section_timing">التوقيت</string>
+    <string name="profile_notifications_section_nudges">التنبيهات</string>
+    <string name="profile_notifications_section_other">أخرى</string>
+    <string name="profile_notifications_reminders">قبل بدء الجلسة</string>
+    <string name="profile_notifications_live_activity">التقدّم المباشر أثناء الجلسة</string>
+    <string name="profile_notifications_session_end">عند انتهاء الجلسة</string>
+    <string name="profile_notifications_follow_up">إذا لم تردّ بعد الجلسة</string>
+    <string name="profile_notifications_streak">قبل أن ينتهي اليوم دون إنجاز</string>
+    <string name="profile_notifications_daily_brief">نظرة صباحية على يومك</string>
+    <string name="profile_notifications_rewards">المكافآت والعجلة اليومية</string>
+    <string name="profile_notifications_reminder_lead">ذكّرني قبل (دقيقة)</string>
+    <string name="profile_notifications_snooze_length">مدة التأجيل (دقيقة)</string>
+    <string name="profile_notifications_snooze_ask">اسأل</string>
+    <string name="profile_notifications_follow_up_delay">المتابعة بعد (دقيقة)</string>
+    <!-- Segment label. The unit lives in the row title so four segments fit without wrapping. -->
+    <string name="profile_notifications_minutes">%1$d</string>
+    <string name="profile_notifications_system_settings">إعدادات إشعارات النظام</string>
+    <string name="profile_notifications_blocked_title">الإشعارات مغلقة</string>
+    <string name="profile_notifications_blocked_body">لا يمكن لأوان تذكيرك بالجلسات حتى يتم السماح بالإشعارات لهذا التطبيق.</string>
+    <string name="profile_notifications_blocked_action">السماح بالإشعارات</string>
     <string name="profile_help_center">مركز المساعدة</string>
     <string name="profile_inventory">المقتنيات</string>
     <string name="profile_how_to_earn_points">كيفية كسب النقاط</string>
@@ -70,6 +94,13 @@
     <string name="profile_daily_zones_edit_default">تعديل الروتين الافتراضي</string>
     <string name="profile_daily_zones_no_zones">لا توجد مناطق في هذا الروتين</string>
     <string name="profile_daily_zones_no_zones_hint">أضف مناطق لتشكيل يومك.</string>
+    <string name="profile_categories_title">الفئات</string>
+    <string name="profile_category_add">إضافة فئة</string>
+    <string name="profile_category_edit">تعديل الفئة</string>
+    <string name="profile_category_delete">حذف الفئة</string>
+    <string name="profile_category_delete_confirm_title">حذف الفئة؟</string>
+    <string name="profile_category_delete_confirm_message">هل أنت متأكد من أنك تريد حذف هذه الفئة؟ لا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="profile_category_name_placeholder">مثال: عمل، دراسة، صحة</string>
     <string name="profile_logout_confirm_title">هل ستغادرنا قريباً؟</string>
     <string name="profile_logout_confirm_subtitle">هل أنت متأكد من أنك تريد تسجيل الخروج من حسابك؟</string>
 
@@ -150,6 +181,8 @@
     <string name="profile_zone_save_changes">حفظ التغييرات</string>
     <string name="profile_zone_delete">حذف المنطقة</string>
     <string name="profile_zone_confirm">تأكيد</string>
+    <string name="profile_zone_category">الفئة</string>
+    <string name="profile_zone_category_empty">لا توجد فئات بعد</string>
     <string name="profile_zone_new_placeholder">منطقة جديدة</string>
 
     <string name="profile_validation_routine_name_empty">اسم الروتين لا يمكن أن يكون فارغاً</string>
@@ -175,4 +208,42 @@
     <string name="profile_day_friday_short">ج</string>
     <string name="profile_day_saturday_short">س</string>
     <string name="profile_day_sunday_short">ح</string>
+
+    <!-- MCP Settings Strings -->
+    <string name="profile_mcp_title">تكامل MCP</string>
+    <string name="profile_mcp_subtitle">ربط المساعدين الذكيين (Claude, Cursor) عبر بروتوكول MCP</string>
+    <string name="profile_mcp_connection_title">تفاصيل الاتصال</string>
+    <string name="profile_mcp_url_label">رابط خادم MCP</string>
+    <string name="profile_mcp_tokens_title">رموز الوصول (Tokens)</string>
+    <string name="profile_mcp_add_token">إضافة رمز جديد</string>
+    <string name="profile_mcp_token_name_hint">اسم الرمز (مثال: Claude Desktop)</string>
+    <string name="profile_mcp_token_obscured_notice">تم إخفاء المفتاح لأسباب أمنية</string>
+    <string name="profile_mcp_token_copy_disabled">يمكن نسخ الرمز فقط عند إنشائه لأول مرة</string>
+    <string name="profile_mcp_token_notice_formatted">%1$s. %2$s</string>
+    <string name="profile_mcp_token_created_banner_title">تم إنشاء الرمز بنجاح!</string>
+    <string name="profile_mcp_token_created_banner_warning">احرص على نسخ رمز الوصول الخاص بك الآن. لن تتمكن من رؤيته مرة أخرى!</string>
+    <string name="profile_mcp_token_copy">نسخ الرمز</string>
+    <string name="profile_mcp_token_copied">تم نسخ الرمز إلى الحافظة</string>
+    <string name="profile_mcp_url_copied">تم نسخ رابط خادم MCP إلى الحافظة</string>
+    <string name="profile_mcp_claude_config_copied">تم نسخ إعداد Claude Desktop إلى الحافظة</string>
+    <string name="profile_mcp_cursor_config_copied">تم نسخ إعداد Cursor إلى الحافظة</string>
+    <string name="profile_mcp_ai_prompt_copied">تم نسخ مطالبة إعداد الذكاء الاصطناعي إلى الحافظة</string>
+    <string name="profile_mcp_token_delete_confirm_title">حذف الرمز؟</string>
+    <string name="profile_mcp_token_delete_confirm_body">هل أنت تأكد من حذف رمز MCP هذا؟ سيفقد المساعد الذكي الوصول فوراً.</string>
+    <string name="profile_mcp_token_regenerate_confirm_title">إعادة إنشاء الرمز؟</string>
+    <string name="profile_mcp_token_regenerate_confirm_body">إعادة إنشاء الرمز ستلغي المفتاح الحالي. ستحتاج إلى تحديثه في المساعد الذكي.</string>
+    <string name="profile_mcp_info_title">كيفية ربط مساعدك الذكي</string>
+    <string name="profile_mcp_setup_title">تعليمات الإعداد</string>
+    <string name="profile_mcp_info_step1">1. احصل على رمز API من شاشة تكامل MCP. اضغط على إضافة رمز جديد وانسخه من رسالة النجاح التي تظهر مرة واحدة.</string>
+    <string name="profile_mcp_info_step2">2. انسخ إعداداً من الأسفل واستبدل YOUR_API_TOKEN بالرمز الخاص بك، أو انسخ مطالبة إعداد الذكاء الاصطناعي والصقها في مساعدك.</string>
+    <string name="profile_mcp_ai_setup_title">أو دع مساعدك الذكي يتولى الإعداد</string>
+    <string name="profile_mcp_cd_copy_ai_prompt">نسخ مطالبة إعداد الذكاء الاصطناعي</string>
+    <string name="profile_mcp_ai_setup_prompt">صِلني بخادم Awan عبر MCP.\n\nأولاً، اطلب مني رمز MCP API الخاص بـ Awan. لا تتابع قبل أن أقدمه لك.\n\nبعد أن أرسل الرمز، أعد إعداد خادم Awan MCP لهذا المساعد باستخدام:\n- رابط الخادم: %1$s\n- التفويض: Bearer [الرمز الذي أقدمه]\n\nتولَّ إعداد MCP بنفسك، وتحقق من الاتصال، وأخبرني عند جاهزيته.</string>
+
+    <string name="profile_mcp_token_created_on">تاريخ الإنشاء: %1$s</string>
+    <string name="profile_mcp_cd_info">معلومات إعداد MCP</string>
+    <string name="profile_mcp_cd_copy_url">نسخ رابط خادم MCP</string>
+    <string name="profile_mcp_cd_copy_snippet">نسخ البرمجية النصية للتكوين</string>
+    <string name="profile_mcp_cd_delete_token">حذف الرمز %1$s</string>
+    <string name="profile_mcp_cd_regenerate_token">إعادة إنشاء الرمز %1$s</string>
 </resources>

@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.awan.android.hilt)
     alias(libs.plugins.awan.android.workmanager)
     alias(libs.plugins.jetbrains.kotlin.serialization)
+    alias(libs.plugins.google.services)
 }
 
 
@@ -74,9 +75,12 @@ dependencies {
     implementation(project(":core:network"))
     implementation(project(":core:design-system"))
     implementation(project(":core:navigation"))
+    implementation(project(":core:notifications"))
     implementation(project(":feature:splash:api"))
 
-
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
     // Compose (platform managed by awan.android.compose convention plugin)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
@@ -89,6 +93,7 @@ dependencies {
     // Lifecycle
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.appcompat)
 
     // Navigation 3

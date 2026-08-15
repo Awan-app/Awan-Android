@@ -50,8 +50,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanButton
@@ -64,10 +64,11 @@ import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.MascotExpression
 import com.awan.app.core.domain.inventory.model.CustomizationRarity
-import com.awan.app.core.domain.inventory.model.CustomizationType
-import com.awan.app.core.domain.inventory.model.OwnedCustomization
+import com.awan.app.core.model.OwnedItem
+import com.awan.app.core.model.StoreItemType
 import com.awan.feature.inventory.impl.R
 import com.awan.feature.inventory.impl.presentation.InventoryAction
+import com.awan.feature.inventory.impl.presentation.InventoryItem
 import com.awan.feature.inventory.impl.presentation.InventorySort
 import com.awan.feature.inventory.impl.presentation.InventoryState
 
@@ -80,7 +81,7 @@ fun InventoryScreen(
 ) {
     var controlsVisible by rememberSaveable { mutableStateOf(false) }
     var detailsItemId by rememberSaveable { mutableStateOf<String?>(null) }
-    val detailsItem = state.customizations.firstOrNull { it.itemId == detailsItemId }
+    val detailsItem = state.items.firstOrNull { it.item.id == detailsItemId }
 
     Box(modifier = Modifier.fillMaxSize()) {
         androidx.compose.material3.Scaffold(
@@ -125,18 +126,18 @@ fun InventoryScreen(
             },
         ) { padding ->
             when {
-                state.isLoading && state.customizations.isEmpty() -> InventoryLoading(modifier = Modifier.padding(padding))
-                state.customizations.isEmpty() && !state.isOnline -> InventoryEmpty(
+                state.isLoading && state.items.isEmpty() -> InventoryLoading(modifier = Modifier.padding(padding))
+                state.items.isEmpty() && !state.isOnline -> InventoryEmpty(
                     title = stringResource(R.string.inventory_offline_title),
                     body = stringResource(R.string.inventory_offline_body),
                     modifier = Modifier.padding(padding),
                 )
-                state.customizations.isEmpty() && state.error != null -> InventoryError(
+                state.items.isEmpty() && state.error != null -> InventoryError(
                     message = state.error.asString(),
                     onRetry = { onAction(InventoryAction.Refresh) },
                     modifier = Modifier.padding(padding),
                 )
-                state.customizations.isEmpty() -> InventoryEmpty(
+                state.items.isEmpty() -> InventoryEmpty(
                     title = stringResource(R.string.inventory_empty_title),
                     body = stringResource(R.string.inventory_empty_body),
                     modifier = Modifier.padding(padding),
@@ -156,12 +157,12 @@ fun InventoryScreen(
             }
         }
 
-        detailsItem?.let { customization ->
+        detailsItem?.let { item ->
             ModalBottomSheet(onDismissRequest = { detailsItemId = null }) {
                 CustomizationDetailsSheet(
-                    customization = customization,
+                    item = item,
                     state = state,
-                    onEquip = { onAction(InventoryAction.Equip(customization.itemId)) },
+                    onEquip = { onAction(InventoryAction.Equip(item.item.id)) },
                 )
             }
         }
@@ -204,13 +205,13 @@ private fun InventoryContent(
                 item(key = "header-${section.type}", span = { GridItemSpan(maxLineSpan) }) {
                     AwanText(typeLabel(section.type), style = AwanTheme.styles.headingText)
                 }
-                items(section.items, key = { it.itemId }) { customization ->
+                items(section.items, key = { it.itemId }) { item ->
                     CustomizationCard(
-                        customization = customization,
+                        item = item,
                         isOnline = state.isOnline,
-                        isEquipping = state.equippingItemId == customization.itemId,
-                        onEquip = { onAction(InventoryAction.Equip(customization.itemId)) },
-                        onDetails = { onOpenDetails(customization.itemId) },
+                        isEquipping = state.equippingItemId == item.itemId,
+                        onEquip = { onAction(InventoryAction.Equip(item.itemId)) },
+                        onDetails = { onOpenDetails(item.itemId) },
                     )
                 }
             }
@@ -249,8 +250,8 @@ private fun InventoryFilters(state: InventoryState, onAction: (InventoryAction) 
                     label = { AwanText(stringResource(R.string.inventory_all_types)) },
                 )
             }
-            items(CustomizationType.entries.size) { index ->
-                val type = CustomizationType.entries[index]
+            items(StoreItemType.entries.size) { index ->
+                val type = StoreItemType.entries[index]
                 FilterChip(
                     selected = state.selectedType == type,
                     onClick = { onAction(InventoryAction.SelectType(type)) },
@@ -285,15 +286,15 @@ private fun InventoryFilters(state: InventoryState, onAction: (InventoryAction) 
 
 @Composable
 private fun CustomizationCard(
-    customization: OwnedCustomization,
+    item: InventoryItem,
     isOnline: Boolean,
     isEquipping: Boolean,
     onEquip: () -> Unit,
     onDetails: () -> Unit,
 ) {
-    val canEquip = isOnline && !customization.isEquipped && !isEquipping
+    val canEquip = isOnline && !item.isEquipped && !isEquipping
     val itemStateDescription = stringResource(
-        if (customization.isEquipped) {
+        if (item.isEquipped) {
             R.string.inventory_item_equipped_state
         } else {
             R.string.inventory_item_not_equipped_state
@@ -302,24 +303,25 @@ private fun CustomizationCard(
     AwanCard(
         modifier = Modifier
             .fillMaxWidth()
-            .testTag("inventory-card-${customization.itemId}")
+            .testTag("inventory-card-${item.itemId}")
             .semantics {
                 stateDescription = itemStateDescription
             },
-        selected = customization.isEquipped,
+        selected = item.isEquipped,
         onClick = if (canEquip) onEquip else null,
         contentPadding = PaddingValues(AwanTheme.spacing.sm),
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             CustomizationArt(
-                customization = customization,
+                imageUrl = item.imageUrl,
+                rarity = item.rarity,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f),
             )
             AwanIconButton(
                 onClick = onDetails,
-                contentDescription = stringResource(R.string.inventory_view_details, customization.name),
+                contentDescription = stringResource(R.string.inventory_view_details, item.name),
                 modifier = Modifier.align(Alignment.TopEnd),
             ) {
                 Icon(Icons.Default.Info, contentDescription = null)
@@ -334,21 +336,22 @@ private fun CustomizationCard(
             }
         }
         Spacer(Modifier.height(AwanTheme.spacing.xs))
-        AwanText(customization.name, style = AwanTheme.styles.bodyText, maxLines = 1)
+        AwanText(item.name, style = AwanTheme.styles.bodyText, maxLines = 1)
         AwanText(
-            rarityLabel(customization.rarity),
-            style = AwanTheme.styles.metaText.copy(color = rarityAccent(customization.rarity)),
+            rarityLabel(item.rarity),
+            style = AwanTheme.styles.metaText.copy(color = rarityAccent(item.rarity)),
         )
     }
 }
 
 @Composable
 internal fun CustomizationDetailsSheet(
-    customization: OwnedCustomization,
+    item: OwnedItem,
     state: InventoryState,
     onEquip: () -> Unit,
 ) {
-    val isEquipped = customization.isEquipped
+    val isEquipped = item.item.id in state.equippedItemIds
+    val rarity = CustomizationRarity.fromInfo(item.item.info)
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -369,26 +372,27 @@ internal fun CustomizationDetailsSheet(
                     .testTag("inventory-details-artwork"),
             ) {
                 CustomizationArt(
-                    customization = customization,
+                    imageUrl = item.item.image,
+                    rarity = rarity,
                     modifier = Modifier.fillMaxSize(),
                     showRarityBackdrop = false,
                 )
             }
-            AwanText(customization.name, style = AwanTheme.styles.headingText)
+            AwanText(item.item.name, style = AwanTheme.styles.headingText)
             AwanText(
-                stringResource(R.string.inventory_details_rarity, rarityLabel(customization.rarity)),
-                style = AwanTheme.styles.metaText.copy(color = rarityAccent(customization.rarity)),
+                stringResource(R.string.inventory_details_rarity, rarityLabel(rarity)),
+                style = AwanTheme.styles.metaText.copy(color = rarityAccent(rarity)),
             )
             AwanText(
-                stringResource(R.string.inventory_details_type, typeLabel(customization.type)),
+                stringResource(R.string.inventory_details_type, typeLabel(item.item.type)),
                 style = AwanTheme.styles.metaText,
             )
-            AwanText(customization.description, style = AwanTheme.styles.bodySecondaryText)
+            AwanText(item.item.description, style = AwanTheme.styles.bodySecondaryText)
             AwanButton(
                 onClick = onEquip,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = state.isOnline && !isEquipped,
-                isLoading = state.equippingItemId == customization.itemId,
+                isLoading = state.equippingItemId == item.item.id,
                 variant = if (isEquipped) AwanButtonVariant.Secondary else AwanButtonVariant.Primary,
             ) {
                 AwanText(
@@ -400,7 +404,7 @@ internal fun CustomizationDetailsSheet(
             modifier = Modifier
                 .matchParentSize()
                 .detailsSheetEdgeShadow(
-                    accent = rarityAccent(customization.rarity),
+                    accent = rarityAccent(rarity),
                     artworkAspectRatio = 1.4f,
                     horizontalPadding = AwanTheme.spacing.md,
                     topPadding = AwanTheme.spacing.sm,
@@ -413,11 +417,12 @@ internal fun CustomizationDetailsSheet(
 
 @Composable
 private fun CustomizationArt(
-    customization: OwnedCustomization,
+    imageUrl: String?,
+    rarity: CustomizationRarity,
     modifier: Modifier,
     showRarityBackdrop: Boolean = true,
 ) {
-    val accent = rarityAccent(customization.rarity)
+    val accent = rarityAccent(rarity)
     val backdropModifier = if (showRarityBackdrop) {
         Modifier.background(
             Brush.radialGradient(
@@ -433,11 +438,11 @@ private fun CustomizationArt(
             .then(backdropModifier),
         contentAlignment = Alignment.Center,
     ) {
-        if (customization.imageUrl == null) {
+        if (imageUrl == null) {
             Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = accent)
         } else {
             AwanRemoteImage(
-                url = customization.imageUrl,
+                url = imageUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize(),
@@ -557,13 +562,12 @@ private fun InventoryError(message: String, onRetry: () -> Unit, modifier: Modif
 }
 
 @Composable
-private fun typeLabel(type: CustomizationType): String = stringResource(
+private fun typeLabel(type: StoreItemType): String = stringResource(
     when (type) {
-        CustomizationType.FRAME -> R.string.inventory_type_frame
-        CustomizationType.SKIN -> R.string.inventory_type_skin
-        CustomizationType.THEME -> R.string.inventory_type_theme
-        CustomizationType.ICON -> R.string.inventory_type_icon
-        CustomizationType.UNKNOWN -> R.string.inventory_type_unknown
+        StoreItemType.FRAME -> R.string.inventory_type_frame
+        StoreItemType.SKIN -> R.string.inventory_type_skin
+        StoreItemType.THEME -> R.string.inventory_type_theme
+        StoreItemType.ICON -> R.string.inventory_type_icon
     },
 )
 

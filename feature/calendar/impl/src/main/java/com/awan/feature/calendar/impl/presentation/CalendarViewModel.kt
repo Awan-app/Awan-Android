@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.calendar.repository.CalendarRepository
 import com.awan.app.core.domain.calendar.repository.CalendarSnapshot
+import com.awan.app.core.domain.gamification.usecase.GetActivityDatesUseCase
+import com.awan.app.core.domain.gamification.usecase.ObserveGamificationProgressUseCase
 import com.awan.feature.calendar.impl.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -21,6 +23,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
     private val repository: CalendarRepository,
+    private val getActivityDatesUseCase: GetActivityDatesUseCase,
+    private val observeGamificationProgressUseCase: ObserveGamificationProgressUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(createInitialState())
     val state: StateFlow<CalendarUiState> = _state.asStateFlow()
@@ -31,7 +35,14 @@ class CalendarViewModel @Inject constructor(
         viewModelScope.launch {
             repository.observeCalendar().collect { snapshot -> snapshot?.let(::render) }
         }
+        viewModelScope.launch {
+            // Same source as the home header, so the two can never disagree.
+            observeGamificationProgressUseCase().collect { progress ->
+                _state.update { it.copy(streak = progress.streak) }
+            }
+        }
         refresh()
+        loadActivityDates(_state.value.currentYearMonth)
     }
 
     fun onAction(action: CalendarAction) = when (action) {
@@ -77,7 +88,11 @@ class CalendarViewModel @Inject constructor(
         val month = if (current.currentYearMonth == YearMonth.from(current.today)) YearMonth.from(today) else current.currentYearMonth
         val goals = CalendarDateMapper.filterAndSortUpcomingGoals(snapshot.goals, today)
         val streakCount = snapshot.user.streak.coerceAtLeast(0)
-        val streakDates = CalendarDateMapper.calculateStreakDates(streakCount, today)
+        // Real activity dates win once they land; the back-counted estimate is only a stand-in
+        // until then, and must not clobber them when the snapshot re-emits.
+        val streakDates = current.streakDates.ifEmpty {
+            CalendarDateMapper.calculateStreakDates(streakCount, today)
+        }
 
         _state.value = CalendarUiState(
             isLoading = false,
@@ -93,9 +108,42 @@ class CalendarViewModel @Inject constructor(
         )
     }
 
-    private fun changeMonth(delta: Long) = _state.update { state ->
-        val month = state.currentYearMonth.plusMonths(delta)
-        state.copy(currentYearMonth = month, monthDays = CalendarDateMapper.buildMonthDays(month, state.today, state.selectedDate, state.streakDates, state.upcomingGoals.map { it.targetDate }.toSet()))
+    private fun changeMonth(delta: Long) {
+        _state.update { state ->
+            val month = state.currentYearMonth.plusMonths(delta)
+            state.copy(currentYearMonth = month, monthDays = CalendarDateMapper.buildMonthDays(month, state.today, state.selectedDate, state.streakDates, state.upcomingGoals.map { it.targetDate }.toSet()))
+        }
+        loadActivityDates(_state.value.currentYearMonth)
+    }
+
+    /**
+     * Marks the days the user was actually active, rather than assuming the streak ran unbroken
+     * back from today — which is only ever right for the current month, and only until the user
+     * scrolls back a page.
+     *
+     * The grid spills into the neighbouring months, so the query covers the whole visible range.
+     * On failure the back-counted estimate stands in, so the streak line survives being offline.
+     */
+    private fun loadActivityDates(month: YearMonth) = viewModelScope.launch {
+        val days = _state.value.monthDays
+        val start = days.firstOrNull()?.date ?: month.atDay(1)
+        val end = days.lastOrNull()?.date ?: month.atEndOfMonth()
+
+        val result = getActivityDatesUseCase(startDate = start, endDate = end)
+        if (result !is Result.Success) return@launch
+
+        _state.update { state ->
+            state.copy(
+                streakDates = result.data,
+                monthDays = CalendarDateMapper.buildMonthDays(
+                    yearMonth = state.currentYearMonth,
+                    today = state.today,
+                    selectedDate = state.selectedDate,
+                    streakDates = result.data,
+                    goalDates = state.upcomingGoals.map { it.targetDate }.toSet(),
+                ),
+            )
+        }
     }
 
     companion object {

@@ -37,7 +37,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -296,6 +299,11 @@ private fun CalendarStyleCheckbox(
     val haptic = LocalHapticFeedback.current
     var isPressed by remember { mutableStateOf(false) }
 
+    // Where a points award flies out of. Stamped on tap rather than tracked, since every card on
+    // screen has one of these and only the tapped one is the origin.
+    val rewardAnchors = LocalRewardAnchors.current
+    var checkboxBounds by remember { mutableStateOf<Rect?>(null) }
+
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.82f else 1f,
         animationSpec = spring(
@@ -330,6 +338,7 @@ private fun CalendarStyleCheckbox(
         modifier = modifier
             .scale(scale)
             .size(24.dp)
+            .onGloballyPositioned { checkboxBounds = it.boundsInRoot() }
             .clip(CircleShape)
             .background(bgColor)
             .border(
@@ -341,6 +350,7 @@ private fun CalendarStyleCheckbox(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = {
+                    rewardAnchors.lastTapOrigin = checkboxBounds
                     isPressed = true
                     haptic.performHapticFeedback(
                         if (isCompleted) HapticFeedbackType.TextHandleMove

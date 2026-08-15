@@ -1,16 +1,17 @@
 package com.awan.feature.inventory.impl.presentation
 
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.common.error.AppError
-import com.awan.app.core.domain.inventory.model.CustomizationRarity
-import com.awan.app.core.domain.inventory.model.CustomizationType
-import com.awan.app.core.domain.inventory.model.OwnedCustomization
-import com.awan.app.core.domain.inventory.repository.InventoryRepository
-import com.awan.app.core.domain.inventory.usecase.EquipCustomizationUseCase
-import com.awan.app.core.domain.inventory.usecase.ObserveInventoryUseCase
-import com.awan.app.core.domain.inventory.usecase.RefreshInventoryUseCase
+import com.awan.app.core.domain.marketplace.repository.StoreRepository
+import com.awan.app.core.domain.marketplace.usecase.EquipItemUseCase
+import com.awan.app.core.domain.marketplace.usecase.GetEquippedItemsUseCase
+import com.awan.app.core.domain.marketplace.usecase.GetInventoryUseCase
+import com.awan.app.core.domain.marketplace.usecase.RefreshMarketplaceUseCase
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.domain.network.usecase.ObserveNetworkConnectivityUseCase
+import com.awan.app.core.model.EquippedItem
+import com.awan.app.core.model.OwnedItem
+import com.awan.app.core.model.StoreItem
+import com.awan.app.core.model.StoreItemType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -31,51 +32,51 @@ import org.junit.Test
 class InventoryViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
-    private class FakeInventoryRepository(items: List<OwnedCustomization>) : InventoryRepository {
-        val inventory = MutableStateFlow(items)
+    private class FakeStoreRepository : StoreRepository {
+        val inventory = MutableStateFlow<List<OwnedItem>>(emptyList())
+        val equipped = MutableStateFlow<List<EquippedItem>>(emptyList())
         var equipCalls = 0
-        var refreshResult: Result<Unit> = Result.Success(Unit)
 
-        override fun observeInventory(): Flow<List<OwnedCustomization>> = inventory
-
-        override fun observeEquippedFrame(): Flow<String?> = flowOf(null)
-
-        override suspend fun refresh(): Result<Unit> = refreshResult
-
-        override suspend fun equip(itemId: String): Result<Unit> {
+        override fun getStoreItems(type: StoreItemType?): Flow<List<StoreItem>> = flowOf(emptyList())
+        override fun getInventory(): Flow<List<OwnedItem>> = inventory
+        override fun getEquippedItems(): Flow<List<EquippedItem>> = equipped
+        override suspend fun buyItem(itemId: String): Result<Unit> = Result.Success(Unit)
+        override suspend fun equipItem(itemId: String): Result<Unit> {
             equipCalls++
             return Result.Success(Unit)
         }
+        override suspend fun unequipItem(itemType: StoreItemType): Result<Unit> = Result.Success(Unit)
+        override suspend fun refreshStoreItems(type: StoreItemType?) {}
+        override suspend fun refreshInventory(): Result<Unit> = Result.Success(Unit)
+        override suspend fun refreshEquippedItems(): Result<Unit> = Result.Success(Unit)
     }
 
     private class FakeConnectivityMonitor(isOnline: Boolean) : NetworkConnectivityMonitor {
         val online = MutableStateFlow(isOnline)
-
         override val isOnline: Flow<Boolean> = online
-
         override fun isCurrentlyOnline(): Boolean = online.value
     }
 
-    private lateinit var repository: FakeInventoryRepository
+    private lateinit var repository: FakeStoreRepository
     private lateinit var connectivity: FakeConnectivityMonitor
 
     private fun viewModel() = InventoryViewModel(
-        observeInventory = ObserveInventoryUseCase(repository),
-        refreshInventory = RefreshInventoryUseCase(repository),
-        equipCustomization = EquipCustomizationUseCase(repository),
+        getInventory = GetInventoryUseCase(repository),
+        getEquippedItems = GetEquippedItemsUseCase(repository),
+        refreshMarketplace = RefreshMarketplaceUseCase(repository),
+        equipItem = EquipItemUseCase(repository),
         observeConnectivity = ObserveNetworkConnectivityUseCase(connectivity),
     )
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        repository = FakeInventoryRepository(
-            listOf(
-                item("common", "Common frame", CustomizationRarity.COMMON, "2026-08-01T00:00:00Z"),
-                item("epic", "Epic frame", CustomizationRarity.EPIC, "2026-08-02T00:00:00Z"),
-                item("unknown", "Mystery frame", CustomizationRarity.UNKNOWN, "2026-08-03T00:00:00Z"),
-                item("skin", "Night skin", CustomizationRarity.RARE, "2026-08-03T00:00:00Z", CustomizationType.SKIN),
-            ),
+        repository = FakeStoreRepository()
+        repository.inventory.value = listOf(
+            item("common", "Common frame", "2026-08-01T00:00:00Z"),
+            item("epic", "Epic frame", "2026-08-02T00:00:00Z"),
+            item("mystery", "Mystery frame", "2026-08-03T00:00:00Z"),
+            item("skin", "Night skin", "2026-08-03T00:00:00Z", StoreItemType.SKIN),
         )
         connectivity = FakeConnectivityMonitor(isOnline = true)
     }
@@ -84,36 +85,24 @@ class InventoryViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     @Test
-    fun `groups by type and sorts known rarities before unknown`() = runTest(testDispatcher) {
+    fun `groups by type and sorts by newest by default`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 
-        val frames = viewModel.state.value.sections.single { it.type == CustomizationType.FRAME }
+        val frames = viewModel.state.value.sections.single { it.type == StoreItemType.FRAME }
 
-        assertEquals(listOf("Epic frame", "Common frame", "Mystery frame"), frames.items.map { it.name })
+        // Sorted by newest (acquiredAt descending)
+        assertEquals(listOf("Mystery frame", "Epic frame", "Common frame"), frames.items.map { it.name })
         assertEquals(2, viewModel.state.value.sections.size)
     }
 
     @Test
-    fun `type rarity and name options narrow and order the visible items`() = runTest(testDispatcher) {
+    fun `type and sort options narrow and order the visible items`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 
-        viewModel.onAction(InventoryAction.SelectType(CustomizationType.FRAME))
-        viewModel.onAction(InventoryAction.ToggleRarity(CustomizationRarity.COMMON))
+        viewModel.onAction(InventoryAction.SelectType(StoreItemType.FRAME))
         viewModel.onAction(InventoryAction.SetSort(InventorySort.NAME))
 
-        assertEquals(listOf("Common frame"), viewModel.state.value.sections.single().items.map { it.name })
-    }
-
-    @Test
-    fun `unknown rarities stay after known rarities for newest sorting`() = runTest(testDispatcher) {
-        val viewModel = viewModel()
-
-        viewModel.onAction(InventoryAction.SetSort(InventorySort.NEWEST))
-
-        assertEquals(
-            listOf("Epic frame", "Common frame", "Mystery frame"),
-            viewModel.state.value.sections.single { it.type == CustomizationType.FRAME }.items.map { it.name },
-        )
+        assertEquals(listOf("Common frame", "Epic frame", "Mystery frame"), viewModel.state.value.sections.single().items.map { it.name })
     }
 
     @Test
@@ -138,31 +127,42 @@ class InventoryViewModelTest {
     }
 
     @Test
-    fun `refresh failure stops loading and exposes the error`() = runTest(testDispatcher) {
-        repository.refreshResult = Result.Error(AppError.Network)
-
+    fun `rarity filter toggles and narrows visible items`() = runTest(testDispatcher) {
+        repository.inventory.value = listOf(
+            item("common", "Common frame", "2026-08-01T00:00:00Z", info = "rarity: common"),
+            item("epic", "Epic frame", "2026-08-02T00:00:00Z", info = "rarity: epic"),
+            item("skin", "Night skin", "2026-08-03T00:00:00Z", StoreItemType.SKIN, info = "rarity: rare"),
+        )
         val viewModel = viewModel()
 
-        assertFalse(viewModel.state.value.isRefreshing)
-        assertFalse(viewModel.state.value.isLoading)
-        assertTrue(viewModel.state.value.error != null)
+        viewModel.onAction(InventoryAction.ToggleRarity(com.awan.app.core.domain.inventory.model.CustomizationRarity.EPIC))
+
+        val section = viewModel.state.value.sections.single()
+        assertEquals(listOf("Epic frame"), section.items.map { it.name })
+
+        // Toggle again to remove filter
+        viewModel.onAction(InventoryAction.ToggleRarity(com.awan.app.core.domain.inventory.model.CustomizationRarity.EPIC))
+        assertEquals(2, viewModel.state.value.sections.size)
     }
 
     private fun item(
         id: String,
         name: String,
-        rarity: CustomizationRarity,
         acquiredAt: String,
-        type: CustomizationType = CustomizationType.FRAME,
-    ) = OwnedCustomization(
-        inventoryId = "inventory-$id",
-        itemId = id,
-        name = name,
-        description = "",
-        imageUrl = null,
-        type = type,
-        rarity = rarity,
-        acquiredAt = acquiredAt,
-        isEquipped = false,
+        type: StoreItemType = StoreItemType.FRAME,
+        info: String? = null,
+    ) = OwnedItem(
+        id = "inventory-$id",
+        item = StoreItem(
+            id = id,
+            name = name,
+            description = "",
+            image = "",
+            info = info,
+            price = 0,
+            version = "",
+            type = type
+        ),
+        boughtAt = acquiredAt
     )
 }

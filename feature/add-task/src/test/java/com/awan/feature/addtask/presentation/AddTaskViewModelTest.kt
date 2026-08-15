@@ -15,6 +15,7 @@ import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
 import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
 import com.awan.app.core.domain.profile.model.UserData
 import com.awan.app.core.domain.profile.repository.UserDataRepository
+import com.awan.app.core.model.NotificationPreferences
 import com.awan.app.core.domain.profile.usecase.GetUserDataUseCase
 import com.awan.app.core.domain.profile.usecase.SetMicPermissionRequestedUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
@@ -118,6 +119,8 @@ class AddTaskViewModelTest {
         override suspend fun scheduleTask(taskId: String) = error("not used")
 
         override suspend fun deleteTask(taskId: String): Result<Unit> = error("not used")
+
+        override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = error("not used")
     }
 
     private class FakeGoalRepository : GoalRepository {
@@ -155,6 +158,8 @@ class AddTaskViewModelTest {
 
     private class FakeZoneRepository(private val zones: List<DayZone>) : ZonesRepository {
         var requestedDate: LocalDate? = null
+
+        override suspend fun refreshZones(): Result<Unit> = Result.Success(Unit)
 
         override suspend fun getZonesForDate(date: LocalDate): Result<List<DayZone>> {
             requestedDate = date
@@ -205,6 +210,10 @@ class AddTaskViewModelTest {
 
         override suspend fun setMicPermissionRequested(requested: Boolean) {
             _userData.update { it.copy(micPermissionRequested = requested) }
+        }
+
+        override suspend fun setNotificationPreferences(preferences: NotificationPreferences) {
+            _userData.update { it.copy(notificationPreferences = preferences) }
         }
     }
 

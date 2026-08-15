@@ -99,12 +99,18 @@
 
     <string name="onboarding_notifications_turn_on">تفعيل التنبيهات</string>
     <string name="onboarding_notifications_not_now">ليس الآن</string>
-    <string name="onboarding_notifications_title">أتريد تنبيهاً لطيفاً عندما يحين الوقت؟</string>
-    <string name="onboarding_notifications_bullet_starts">فقط عند بدء جلسة — دون إزعاج طوال اليوم.</string>
-    <string name="onboarding_notifications_bullet_fix">فقط عندما تحتاج الخطة إلى تعديل بسيط تودّ معرفته.</string>
-    <string name="onboarding_notifications_bullet_spam">بلا إزعاج أبداً — أوقفها بنقرة واحدة في أي وقت.</string>
+    <string name="onboarding_notifications_title">أتريد من أوان أن يرافقك خلال يومك؟</string>
+    <string name="onboarding_notifications_bullet_sessions">تنبيه قبل الجلسة، وعدّ تنازلي أثناءها.</string>
+    <string name="onboarding_notifications_bullet_checkin">سؤال ودود إذا تعثّرت جلسة، أو بقي يومك فارغاً.</string>
+    <string name="onboarding_notifications_bullet_control">لكل واحد منها مفتاح خاص به، في الملف الشخصي ← الإشعارات.</string>
     <string name="onboarding_notifications_permission_note">سيسألك النظام تالياً — هذا فقط لتعرف السبب.</string>
     <string name="onboarding_notifications_denied">الإشعارات معطّلة في إعدادات النظام — انقر \"تفعيل التنبيهات\" لفتحها.</string>
-    <string name="onboarding_notifications_preview_sender">أوان · الآن</string>
-    <string name="onboarding_notifications_preview_body">يبدأ العمل خلال 5 دقائق — مراجعة التصميم أولاً.</string>
+
+    <!-- Mock notifications. Wording tracks the real ones in :core:notifications. -->
+    <string name="onboarding_notifications_preview_reminder_title">مراجعة التصميم</string>
+    <string name="onboarding_notifications_preview_reminder_body">تبدأ خلال 10 دقائق · 9:30 – 10:30</string>
+    <string name="onboarding_notifications_preview_live_title">مراجعة التصميم</string>
+    <string name="onboarding_notifications_preview_live_body">بقيت 27 دقيقة</string>
+    <string name="onboarding_notifications_preview_checkin_title">كيف سارت مراجعة التصميم؟</string>
+    <string name="onboarding_notifications_preview_checkin_body">حدّدها كمكتملة لتُحتسب.</string>
 </resources>

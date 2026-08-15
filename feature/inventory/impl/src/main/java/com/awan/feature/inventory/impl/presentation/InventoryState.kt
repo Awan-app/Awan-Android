@@ -2,8 +2,8 @@ package com.awan.feature.inventory.impl.presentation
 
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.inventory.model.CustomizationRarity
-import com.awan.app.core.domain.inventory.model.CustomizationType
-import com.awan.app.core.domain.inventory.model.OwnedCustomization
+import com.awan.app.core.model.OwnedItem
+import com.awan.app.core.model.StoreItemType
 
 enum class InventorySort {
     RARITY,
@@ -11,16 +11,28 @@ enum class InventorySort {
     NAME,
 }
 
+data class InventoryItem(
+    val itemId: String,
+    val name: String,
+    val description: String,
+    val imageUrl: String?,
+    val type: StoreItemType,
+    val rarity: CustomizationRarity,
+    val isEquipped: Boolean,
+    val acquiredAt: String,
+)
+
 data class InventorySection(
-    val type: CustomizationType,
-    val items: List<OwnedCustomization>,
+    val type: StoreItemType,
+    val items: List<InventoryItem>,
 )
 
 data class InventoryState(
-    val customizations: List<OwnedCustomization> = emptyList(),
-    val selectedType: CustomizationType? = null,
+    val items: List<OwnedItem> = emptyList(),
+    val equippedItemIds: Set<String> = emptySet(),
+    val selectedType: StoreItemType? = null,
     val selectedRarities: Set<CustomizationRarity> = emptySet(),
-    val sort: InventorySort = InventorySort.RARITY,
+    val sort: InventorySort = InventorySort.NEWEST,
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val isOnline: Boolean = true,
@@ -28,31 +40,54 @@ data class InventoryState(
     val error: UiText? = null,
 ) {
     val sections: List<InventorySection>
-        get() = inventorySections(customizations, selectedType, selectedRarities, sort)
+        get() = inventorySections(items, equippedItemIds, selectedType, selectedRarities, sort)
 }
 
 internal fun inventorySections(
-    customizations: List<OwnedCustomization>,
-    selectedType: CustomizationType?,
-    selectedRarities: Set<CustomizationRarity>,
-    sort: InventorySort,
-): List<InventorySection> = customizations
+    items: List<OwnedItem>,
+    equippedItemIds: Set<String>,
+    selectedType: StoreItemType?,
+    selectedRarities: Set<CustomizationRarity> = emptySet(),
+    sort: InventorySort = InventorySort.NEWEST,
+): List<InventorySection> = items
     .asSequence()
-    .filter { selectedType == null || it.type == selectedType }
-    .filter { selectedRarities.isEmpty() || it.rarity in selectedRarities }
+    .filter { selectedType == null || it.item.type == selectedType }
+    .filter {
+        selectedRarities.isEmpty() ||
+            CustomizationRarity.fromInfo(it.item.info) in selectedRarities
+    }
+    .map { ownedItem ->
+        InventoryItem(
+            itemId = ownedItem.item.id,
+            name = ownedItem.item.name,
+            description = ownedItem.item.description,
+            imageUrl = ownedItem.item.image,
+            type = ownedItem.item.type,
+            rarity = CustomizationRarity.fromInfo(ownedItem.item.info),
+            isEquipped = ownedItem.item.id in equippedItemIds,
+            acquiredAt = ownedItem.boughtAt,
+        )
+    }
     .groupBy { it.type }
     .toSortedMap(compareBy { it.ordinal })
     .map { (type, items) -> InventorySection(type, items.sortedFor(sort)) }
 
-private fun List<OwnedCustomization>.sortedFor(sort: InventorySort): List<OwnedCustomization> = when (sort) {
+private fun List<InventoryItem>.sortedFor(sort: InventorySort): List<InventoryItem> = when (sort) {
     InventorySort.RARITY -> sortedWith(
-        knownRaritiesFirst
-            .thenByDescending { it.rarity.rank }
+        compareByDescending<InventoryItem> { rarityRank(it.rarity) }
             .thenByDescending { it.acquiredAt }
-            .thenBy { it.name },
+            .thenBy { it.name.lowercase() }
     )
-    InventorySort.NEWEST -> sortedWith(knownRaritiesFirst.thenByDescending { it.acquiredAt }.thenBy { it.name })
-    InventorySort.NAME -> sortedWith(knownRaritiesFirst.thenBy { it.name.lowercase() })
+    InventorySort.NEWEST -> sortedWith(compareByDescending<InventoryItem> { it.acquiredAt }.thenBy { it.name })
+    InventorySort.NAME -> sortedBy { it.name.lowercase() }
 }
 
-private val knownRaritiesFirst = compareBy<OwnedCustomization> { it.rarity == CustomizationRarity.UNKNOWN }
+private fun rarityRank(rarity: CustomizationRarity): Int = when (rarity) {
+    CustomizationRarity.LEGENDARY -> 5
+    CustomizationRarity.EPIC -> 4
+    CustomizationRarity.RARE -> 3
+    CustomizationRarity.UNCOMMON -> 2
+    CustomizationRarity.COMMON -> 1
+    CustomizationRarity.UNKNOWN -> 0
+}
+

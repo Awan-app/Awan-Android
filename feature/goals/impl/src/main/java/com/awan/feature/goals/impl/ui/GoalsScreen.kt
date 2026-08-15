@@ -49,41 +49,12 @@ fun GoalsScreen(
     val colors = AwanTheme.colors
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                            Brush.verticalGradient(
-                    colors = listOf(
-                        colors.backgroundStart,
-                        colors.background,
-                        colors.background,
-                    ),
-                ),
-            ),
+        modifier = modifier.fillMaxSize(),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding(),
+            modifier = Modifier.fillMaxSize(),
         ) {
-            // ── Title ─────────────────────────────────────────────────────────
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp, bottom = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                AwanText(
-                    text = stringResource(R.string.goals_title),
-                    style = AwanTheme.typography.title.copy(
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = colors.ink,
-                    ),
-                )
-            }
-
-            // ── Mascot header ─────────────────────────────────────────────────
+        // ── Mascot header ─────────────────────────────────────────────────
             GoalsMascotHeader()
 
             Spacer(modifier = Modifier.height(16.dp))

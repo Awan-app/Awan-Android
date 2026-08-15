@@ -1,5 +1,6 @@
 package com.awan.app.core.network.dto.zone
 
+import com.awan.app.core.network.dto.category.CategoryDto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -9,4 +10,5 @@ data class TemplateOverrideDto(
     @SerialName("name") val name: String? = null,
     @SerialName("dateOfDay") val dateOfDay: String,
     @SerialName("zones") val zones: List<ZoneDto> = emptyList(),
+    @SerialName("category") val category: CategoryDto? = null
 )

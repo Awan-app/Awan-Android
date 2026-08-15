@@ -9,9 +9,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.awan.app.core.designsystem.AwanTheme
-import com.awan.app.core.domain.inventory.model.CustomizationRarity
-import com.awan.app.core.domain.inventory.model.CustomizationType
-import com.awan.app.core.domain.inventory.model.OwnedCustomization
+import com.awan.app.core.model.OwnedItem
+import com.awan.app.core.model.StoreItem
+import com.awan.app.core.model.StoreItemType
 import com.awan.feature.inventory.impl.presentation.InventoryAction
 import com.awan.feature.inventory.impl.presentation.InventoryState
 import org.junit.Assert.assertEquals
@@ -26,14 +26,15 @@ class InventoryScreenTest {
 
     @Test
     fun tappingCardEquipsItemAndInfoOpensDetailsSheet() {
-        val customization = customization(isEquipped = false)
+        val ownedItem = item()
         var action: InventoryAction? = null
 
         composeRule.setContent {
             AwanTheme {
                 InventoryScreen(
                     state = InventoryState(
-                        customizations = listOf(customization),
+                        items = listOf(ownedItem),
+                        equippedItemIds = emptySet(),
                         isLoading = false,
                     ),
                     onAction = { action = it },
@@ -42,24 +43,25 @@ class InventoryScreenTest {
             }
         }
 
-        composeRule.onNodeWithTag("inventory-card-${customization.itemId}").performClick()
-        assertEquals(InventoryAction.Equip(customization.itemId), action)
+        composeRule.onNodeWithTag("inventory-card-${ownedItem.item.id}").performClick()
+        assertEquals(InventoryAction.Equip(ownedItem.item.id), action)
 
-        composeRule.onNodeWithContentDescription("View details for ${customization.name}").performClick()
+        composeRule.onNodeWithContentDescription("View details for ${ownedItem.item.name}").performClick()
         composeRule.onNodeWithTag("inventory-details-artwork").assertIsDisplayed()
-        composeRule.onNodeWithText(customization.description).assertIsDisplayed()
+        composeRule.onNodeWithText(ownedItem.item.description).assertIsDisplayed()
         composeRule.onNodeWithText("Equip").assertIsDisplayed()
     }
 
     @Test
     fun equippedItemShowsDisabledEquippedActionInDetailsSheet() {
-        val customization = customization(isEquipped = true)
+        val ownedItem = item()
 
         composeRule.setContent {
             AwanTheme {
                 InventoryScreen(
                     state = InventoryState(
-                        customizations = listOf(customization),
+                        items = listOf(ownedItem),
+                        equippedItemIds = setOf(ownedItem.item.id),
                         isLoading = false,
                     ),
                     onAction = {},
@@ -68,19 +70,22 @@ class InventoryScreenTest {
             }
         }
 
-        composeRule.onNodeWithContentDescription("View details for ${customization.name}").performClick()
+        composeRule.onNodeWithContentDescription("View details for ${ownedItem.item.name}").performClick()
         composeRule.onNodeWithText("Equipped").assertIsNotEnabled()
     }
 
-    private fun customization(isEquipped: Boolean) = OwnedCustomization(
-        inventoryId = "inventory-frame",
-        itemId = "frame",
-        name = "Gold Frame",
-        description = "A warm frame for milestone moments.",
-        imageUrl = null,
-        type = CustomizationType.FRAME,
-        rarity = CustomizationRarity.RARE,
-        acquiredAt = "2026-08-01T00:00:00Z",
-        isEquipped = isEquipped,
+    private fun item() = OwnedItem(
+        id = "inventory-frame",
+        item = StoreItem(
+            id = "frame",
+            name = "Gold Frame",
+            description = "A warm frame for milestone moments.",
+            image = "",
+            info = "rare",
+            price = 500,
+            version = "1.0",
+            type = StoreItemType.FRAME,
+        ),
+        boughtAt = "2026-08-01T00:00:00Z",
     )
 }
