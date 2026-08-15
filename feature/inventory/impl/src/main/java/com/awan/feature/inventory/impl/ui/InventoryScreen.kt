@@ -33,6 +33,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -227,9 +228,24 @@ private fun InventoryContent(
                 )
             }
         } else {
-            state.sections.forEach { section ->
+            state.sections.forEachIndexed { index, section ->
+                if (index > 0) {
+                    item(key = "divider-${section.type}", span = { GridItemSpan(maxLineSpan) }) {
+                        HorizontalDivider(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = AwanTheme.spacing.xl, bottom = AwanTheme.spacing.md),
+                            color = AwanTheme.colors.line,
+                            thickness = 1.dp,
+                        )
+                    }
+                }
                 item(key = "header-${section.type}", span = { GridItemSpan(maxLineSpan) }) {
-                    AwanText(typeLabel(section.type), style = AwanTheme.styles.headingText)
+                    AwanText(
+                        typeLabel(section.type),
+                        style = AwanTheme.styles.headingText,
+                        modifier = Modifier.padding(bottom = AwanTheme.spacing.xs),
+                    )
                 }
                 item(key = "default-${section.type}") {
                     DefaultItemCard(
