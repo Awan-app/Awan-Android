@@ -70,9 +70,7 @@ import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanRemoteImage
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
-import com.awan.app.core.designsystem.CascadeItem
 import com.awan.app.core.designsystem.MascotExpression
-import com.awan.app.core.designsystem.SparkleBurst
 import com.awan.app.core.domain.inventory.model.CustomizationRarity
 import com.awan.app.core.model.OwnedItem
 import com.awan.app.core.model.StoreItemType
@@ -261,12 +259,11 @@ private fun InventoryContent(
                     if (isNew) {
                         val unseenIndex =
                             state.unseenItemIds.toList().indexOf(item.itemId).coerceAtLeast(0)
-                        CascadeItem(index = unseenIndex) {
+                        NewItemAcquisitionEffect(index = unseenIndex) {
                             CustomizationCard(
                                 item = item,
                                 isOnline = state.isOnline,
                                 isEquipping = state.equippingItemId == item.itemId,
-                                isNew = true,
                                 onEquip = { onAction(InventoryAction.Equip(item.itemId)) },
                                 onInfo = { onAction(InventoryAction.OpenDetails(item.itemId)) },
                             )
@@ -276,7 +273,6 @@ private fun InventoryContent(
                             item = item,
                             isOnline = state.isOnline,
                             isEquipping = state.equippingItemId == item.itemId,
-                            isNew = false,
                             onEquip = { onAction(InventoryAction.Equip(item.itemId)) },
                             onInfo = { onAction(InventoryAction.OpenDetails(item.itemId)) },
                         )
@@ -443,7 +439,6 @@ private fun CustomizationCard(
     item: InventoryItem,
     isOnline: Boolean,
     isEquipping: Boolean,
-    isNew: Boolean,
     onEquip: () -> Unit,
     onInfo: () -> Unit,
 ) {
@@ -471,12 +466,6 @@ private fun CustomizationCard(
                 modifier = Modifier.fillMaxSize(),
                 showRarityGradient = true,
             )
-            if (isNew) {
-                SparkleBurst(
-                    celebrate = true,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-            }
             AwanIconButton(
                 onClick = onInfo,
                 contentDescription = stringResource(R.string.inventory_view_details, item.name),
