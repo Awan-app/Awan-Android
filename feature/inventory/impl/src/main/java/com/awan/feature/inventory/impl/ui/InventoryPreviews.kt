@@ -134,7 +134,7 @@ fun InventoryScreenMixedRaritiesPreview() {
     }
 }
 
-@Preview(name = "Inventory · Details Sheet (Unequipped / Pick)", showBackground = true, widthDp = 420, heightDp = 720)
+@Preview(name = "Inventory · Details Sheet (Unequipped / Equip)", showBackground = true, widthDp = 420, heightDp = 720)
 @Composable
 fun InventoryDetailsSheetUnequippedPreview() {
     AwanTheme {

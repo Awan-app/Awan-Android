@@ -28,7 +28,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Payments
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -118,54 +118,47 @@ fun InventoryScreen(
                         ) {
                             Icon(Icons.Default.Tune, contentDescription = null)
                         }
-                        AwanIconButton(
-                            onClick = { onAction(InventoryAction.Refresh) },
-                            enabled = !state.isRefreshing,
-                            contentDescription = stringResource(R.string.inventory_refresh),
-                        ) {
-                            if (state.isRefreshing) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp), strokeWidth = 2.dp
-                                )
-                            } else {
-                                Icon(Icons.Default.Refresh, contentDescription = null)
-                            }
-                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = AwanTheme.colors.background),
                 )
             },
         ) { padding ->
-            when {
-                state.isLoading && state.items.isEmpty() -> InventoryLoading(
-                    modifier = Modifier.padding(
-                        padding
+            PullToRefreshBox(
+                isRefreshing = state.isRefreshing,
+                onRefresh = { onAction(InventoryAction.Refresh) },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                when {
+                    state.isLoading && state.items.isEmpty() -> InventoryLoading(
+                        modifier = Modifier.fillMaxSize()
                     )
-                )
 
-                state.items.isEmpty() && !state.isOnline -> InventoryEmpty(
-                    title = stringResource(R.string.inventory_offline_title),
-                    body = stringResource(R.string.inventory_offline_body),
-                    modifier = Modifier.padding(padding),
-                )
+                    state.items.isEmpty() && !state.isOnline -> InventoryEmpty(
+                        title = stringResource(R.string.inventory_offline_title),
+                        body = stringResource(R.string.inventory_offline_body),
+                        modifier = Modifier.fillMaxSize(),
+                    )
 
-                state.items.isEmpty() && state.error != null -> InventoryError(
-                    message = state.error.asString(),
-                    onRetry = { onAction(InventoryAction.Refresh) },
-                    modifier = Modifier.padding(padding),
-                )
+                    state.items.isEmpty() && state.error != null -> InventoryError(
+                        message = state.error.asString(),
+                        onRetry = { onAction(InventoryAction.Refresh) },
+                        modifier = Modifier.fillMaxSize(),
+                    )
 
-                state.items.isEmpty() -> InventoryEmpty(
-                    title = stringResource(R.string.inventory_empty_title),
-                    body = stringResource(R.string.inventory_empty_body),
-                    modifier = Modifier.padding(padding),
-                )
+                    state.items.isEmpty() -> InventoryEmpty(
+                        title = stringResource(R.string.inventory_empty_title),
+                        body = stringResource(R.string.inventory_empty_body),
+                        modifier = Modifier.fillMaxSize(),
+                    )
 
-                else -> InventoryContent(
-                    state = state,
-                    onAction = onAction,
-                    modifier = Modifier.padding(padding),
-                )
+                    else -> InventoryContent(
+                        state = state,
+                        onAction = onAction,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
         }
 
@@ -213,9 +206,6 @@ private fun InventoryContent(
         horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
     ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            InventoryControlsTrigger(state = state, onAction = onAction)
-        }
         state.error?.let { error ->
             item(span = { GridItemSpan(maxLineSpan) }) {
                 AwanText(error.asString(), style = AwanTheme.styles.bodySecondaryText)
@@ -282,40 +272,6 @@ private fun InventoryContent(
 }
 
 @Composable
-private fun InventoryControlsTrigger(
-    state: InventoryState,
-    onAction: (InventoryAction) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        AwanText(
-            stringResource(R.string.inventory_filter_type),
-            style = AwanTheme.styles.metaText,
-            modifier = Modifier.weight(1f),
-        )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-            item {
-                FilterChip(
-                    selected = state.selectedType == null,
-                    onClick = { onAction(InventoryAction.SelectType(null)) },
-                    label = { AwanText(stringResource(R.string.inventory_all_types)) },
-                )
-            }
-            items(StoreItemType.entries.size) { index ->
-                val type = StoreItemType.entries[index]
-                FilterChip(
-                    selected = state.selectedType == type,
-                    onClick = { onAction(InventoryAction.SelectType(type)) },
-                    label = { AwanText(typeLabel(type)) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun DefaultItemCard(
     type: StoreItemType,
     isCurrentlyDefault: Boolean,
@@ -339,7 +295,8 @@ private fun DefaultItemCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1f),
+                .aspectRatio(1f)
+                .background(AwanTheme.colors.surface),
             contentAlignment = Alignment.Center,
         ) {
             AwanMascot(
@@ -393,33 +350,66 @@ private fun InventoryControlsSheet(
 
 @Composable
 private fun InventoryFilters(state: InventoryState, onAction: (InventoryAction) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-        AwanText(
-            stringResource(R.string.inventory_filter_rarity), style = AwanTheme.styles.metaText
-        )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-            items(CustomizationRarity.entries.size) { index ->
-                val rarity = CustomizationRarity.entries[index]
-                val selected = rarity in state.selectedRarities
-                FilterChip(
-                    selected = selected,
-                    onClick = { onAction(InventoryAction.ToggleRarity(rarity)) },
-                    label = { AwanText(rarityLabel(rarity)) },
-                )
-            }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
+        // 1. Sort Control (Relocated above rarity)
+        Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
             AwanText(
                 stringResource(R.string.inventory_sort),
                 style = AwanTheme.styles.metaText,
-                modifier = Modifier.weight(1f),
             )
-            InventorySort.entries.forEach { sort ->
-                FilterChip(
-                    selected = state.sort == sort,
-                    onClick = { onAction(InventoryAction.SetSort(sort)) },
-                    label = { AwanText(sortLabel(sort)) },
-                )
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+                items(InventorySort.entries.size) { index ->
+                    val sort = InventorySort.entries[index]
+                    FilterChip(
+                        selected = state.sort == sort,
+                        onClick = { onAction(InventoryAction.SetSort(sort)) },
+                        label = { AwanText(sortLabel(sort)) },
+                    )
+                }
+            }
+        }
+
+        // 2. Rarity Control
+        Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+            AwanText(
+                stringResource(R.string.inventory_filter_rarity),
+                style = AwanTheme.styles.metaText,
+            )
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+                items(CustomizationRarity.entries.size) { index ->
+                    val rarity = CustomizationRarity.entries[index]
+                    val selected = rarity in state.selectedRarities
+                    FilterChip(
+                        selected = selected,
+                        onClick = { onAction(InventoryAction.ToggleRarity(rarity)) },
+                        label = { AwanText(rarityLabel(rarity)) },
+                    )
+                }
+            }
+        }
+
+        // 3. Category / Slot Type Control (Relocated from top screen, third list option with same padding/spacing)
+        Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+            AwanText(
+                stringResource(R.string.inventory_filter_type),
+                style = AwanTheme.styles.metaText,
+            )
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+                item {
+                    FilterChip(
+                        selected = state.selectedType == null,
+                        onClick = { onAction(InventoryAction.SelectType(null)) },
+                        label = { AwanText(stringResource(R.string.inventory_all_types)) },
+                    )
+                }
+                items(StoreItemType.entries.size) { index ->
+                    val type = StoreItemType.entries[index]
+                    FilterChip(
+                        selected = state.selectedType == type,
+                        onClick = { onAction(InventoryAction.SelectType(type)) },
+                        label = { AwanText(typeLabel(type)) },
+                    )
+                }
             }
         }
     }
@@ -455,6 +445,7 @@ private fun CustomizationCard(
                 imageUrl = item.imageUrl,
                 rarity = item.rarity,
                 modifier = Modifier.fillMaxSize(),
+                showRarityGradient = true,
             )
             if (isNew) {
                 SparkleBurst(
@@ -521,7 +512,7 @@ internal fun CustomizationDetailsSheet(
                     imageUrl = item.item.image,
                     rarity = rarity,
                     modifier = Modifier.fillMaxSize(),
-                    showRarityBackdrop = false,
+                    showRarityGradient = false,
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -561,7 +552,7 @@ internal fun CustomizationDetailsSheet(
             ) {
                 AwanText(
                     stringResource(
-                        if (isEquipped) R.string.inventory_already_equipped else R.string.inventory_pick,
+                        if (isEquipped) R.string.inventory_already_equipped else R.string.inventory_equip,
                     ),
                 )
             }
@@ -583,22 +574,18 @@ private fun CustomizationArt(
     imageUrl: String?,
     rarity: CustomizationRarity,
     modifier: Modifier,
-    showRarityBackdrop: Boolean = true,
+    showRarityGradient: Boolean = true,
 ) {
     val accent = rarityAccent(rarity)
-    val backdropModifier = if (showRarityBackdrop) {
-        Modifier.background(
-            Brush.radialGradient(
-                colors = listOf(accent.copy(alpha = CardBackdropAlpha), AwanTheme.colors.surface),
-            ),
-        )
+    val gradientModifier = if (showRarityGradient) {
+        Modifier.gridItemArtworkGradient(accent)
     } else {
-        Modifier.background(AwanTheme.colors.surface)
+        Modifier
     }
     Box(
         modifier = modifier
-            .clip(AwanTheme.shapes.card)
-            .then(backdropModifier),
+            .background(AwanTheme.colors.surface)
+            .then(gradientModifier),
         contentAlignment = Alignment.Center,
     ) {
         if (imageUrl == null) {
@@ -614,9 +601,23 @@ private fun CustomizationArt(
     }
 }
 
+private fun Modifier.gridItemArtworkGradient(accent: Color): Modifier = drawWithCache {
+    val gradientBrush = Brush.verticalGradient(
+        0.0f to Color.Transparent,
+        0.40f to Color.Transparent,              // 60% from bottom (40% from top)
+        0.80f to accent.copy(alpha = 0.25f),     // 20% breakpoint from bottom
+        1.0f to accent.copy(alpha = 0.45f),      // 0% bottom edge (intense)
+        startY = 0f,
+        endY = size.height,
+    )
+    onDrawWithContent {
+        drawContent()
+        drawRect(brush = gradientBrush)
+    }
+}
+
 private fun Modifier.ellipticalRarityGradient(
     accent: Color,
-    alpha: Float = SheetGradientAlpha,
 ) = drawWithCache {
     val center = Offset(size.width / 2f, size.height)
     val horizontalRadius = size.width * 0.95f
@@ -624,7 +625,9 @@ private fun Modifier.ellipticalRarityGradient(
     val scaleX = if (verticalRadius > 0f) horizontalRadius / verticalRadius else 1f
 
     val brush = Brush.radialGradient(
-        colors = listOf(accent.copy(alpha = alpha), Color.Transparent),
+        0.0f to accent.copy(alpha = 0.35f),
+        0.43f to accent.copy(alpha = 0.18f),
+        1.0f to Color.Transparent,
         center = center,
         radius = if (verticalRadius > 0f) verticalRadius else 1f,
     )
