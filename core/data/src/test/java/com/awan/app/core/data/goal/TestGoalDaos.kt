@@ -84,7 +84,10 @@ internal open class TestSessionDao : com.awan.app.core.database.dao.SessionDao {
     override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<com.awan.app.core.database.model.SessionEntity>> = flowOf(emptyList())
     override suspend fun getSessionsForDate(date: String): List<com.awan.app.core.database.model.SessionEntity> = emptyList()
     override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<com.awan.app.core.database.model.SessionEntity> = emptyList()
+    override fun observeUpcomingSessions(startDate: String, endDate: String): Flow<List<com.awan.app.core.database.model.UpcomingSessionRow>> = flowOf(emptyList())
+    override suspend fun getUpcomingSessions(startDate: String, endDate: String): List<com.awan.app.core.database.model.UpcomingSessionRow> = emptyList()
     override suspend fun getSession(id: String): com.awan.app.core.database.model.SessionEntity? = null
     override suspend fun deleteSessionsForDates(dates: List<String>) {}
     override suspend fun deleteSession(id: String) {}
 }
+
