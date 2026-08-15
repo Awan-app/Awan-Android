@@ -509,74 +509,96 @@ internal fun CustomizationDetailsSheet(
     val isEquipped = item.item.id in state.equippedItemIds
     val rarity = CustomizationRarity.fromInfo(item.item.info)
     val accent = rarityAccent(rarity)
+
+    // Outermost Box: the gradient is drawn BEHIND everything via bowlGradientBackdrop.
+    // The image and text content sit on top and are never tinted by the gradient.
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .ellipticalRarityGradient(accent = accent)
+            .bowlGradientBackdrop(accent = accent)
             .navigationBarsPadding()
             .verticalScroll(rememberScrollState()),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = AwanTheme.spacing.md, vertical = AwanTheme.spacing.sm),
-            verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
+            modifier = Modifier.fillMaxWidth(),
         ) {
+            // ── Image section ──────────────────────────────────────────────
+            // • Fills all horizontal space (no fillMaxWidth(0.80f), no padding)
+            // • No rounded corners (no clip)
+            // • Pure white background so the gradient behind it is hidden
+            // • Slightly reduced height: aspectRatio(1.75f) ≈ 0.8× of old 1.4f
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.80f)
-                    .aspectRatio(1.4f)
-                    .align(Alignment.CenterHorizontally)
-                    .clip(AwanTheme.shapes.card)
+                    .fillMaxWidth()
+                    .aspectRatio(1.75f)
+                    .background(Color.White)
                     .testTag("inventory-details-artwork"),
+                contentAlignment = Alignment.Center,
             ) {
-                CustomizationArt(
-                    imageUrl = item.item.image,
-                    rarity = rarity,
-                    modifier = Modifier.fillMaxSize(),
-                    showRarityGradient = false,
-                )
+                if (item.item.image.isBlank()) {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = accent)
+                } else {
+                    AwanRemoteImage(
+                        url = item.item.image,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize(0.85f),
+                    )
+                }
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AwanText(item.item.name, style = AwanTheme.styles.headingText)
-                Spacer(modifier = Modifier.weight(1f))
-                AwanChip(
-                    label = rarityLabel(rarity),
-                    tone = rarityChipTone(rarity),
-                )
-            }
-            AwanText(item.item.description, style = AwanTheme.styles.bodySecondaryText)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Payments,
-                    contentDescription = null,
-                    tint = AwanTheme.colors.zoneSun,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(Modifier.width(AwanTheme.spacing.xxs))
-                AwanText(
-                    stringResource(R.string.inventory_details_cost, item.item.price),
-                    style = AwanTheme.styles.bodyText,
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                AwanText(
-                    stringResource(R.string.inventory_details_type, typeLabel(item.item.type)),
-                    style = AwanTheme.styles.metaText,
-                )
-            }
-            Spacer(modifier = Modifier.height(AwanTheme.spacing.lg))
-            AwanButton(
-                onClick = onEquip,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = state.isOnline && !isEquipped,
-                isLoading = state.equippingItemId == item.item.id,
-                variant = if (isEquipped) AwanButtonVariant.Secondary else AwanButtonVariant.Primary,
-            ) {
-                AwanText(
-                    stringResource(
-                        if (isEquipped) R.string.inventory_already_equipped else R.string.inventory_equip,
+
+            // ── Text / action content ──────────────────────────────────────
+            // Horizontal padding only applies to the text area below the image.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = AwanTheme.spacing.md,
+                        vertical = AwanTheme.spacing.sm,
                     ),
-                )
+                verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    AwanText(item.item.name, style = AwanTheme.styles.headingText)
+                    Spacer(modifier = Modifier.weight(1f))
+                    AwanChip(
+                        label = rarityLabel(rarity),
+                        tone = rarityChipTone(rarity),
+                    )
+                }
+                AwanText(item.item.description, style = AwanTheme.styles.bodySecondaryText)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Payments,
+                        contentDescription = null,
+                        tint = AwanTheme.colors.zoneSun,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(AwanTheme.spacing.xxs))
+                    AwanText(
+                        stringResource(R.string.inventory_details_cost, item.item.price),
+                        style = AwanTheme.styles.bodyText,
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    AwanText(
+                        stringResource(R.string.inventory_details_type, typeLabel(item.item.type)),
+                        style = AwanTheme.styles.metaText,
+                    )
+                }
+                Spacer(modifier = Modifier.height(AwanTheme.spacing.lg))
+                AwanButton(
+                    onClick = onEquip,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = state.isOnline && !isEquipped,
+                    isLoading = state.equippingItemId == item.item.id,
+                    variant = if (isEquipped) AwanButtonVariant.Secondary else AwanButtonVariant.Primary,
+                ) {
+                    AwanText(
+                        stringResource(
+                            if (isEquipped) R.string.inventory_already_equipped else R.string.inventory_equip,
+                        ),
+                    )
+                }
             }
         }
     }
@@ -641,20 +663,40 @@ private fun Modifier.gridItemArtworkGradient(accent: Color): Modifier = drawWith
     }
 }
 
-private fun Modifier.ellipticalRarityGradient(
+/**
+ * Bottom-to-top "bowl" gradient applied to the details bottom sheet.
+ *
+ * The gradient has two distinct intensity sections:
+ * - **Section 1 (intense)**: High-alpha accent at the bottom edge and lateral edges,
+ *   created by a radial gradient whose centre sits slightly below centre ("climbing" effect).
+ *   This produces a concave / bowl shape that hugs the bottom and sides of the sheet.
+ * - **Section 2 (fade)**: The radial gradient naturally falls off toward the upper half,
+ *   creating a smooth, organic transition to full transparency at the top.
+ *
+ * Drawn via `onDrawBehind` so every element rendered on top (image, text, buttons)
+ * is never tinted or covered by the gradient colours.
+ */
+private fun Modifier.bowlGradientBackdrop(
     accent: Color,
 ) = drawWithCache {
-    val center = Offset(size.width / 2f, size.height)
-    val horizontalRadius = size.width * 0.95f
-    val verticalRadius = size.height * 0.70f
-    val scaleX = if (verticalRadius > 0f) horizontalRadius / verticalRadius else 1f
+    // Place the radial centre slightly below the vertical midpoint.
+    // This makes the gradient "climb" upward from the bottom, giving
+    // the bowl / concave impression described in the spec.
+    val center = Offset(size.width / 2f, size.height * 0.75f)
+    val radius = size.height * 0.85f
+
+    // Horizontal stretch so intensity hugs the left and right edges of the sheet.
+    val scaleX = if (radius > 0f) (size.width * 0.55f) / radius else 1f
 
     val brush = Brush.radialGradient(
-        0.0f to accent.copy(alpha = 0.35f),
-        0.43f to accent.copy(alpha = 0.18f),
+        // Section 1 – intense core (bottom & edges)
+        0.0f to accent.copy(alpha = 0.40f),
+        0.30f to accent.copy(alpha = 0.28f),
+        // Section 2 – natural fade
+        0.60f to accent.copy(alpha = 0.12f),
         1.0f to Color.Transparent,
         center = center,
-        radius = if (verticalRadius > 0f) verticalRadius else 1f,
+        radius = if (radius > 0f) radius else 1f,
     )
 
     onDrawBehind {
