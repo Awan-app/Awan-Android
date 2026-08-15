@@ -47,9 +47,33 @@ class InventoryScreenTest {
         assertEquals(InventoryAction.Equip(ownedItem.item.id), action)
 
         composeRule.onNodeWithContentDescription("View details for ${ownedItem.item.name}").performClick()
+        assertEquals(InventoryAction.OpenDetails(ownedItem.item.id), action)
+    }
+
+    @Test
+    fun detailsSheetDisplaysItemInfoAndEquipAction() {
+        val ownedItem = item()
+        var action: InventoryAction? = null
+
+        composeRule.setContent {
+            AwanTheme {
+                InventoryScreen(
+                    state = InventoryState(
+                        items = listOf(ownedItem),
+                        equippedItemIds = emptySet(),
+                        detailsItemId = ownedItem.item.id,
+                        isLoading = false,
+                    ),
+                    onAction = { action = it },
+                    onBack = {},
+                )
+            }
+        }
+
         composeRule.onNodeWithTag("inventory-details-artwork").assertIsDisplayed()
         composeRule.onNodeWithText(ownedItem.item.description).assertIsDisplayed()
-        composeRule.onNodeWithText("Equip").assertIsDisplayed()
+        composeRule.onNodeWithText("Equip").assertIsDisplayed().performClick()
+        assertEquals(InventoryAction.Equip(ownedItem.item.id), action)
     }
 
     @Test
@@ -62,6 +86,7 @@ class InventoryScreenTest {
                     state = InventoryState(
                         items = listOf(ownedItem),
                         equippedItemIds = setOf(ownedItem.item.id),
+                        detailsItemId = ownedItem.item.id,
                         isLoading = false,
                     ),
                     onAction = {},
@@ -70,8 +95,31 @@ class InventoryScreenTest {
             }
         }
 
-        composeRule.onNodeWithContentDescription("View details for ${ownedItem.item.name}").performClick()
+        composeRule.onNodeWithTag("inventory-details-artwork").assertIsDisplayed()
         composeRule.onNodeWithText("Equipped").assertIsNotEnabled()
+    }
+
+    @Test
+    fun tappingDefaultCardWhenEquippedDispatchesUnequipAction() {
+        val ownedItem = item()
+        var action: InventoryAction? = null
+
+        composeRule.setContent {
+            AwanTheme {
+                InventoryScreen(
+                    state = InventoryState(
+                        items = listOf(ownedItem),
+                        equippedItemIds = setOf(ownedItem.item.id),
+                        isLoading = false,
+                    ),
+                    onAction = { action = it },
+                    onBack = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("inventory-card-default-frame").performClick()
+        assertEquals(InventoryAction.Unequip(StoreItemType.FRAME), action)
     }
 
     private fun item() = OwnedItem(

@@ -35,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -62,7 +63,9 @@ import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanRemoteImage
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.CascadeItem
 import com.awan.app.core.designsystem.MascotExpression
+import com.awan.app.core.designsystem.SparkleBurst
 import com.awan.app.core.domain.inventory.model.CustomizationRarity
 import com.awan.app.core.model.OwnedItem
 import com.awan.app.core.model.StoreItemType
@@ -71,6 +74,8 @@ import com.awan.feature.inventory.impl.presentation.InventoryAction
 import com.awan.feature.inventory.impl.presentation.InventoryItem
 import com.awan.feature.inventory.impl.presentation.InventorySort
 import com.awan.feature.inventory.impl.presentation.InventoryState
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,8 +85,6 @@ fun InventoryScreen(
     onBack: () -> Unit,
 ) {
     var controlsVisible by rememberSaveable { mutableStateOf(false) }
-    var detailsItemId by rememberSaveable { mutableStateOf<String?>(null) }
-    val detailsItem = state.items.firstOrNull { it.item.id == detailsItemId }
 
     Box(modifier = Modifier.fillMaxSize()) {
         androidx.compose.material3.Scaffold(
@@ -145,7 +148,6 @@ fun InventoryScreen(
                 else -> InventoryContent(
                     state = state,
                     onAction = onAction,
-                    onOpenDetails = { detailsItemId = it },
                     modifier = Modifier.padding(padding),
                 )
             }
@@ -157,8 +159,8 @@ fun InventoryScreen(
             }
         }
 
-        detailsItem?.let { item ->
-            ModalBottomSheet(onDismissRequest = { detailsItemId = null }) {
+        state.detailsItem?.let { item ->
+            ModalBottomSheet(onDismissRequest = { onAction(InventoryAction.CloseDetails) }) {
                 CustomizationDetailsSheet(
                     item = item,
                     state = state,
@@ -173,9 +175,15 @@ fun InventoryScreen(
 private fun InventoryContent(
     state: InventoryState,
     onAction: (InventoryAction) -> Unit,
-    onOpenDetails: (String) -> Unit,
     modifier: Modifier,
 ) {
+    LaunchedEffect(state.unseenItemIds) {
+        if (state.unseenItemIds.isNotEmpty()) {
+            delay((state.unseenItemIds.size * 55L + 500L).milliseconds)
+            onAction(InventoryAction.MarkSeen)
+        }
+    }
+
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         modifier = modifier.fillMaxSize(),
@@ -205,17 +213,100 @@ private fun InventoryContent(
                 item(key = "header-${section.type}", span = { GridItemSpan(maxLineSpan) }) {
                     AwanText(typeLabel(section.type), style = AwanTheme.styles.headingText)
                 }
-                items(section.items, key = { it.itemId }) { item ->
-                    CustomizationCard(
-                        item = item,
+                item(key = "default-${section.type}") {
+                    DefaultItemCard(
+                        type = section.type,
+                        isCurrentlyDefault = section.items.none { it.isEquipped },
                         isOnline = state.isOnline,
-                        isEquipping = state.equippingItemId == item.itemId,
-                        onEquip = { onAction(InventoryAction.Equip(item.itemId)) },
-                        onDetails = { onOpenDetails(item.itemId) },
+                        isUnequipping = state.unequippingType == section.type,
+                        onUnequip = { onAction(InventoryAction.Unequip(section.type)) },
                     )
+                }
+                items(section.items, key = { it.itemId }) { item ->
+                    val isNew = item.itemId in state.unseenItemIds
+                    if (isNew) {
+                        val unseenIndex = state.unseenItemIds.toList().indexOf(item.itemId).coerceAtLeast(0)
+                        CascadeItem(index = unseenIndex) {
+                            CustomizationCard(
+                                item = item,
+                                isOnline = state.isOnline,
+                                isEquipping = state.equippingItemId == item.itemId,
+                                isNew = true,
+                                onEquip = { onAction(InventoryAction.Equip(item.itemId)) },
+                                onDetails = { onAction(InventoryAction.OpenDetails(item.itemId)) },
+                            )
+                        }
+                    } else {
+                        CustomizationCard(
+                            item = item,
+                            isOnline = state.isOnline,
+                            isEquipping = state.equippingItemId == item.itemId,
+                            isNew = false,
+                            onEquip = { onAction(InventoryAction.Equip(item.itemId)) },
+                            onDetails = { onAction(InventoryAction.OpenDetails(item.itemId)) },
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DefaultItemCard(
+    type: StoreItemType,
+    isCurrentlyDefault: Boolean,
+    isOnline: Boolean,
+    isUnequipping: Boolean,
+    onUnequip: () -> Unit,
+) {
+    val canUnequip = isOnline && !isCurrentlyDefault && !isUnequipping
+    val defaultStateDescription = stringResource(
+        if (isCurrentlyDefault) {
+            R.string.inventory_item_equipped_state
+        } else {
+            R.string.inventory_item_not_equipped_state
+        },
+    )
+    AwanCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("inventory-card-default-${type.name.lowercase()}")
+            .semantics {
+                stateDescription = defaultStateDescription
+            },
+        selected = isCurrentlyDefault,
+        onClick = if (canUnequip) onUnequip else null,
+        contentPadding = PaddingValues(AwanTheme.spacing.sm),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(AwanTheme.shapes.card)
+                .background(AwanTheme.colors.surface),
+            contentAlignment = Alignment.Center,
+        ) {
+            AwanMascot(expression = MascotExpression.Idle, width = 48.dp)
+            if (isUnequipping) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .align(Alignment.Center),
+                    strokeWidth = 2.dp,
+                )
+            }
+        }
+        Spacer(Modifier.height(AwanTheme.spacing.xs))
+        AwanText(
+            stringResource(R.string.inventory_default),
+            style = AwanTheme.styles.bodyText,
+            maxLines = 1,
+        )
+        AwanText(
+            defaultStateDescription,
+            style = AwanTheme.styles.metaText,
+        )
     }
 }
 
@@ -289,6 +380,7 @@ private fun CustomizationCard(
     item: InventoryItem,
     isOnline: Boolean,
     isEquipping: Boolean,
+    isNew: Boolean = false,
     onEquip: () -> Unit,
     onDetails: () -> Unit,
 ) {
@@ -319,6 +411,12 @@ private fun CustomizationCard(
                     .fillMaxWidth()
                     .aspectRatio(1f),
             )
+            if (isNew) {
+                SparkleBurst(
+                    celebrate = true,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
             AwanIconButton(
                 onClick = onDetails,
                 contentDescription = stringResource(R.string.inventory_view_details, item.name),
