@@ -4,6 +4,7 @@ import com.awan.app.core.domain.notifications.usecase.GetNotificationPreferences
 import com.awan.app.core.domain.notifications.usecase.SetNotificationPreferencesUseCase
 import com.awan.app.core.domain.profile.model.UserData
 import com.awan.app.core.domain.profile.repository.UserDataRepository
+import com.awan.app.core.model.DarkThemeConfig
 import com.awan.app.core.model.NotificationPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -136,7 +137,7 @@ class NotificationSettingsViewModelTest {
     private class FakeUserDataRepository : UserDataRepository {
 
         private val state = MutableStateFlow(
-            UserData(darkThemeEnabled = false, locale = "en")
+            UserData(darkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM, locale = "en")
         )
 
         var saved: NotificationPreferences? = null
@@ -162,7 +163,7 @@ class NotificationSettingsViewModelTest {
             state.value = state.value.copy(notificationPreferences = preferences)
         }
 
-        override suspend fun setDarkThemeEnabled(enabled: Boolean) = Unit
+        override suspend fun setDarkThemeConfig(config: DarkThemeConfig) = Unit
 
         override suspend fun setLocale(locale: String) = Unit
 

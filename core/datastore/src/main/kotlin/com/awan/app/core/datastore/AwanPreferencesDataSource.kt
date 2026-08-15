@@ -2,9 +2,11 @@ package com.awan.app.core.datastore
 
 import androidx.datastore.core.DataStore
 import com.awan.app.core.datastore.model.UserPreferencesData
+import com.awan.app.core.datastore.proto.DarkThemeConfigProto
 import com.awan.app.core.datastore.proto.UserPreferences
 import com.awan.app.core.datastore.proto.copy
 import com.awan.app.core.model.NotificationPreferences
+import com.awan.app.core.model.DarkThemeConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -28,8 +30,16 @@ class AwanPreferencesDataSource @Inject constructor(
         }
         .map { proto -> proto.toData() }
 
-    override suspend fun setDarkThemeEnabled(enabled: Boolean) {
-        dataStore.updateData { it.copy { darkThemeEnabled = enabled } }
+    override suspend fun setDarkThemeConfig(config: DarkThemeConfig) {
+        dataStore.updateData {
+            it.copy {
+                darkThemeConfig = when (config) {
+                    DarkThemeConfig.FOLLOW_SYSTEM -> DarkThemeConfigProto.DARK_THEME_CONFIG_FOLLOW_SYSTEM
+                    DarkThemeConfig.LIGHT -> DarkThemeConfigProto.DARK_THEME_CONFIG_LIGHT
+                    DarkThemeConfig.DARK -> DarkThemeConfigProto.DARK_THEME_CONFIG_DARK
+                }
+            }
+        }
     }
 
     override suspend fun setDynamicColorEnabled(enabled: Boolean) {
@@ -74,7 +84,23 @@ class AwanPreferencesDataSource @Inject constructor(
     }
 
     private fun UserPreferences.toData() = UserPreferencesData(
-        darkThemeEnabled = darkThemeEnabled,
+        darkThemeConfig = if (hasDarkThemeConfig()) {
+            when (darkThemeConfig) {
+                DarkThemeConfigProto.DARK_THEME_CONFIG_FOLLOW_SYSTEM -> DarkThemeConfig.FOLLOW_SYSTEM
+                DarkThemeConfigProto.DARK_THEME_CONFIG_LIGHT -> DarkThemeConfig.LIGHT
+                DarkThemeConfigProto.DARK_THEME_CONFIG_DARK -> DarkThemeConfig.DARK
+                else -> DarkThemeConfig.FOLLOW_SYSTEM
+            }
+        } else {
+            // Legacy migration: old users had a boolean 'dark_theme_enabled'.
+            // If they are existing users (onboarding completed), we preserve their choice.
+            // New users (onboarding not completed) default to FOLLOW_SYSTEM.
+            when {
+                darkThemeEnabled -> DarkThemeConfig.DARK
+                onboardingCompleted -> DarkThemeConfig.LIGHT
+                else -> DarkThemeConfig.FOLLOW_SYSTEM
+            }
+        },
         useDynamicColor = useDynamicColor,
         onboardingCompleted = onboardingCompleted,
         defaultZone = defaultZone,

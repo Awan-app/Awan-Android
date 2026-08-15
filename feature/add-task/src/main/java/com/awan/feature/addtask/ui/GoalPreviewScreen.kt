@@ -101,7 +101,7 @@ fun GoalPreviewScreen(
 
             AwanText(
                 text = stringResource(R.string.add_task_goal_preview_title),
-                style = AwanTheme.typography.title.copy(color = AwanTheme.colors.textPrimary),
+                style = AwanTheme.styles.titleText,
             )
 
             AwanIconButton(

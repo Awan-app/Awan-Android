@@ -1,20 +1,26 @@
 package com.awan.feature.splash.impl.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
+import com.awan.app.core.designsystem.AwanMascot
+import com.awan.app.core.designsystem.AwanText
+import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.MascotExpression
+import com.awan.app.core.designsystem.R
 import com.awan.core.navigation.Route
 import com.awan.feature.splash.api.SplashRoute
 import com.awan.feature.splash.impl.ui.SplashDestination
@@ -42,10 +48,23 @@ fun SplashRouteScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    val colors = AwanTheme.colors
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colors.background),
+        contentAlignment = Alignment.Center
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("SplashRoute Screen")
-            Spacer(modifier = Modifier.height(16.dp))
+            AwanMascot(
+                expression = MascotExpression.Idle,
+                width = 120.dp
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            AwanText(
+                text = stringResource(R.string.app_name),
+                style = AwanTheme.styles.displayText
+            )
         }
     }
 }

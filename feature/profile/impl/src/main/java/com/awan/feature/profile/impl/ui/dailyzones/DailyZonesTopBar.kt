@@ -1,8 +1,6 @@
 package com.awan.feature.profile.impl.ui.dailyzones
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -11,7 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.awan.app.core.designsystem.AwanIconButton
+import com.awan.app.core.designsystem.AwanBackButton
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.profile.impl.R
@@ -36,13 +34,7 @@ fun DailyZonesTopBar(
         },
         navigationIcon = {
             Box(modifier = Modifier.padding(start = 12.dp)) {
-                AwanIconButton(onClick = onBackClick, contentDescription = stringResource(R.string.profile_back)) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null,
-                        tint = AwanTheme.colors.textPrimary
-                    )
-                }
+                AwanBackButton(onClick = onBackClick)
             }
         },
         actions = {
