@@ -18,7 +18,9 @@ data class InventoryItem(
     val imageUrl: String?,
     val type: StoreItemType,
     val rarity: CustomizationRarity,
+    val price: Int,
     val isEquipped: Boolean,
+    val isSeen: Boolean,
     val acquiredAt: String,
 )
 
@@ -37,10 +39,16 @@ data class InventoryState(
     val isRefreshing: Boolean = false,
     val isOnline: Boolean = true,
     val equippingItemId: String? = null,
+    val unequippingType: StoreItemType? = null,
+    val detailsItemId: String? = null,
+    val unseenItemIds: Set<String> = emptySet(),
     val error: UiText? = null,
 ) {
     val sections: List<InventorySection>
         get() = inventorySections(items, equippedItemIds, selectedType, selectedRarities, sort)
+
+    val detailsItem: OwnedItem?
+        get() = items.firstOrNull { it.item.id == detailsItemId }
 }
 
 internal fun inventorySections(
@@ -64,7 +72,9 @@ internal fun inventorySections(
             imageUrl = ownedItem.item.image,
             type = ownedItem.item.type,
             rarity = CustomizationRarity.fromInfo(ownedItem.item.info),
+            price = ownedItem.item.price,
             isEquipped = ownedItem.item.id in equippedItemIds,
+            isSeen = ownedItem.isSeen,
             acquiredAt = ownedItem.boughtAt,
         )
     }

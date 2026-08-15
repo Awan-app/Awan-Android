@@ -1,11 +1,14 @@
 package com.awan.feature.inventory.impl.presentation
 
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.domain.inventory.model.CustomizationRarity
 import com.awan.app.core.domain.marketplace.repository.StoreRepository
 import com.awan.app.core.domain.marketplace.usecase.EquipItemUseCase
 import com.awan.app.core.domain.marketplace.usecase.GetEquippedItemsUseCase
 import com.awan.app.core.domain.marketplace.usecase.GetInventoryUseCase
+import com.awan.app.core.domain.marketplace.usecase.MarkInventorySeenUseCase
 import com.awan.app.core.domain.marketplace.usecase.RefreshMarketplaceUseCase
+import com.awan.app.core.domain.marketplace.usecase.UnequipItemUseCase
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.domain.network.usecase.ObserveNetworkConnectivityUseCase
 import com.awan.app.core.model.EquippedItem
@@ -24,6 +27,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -36,6 +40,10 @@ class InventoryViewModelTest {
         val inventory = MutableStateFlow<List<OwnedItem>>(emptyList())
         val equipped = MutableStateFlow<List<EquippedItem>>(emptyList())
         var equipCalls = 0
+        var unequipCalls = 0
+        var lastUnequippedType: StoreItemType? = null
+        var markSeenCalls = 0
+        var refreshCalls = 0
 
         override fun getStoreItems(type: StoreItemType?): Flow<List<StoreItem>> = flowOf(emptyList())
         override fun getInventory(): Flow<List<OwnedItem>> = inventory
@@ -45,10 +53,25 @@ class InventoryViewModelTest {
             equipCalls++
             return Result.Success(Unit)
         }
-        override suspend fun unequipItem(itemType: StoreItemType): Result<Unit> = Result.Success(Unit)
-        override suspend fun refreshStoreItems(type: StoreItemType?) {}
-        override suspend fun refreshInventory(): Result<Unit> = Result.Success(Unit)
-        override suspend fun refreshEquippedItems(): Result<Unit> = Result.Success(Unit)
+        override suspend fun unequipItem(itemType: StoreItemType): Result<Unit> {
+            unequipCalls++
+            lastUnequippedType = itemType
+            return Result.Success(Unit)
+        }
+        override suspend fun refreshStoreItems(type: StoreItemType?) {
+            refreshCalls++
+        }
+        override suspend fun refreshInventory(): Result<Unit> {
+            refreshCalls++
+            return Result.Success(Unit)
+        }
+        override suspend fun refreshEquippedItems(): Result<Unit> {
+            refreshCalls++
+            return Result.Success(Unit)
+        }
+        override suspend fun markInventorySeen() {
+            markSeenCalls++
+        }
     }
 
     private class FakeConnectivityMonitor(isOnline: Boolean) : NetworkConnectivityMonitor {
@@ -65,6 +88,8 @@ class InventoryViewModelTest {
         getEquippedItems = GetEquippedItemsUseCase(repository),
         refreshMarketplace = RefreshMarketplaceUseCase(repository),
         equipItem = EquipItemUseCase(repository),
+        unequipItem = UnequipItemUseCase(repository),
+        markInventorySeen = MarkInventorySeenUseCase(repository),
         observeConnectivity = ObserveNetworkConnectivityUseCase(connectivity),
     )
 
@@ -106,6 +131,22 @@ class InventoryViewModelTest {
     }
 
     @Test
+    fun `sort by rarity orders items by rarity rank descending`() = runTest(testDispatcher) {
+        repository.inventory.value = listOf(
+            item("common", "Common frame", "2026-08-01T00:00:00Z", info = "rarity: common"),
+            item("epic", "Epic frame", "2026-08-02T00:00:00Z", info = "rarity: epic"),
+            item("legendary", "Legendary frame", "2026-08-03T00:00:00Z", info = "rarity: legendary"),
+            item("uncommon", "Uncommon frame", "2026-08-01T00:00:00Z", info = "rarity: uncommon"),
+        )
+        val viewModel = viewModel()
+
+        viewModel.onAction(InventoryAction.SetSort(InventorySort.RARITY))
+
+        val section = viewModel.state.value.sections.single { it.type == StoreItemType.FRAME }
+        assertEquals(listOf("Legendary frame", "Epic frame", "Uncommon frame", "Common frame"), section.items.map { it.name })
+    }
+
+    @Test
     fun `equip is blocked when offline`() = runTest(testDispatcher) {
         val viewModel = viewModel()
         connectivity.online.value = false
@@ -127,6 +168,29 @@ class InventoryViewModelTest {
     }
 
     @Test
+    fun `unequip is blocked when offline`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+        connectivity.online.value = false
+
+        viewModel.onAction(InventoryAction.Unequip(StoreItemType.FRAME))
+
+        assertEquals(0, repository.unequipCalls)
+    }
+
+    @Test
+    fun `unequip is sent when online and triggers refresh`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+        val initialRefreshCalls = repository.refreshCalls
+
+        viewModel.onAction(InventoryAction.Unequip(StoreItemType.FRAME))
+
+        assertEquals(1, repository.unequipCalls)
+        assertEquals(StoreItemType.FRAME, repository.lastUnequippedType)
+        assertTrue(repository.refreshCalls > initialRefreshCalls)
+        assertNull(viewModel.state.value.unequippingType)
+    }
+
+    @Test
     fun `rarity filter toggles and narrows visible items`() = runTest(testDispatcher) {
         repository.inventory.value = listOf(
             item("common", "Common frame", "2026-08-01T00:00:00Z", info = "rarity: common"),
@@ -135,14 +199,45 @@ class InventoryViewModelTest {
         )
         val viewModel = viewModel()
 
-        viewModel.onAction(InventoryAction.ToggleRarity(com.awan.app.core.domain.inventory.model.CustomizationRarity.EPIC))
+        viewModel.onAction(InventoryAction.ToggleRarity(CustomizationRarity.EPIC))
 
         val section = viewModel.state.value.sections.single()
         assertEquals(listOf("Epic frame"), section.items.map { it.name })
 
         // Toggle again to remove filter
-        viewModel.onAction(InventoryAction.ToggleRarity(com.awan.app.core.domain.inventory.model.CustomizationRarity.EPIC))
+        viewModel.onAction(InventoryAction.ToggleRarity(CustomizationRarity.EPIC))
         assertEquals(2, viewModel.state.value.sections.size)
+    }
+
+    @Test
+    fun `open and close details updates detailsItemId and detailsItem`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.onAction(InventoryAction.OpenDetails("epic"))
+        assertEquals("epic", viewModel.state.value.detailsItemId)
+        assertEquals("epic", viewModel.state.value.detailsItem?.item?.id)
+        assertEquals("Epic frame", viewModel.state.value.detailsItem?.item?.name)
+
+        viewModel.onAction(InventoryAction.CloseDetails)
+        assertNull(viewModel.state.value.detailsItemId)
+        assertNull(viewModel.state.value.detailsItem)
+    }
+
+    @Test
+    fun `unseen items are tracked in unseenItemIds and markSeen clears them`() = runTest(testDispatcher) {
+        repository.inventory.value = listOf(
+            item("common", "Common frame", "2026-08-01T00:00:00Z", isSeen = true),
+            item("epic", "Epic frame", "2026-08-02T00:00:00Z", isSeen = false),
+            item("mystery", "Mystery frame", "2026-08-03T00:00:00Z", isSeen = false),
+        )
+        val viewModel = viewModel()
+
+        assertEquals(setOf("epic", "mystery"), viewModel.state.value.unseenItemIds)
+
+        viewModel.onAction(InventoryAction.MarkSeen)
+
+        assertEquals(1, repository.markSeenCalls)
+        assertTrue(viewModel.state.value.unseenItemIds.isEmpty())
     }
 
     private fun item(
@@ -151,6 +246,7 @@ class InventoryViewModelTest {
         acquiredAt: String,
         type: StoreItemType = StoreItemType.FRAME,
         info: String? = null,
+        isSeen: Boolean = true,
     ) = OwnedItem(
         id = "inventory-$id",
         item = StoreItem(
@@ -163,6 +259,7 @@ class InventoryViewModelTest {
             version = "",
             type = type
         ),
-        boughtAt = acquiredAt
+        boughtAt = acquiredAt,
+        isSeen = isSeen,
     )
 }

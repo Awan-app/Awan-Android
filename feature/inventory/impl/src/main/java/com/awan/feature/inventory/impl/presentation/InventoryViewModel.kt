@@ -7,8 +7,11 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.marketplace.usecase.EquipItemUseCase
 import com.awan.app.core.domain.marketplace.usecase.GetEquippedItemsUseCase
 import com.awan.app.core.domain.marketplace.usecase.GetInventoryUseCase
+import com.awan.app.core.domain.marketplace.usecase.MarkInventorySeenUseCase
 import com.awan.app.core.domain.marketplace.usecase.RefreshMarketplaceUseCase
+import com.awan.app.core.domain.marketplace.usecase.UnequipItemUseCase
 import com.awan.app.core.domain.network.usecase.ObserveNetworkConnectivityUseCase
+import com.awan.app.core.model.StoreItemType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +26,8 @@ class InventoryViewModel @Inject constructor(
     private val getEquippedItems: GetEquippedItemsUseCase,
     private val refreshMarketplace: RefreshMarketplaceUseCase,
     private val equipItem: EquipItemUseCase,
+    private val unequipItem: UnequipItemUseCase,
+    private val markInventorySeen: MarkInventorySeenUseCase,
     private val observeConnectivity: ObserveNetworkConnectivityUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(InventoryState())
@@ -31,7 +36,13 @@ class InventoryViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             getInventory().collect { items ->
-                _state.update { it.copy(items = items, isLoading = false) }
+                _state.update {
+                    it.copy(
+                        items = items,
+                        isLoading = false,
+                        unseenItemIds = items.filter { item -> !item.isSeen }.map { item -> item.item.id }.toSet(),
+                    )
+                }
             }
         }
         viewModelScope.launch {
@@ -62,6 +73,10 @@ class InventoryViewModel @Inject constructor(
             }
             is InventoryAction.SetSort -> _state.update { it.copy(sort = action.sort) }
             is InventoryAction.Equip -> equip(action.itemId)
+            is InventoryAction.Unequip -> unequip(action.type)
+            is InventoryAction.OpenDetails -> _state.update { it.copy(detailsItemId = action.itemId) }
+            InventoryAction.CloseDetails -> _state.update { it.copy(detailsItemId = null) }
+            InventoryAction.MarkSeen -> markSeen()
         }
     }
 
@@ -87,6 +102,28 @@ class InventoryViewModel @Inject constructor(
                 is Result.Success -> _state.update { it.copy(equippingItemId = null) }
                 Result.Loading -> _state.update { it.copy(equippingItemId = null) }
             }
+        }
+    }
+
+    private fun unequip(type: StoreItemType) {
+        if (!_state.value.isOnline || _state.value.unequippingType != null) return
+        viewModelScope.launch {
+            _state.update { it.copy(unequippingType = type, error = null) }
+            when (val result = unequipItem(type)) {
+                is Result.Error -> _state.update { it.copy(unequippingType = null, error = result.error.toUiText()) }
+                is Result.Success -> {
+                    _state.update { it.copy(unequippingType = null) }
+                    refreshMarketplace()
+                }
+                Result.Loading -> _state.update { it.copy(unequippingType = null) }
+            }
+        }
+    }
+
+    private fun markSeen() {
+        viewModelScope.launch {
+            markInventorySeen()
+            _state.update { it.copy(unseenItemIds = emptySet()) }
         }
     }
 }

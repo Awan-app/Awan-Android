@@ -9,5 +9,9 @@ sealed interface InventoryAction {
     data class ToggleRarity(val rarity: CustomizationRarity) : InventoryAction
     data class SetSort(val sort: InventorySort) : InventoryAction
     data class Equip(val itemId: String) : InventoryAction
+    data class Unequip(val type: StoreItemType) : InventoryAction
+    data class OpenDetails(val itemId: String) : InventoryAction
+    data object CloseDetails : InventoryAction
+    data object MarkSeen : InventoryAction
 }
 
