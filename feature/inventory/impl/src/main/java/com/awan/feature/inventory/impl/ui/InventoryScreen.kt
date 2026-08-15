@@ -51,8 +51,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
@@ -666,65 +670,52 @@ private fun Modifier.gridItemArtworkGradient(accent: Color): Modifier = drawWith
 /**
  * Bottom-to-top edge gradient backdrop for the customization details bottom sheet.
  *
- * Breakpoint specifications:
- * - **0% - 10% from edges (0.00-0.10 & 0.90-1.00 of width)**: Intense gradient starting at
- *   the very left and right borders and transitioning across the first 10% of width.
- * - **10% - 30% from edges (0.10-0.30 & 0.70-0.90 of width)**: Smoothly fades out over the
- *   next 20% of width to fully transparent.
- * - **30% - 70% of width (Central 40%)**: Fully transparent (`Color.Transparent`), showing
- *   the clean white/background without any gradient.
- * - **Vertical dimension**: Bottom-to-top fade so the edge glow is strongest near the bottom
- *   and naturally fades out as it ascends toward the top.
+ * Implements a 2D edge mask:
+ * - **Horizontal distribution**:
+ *   - 0.00f -> full accent intensity (alpha 0.45f)
+ *   - 0.10f -> full accent intensity (alpha 0.45f)
+ *   - 0.30f -> transparent
+ *   - 0.70f -> transparent
+ *   - 0.90f -> full accent intensity (alpha 0.45f)
+ *   - 1.00f -> full accent intensity (alpha 0.45f)
+ * - **Vertical mask**:
+ *   - 0.00f -> transparent
+ *   - 1.00f -> opaque
+ *   Applied using BlendMode.DstIn inside an isolated canvas saveLayer.
  */
 private fun Modifier.bowlGradientBackdrop(
     accent: Color,
 ): Modifier = drawWithCache {
-    val w = size.width
-    val h = size.height
+    val fullAccent = accent.copy(alpha = 0.45f)
 
-    // ── 1. Left Edge Gradient (0% to 30% of total width) ───────────────────
-    // • Direction: from bottom-left corner (0, h) to top of 30% boundary (w*0.30, h*0.15).
-    // • 0% - 10% width (0.0f - 0.333f of vector): intense start at edge (alpha 0.40 -> 0.30)
-    // • 10% - 30% width (0.333f - 1.0f of vector): smoothly fades out over the next 20% width
-    // • >30% width: fully transparent (Color.Transparent)
-    val leftEdgeBrush = Brush.linearGradient(
-        0.0f to accent.copy(alpha = 0.40f),     // Left edge start: intense
-        0.333f to accent.copy(alpha = 0.30f),   // First 10% width breakpoint
-        1.0f to Color.Transparent,              // 30% width breakpoint: fully transparent
-        start = Offset(0f, h),
-        end = Offset(w * 0.30f, h * 0.15f),
+    val horizontalBrush = Brush.horizontalGradient(
+        0.00f to fullAccent,
+        0.10f to fullAccent,
+        0.30f to Color.Transparent,
+        0.70f to Color.Transparent,
+        0.90f to fullAccent,
+        1.00f to fullAccent,
+        startX = 0f,
+        endX = size.width,
     )
 
-    // ── 2. Right Edge Gradient (70% to 100% of total width) ────────────────
-    // • Direction: from bottom-right corner (w, h) to top of 30% boundary (w*0.70, h*0.15).
-    // • 90% - 100% width (0.0f - 0.333f of vector): intense start at right edge (alpha 0.40 -> 0.30)
-    // • 70% - 90% width (0.333f - 1.0f of vector): smoothly fades out over the next 20% width
-    // • <70% width: fully transparent (Color.Transparent)
-    val rightEdgeBrush = Brush.linearGradient(
-        0.0f to accent.copy(alpha = 0.40f),     // Right edge start: intense
-        0.333f to accent.copy(alpha = 0.30f),   // 10% from right (90% width) breakpoint
-        1.0f to Color.Transparent,              // 30% from right (70% width) breakpoint: fully transparent
-        start = Offset(w, h),
-        end = Offset(w * 0.70f, h * 0.15f),
+    val verticalMaskBrush = Brush.verticalGradient(
+        0.00f to Color.Transparent,
+        1.00f to Color.Black,
+        startY = 0f,
+        endY = size.height,
     )
+
+    val bounds = Rect(0f, 0f, size.width, size.height)
+    val layerPaint = Paint()
 
     onDrawBehind {
-        // Left edge strip (0% to 30% width):
-        drawRect(
-            brush = leftEdgeBrush,
-            topLeft = Offset(0f, 0f),
-            size = androidx.compose.ui.geometry.Size(w * 0.30f, h),
-        )
-
-        // Right edge strip (70% to 100% width):
-        drawRect(
-            brush = rightEdgeBrush,
-            topLeft = Offset(w * 0.70f, 0f),
-            size = androidx.compose.ui.geometry.Size(w * 0.30f, h),
-        )
-
-        // Central 40% area [w * 0.30f .. w * 0.70f]:
-        // No drawing occurs here, keeping the center 100% white / background.
+        drawIntoCanvas { canvas ->
+            canvas.saveLayer(bounds, layerPaint)
+            drawRect(brush = horizontalBrush)
+            drawRect(brush = verticalMaskBrush, blendMode = BlendMode.DstIn)
+            canvas.restore()
+        }
     }
 }
 
