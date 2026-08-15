@@ -686,9 +686,9 @@ private fun Modifier.gridItemArtworkGradient(accent: Color): Modifier = drawWith
 private fun Modifier.bowlGradientBackdrop(
     accent: Color,
 ): Modifier = drawWithCache {
-    val debugColor = Color(0xFFAA00FF) // Static purple for debugging
-    val maxAlpha = 0.65f // Increased slightly for debugging visibility
-    val fullAccent = debugColor.copy(alpha = maxAlpha)
+    // Lowering the gradient alpha by 40% to make it significantly softer.
+    val maxAlpha = 0.27f 
+    val fullAccent = accent.copy(alpha = maxAlpha)
     
     // By using 3 smaller radial points (left, center, right), we can keep the 
     // glow wide across the bottom but severely restrict how high it travels vertically.
@@ -699,8 +699,8 @@ private fun Modifier.bowlGradientBackdrop(
     val radialStops = arrayOf(
         0.00f to fullAccent,
         0.40f to fullAccent,
-        0.70f to debugColor.copy(alpha = maxAlpha * 0.5f),
-        0.90f to debugColor.copy(alpha = maxAlpha * 0.15f),
+        0.70f to accent.copy(alpha = maxAlpha * 0.5f),
+        0.90f to accent.copy(alpha = maxAlpha * 0.15f),
         1.00f to Color.Transparent
     )
 
