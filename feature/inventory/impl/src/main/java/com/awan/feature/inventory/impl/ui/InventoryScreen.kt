@@ -610,7 +610,9 @@ private fun CustomizationArt(
                 url = imageUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize(),
+                // Slightly smaller than the container so the gradient is visible
+                // around the image edges — giving it a floating appearance.
+                modifier = Modifier.fillMaxSize(0.85f),
             )
         }
     }
@@ -625,8 +627,9 @@ private fun Modifier.gridItemArtworkGradient(accent: Color): Modifier = drawWith
         startY = 0f,
         endY = size.height,
     )
-    onDrawWithContent {
-        drawContent()
+    // Draw the gradient BEHIND the image content (onDrawBehind) so the image
+    // is never tinted or covered by the gradient colors.
+    onDrawBehind {
         drawRect(brush = gradientBrush)
     }
 }
