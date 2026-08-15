@@ -60,30 +60,48 @@ internal fun inventorySections(
     selectedType: StoreItemType?,
     selectedRarities: Set<CustomizationRarity> = emptySet(),
     sort: InventorySort = InventorySort.NEWEST,
-): List<InventorySection> = items
-    .asSequence()
-    .filter { selectedType == null || it.item.type == selectedType }
-    .filter {
-        selectedRarities.isEmpty() ||
-            CustomizationRarity.fromInfo(it.item.info) in selectedRarities
+): List<InventorySection> {
+    // Map owned items into flat InventoryItem list, applying type + rarity filters.
+    val filteredItems = items
+        .asSequence()
+        .filter { selectedType == null || it.item.type == selectedType }
+        .filter {
+            selectedRarities.isEmpty() ||
+                CustomizationRarity.fromInfo(it.item.info) in selectedRarities
+        }
+        .map { ownedItem ->
+            InventoryItem(
+                itemId = ownedItem.item.id,
+                name = ownedItem.item.name,
+                description = ownedItem.item.description,
+                imageUrl = ownedItem.item.image,
+                type = ownedItem.item.type,
+                rarity = CustomizationRarity.fromInfo(ownedItem.item.info),
+                price = ownedItem.item.price,
+                isEquipped = ownedItem.item.id in equippedItemIds,
+                isSeen = ownedItem.isSeen,
+                acquiredAt = ownedItem.boughtAt,
+            )
+        }
+        .groupBy { it.type }
+
+    // Determine which types to show:
+    // • When a specific type is selected, show only that type.
+    // • When "All" is selected (selectedType == null), always show EVERY StoreItemType so
+    //   each section's DefaultItemCard is visible, even for types the user owns nothing of.
+    val typesToShow: List<StoreItemType> = if (selectedType != null) {
+        listOf(selectedType)
+    } else {
+        StoreItemType.entries
     }
-    .map { ownedItem ->
-        InventoryItem(
-            itemId = ownedItem.item.id,
-            name = ownedItem.item.name,
-            description = ownedItem.item.description,
-            imageUrl = ownedItem.item.image,
-            type = ownedItem.item.type,
-            rarity = CustomizationRarity.fromInfo(ownedItem.item.info),
-            price = ownedItem.item.price,
-            isEquipped = ownedItem.item.id in equippedItemIds,
-            isSeen = ownedItem.isSeen,
-            acquiredAt = ownedItem.boughtAt,
+
+    return typesToShow.map { type ->
+        InventorySection(
+            type = type,
+            items = (filteredItems[type] ?: emptyList()).sortedFor(sort),
         )
     }
-    .groupBy { it.type }
-    .toSortedMap(compareBy { it.ordinal })
-    .map { (type, items) -> InventorySection(type, items.sortedFor(sort)) }
+}
 
 private fun List<InventoryItem>.sortedFor(sort: InventorySort): List<InventoryItem> = when (sort) {
     InventorySort.RARITY -> sortedWith(

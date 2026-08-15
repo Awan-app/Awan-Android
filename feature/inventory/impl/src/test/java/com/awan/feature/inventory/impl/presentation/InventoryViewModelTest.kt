@@ -125,7 +125,8 @@ class InventoryViewModelTest {
 
         // Sorted by newest (acquiredAt descending)
         assertEquals(listOf("Mystery frame", "Epic frame", "Common frame"), frames.items.map { it.name })
-        assertEquals(2, viewModel.state.value.sections.size)
+        // All types appear even if the user owns nothing of that type
+        assertEquals(StoreItemType.entries.size, viewModel.state.value.sections.size)
         assertFalse(viewModel.state.value.isLoading)
     }
 
@@ -168,8 +169,57 @@ class InventoryViewModelTest {
         assertEquals(1, viewModel.state.value.sections.size)
         assertEquals(StoreItemType.SKIN, viewModel.state.value.sections.single().type)
 
+        // Deselecting to "All" (null) must restore ALL StoreItemType sections
         viewModel.onAction(InventoryAction.SelectType(null))
-        assertEquals(2, viewModel.state.value.sections.size)
+        assertEquals(StoreItemType.entries.size, viewModel.state.value.sections.size)
+    }
+
+    // -------------------------------------------------------------------------
+    // Spec: "All" shows every section, default card pre-selected
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `selecting All shows every StoreItemType section regardless of owned items`() = runTest(testDispatcher) {
+        // User owns only FRAME items — no SKINs, THEMEs, or ICONs
+        repository.inventory.value = listOf(
+            item("frame1", "Frame One", "2026-08-01T00:00:00Z", StoreItemType.FRAME),
+        )
+        val viewModel = viewModel()
+
+        // No type filter means "All"
+        assertNull(viewModel.state.value.selectedType)
+
+        val sectionTypes = viewModel.state.value.sections.map { it.type }.toSet()
+        assertEquals(
+            "All StoreItemTypes must appear when selectedType is null",
+            StoreItemType.entries.toSet(),
+            sectionTypes,
+        )
+    }
+
+    @Test
+    fun `default card is pre-selected for every section when no item of that type is equipped`() = runTest(testDispatcher) {
+        // User owns only FRAME items, nothing equipped
+        repository.inventory.value = listOf(
+            item("frame1", "Frame One", "2026-08-01T00:00:00Z", StoreItemType.FRAME),
+        )
+        val viewModel = viewModel()
+
+        // For each section, if nothing is equipped in that type the default card must be "selected"
+        viewModel.state.value.sections.forEach { section ->
+            assertFalse(
+                "Section ${section.type} should NOT have any item equipped (none were equipped)",
+                viewModel.state.value.isTypeEquipped(section.type),
+            )
+        }
+        // Specifically: SKIN, THEME, ICON sections have zero items — default card is pre-selected
+        val nonFrameTypes = StoreItemType.entries.filter { it != StoreItemType.FRAME }
+        nonFrameTypes.forEach { type ->
+            assertFalse(
+                "${type.name} default card must be pre-selected (nothing equipped in that type)",
+                viewModel.state.value.isTypeEquipped(type),
+            )
+        }
     }
 
     @Test
@@ -182,36 +232,43 @@ class InventoryViewModelTest {
         )
         val viewModel = viewModel()
 
-        // Filter for EPIC
+        // Filter for EPIC — all sections still present, but only FRAME section has matching items
         viewModel.onAction(InventoryAction.ToggleRarity(CustomizationRarity.EPIC))
-        assertEquals(1, viewModel.state.value.sections.size)
-        assertEquals(listOf("Epic frame"), viewModel.state.value.sections.single().items.map { it.name })
+        assertEquals(StoreItemType.entries.size, viewModel.state.value.sections.size)
+        val epicFrames = viewModel.state.value.sections.single { it.type == StoreItemType.FRAME }
+        assertEquals(listOf("Epic frame"), epicFrames.items.map { it.name })
+        // SKIN section exists but has no matching epic items
+        assertTrue(viewModel.state.value.sections.single { it.type == StoreItemType.SKIN }.items.isEmpty())
 
-        // Add RARE to filter
+        // Add RARE to filter — FRAME and SKIN both have matching items
         viewModel.onAction(InventoryAction.ToggleRarity(CustomizationRarity.RARE))
-        assertEquals(2, viewModel.state.value.sections.size)
+        assertEquals(StoreItemType.entries.size, viewModel.state.value.sections.size)
         val frames = viewModel.state.value.sections.single { it.type == StoreItemType.FRAME }
         assertEquals(listOf("Epic frame", "Rare frame"), frames.items.map { it.name })
+        assertEquals(listOf("Night skin"), viewModel.state.value.sections.single { it.type == StoreItemType.SKIN }.items.map { it.name })
 
-        // Remove EPIC from filter
+        // Remove EPIC from filter — only RARE items remain
         viewModel.onAction(InventoryAction.ToggleRarity(CustomizationRarity.EPIC))
-        assertEquals(2, viewModel.state.value.sections.size)
+        assertEquals(StoreItemType.entries.size, viewModel.state.value.sections.size)
         val onlyRareFrames = viewModel.state.value.sections.single { it.type == StoreItemType.FRAME }
         assertEquals(listOf("Rare frame"), onlyRareFrames.items.map { it.name })
 
-        // Remove RARE from filter -> all items shown
+        // Remove RARE from filter -> all items shown; all sections appear again
         viewModel.onAction(InventoryAction.ToggleRarity(CustomizationRarity.RARE))
-        assertEquals(2, viewModel.state.value.sections.size)
+        // With no rarity filter and no type filter, all StoreItemType sections appear
+        assertEquals(StoreItemType.entries.size, viewModel.state.value.sections.size)
         assertEquals(3, viewModel.state.value.sections.single { it.type == StoreItemType.FRAME }.items.size)
     }
 
     @Test
-    fun `filter resulting in no matches returns empty sections`() = runTest(testDispatcher) {
+    fun `filter resulting in no matches returns sections with empty item lists`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 
         viewModel.onAction(InventoryAction.ToggleRarity(CustomizationRarity.LEGENDARY))
 
-        assertTrue(viewModel.state.value.sections.isEmpty())
+        // With All selected, all sections still appear — but each has no matching items
+        assertEquals(StoreItemType.entries.size, viewModel.state.value.sections.size)
+        assertTrue(viewModel.state.value.sections.all { it.items.isEmpty() })
     }
 
     @Test
