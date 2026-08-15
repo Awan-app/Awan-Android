@@ -686,52 +686,43 @@ private fun Modifier.gridItemArtworkGradient(accent: Color): Modifier = drawWith
 private fun Modifier.bowlGradientBackdrop(
     accent: Color,
 ): Modifier = drawWithCache {
-    // The Gemini-style glow is soft, diffuse, and ambient.
-    // We achieve this using overlapping large radial gradients from the bottom corners,
-    // plus a soft vertical base.
     val maxAlpha = 0.45f
     val fullAccent = accent.copy(alpha = maxAlpha)
     
-    // Adjusted radius to ensure it doesn't reach the absolute top of the bottom sheet
-    val cornerRadius = size.width * 0.85f
+    // By using 3 smaller radial points (left, center, right), we can keep the 
+    // glow wide across the bottom but severely restrict how high it travels vertically.
+    val edgeRadius = size.width * 0.40f
+    val centerRadius = size.width * 0.30f
 
-    // Explicit breakpoints to concentrate the glow near the bottom and fade out smoothly
+    // Sharp fade-out stops to prevent the glow from bleeding up the sheet
     val radialStops = arrayOf(
         0.00f to fullAccent,
-        0.20f to fullAccent,
-        0.45f to accent.copy(alpha = maxAlpha * 0.6f),
-        0.75f to accent.copy(alpha = maxAlpha * 0.15f),
+        0.25f to accent.copy(alpha = maxAlpha * 0.7f),
+        0.55f to accent.copy(alpha = maxAlpha * 0.25f),
+        0.80f to accent.copy(alpha = maxAlpha * 0.05f),
         1.00f to Color.Transparent
     )
 
     val leftRadial = Brush.radialGradient(
         colorStops = radialStops,
         center = Offset(0f, size.height),
-        radius = cornerRadius
+        radius = edgeRadius
     )
 
     val rightRadial = Brush.radialGradient(
         colorStops = radialStops,
         center = Offset(size.width, size.height),
-        radius = cornerRadius
+        radius = edgeRadius
     )
 
-    // Soft vertical gradient to ensure the bottom edge is a solid anchor.
-    // Adding breakpoints here as well to keep it tight to the bottom edge.
-    val verticalStops = arrayOf(
-        0.0f to Color.Transparent,
-        0.4f to accent.copy(alpha = maxAlpha * 0.1f),
-        1.0f to accent.copy(alpha = maxAlpha * 0.6f)
-    )
-    
-    val baseVertical = Brush.verticalGradient(
-        colorStops = verticalStops,
-        startY = size.height - (size.width * 0.45f),
-        endY = size.height
+    val centerRadial = Brush.radialGradient(
+        colorStops = radialStops,
+        center = Offset(size.width * 0.5f, size.height),
+        radius = centerRadius
     )
 
     onDrawBehind {
-        drawRect(brush = baseVertical)
+        drawRect(brush = centerRadial)
         drawRect(brush = leftRadial)
         drawRect(brush = rightRadial)
     }
