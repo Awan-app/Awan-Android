@@ -191,7 +191,9 @@ private fun InventoryContent(
 ) {
     LaunchedEffect(state.unseenItemIds) {
         if (state.unseenItemIds.isNotEmpty()) {
-            delay((state.unseenItemIds.size * 55L + 500L).milliseconds)
+            // Allow the 1500ms acquisition animation (+ stagger) to complete fully
+            // before clearing unseenItemIds from the in-memory state.
+            delay((state.unseenItemIds.size * 80L + 2000L).milliseconds)
             onAction(InventoryAction.MarkSeen)
         }
     }
@@ -259,7 +261,7 @@ private fun InventoryContent(
                     if (isNew) {
                         val unseenIndex =
                             state.unseenItemIds.toList().indexOf(item.itemId).coerceAtLeast(0)
-                        NewItemAcquisitionEffect(index = unseenIndex) {
+                        NewItemAcquisitionEffect(index = unseenIndex, itemId = item.itemId) {
                             CustomizationCard(
                                 item = item,
                                 isOnline = state.isOnline,

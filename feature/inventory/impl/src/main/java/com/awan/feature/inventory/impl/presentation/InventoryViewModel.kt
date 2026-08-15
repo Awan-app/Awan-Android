@@ -33,14 +33,34 @@ class InventoryViewModel @Inject constructor(
     private val _state = MutableStateFlow(InventoryState())
     val state: StateFlow<InventoryState> = _state.asStateFlow()
 
+    /**
+     * In-memory latch: item ids that have been acknowledged (seen) during this process lifetime.
+     * Once an id is added here it will never re-enter [InventoryState.unseenItemIds] even if the
+     * database Flow re-emits (e.g. after the app returns from background), preventing the
+     * acquisition animation from replaying on re-open.
+     */
+    private val seenThisSession = mutableSetOf<String>()
+
     init {
         viewModelScope.launch {
             getInventory().collect { items ->
-                _state.update {
-                    it.copy(
+                val newUnseen = items
+                    .filter { item -> !item.isSeen && item.item.id !in seenThisSession }
+                    .map { item -> item.item.id }
+                    .toSet()
+
+                if (newUnseen.isNotEmpty()) {
+                    seenThisSession += newUnseen
+                    // Instantly persist isSeen = 1 to the database so it reflects
+                    // that it has been seen immediately upon opening the screen.
+                    markInventorySeen()
+                }
+
+                _state.update { current ->
+                    current.copy(
                         items = items,
                         isLoading = false,
-                        unseenItemIds = items.filter { item -> !item.isSeen }.map { item -> item.item.id }.toSet(),
+                        unseenItemIds = current.unseenItemIds + newUnseen,
                     )
                 }
             }
@@ -121,9 +141,8 @@ class InventoryViewModel @Inject constructor(
     }
 
     private fun markSeen() {
-        viewModelScope.launch {
-            markInventorySeen()
-            _state.update { it.copy(unseenItemIds = emptySet()) }
-        }
+        val idsToMark = _state.value.unseenItemIds
+        seenThisSession += idsToMark
+        _state.update { it.copy(unseenItemIds = emptySet()) }
     }
 }

@@ -1,5 +1,9 @@
 package com.awan.feature.inventory.impl.ui
 
+import android.graphics.Color as AndroidColor
+import android.graphics.LinearGradient
+import android.graphics.Paint as AndroidPaint
+import android.graphics.Shader
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -9,10 +13,13 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
@@ -20,8 +27,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.awan.app.core.designsystem.AwanTheme
@@ -37,201 +45,265 @@ import kotlin.time.Duration.Companion.milliseconds
 
 private const val PARTICLE_COUNT = 8
 
-// Rich golden gradient tokens: radiant bright yellow -> rich amber orange
-private val GoldenYellow = Color(0xFFFFEB3B)
-private val GoldenOrange = Color(0xFFFF8F00)
-
-private data class ParticleTrajectory(
-    val angle: Float,
-    val speedMultiplier: Float,
-    val lineLength: Float,
+private data class Spark(
+    val angle: Float,       // radians; evenly distributed with random jitter
+    val speed: Float,       // travel-speed multiplier relative to maxReach
+    val lengthDp: Float,    // trail length in dp
 )
 
 /**
- * First-time item acquisition animation for newly obtained inventory items.
+ * First-time item acquisition animation (triggered when the item's "seen" flag is false).
  *
- * Requirements fulfilled:
- * 1. Particles originate from the exact horizontal & vertical center of each grid item.
- * 2. Particles are layered BEHIND their own card (so only visible once extending beyond card edges)
- *    while zIndex elevates them in front of neighboring grid items.
- * 3. Particle color is a bright yellow to deep golden-orange gradient.
- * 4. Particles radiate in independent, randomized organic trajectories (not a static star).
- * 5. Particles fade out rapidly after traveling past the card perimeter.
- * 6. Brief diagonal white shine highlights the card on impact.
+ * Sequence:
+ * 1. Item hovers upward then slams back to rest position with spring physics.
+ * 2. Impact emits 8 golden sparks from the centre of the item's image area, radiating
+ *    outward in randomised directions.  While inside the card the sparks are occluded by
+ *    the card's opaque surface; they only become visible once they breach the card edge.
+ * 3. A brief white glass-glimmer sweeps diagonally across the card face.
+ *
+ * --- Why the previous implementation broke ---
+ * • Canvas used Modifier.fillMaxSize() inside a LazyVerticalGrid whose height constraint
+ *   is unbounded.  fillMaxSize() on an unbounded axis collapses to height ≈ 0, so
+ *   size.height / 2 ≈ 0 — placing every spark at the top of the cell.
+ *   Fix: Modifier.matchParentSize() (BoxScope-only) sizes the Canvas to match the card.
+ *
+ * • drawLine(brush = Brush.linearGradient(...)) on a very short segment (≈10 dp) creates
+ *   a degenerate gradient shader that falls back to black.
+ *   Fix: use android.graphics.Paint + android.graphics.LinearGradient via drawIntoCanvas,
+ *   which reliably renders the gradient on any segment length.
+ *
+ * • FastOutSlowInEasing front-loads all motion into the first ~100 ms, then the curve
+ *   flattens — making sparks appear to freeze or snap.
+ *   Fix: LinearEasing over a longer duration (700 ms) keeps travel continuous and visible.
  */
 @Composable
 fun NewItemAcquisitionEffect(
     index: Int = 0,
+    itemId: String,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     val reduced = reducedMotion()
 
-    val translationYAnim = remember { Animatable(0f) }
+    val yAnim = remember { Animatable(0f) }
     val scaleAnim = remember { Animatable(1f) }
-    val particleProgress = remember { Animatable(0f) }
-    val shineProgress = remember { Animatable(0f) }
+    // Master spark timeline: a single 0→1 value from which position and alpha are
+    // derived as independent curves so travel and fade can overlap without snapping.
+    val sparkAnim = remember { Animatable(0f) }
+    val shineAnim = remember { Animatable(0f) }
 
-    // Generate randomized organic particle trajectories for each item
-    val trajectories = remember {
-        val baseStep = (2f * PI.toFloat()) / PARTICLE_COUNT
+    // Stable randomised trajectories — not re-generated on recomposition
+    val sparks = remember {
+        val step = (2f * PI.toFloat()) / PARTICLE_COUNT
         List(PARTICLE_COUNT) { i ->
-            val jitter = (Random.nextFloat() - 0.5f) * (baseStep * 0.55f)
-            val speed = 0.85f + Random.nextFloat() * 0.45f
-            val length = 8f + Random.nextFloat() * 6f
-            ParticleTrajectory(
-                angle = i * baseStep + jitter,
-                speedMultiplier = speed,
-                lineLength = length,
+            Spark(
+                angle = i * step + (Random.nextFloat() - 0.5f) * step * 0.75f,
+                speed = 0.65f + Random.nextFloat() * 0.70f,
+                lengthDp = 6f + Random.nextFloat() * 8f,
             )
         }
     }
 
-    LaunchedEffect(Unit) {
-        if (reduced) return@LaunchedEffect
+    // Reuse one Paint object to avoid per-frame allocations inside the draw loop
+    val sparkPaint = remember {
+        AndroidPaint().apply {
+            style = AndroidPaint.Style.STROKE
+            strokeCap = AndroidPaint.Cap.ROUND
+            isAntiAlias = true
+        }
+    }
 
-        // Stagger entrance based on grid index
+    // Survives recomposition AND scroll-driven recycling of the LazyGrid slot.
+    // Once true, the animation will never replay even if the composable re-enters
+    // composition (e.g. after the item scrolls off-screen and back into view).
+    var hasAnimated by rememberSaveable(itemId) { mutableStateOf(false) }
+
+    LaunchedEffect(itemId) {
+        if (reduced || hasAnimated) return@LaunchedEffect
+        hasAnimated = true
+
+        // Stagger items so they don't all animate simultaneously
         delay((index * 80L).milliseconds)
 
-        // 1. Hover upward (-16dp, scale 1.05)
+        // ── Phase 1: hover up ─────────────────────────────────────────────────
         coroutineScope {
-            launch {
-                translationYAnim.animateTo(
-                    targetValue = -16f,
-                    animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-                )
-            }
-            launch {
-                scaleAnim.animateTo(
-                    targetValue = 1.05f,
-                    animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-                )
-            }
+            launch { yAnim.animateTo(-18f, tween(220, easing = FastOutSlowInEasing)) }
+            launch { scaleAnim.animateTo(1.06f, tween(220, easing = FastOutSlowInEasing)) }
         }
+        delay(35.milliseconds)
 
-        delay(40.milliseconds)
-
-        // 2. Slam crashing into default place (0dp, scale 1.0)
+        // ── Phase 2: slam down ────────────────────────────────────────────────
         coroutineScope {
             launch {
-                translationYAnim.animateTo(
+                yAnim.animateTo(
                     targetValue = 0f,
                     animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        dampingRatio = Spring.DampingRatioLowBouncy,
                         stiffness = Spring.StiffnessHigh,
                     ),
                 )
             }
             launch {
                 scaleAnim.animateTo(
-                    targetValue = 1.0f,
-                    animationSpec = tween(durationMillis = 120, easing = FastOutLinearInEasing),
+                    targetValue = 1f,
+                    animationSpec = tween(130, easing = FastOutLinearInEasing),
                 )
             }
         }
 
-        // 3. Trigger Particle Burst & Fast Glass Shine upon slam
+        // ── Phase 3: impact — sparks + glass shine concurrently ───────────────
+        // sparkAnim drives a master 0→1 timeline over 1 100 ms.
+        // sparkPos  = travel curve: ramps 0→1 over the FIRST 60 % (0–660 ms).
+        // sparkAlpha = fade  curve: full brightness for first 30 % (0–330 ms),
+        //              then linearly falls to 0 at 100 % (1 100 ms).
+        // Result: sparks fly out fast, stay bright while traveling, then
+        // remain at maximum distance and fade away slowly — no snapping.
         coroutineScope {
             launch {
-                particleProgress.snapTo(0f)
-                particleProgress.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween(durationMillis = 520, easing = FastOutSlowInEasing),
-                )
+                sparkAnim.snapTo(0f)
+                sparkAnim.animateTo(1f, tween(1100, easing = LinearEasing))
             }
             launch {
-                shineProgress.snapTo(0f)
-                shineProgress.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween(durationMillis = 320, easing = LinearEasing),
-                )
+                // Radial shine pulse: 600 ms is enough for a clean fade-in / fade-out.
+                shineAnim.snapTo(0f)
+                shineAnim.animateTo(1f, tween(600, easing = LinearEasing))
             }
         }
     }
 
     if (reduced) {
-        Box(modifier = modifier) { content() }
+        Box(modifier) { content() }
         return
     }
 
-    val isBurstActive = particleProgress.value > 0f && particleProgress.value < 1f
+    // Read animated values at composition level.
+    // This causes one recomposition per animation frame, which is necessary to:
+    //  – keep the zIndex modifier reactive (layout-phase modifier, not draw-phase)
+    //  – ensure both Canvas and drawWithContent lambdas receive up-to-date values
+    val sparkT = sparkAnim.value
+    val sT = shineAnim.value
+
+    // ── Derived spark curves ──────────────────────────────────────────────────
+    // Travel: 0→1 over the first 60 % of the timeline; holds at 1 after that.
+    val sparkPos = (sparkT / 0.6f).coerceIn(0f, 1f)
+    // Alpha: full opacity for the first 30 %, then linear fall to 0 at 100 %.
+    val sparkAlpha = if (sparkT < 0.3f) 1f else ((1f - sparkT) / 0.7f).coerceIn(0f, 1f)
+
+    val burstActive = sparkT in 0.001f..0.999f
     val shape = AwanTheme.shapes.card
 
     Box(
         modifier = modifier
-            // Elevate above neighboring grid items during particle burst
-            .zIndex(if (isBurstActive) 2f else 0f)
+            // Elevate above neighbouring grid items during the burst so overflowing
+            // sparks are drawn on top of adjacent cards
+            .zIndex(if (burstActive) 2f else 0f)
             .graphicsLayer {
-                translationY = translationYAnim.value * density
+                translationY = yAnim.value * density
                 scaleX = scaleAnim.value
                 scaleY = scaleAnim.value
             },
     ) {
-        // LAYER 1 (BEHIND CARD): Centered Golden Particle Burst Canvas
-        // Rendered behind its own card; particles emerge once extending beyond the card boundaries
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val p = particleProgress.value
-            if (p > 0f && p < 1f) {
-                // Exact horizontal and vertical center of the grid item
-                val center = Offset(size.width / 2f, size.height / 2f)
-                val maxReach = size.minDimension * 0.95f
-                val alpha = (1f - p).coerceIn(0f, 1f)
+        // ─────────────────────────────────────────────────────────────────────
+        // LAYER 0 — Sparks   (drawn FIRST inside Box = behind the card)
+        //
+        // matchParentSize(): Canvas is measured AFTER the card child establishes
+        // the Box size, so it gets the exact card dimensions (not an unbounded size).
+        //
+        // graphicsLayer { clip = false }: the Canvas's graphics layer does not clip
+        // its own drawing, allowing sparks to visually overflow beyond the card edge
+        // and be seen by the user once they breach the card boundary.
+        //
+        // Because the card (LAYER 1) is drawn on top with an opaque background, sparks
+        // that are still inside the card are naturally occluded — no extra masking needed.
+        // ─────────────────────────────────────────────────────────────────────
+        Canvas(
+            modifier = Modifier
+                .matchParentSize()
+                .graphicsLayer { clip = false },
+        ) {
+            if (!burstActive) return@Canvas
 
-                trajectories.forEach { trajectory ->
-                    val distance = maxReach * p * trajectory.speedMultiplier
-                    val lineLenPx = trajectory.lineLength.dp.toPx()
+            // Spark origin = centre of the card's image area.
+            // The card image uses aspectRatio(1:1), so imageHeight == imageWidth == size.width.
+            // Using size.width / 2 for cy correctly centres on the image, not the full card
+            // (which also includes the text row below the image).
+            val cx = size.width / 2f
+            val cy = size.width / 2f
 
-                    val startX = center.x + cos(trajectory.angle) * distance
-                    val startY = center.y + sin(trajectory.angle) * distance
+            // maxReach > half card width → sparks clearly breach the card boundary
+            val maxReach = size.width * 1.4f
 
-                    val endX = center.x + cos(trajectory.angle) * (distance + lineLenPx)
-                    val endY = center.y + sin(trajectory.angle) * (distance + lineLenPx)
+            // sparkAlpha: full brightness first 30 %, then linear fall to 0 at 100 %.
+            // Sparks travel to max distance first, THEN fade away — no coupling = no snap.
+            val alphaInt = (sparkAlpha * 255).toInt()
 
-                    val startPoint = Offset(startX, startY)
-                    val endPoint = Offset(endX, endY)
+            // Precompute pixel positions inside DrawScope where density (dp→px) is available.
+            // drawIntoCanvas lambda does NOT have a Density context so dp.toPx() won't compile
+            // if called inside it.
+            val strokePx = 1.6.dp.toPx()
+            val positions = Array(sparks.size) { i ->
+                val spark = sparks[i]
+                // sparkPos drives distance; sparkAlpha drives colour — fully independent.
+                val dist = maxReach * sparkPos * spark.speed
+                val trail = spark.lengthDp.dp.toPx()
+                floatArrayOf(
+                    cx + cos(spark.angle) * dist,              // sx
+                    cy + sin(spark.angle) * dist,              // sy
+                    cx + cos(spark.angle) * (dist + trail),    // ex
+                    cy + sin(spark.angle) * (dist + trail),    // ey
+                )
+            }
 
-                    // Rich yellow-to-orange golden gradient
-                    val goldGradient = Brush.linearGradient(
-                        colors = listOf(
-                            GoldenYellow.copy(alpha = alpha),
-                            GoldenOrange.copy(alpha = alpha),
-                        ),
-                        start = startPoint,
-                        end = endPoint,
+            // Use native android.graphics.Paint + android.graphics.LinearGradient.
+            // Compose's drawLine(brush = Brush.linearGradient(...)) can produce a degenerate
+            // shader on short segments, rendering black.  The native path is guaranteed.
+            drawIntoCanvas { composeCanvas ->
+                val nc = composeCanvas.nativeCanvas
+                sparkPaint.strokeWidth = strokePx
+                positions.forEach { pos ->
+                    // Bright gold #FFE100 → deep amber #FF5A00 along each spark trail
+                    sparkPaint.shader = LinearGradient(
+                        pos[0], pos[1], pos[2], pos[3],
+                        AndroidColor.argb(alphaInt, 255, 225, 0),  // #FFE100
+                        AndroidColor.argb(alphaInt, 255, 90, 0),   // #FF5A00
+                        Shader.TileMode.CLAMP,
                     )
-
-                    drawLine(
-                        brush = goldGradient,
-                        start = startPoint,
-                        end = endPoint,
-                        strokeWidth = 1.5.dp.toPx(),
-                        cap = StrokeCap.Round,
-                    )
+                    nc.drawLine(pos[0], pos[1], pos[2], pos[3], sparkPaint)
                 }
             }
         }
 
-        // LAYER 2 (ON TOP OF PARTICLES): Main Item Card with White Shine Overlay
+        // ─────────────────────────────────────────────────────────────────────
+        // LAYER 1 — Card content + glass shine   (drawn LAST = on top of sparks)
+        //
+        // The card's own opaque surface hides any sparks still within the card
+        // boundary — no explicit masking is required.
+        // ─────────────────────────────────────────────────────────────────────
         Box(
             modifier = Modifier
-                .fillMaxSize()
                 .clip(shape)
                 .drawWithContent {
                     drawContent()
-                    val t = shineProgress.value
-                    if (t in 0.01f..0.99f) {
-                        val sweepWidth = size.width * 0.6f
-                        val startX = (size.width + sweepWidth * 2f) * t - sweepWidth
-                        val shineBrush = Brush.linearGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.White.copy(alpha = 0.55f * (1f - t * 0.3f)),
-                                Color.Transparent,
+                    // Radial white-glass pulse driven by sin(sT·π):
+                    //   sT=0.0 → alpha=0  (invisible, no snap-in)
+                    //   sT=0.5 → alpha=1  (peak brightness at mid-animation)
+                    //   sT=1.0 → alpha=0  (invisible, no snap-out)
+                    // The sine curve guarantees smooth fade-in AND fade-out entirely
+                    // on the card face — no linear sweep that exits the edge abruptly.
+                    if (sT in 0.01f..0.99f) {
+                        val pulseAlpha = sin(sT * PI.toFloat()).coerceIn(0f, 1f) * 0.45f
+                        drawRect(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = pulseAlpha),
+                                    Color.White.copy(alpha = pulseAlpha * 0.4f),
+                                    Color.Transparent,
+                                ),
+                                center = Offset(size.width / 2f, size.width / 2f),
+                                radius = size.width * 0.7f,
                             ),
-                            start = Offset(startX, 0f),
-                            end = Offset(startX + sweepWidth, size.height),
+                            size = Size(size.width, size.height),
                         )
-                        drawRect(brush = shineBrush, size = Size(size.width, size.height))
                     }
                 },
         ) {
