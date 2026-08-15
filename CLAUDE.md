@@ -6,8 +6,6 @@ This file provides guidance to AI coding agents when working with code in this r
 
 Awan — native Android client for an AI-assisted adaptive scheduling app. A cloud "AI Architect" (LLM behind a backend's POST request) decomposes goals into a strict JSON Contract of tasks; an on-device **Local Conflict Engine** does 100% of placement/overlap/dependency math. The AI never writes start times; the engine never guesses intent.
 
-Reference docs live in `docs/reference/` (architecture, layers, feature guide) and `docs/navigation_guide.md` (Navigation 3 patterns used here).
-
 ## Commands
 
 - Build: `./gradlew assembleDebug`
@@ -16,7 +14,11 @@ Reference docs live in `docs/reference/` (architecture, layers, feature guide) a
 - Instrumented tests (device/emulator required): `./gradlew connectedDebugAndroidTest`
 - Lint: `./gradlew lint`
 
-Gradle 9.4.1 with configuration cache enabled; daemon toolchain is JVM 21. AGP 9.2.1, Kotlin 2.4.0, compileSdk 37 / minSdk 26, Compose BOM 2026.06.01. Version catalog: `gradle/libs.versions.toml`.
+Gradle 9.4.1 with configuration cache enabled; Java/Kotlin target is 17. AGP 9.2.1, Kotlin 2.4.0, compileSdk 37 / targetSdk 36 / minSdk 26, Compose BOM 2026.06.01. Version catalog: `gradle/libs.versions.toml`.
+
+There is no detekt or ktlint task — `assembleDebug` plus `lint` is the whole static-check story.
+
+Source roots are mixed: `:core:database`, `:core:data` and `:core:domain` use `src/main/kotlin`, everything else uses `src/main/java`. Glob both when searching.
 
 ## Git & Jira
 
@@ -52,7 +54,7 @@ Dependency direction is always `presentation → domain ← data`. Domain depend
 
 - `build-logic/` convention plugins own shared Gradle config: `awan.android.application`, `awan.android.library`, `awan.jvm.library`, `awan.android.compose`, `awan.android.hilt`, `awan.android.feature`, `awan.android.room`, `awan.android.navigation`. Module build files stay declarative — apply these instead of repeating config.
 - `:core:*` modules: `model` (domain models), `domain` (repository contracts + use cases), `data` (repository impls, data sources, DTOs/mappers), `database` (Room), `common` (dispatchers, `Result`, `AppError`), `datastore` + `datastore-proto` (Proto DataStore prefs, encrypted token storage), `network` (Retrofit/OkHttp, auth interceptor + token authenticator), `design-system` (Awan components, Styles API themes, tokens), `navigation` (`Navigator`, `NavigationState`, `Route`).
-- `:feature:*` modules with **api/impl split** (api = routes only, impl = EntryProvider + screens): splash, onboarding, auth, home, calendar, chat, goals, profile, marketplace, ai-tasks. Features depend on core and other features' `api` modules, never on their `impl`. Exception: `:feature:add-task` has no split — it's a state-driven sheet, not a navigation destination, so it exports no Route and only `:app` consumes it.
+- `:feature:*` modules with **api/impl split** (api = routes only, impl = EntryProvider + screens): splash, onboarding, auth, home, calendar, chat, goals, profile, inventory, marketplace, ai-tasks. Features depend on core and other features' `api` modules, never on their `impl`. Exception: `:feature:add-task` has no split — it's a state-driven sheet, not a navigation destination, so it exports no Route and only `:app` consumes it.
 - `:app` hosts the Navigation 3 shell: `AwanApp`, `AwanAppState`, `TopLevelDestination`, `MainActivity`.
 - Hilt DI throughout; UDF ViewModels exposing `StateFlow` of sealed UI state.
 - Packages: `com.awan.app` (app), `com.awan.app.core.*` (core), `com.awan.feature.*` (features).
@@ -65,11 +67,11 @@ Built. Repositories return `Flow` from DAOs and the UI observes that; the networ
 - **Gate writes on `NetworkConnectivityMonitor.isCurrentlyOnline()`** and return `AppError.Network` when offline, instead of letting the call fail deep in the stack.
 - Freshness is per-row: entities carry `expiryTime`, filled from `SyncTtl` (schedule 15 min, goals 30 min, profile/categories/templates 1 h). Background refresh runs through `SyncWorker` (WorkManager) driven by `OfflineSyncCoordinator`.
 
-### Room migrations — silent data loss if skipped
+### Room migrations — every entity change currently wipes the database
 
-`AwanDatabase` is at **version 4**, with real migrations and schemas exported to `core/database/schemas/`.
+`AwanDatabase` is at **version 1** (`AwanDatabase.kt`), only `1.json` is exported to `core/database/schemas/`, and **there are no `Migration` objects in the module at all**. `DatabaseModule` builds with `fallbackToDestructiveMigration(dropAllTables = true)` and nothing else.
 
-Any entity change needs a `Migration` **and** a version bump. `fallbackToDestructiveMigration(dropAllTables = true)` is still enabled as a backstop, so a missing or wrong migration **wipes the user's database instead of failing loudly** — it will look fine on a clean install and destroy data on upgrade. Migrations have needed follow-up fixes before; add the column to both the entity and the migration SQL, and check the exported schema JSON.
+So today an entity change does not fail loudly — it silently drops every table on upgrade, and looks perfectly fine on a clean install. Assume no migration infrastructure exists: changing an entity means writing the first `Migration`, bumping the version, wiring `addMigrations(...)` in `DatabaseModule`, and checking the newly exported schema JSON. Do not assume a migration list is already there to extend.
 
 ### Still to build
 

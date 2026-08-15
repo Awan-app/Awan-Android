@@ -84,20 +84,13 @@
     <string name="add_task_goal_preview_duration">المدة التقديرية %1$s</string>
     <string name="add_task_goal_preview_points">%1$d نقاط</string>
 
-    <string name="add_task_goal_mic_idle">إملاء نصي</string>
-    <string name="add_task_goal_mic_listening">جارٍ الاستماع… انقر للإيقاف</string>
-    <string name="add_task_goal_speech_permission_denied">إذن الميكروفون مطلوب للتعرف على الصوت.</string>
-    <string name="add_task_goal_speech_unavailable">التعرف على الصوت غير متاح على هذا الجهاز.</string>
-    <string name="add_task_goal_speech_no_match">لم أتمكن من التقاط الصوت. حاول التحدث مجددًا.</string>
-    <string name="add_task_goal_speech_error">حدث خطأ أثناء التعرف على الصوت. يُرجى المحاولة مرة أخرى.</string>
-
     <string name="add_task_error_create_failed">تعذّر إضافة المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
     <string name="add_task_error_goal_continuation_failed">تعذّر على أوان تقسيم هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
     <string name="add_task_error_goal_confirm_failed">تعذّر حفظ هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
 
-    <string name="add_task_goal_permission_dialog_title">إذن الميكروفون مطلوب</string>
-    <string name="add_task_goal_permission_dialog_body">تم إيقاف إذن الميكروفون. يرجى تفعيله من إعدادات التطبيق لاستخدام الإملاء الصوتي.</string>
-    <string name="add_task_goal_permission_dialog_confirm">فتح الإعدادات</string>
-    <string name="add_task_goal_permission_dialog_cancel">إلغاء</string>
-
+    <string name="add_task_goal_thinking_1">أقرأ هدفك…</string>
+    <string name="add_task_goal_thinking_2">أقسّمه إلى خطوات…</string>
+    <string name="add_task_goal_thinking_3">أقدّر مدة كل خطوة…</string>
+    <string name="add_task_goal_thinking_4">أوشكت على الانتهاء…</string>
+    <string name="add_task_goal_plan_ready">خطتك جاهزة!</string>
 </resources>

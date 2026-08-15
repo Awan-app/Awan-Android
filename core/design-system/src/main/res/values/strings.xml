@@ -49,6 +49,22 @@
     <string name="ds_wheel_close">Close</string>
     <string name="ds_wheel_item_wedge">Gift</string>
 
+    <!-- Speech to text -->
+    <string name="ds_mic_idle">Dictate text</string>
+    <string name="ds_mic_listening">Listening… tap to stop</string>
+    <string name="ds_speech_permission_denied">Microphone permission is required for speech recognition.</string>
+    <string name="ds_speech_unavailable">Speech recognition is unavailable on this device.</string>
+    <string name="ds_speech_no_match">Didn\'t catch that. Try speaking again.</string>
+    <string name="ds_speech_error">Speech recognition error. Please try again.</string>
+    <string name="ds_speech_language_unsupported">Speech recognition doesn\'t support your app language on this device.</string>
+    <string name="ds_speech_rationale_title">Use your voice?</string>
+    <string name="ds_speech_rationale_body">Awan needs the microphone so you can dictate instead of typing. Nothing is recorded or stored.</string>
+    <string name="ds_speech_rationale_confirm">Continue</string>
+    <string name="ds_speech_rationale_cancel">Not now</string>
+    <string name="ds_speech_settings_dialog_title">Microphone Permission Required</string>
+    <string name="ds_speech_settings_dialog_body">Microphone access is turned off. Please enable it in device settings to use speech recognition.</string>
+    <string name="ds_speech_settings_dialog_confirm">Open Settings</string>
+    <string name="ds_speech_settings_dialog_cancel">Cancel</string>
     <!-- Points shortcuts -->
     <string name="ds_points_thousand">%1$sk</string>
     <string name="ds_points_million">%1$sM</string>
