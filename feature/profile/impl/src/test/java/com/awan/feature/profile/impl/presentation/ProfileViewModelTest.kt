@@ -465,5 +465,6 @@ class ProfileViewModelTest {
         override suspend fun buyItem(itemId: String): Result<Unit> = Result.Success(Unit)
         override suspend fun equipItem(itemId: String): Result<Unit> = Result.Success(Unit)
         override suspend fun unequipItem(itemType: StoreItemType): Result<Unit> = Result.Success(Unit)
+        override suspend fun markInventorySeen() {}
     }
 }

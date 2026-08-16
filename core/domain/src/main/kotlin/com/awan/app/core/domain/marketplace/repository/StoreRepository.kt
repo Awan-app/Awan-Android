@@ -17,4 +17,5 @@ interface StoreRepository {
     suspend fun refreshStoreItems(type: StoreItemType? = null)
     suspend fun refreshInventory(): Result<Unit>
     suspend fun refreshEquippedItems(): Result<Unit>
+    suspend fun markInventorySeen()
 }

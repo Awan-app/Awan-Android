@@ -21,6 +21,7 @@ data class StoreItemDto(
     @SerialName("price") val price: Int = 0,
     @SerialName("version") val version: String? = null,
     @SerialName("type") val type: String? = null,
+    @SerialName("rarity") val rarity: String? = null,
 )
 
 @Serializable

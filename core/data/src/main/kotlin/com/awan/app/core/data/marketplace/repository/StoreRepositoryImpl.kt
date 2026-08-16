@@ -22,6 +22,7 @@ import com.awan.app.core.model.StoreItemType
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -140,7 +141,7 @@ class StoreRepositoryImpl @Inject constructor(
                     expiryTime = expiry
                 )
             }
-            storeDao.replaceOwnedItems(entities)
+            storeDao.replaceOwnedItemsPreservingSeen(entities)
 
             // Also ensure store items from inventory are in store_items table
             val storeItems = result.data.mapNotNull { it.item.asExternalModel()?.asEntity(expiry) }
@@ -174,5 +175,9 @@ class StoreRepositoryImpl @Inject constructor(
         } else {
             Result.Error((result as Result.Error).error)
         }
+    }
+
+    override suspend fun markInventorySeen() = withContext(ioDispatcher) {
+        storeDao.markAllOwnedItemsSeen()
     }
 }

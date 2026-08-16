@@ -6,8 +6,7 @@ import com.awan.app.core.model.StoreItemType
 import javax.inject.Inject
 
 class UnequipItemUseCase @Inject constructor(
-    private val repository: StoreRepository
+    private val repository: StoreRepository,
 ) {
-    suspend operator fun invoke(itemType: StoreItemType): Result<Unit> =
-        repository.unequipItem(itemType)
+    suspend operator fun invoke(type: StoreItemType): Result<Unit> = repository.unequipItem(type)
 }
