@@ -23,7 +23,7 @@ import com.awan.app.core.model.TaskWithSessionsDraft
 import com.awan.feature.aitasks.impl.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -325,11 +325,14 @@ class AiTasksViewModelTest {
         val second = viewModel.state.value.proposals[1].id
         viewModel.onAction(AiTasksAction.Removed(second))
 
+        val events = mutableListOf<AiTasksEvent>()
+        backgroundScope.launch { viewModel.events.collect { events.add(it) } }
+
         viewModel.onAction(AiTasksAction.Accept)
 
         assertEquals(1, taskRepository.lastBulkDrafts.size)
         assertEquals("A", taskRepository.lastBulkDrafts.single().task.title)
-        assertEquals(AiTasksEvent.TasksCreated(1), viewModel.events.first())
+        assertEquals(AiTasksEvent.TasksCreated(1), events.first())
     }
 
     @Test
@@ -512,9 +515,12 @@ class AiTasksViewModelTest {
         viewModel.onAction(AiTasksAction.Load(text = "note", note = null, imageUri = null))
         viewModel.onAction(AiTasksAction.BackRequested)
 
+        val events = mutableListOf<AiTasksEvent>()
+        backgroundScope.launch { viewModel.events.collect { events.add(it) } }
+
         viewModel.onAction(AiTasksAction.DiscardConfirmed)
 
-        assertEquals(AiTasksEvent.Dismissed, viewModel.events.first())
+        assertEquals(AiTasksEvent.Dismissed, events.first())
     }
 
     @Test

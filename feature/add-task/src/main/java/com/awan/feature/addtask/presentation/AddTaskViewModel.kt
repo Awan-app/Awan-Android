@@ -53,7 +53,7 @@ class AddTaskViewModel @Inject constructor(
     val state: StateFlow<AddTaskState> = _state.asStateFlow()
 
     private val _events = MutableSharedFlow<AddTaskEvent>(
-        replay = 1,
+        extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     val events: SharedFlow<AddTaskEvent> = _events.asSharedFlow()
