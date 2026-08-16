@@ -112,16 +112,16 @@ class GoalRemoteDataSourceImpl @Inject constructor(
     ): List<AiConfirmedSessionItemDto> {
         return when (element) {
             is JsonArray -> {
-                element.mapNotNull { item ->
-                    runCatching { json.decodeFromJsonElement<AiConfirmedSessionItemDto>(item) }.getOrNull()
+                element.map { item ->
+                    json.decodeFromJsonElement<AiConfirmedSessionItemDto>(item)
                 }
             }
             is JsonObject -> {
                 val sessionsArray = element["sessions"] as? JsonArray
                     ?: element["scheduledSessions"] as? JsonArray
                     ?: element["data"] as? JsonArray
-                sessionsArray?.mapNotNull { item ->
-                    runCatching { json.decodeFromJsonElement<AiConfirmedSessionItemDto>(item) }.getOrNull()
+                sessionsArray?.map { item ->
+                    json.decodeFromJsonElement<AiConfirmedSessionItemDto>(item)
                 } ?: emptyList()
             }
             else -> emptyList()

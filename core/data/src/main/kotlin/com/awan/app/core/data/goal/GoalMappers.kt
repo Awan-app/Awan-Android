@@ -59,7 +59,7 @@ internal fun GoalInfoResponse.toModel(): Goal {
  * The entity's [GoalEntity.title] is stored as received from the API and may
  * contain a leading emoji; this mapper extracts it with the same logic.
  */
-internal fun GoalEntity.toModel(tasks: List<Task> = emptyList()): Goal {
+internal fun GoalEntity.toModel(tasks: List<Task>): Goal {
     val (extractedEmoji, cleanTitle) = extractEmojiAndTitle(title)
     val goalStatus = runCatching { GoalStatus.valueOf(status) }.getOrDefault(GoalStatus.UNKNOWN)
     return Goal(
