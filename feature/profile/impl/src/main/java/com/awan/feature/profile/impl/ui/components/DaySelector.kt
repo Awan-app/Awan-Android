@@ -44,23 +44,26 @@ fun DaySelector(
     today: LocalDate = LocalDate.now(),
     referenceDate: LocalDate = LocalDate.now(),
     selectedDates: Set<String> = emptySet(),
-    isTodayOnly: Boolean = false
+    isTodayOnly: Boolean = false,
+    showArrows: Boolean = true
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AwanIconButton(
-            onClick = onPreviousWeek,
-            contentDescription = null,
-            modifier = Modifier.size(32.dp)
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
+        if (showArrows) {
+            AwanIconButton(
+                onClick = onPreviousWeek,
                 contentDescription = null,
-                tint = AwanTheme.colors.textSecondary,
-                modifier = Modifier.size(16.dp)
-            )
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,
+                    tint = AwanTheme.colors.textSecondary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
 
         Row(
@@ -188,7 +191,7 @@ fun DaySelector(
                             color = when {
                                 isSelected -> AwanTheme.colors.sky
                                 isToday -> AwanTheme.colors.sky
-                                isAssigned -> AwanTheme.colors.disabledContent
+                                isAssigned && !isTodayOnly -> AwanTheme.colors.disabledContent
                                 templateColor != null -> templateColor
                                 else -> AwanTheme.colors.textSecondary
                             }
@@ -198,17 +201,19 @@ fun DaySelector(
             }
         }
 
-        AwanIconButton(
-            onClick = onNextWeek,
-            contentDescription = null,
-            modifier = Modifier.size(32.dp)
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowForward,
+        if (showArrows) {
+            AwanIconButton(
+                onClick = onNextWeek,
                 contentDescription = null,
-                tint = AwanTheme.colors.textSecondary,
-                modifier = Modifier.size(16.dp)
-            )
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = AwanTheme.colors.textSecondary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
     }
 }

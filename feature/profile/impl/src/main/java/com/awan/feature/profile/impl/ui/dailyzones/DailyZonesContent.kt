@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -60,32 +62,64 @@ fun DailyZonesContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column(
-                        modifier = Modifier.clickable { onAction(DailyZonesAction.GoToToday) }
-                    ) {
-                        val selectedDate = uiState.selectedDate ?: LocalDate.now()
-                        val dayNum = selectedDate.dayOfMonth
-                        val suffix = getDayOfMonthSuffix(dayNum)
-                        val formatter = DateTimeFormatter.ofPattern("MMMM d'$suffix' EEEE", Locale.ENGLISH)
-                        val dateStr = selectedDate.format(formatter)
-                        
-                        AwanText(
-                            text = dateStr,
-                            style = AwanTheme.styles.bodyText.copy(
-                                textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
-                            )
-                        )
-                    }
-
                     AwanIconButton(
-                        onClick = onShowDatePicker,
+                        onClick = { onAction(DailyZonesAction.PreviousWeek) },
                         contentDescription = null,
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.CalendarToday,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = null,
-                            tint = AwanTheme.colors.sky,
+                            tint = AwanTheme.colors.textSecondary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.clickable { onAction(DailyZonesAction.GoToToday) },
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            val selectedDate = uiState.selectedDate ?: LocalDate.now()
+                            val dayNum = selectedDate.dayOfMonth
+                            val suffix = getDayOfMonthSuffix(dayNum)
+                            val formatter = DateTimeFormatter.ofPattern("MMMM d'$suffix' EEEE", Locale.ENGLISH)
+                            val dateStr = selectedDate.format(formatter)
+                            
+                            AwanText(
+                                text = dateStr,
+                                style = AwanTheme.styles.bodyText.copy(
+                                    textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
+                                )
+                            )
+                        }
+
+                        AwanIconButton(
+                            onClick = onShowDatePicker,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CalendarToday,
+                                contentDescription = null,
+                                tint = AwanTheme.colors.sky,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    AwanIconButton(
+                        onClick = { onAction(DailyZonesAction.NextWeek) },
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            tint = AwanTheme.colors.textSecondary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -98,6 +132,7 @@ fun DailyZonesContent(
                     onDaySelected = { onAction(DailyZonesAction.SelectDay(it)) },
                     onNextWeek = { onAction(DailyZonesAction.NextWeek) },
                     onPreviousWeek = { onAction(DailyZonesAction.PreviousWeek) },
+                    showArrows = false,
                     referenceDate = uiState.selectedDate ?: LocalDate.now(),
                     today = LocalDate.now()
                 )
