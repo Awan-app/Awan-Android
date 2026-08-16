@@ -26,6 +26,10 @@ import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.model.UserEntity
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 
+import com.awan.app.core.model.ProfileConstants
+import com.awan.app.core.model.sanitizeLastName
+import com.awan.app.core.model.toApiLastName
+
 @Singleton
 class OnboardingRepositoryImpl @Inject constructor(
     private val remoteDataSource: OnboardingRemoteDataSource,
@@ -40,13 +44,13 @@ class OnboardingRepositoryImpl @Inject constructor(
         if (!connectivityMonitor.isCurrentlyOnline()) {
             return@withContext Result.Error(AppError.Network)
         }
-        val firstName = data.profile?.firstName?.takeIf { it.isNotBlank() } ?: "User"
-        val lastName = data.profile?.lastName?.takeIf { it.isNotBlank() } ?: "Awan"
+        val firstName = data.profile?.firstName?.takeIf { it.isNotBlank() } ?: ProfileConstants.DEFAULT_FIRST_NAME_FRIEND
+        val lastName = data.profile?.lastName.toApiLastName()
 
         val request = CompleteOnboardingRequest(
             firstName = firstName,
             lastName = lastName,
-            birthDate = "2000-01-01",
+            birthDate = ProfileConstants.DEFAULT_BIRTH_DATE,
             timezone = TimeZone.getDefault().id.ifBlank { "Africa/Cairo" },
             preferredSessionDuration = data.preferredTaskLengthMinutes,
             bufferBetweenSessions = 10,
@@ -66,8 +70,8 @@ class OnboardingRepositoryImpl @Inject constructor(
                         id = response.id,
                         email = response.email ?: "",
                         firstName = response.firstName ?: firstName,
-                        lastName = response.lastName ?: lastName,
-                        birthDate = response.birthDate ?: "2000-01-01",
+                        lastName = response.lastName.sanitizeLastName(),
+                        birthDate = response.birthDate ?: ProfileConstants.DEFAULT_BIRTH_DATE,
                         points = response.points ?: 0,
                         streak = response.streak ?: 0,
                         maxStreak = response.maxStreak ?: 0,

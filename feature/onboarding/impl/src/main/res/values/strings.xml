@@ -37,7 +37,7 @@
     <string name="onboarding_name_subtitle">So I can greet you properly each morning.</string>
     <string name="onboarding_name_first_placeholder">First name</string>
     <string name="onboarding_name_last_placeholder">Last name (optional)</string>
-    <string name="onboarding_name_default_friend">friend</string>
+    <string name="onboarding_name_default_friend">Friend</string>
 
     <string name="onboarding_day_bounds_step_title">When does your day begin and end?</string>
     <string name="onboarding_i_usually_wake_up_at">I usually wake up at</string>

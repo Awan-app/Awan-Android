@@ -5,6 +5,7 @@ import com.awan.app.core.database.model.UserPreferencesEntity
 import com.awan.app.core.database.model.UserWithPreferences
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.model.UserPreferences
+import com.awan.app.core.model.sanitizeLastName
 import com.awan.app.core.network.dto.profile.ProfileResponse
 import com.awan.app.core.network.dto.profile.UserPreferencesResponse
 
@@ -13,7 +14,7 @@ internal fun ProfileResponse.toDomain(): Profile = Profile(
     id = id,
     email = email,
     firstName = firstName,
-    lastName = lastName,
+    lastName = lastName.sanitizeLastName(),
     birthDate = birthDate,
     points = points,
     streak = streak,
@@ -36,7 +37,7 @@ internal fun UserWithPreferences.asExternalModel(): Profile = Profile(
     id = user.id,
     email = user.email,
     firstName = user.firstName,
-    lastName = user.lastName,
+    lastName = user.lastName.sanitizeLastName(),
     birthDate = user.birthDate,
     points = user.points,
     streak = user.streak,
@@ -59,7 +60,7 @@ internal fun Profile.asEntity(): UserEntity = UserEntity(
     id = id ?: "",
     email = email ?: "",
     firstName = firstName ?: "",
-    lastName = lastName ?: "",
+    lastName = lastName.sanitizeLastName(),
     birthDate = birthDate,
     points = points ?: 0,
     streak = streak ?: 0,
