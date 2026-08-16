@@ -6,7 +6,6 @@ import com.awan.app.core.database.AwanDatabase
 import com.awan.app.core.database.dao.CachedScheduleDateDao
 import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
-import com.awan.app.core.database.dao.McpTokenDao
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.dao.ScheduleDraftDao
 import com.awan.app.core.database.dao.StoreDao
@@ -85,10 +84,6 @@ object DatabaseModule {
     @Provides
     fun providesStoreDao(database: AwanDatabase): StoreDao =
         database.storeDao()
-
-    @Provides
-    fun providesMcpTokenDao(database: AwanDatabase): McpTokenDao =
-        database.mcpTokenDao()
 
     @Provides
     fun providesScheduleDraftDao(database: AwanDatabase): ScheduleDraftDao =

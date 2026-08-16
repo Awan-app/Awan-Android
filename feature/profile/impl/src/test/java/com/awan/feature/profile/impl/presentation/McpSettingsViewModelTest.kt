@@ -2,19 +2,12 @@ package com.awan.feature.profile.impl.presentation
 
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.domain.mcp.model.CreatedMcpToken
 import com.awan.app.core.domain.mcp.model.McpConnectionDetails
-import com.awan.app.core.domain.mcp.model.McpToken
 import com.awan.app.core.domain.mcp.repository.McpRepository
-import com.awan.app.core.domain.mcp.usecase.CreateMcpTokenUseCase
-import com.awan.app.core.domain.mcp.usecase.DeleteMcpTokenUseCase
 import com.awan.app.core.domain.mcp.usecase.GetMcpConnectionDetailsUseCase
-import com.awan.app.core.domain.mcp.usecase.GetMcpTokensUseCase
-import com.awan.app.core.domain.mcp.usecase.RegenerateMcpTokenUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -43,10 +36,6 @@ class McpSettingsViewModelTest {
         fakeRepository = FakeMcpRepository()
         viewModel = McpSettingsViewModel(
             getMcpConnectionDetailsUseCase = GetMcpConnectionDetailsUseCase(fakeRepository),
-            getMcpTokensUseCase = GetMcpTokensUseCase(fakeRepository),
-            createMcpTokenUseCase = CreateMcpTokenUseCase(fakeRepository),
-            deleteMcpTokenUseCase = DeleteMcpTokenUseCase(fakeRepository),
-            regenerateMcpTokenUseCase = RegenerateMcpTokenUseCase(fakeRepository),
         )
     }
 
@@ -54,168 +43,72 @@ class McpSettingsViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     @Test
-    fun `initial state loads connection details and tokens`() = runTest(testDispatcher) {
+    fun `initial state loads connection details successfully`() = runTest(testDispatcher) {
         val state = viewModel.uiState.value
         assertNotNull(state.connectionDetails)
-        assertEquals("https://mcp.awan.app/v1", state.connectionDetails?.mcpUrl)
-        assertEquals(1, state.tokens.size)
-        assertEquals("Claude Desktop", state.tokens.first().name)
+        assertEquals("https://awanproduction.up.railway.app/mcp", state.connectionDetails?.mcpUrl)
+        assertEquals("awan-mcp", state.connectionDetails?.clientId)
+        assertEquals(false, state.isLoading)
+        assertNull(state.error)
     }
 
     @Test
-    fun `ShowAddTokenDialog and UpdateNewTokenName actions update state correctly`() = runTest(testDispatcher) {
-        viewModel.onAction(McpSettingsAction.ShowAddTokenDialog)
-        assert(viewModel.uiState.value.showAddTokenDialog)
-
-        viewModel.onAction(McpSettingsAction.UpdateNewTokenName("My Token"))
-        assertEquals("My Token", viewModel.uiState.value.newTokenName)
-
-        viewModel.onAction(McpSettingsAction.HideAddTokenDialog)
-        assert(!viewModel.uiState.value.showAddTokenDialog)
-        assertEquals("", viewModel.uiState.value.newTokenName)
-    }
-
-    @Test
-    fun `ShowDeleteDialog and HideDeleteDialog update deletingToken in state`() = runTest(testDispatcher) {
-        val token = McpToken("token-1", "Claude Desktop", "••••••••abcd", "2026-08-11T00:00:00Z")
-        viewModel.onAction(McpSettingsAction.ShowDeleteDialog(token))
-        assertEquals(token, viewModel.uiState.value.deletingToken)
-
-        viewModel.onAction(McpSettingsAction.HideDeleteDialog)
-        assertNull(viewModel.uiState.value.deletingToken)
-    }
-
-    @Test
-    fun `ShowRegenerateDialog and HideRegenerateDialog update regeneratingToken in state`() = runTest(testDispatcher) {
-        val token = McpToken("token-1", "Claude Desktop", "••••••••abcd", "2026-08-11T00:00:00Z")
-        viewModel.onAction(McpSettingsAction.ShowRegenerateDialog(token))
-        assertEquals(token, viewModel.uiState.value.regeneratingToken)
-
-        viewModel.onAction(McpSettingsAction.HideRegenerateDialog)
-        assertNull(viewModel.uiState.value.regeneratingToken)
-    }
-
-    @Test
-    fun `CreateToken action creates token, sets createdToken, resets dialog, and emits TokenCreated event`() = runTest(testDispatcher) {
+    fun `initial state sets error and emits event when repository returns error`() = runTest(testDispatcher) {
+        val errorRepo = FakeMcpRepository().apply { shouldReturnError = true }
         val events = mutableListOf<McpSettingsEvent>()
-        val job = launch { viewModel.events.toList(events) }
 
-        viewModel.onAction(McpSettingsAction.ShowAddTokenDialog)
-        viewModel.onAction(McpSettingsAction.UpdateNewTokenName("Cursor"))
-        viewModel.onAction(McpSettingsAction.CreateToken("Cursor"))
+        val errorViewModel = McpSettingsViewModel(
+            getMcpConnectionDetailsUseCase = GetMcpConnectionDetailsUseCase(errorRepo),
+        )
+        val job = launch { errorViewModel.events.toList(events) }
 
-        val state = viewModel.uiState.value
-        assertNotNull(state.createdToken)
-        assertEquals("Cursor", state.createdToken?.name)
-        assertEquals("raw_secret_cursor_key", state.createdToken?.rawToken)
-        assert(!state.showAddTokenDialog)
-        assertEquals("", state.newTokenName)
-        assertEquals(1, events.size)
-        assert(events.first() is McpSettingsEvent.TokenCreated)
-
-        job.cancel()
-    }
-
-    @Test
-    fun createTokenErrorClosesAddTokenDialogAndExposesSnackbarError() = runTest(testDispatcher) {
-        fakeRepository.createResult = Result.Error(AppError.Network)
-
-        viewModel.onAction(McpSettingsAction.ShowAddTokenDialog)
-        viewModel.onAction(McpSettingsAction.UpdateNewTokenName("Cursor"))
-        viewModel.onAction(McpSettingsAction.CreateToken("Cursor"))
-
-        val state = viewModel.uiState.value
-        assert(!state.showAddTokenDialog)
+        val state = errorViewModel.uiState.value
+        assertNull(state.connectionDetails)
         assertNotNull(state.error)
-    }
-    @Test
-    fun `DeleteToken action removes token from state, clears deletingToken, and emits TokenDeleted event`() = runTest(testDispatcher) {
-        val events = mutableListOf<McpSettingsEvent>()
-        val job = launch { viewModel.events.toList(events) }
-
-        val token = McpToken("token-1", "Claude Desktop", "••••••••abcd", "2026-08-11T00:00:00Z")
-        viewModel.onAction(McpSettingsAction.ShowDeleteDialog(token))
-        viewModel.onAction(McpSettingsAction.DeleteToken("token-1"))
-
-        val state = viewModel.uiState.value
-        assertEquals(0, state.tokens.size)
-        assertNull(state.deletingToken)
         assertEquals(1, events.size)
-        assert(events.first() is McpSettingsEvent.TokenDeleted)
+        assert(events.first() is McpSettingsEvent.Error)
 
         job.cancel()
     }
 
     @Test
-    fun `RegenerateToken action sets new createdToken, clears regeneratingToken, and emits TokenRegenerated event`() = runTest(testDispatcher) {
-        val events = mutableListOf<McpSettingsEvent>()
-        val job = launch { viewModel.events.toList(events) }
+    fun `Refresh action re-fetches connection details`() = runTest(testDispatcher) {
+        fakeRepository.details = McpConnectionDetails(
+            mcpUrl = "https://updated.railway.app/mcp",
+            clientId = "awan-updated",
+        )
 
-        val token = McpToken("token-1", "Claude Desktop", "••••••••abcd", "2026-08-11T00:00:00Z")
-        viewModel.onAction(McpSettingsAction.ShowRegenerateDialog(token))
-        viewModel.onAction(McpSettingsAction.RegenerateToken("token-1"))
+        viewModel.onAction(McpSettingsAction.Refresh)
 
         val state = viewModel.uiState.value
-        assertNotNull(state.createdToken)
-        assertEquals("raw_regenerated_token-1", state.createdToken?.rawToken)
-        assertNull(state.regeneratingToken)
-        assertEquals(1, events.size)
-        assert(events.first() is McpSettingsEvent.TokenRegenerated)
-
-        job.cancel()
+        assertEquals("https://updated.railway.app/mcp", state.connectionDetails?.mcpUrl)
+        assertEquals("awan-updated", state.connectionDetails?.clientId)
     }
 
     @Test
-    fun `DismissCreatedModal clears createdToken in state`() = runTest(testDispatcher) {
-        viewModel.onAction(McpSettingsAction.CreateToken("Test"))
-        assertNotNull(viewModel.uiState.value.createdToken)
+    fun `DismissError clears error in state`() = runTest(testDispatcher) {
+        val errorRepo = FakeMcpRepository().apply { shouldReturnError = true }
+        val errorViewModel = McpSettingsViewModel(
+            getMcpConnectionDetailsUseCase = GetMcpConnectionDetailsUseCase(errorRepo),
+        )
 
-        viewModel.onAction(McpSettingsAction.DismissCreatedModal)
-        assertNull(viewModel.uiState.value.createdToken)
+        assertNotNull(errorViewModel.uiState.value.error)
+        errorViewModel.onAction(McpSettingsAction.DismissError)
+        assertNull(errorViewModel.uiState.value.error)
     }
 
     private class FakeMcpRepository : McpRepository {
-        var createResult: Result<CreatedMcpToken>? = null
-        private val tokensList = mutableListOf(
-            McpToken("token-1", "Claude Desktop", "••••••••abcd", "2026-08-11T00:00:00Z")
+        var shouldReturnError = false
+        var details = McpConnectionDetails(
+            mcpUrl = "https://awanproduction.up.railway.app/mcp",
+            clientId = "awan-mcp",
         )
-        private val tokensFlow = MutableStateFlow<Result<List<McpToken>>>(Result.Success(tokensList))
 
         override fun getMcpConnectionDetails(): Flow<Result<McpConnectionDetails>> {
-            return flowOf(Result.Success(McpConnectionDetails("https://mcp.awan.app/v1", "awan-android-client")))
-        }
-
-        override fun getMcpTokens(): Flow<Result<List<McpToken>>> = tokensFlow
-
-        override suspend fun createMcpToken(name: String): Result<CreatedMcpToken> {
-            createResult?.let { return it }
-            val created = CreatedMcpToken(
-                id = "token-${System.currentTimeMillis()}",
-                name = name,
-                rawToken = "raw_secret_${name.lowercase()}_key",
-                maskedToken = "••••••••secret",
-                createdAt = "2026-08-11T00:00:00Z"
-            )
-            tokensList.add(McpToken(created.id, created.name, created.maskedToken, created.createdAt))
-            tokensFlow.value = Result.Success(tokensList.toList())
-            return Result.Success(created)
-        }
-
-        override suspend fun deleteMcpToken(id: String): Result<Unit> {
-            tokensList.removeAll { it.id == id }
-            tokensFlow.value = Result.Success(tokensList.toList())
-            return Result.Success(Unit)
-        }
-
-        override suspend fun regenerateMcpToken(id: String): Result<CreatedMcpToken> {
-            val created = CreatedMcpToken(
-                id = id,
-                name = "Regenerated",
-                rawToken = "raw_regenerated_$id",
-                maskedToken = "••••••••regen",
-                createdAt = "2026-08-11T00:00:00Z"
-            )
-            return Result.Success(created)
+            if (shouldReturnError) {
+                return flowOf(Result.Error(AppError.Network))
+            }
+            return flowOf(Result.Success(details))
         }
     }
 }

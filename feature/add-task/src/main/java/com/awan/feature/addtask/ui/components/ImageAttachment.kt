@@ -1,9 +1,18 @@
 package com.awan.feature.addtask.ui.components
 
+import android.Manifest
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.Settings
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +41,15 @@ import java.io.File
 
 private val ThumbnailSize = 72.dp
 
+private fun Context.findActivity(): ComponentActivity? {
+    var current = this
+    while (current is ContextWrapper) {
+        if (current is ComponentActivity) return current
+        current = current.baseContext
+    }
+    return null
+}
+
 /**
  * A photo of a whiteboard, a handwritten list, or a screenshot — extra context Awan reads alongside
  * the typed note. Never both empty and filled: showing the picker row or the attached thumbnail, not
@@ -55,12 +73,53 @@ fun ImageAttachment(
 private fun PickImageButtons(onImagePicked: (String) -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
+    var showCameraRationaleDialog by remember { mutableStateOf(false) }
+    var showCameraSettingsDialog by remember { mutableStateOf(false) }
 
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         uri?.let { onImagePicked(it.toString()) }
     }
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { captured ->
         if (captured) pendingCameraUri?.let { onImagePicked(it.toString()) }
+    }
+
+    fun launchCameraInternal() {
+        val uri = createCameraOutputUri(context)
+        pendingCameraUri = uri
+        cameraLauncher.launch(uri)
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            launchCameraInternal()
+        } else {
+            val activity = context.findActivity()
+            val showRationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
+                activity,
+                Manifest.permission.CAMERA
+            )
+            if (showRationale) {
+                showCameraRationaleDialog = true
+            } else {
+                showCameraSettingsDialog = true
+            }
+        }
+    }
+
+    fun requestCameraPermissionAndLaunch() {
+        val permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+            launchCameraInternal()
+        } else {
+            val activity = context.findActivity()
+            if (activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)) {
+                showCameraRationaleDialog = true
+            } else {
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        }
     }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
@@ -77,9 +136,7 @@ private fun PickImageButtons(onImagePicked: (String) -> Unit, modifier: Modifier
             }
             AwanButton(
                 onClick = {
-                    val uri = createCameraOutputUri(context)
-                    pendingCameraUri = uri
-                    cameraLauncher.launch(uri)
+                    requestCameraPermissionAndLaunch()
                 },
                 variant = AwanButtonVariant.Quiet,
                 icon = { Icon(Lucide.Camera, contentDescription = null) },
@@ -87,6 +144,39 @@ private fun PickImageButtons(onImagePicked: (String) -> Unit, modifier: Modifier
                 AwanText(stringResource(R.string.add_task_photo_take))
             }
         }
+    }
+
+    if (showCameraRationaleDialog) {
+        AwanDialog(
+            title = stringResource(R.string.add_task_camera_permission_rationale_title),
+            body = stringResource(R.string.add_task_camera_permission_rationale_message),
+            primaryLabel = stringResource(R.string.add_task_grant_permission),
+            onPrimary = {
+                showCameraRationaleDialog = false
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            },
+            secondaryLabel = stringResource(R.string.add_task_cancel),
+            onSecondary = { showCameraRationaleDialog = false },
+            onDismiss = { showCameraRationaleDialog = false }
+        )
+    }
+
+    if (showCameraSettingsDialog) {
+        AwanDialog(
+            title = stringResource(R.string.add_task_camera_permission_settings_title),
+            body = stringResource(R.string.add_task_camera_permission_settings_message),
+            primaryLabel = stringResource(R.string.add_task_open_settings),
+            onPrimary = {
+                showCameraSettingsDialog = false
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
+                }
+                context.startActivity(intent)
+            },
+            secondaryLabel = stringResource(R.string.add_task_cancel),
+            onSecondary = { showCameraSettingsDialog = false },
+            onDismiss = { showCameraSettingsDialog = false }
+        )
     }
 }
 

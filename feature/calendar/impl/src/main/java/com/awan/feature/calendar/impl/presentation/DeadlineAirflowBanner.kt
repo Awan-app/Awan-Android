@@ -1,6 +1,5 @@
 package com.awan.feature.calendar.impl.presentation
 
-import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -20,25 +19,26 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.SoapBubbleStyle
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+import org.intellij.lang.annotations.Language
 
+@Language("AGSL")
 private const val AIRFLOW_AGSL_SHADER = """
     uniform float2 resolution;
     uniform float time;
@@ -50,6 +50,7 @@ private const val AIRFLOW_AGSL_SHADER = """
         float y = uv.y;
 
         // Base gradient from Left (Red) -> Center (Amber) -> Right (Green)
+        // Matching SoapBubbleStyle.UrgentRed (#EF4444), MidAmber (#F59E0B), CalmEmerald (#10B981)
         float3 red = float3(0.937, 0.267, 0.267);    // #EF4444 (due soon / urgent)
         float3 amber = float3(0.961, 0.620, 0.043);  // #F59E0B (halfway)
         float3 green = float3(0.063, 0.725, 0.506);  // #10B981 (open sky / plenty of time)
@@ -58,76 +59,86 @@ private const val AIRFLOW_AGSL_SHADER = """
             ? mix(red, amber, x * 2.0) 
             : mix(amber, green, (x - 0.5) * 2.0);
 
-        float3 highlightCol = mix(baseCol, float3(1.0), 0.55);
-
-        // Strict integer harmonics for a 100% seamless, mathematically continuous loop
-        float t1 = time * 1.0;
-        float t2 = time * 2.0;
-
         float pi2x = x * 6.28318530718;
         float pi4x = x * 12.5663706144;
 
         // -------------------------------------------------------------------
-        // 7 Curated Weaving Streams (Organized Fluid Corridor)
+        // 7 Curated Weaving Streams — exact match with AirflowCanvasFallback
         // -------------------------------------------------------------------
-        // 1. Primary bold spine ribbon (slow, central undulating backbone)
-        float w1 = 0.50 + 0.15 * sin(pi2x - t1) + 0.035 * cos(pi4x + t2);
+        // 1. Primary bold spine ribbon: baseY = 0.50, amp1 = 0.15, f1 = 1, amp2 = 0.035, f2 = 2, speed = 1, phase = 0.0
+        float w1 = 0.50 + 0.15 * sin(pi2x - time * 1.0) + 0.035 * cos(pi4x + time * 1.0);
 
-        // 2. Ultra-fine hairline companion (tightly orbiting & crossing the spine)
-        float w2 = 0.50 + 0.12 * sin(pi2x - t2 + 0.9) + 0.045 * sin(pi4x - t1);
+        // 2. Ultra-fine hairline companion: baseY = 0.50, amp1 = 0.12, f1 = 1, amp2 = 0.045, f2 = 2, speed = 2, phase = 0.9
+        float w2 = 0.50 + 0.12 * sin(pi2x - time * 2.0 + 0.9) + 0.045 * cos(pi4x + time * 2.0 + 0.9);
 
-        // 3. Medium upper weave (drifts slightly above, swooping across at intervals)
-        float w3 = 0.44 + 0.17 * sin(pi2x - t1 + 2.0) + 0.030 * cos(pi4x - t2);
+        // 3. Medium upper weave: baseY = 0.44, amp1 = 0.17, f1 = 1, amp2 = 0.030, f2 = 2, speed = 1, phase = 2.0
+        float w3 = 0.44 + 0.17 * sin(pi2x - time * 1.0 + 2.0) + 0.030 * cos(pi4x + time * 1.0 + 2.0);
 
-        // 4. Hairline lower weave (drifts slightly below with independent phase)
-        float w4 = 0.56 + 0.16 * sin(pi2x - t1 + 4.1) + 0.030 * sin(pi4x + t1);
+        // 4. Fine lower hairline: baseY = 0.56, amp1 = 0.16, f1 = 1, amp2 = 0.030, f2 = 2, speed = 1, phase = 4.1
+        float w4 = 0.56 + 0.16 * sin(pi2x - time * 1.0 + 4.1) + 0.030 * cos(pi4x + time * 1.0 + 4.1);
 
-        // 5. Broad soft flowing ribbon (soft lower-mid accent)
-        float w5 = 0.52 + 0.14 * sin(pi2x - t2 + 3.2) + 0.050 * cos(pi2x + t1);
+        // 5. Broad soft flowing ribbon: baseY = 0.52, amp1 = 0.14, f1 = 1, amp2 = 0.050, f2 = 1, speed = 2, phase = 3.2
+        float w5 = 0.52 + 0.14 * sin(pi2x - time * 2.0 + 3.2) + 0.050 * cos(pi2x + time * 2.0 + 3.2);
 
-        // 6. Medium upper cresting ribbon (graceful crest above center)
-        float w6 = 0.40 + 0.15 * sin(pi2x - t2 + 1.5) + 0.040 * sin(pi2x + t1);
+        // 6. Medium crest stream: baseY = 0.40, amp1 = 0.15, f1 = 1, amp2 = 0.040, f2 = 1, speed = 2, phase = 1.5
+        float w6 = 0.40 + 0.15 * sin(pi2x - time * 2.0 + 1.5) + 0.040 * cos(pi2x + time * 2.0 + 1.5);
 
-        // 7. Dynamic swoop thread (traverses across the entire bundle from top to bottom)
-        float w7 = 0.50 + 0.19 * sin(pi2x - t1 + 1.3) - 0.035 * sin(pi4x + t2);
+        // 7. Dynamic fine swoop thread: baseY = 0.50, amp1 = 0.19, f1 = 1, amp2 = 0.035, f2 = 2, speed = 1, phase = 1.3
+        float w7 = 0.50 + 0.19 * sin(pi2x - time * 1.0 + 1.3) + 0.035 * cos(pi4x + time * 1.0 + 1.3);
 
-        // Distances from pixel y to thread curves
-        float d1 = abs(y - w1);
-        float d2 = abs(y - w2);
-        float d3 = abs(y - w3);
-        float d4 = abs(y - w4);
-        float d5 = abs(y - w5);
-        float d6 = abs(y - w6);
-        float d7 = abs(y - w7);
+        // 1 dp in pixels for 130dp banner height
+        float dp = resolution.y / 130.0;
 
-        // Varied thread thicknesses (bold ribbon, fine hairline, medium stream)
-        float core1 = exp(-d1 * d1 * 480.0)  * 0.36; // Bold central ribbon
-        float core2 = exp(-d2 * d2 * 1600.0) * 0.32; // Ultra-fine crisp hairline
-        float core3 = exp(-d3 * d3 * 750.0)  * 0.28; // Medium upper ribbon
-        float core4 = exp(-d4 * d4 * 1400.0) * 0.26; // Fine lower hairline
-        float core5 = exp(-d5 * d5 * 380.0)  * 0.24; // Broad soft flow
-        float core6 = exp(-d6 * d6 * 820.0)  * 0.25; // Medium crest stream
-        float core7 = exp(-d7 * d7 * 1100.0) * 0.28; // Fine dynamic swoop
+        float d1 = abs(fragCoord.y - w1 * resolution.y);
+        float d2 = abs(fragCoord.y - w2 * resolution.y);
+        float d3 = abs(fragCoord.y - w3 * resolution.y);
+        float d4 = abs(fragCoord.y - w4 * resolution.y);
+        float d5 = abs(fragCoord.y - w5 * resolution.y);
+        float d6 = abs(fragCoord.y - w6 * resolution.y);
+        float d7 = abs(fragCoord.y - w7 * resolution.y);
 
-        float totalCores = core1 + core2 + core3 + core4 + core5 + core6 + core7;
+        // Thread stroke half-widths and alphas matching AirflowCanvasFallback exactly
+        // 1. sWidth = 3.6 dp, alpha = 0.38
+        float hw1 = 1.80 * dp;
+        float stream1 = smoothstep(hw1 + 1.0, hw1 - 1.0, d1) * 0.38;
 
-        // Soft ambient atmospheric glow around the shared stream envelope
-        float glow = (exp(-d1 * 22.0) + exp(-d3 * 18.0) + exp(-d5 * 18.0) + exp(-d6 * 18.0)) * 0.042;
+        // 2. sWidth = 1.0 dp, alpha = 0.30
+        float hw2 = 0.50 * dp;
+        float stream2 = smoothstep(hw2 + 1.0, hw2 - 1.0, d2) * 0.30;
 
-        // Gentle crest shimmer
-        float crest = pow(max(0.0, sin(pi2x - t1)), 4.0) * exp(-d1 * d1 * 350.0) * 0.28;
+        // 3. sWidth = 2.2 dp, alpha = 0.28
+        float hw3 = 1.10 * dp;
+        float stream3 = smoothstep(hw3 + 1.0, hw3 - 1.0, d3) * 0.28;
 
-        float intensity = (totalCores + glow + crest) * strength;
+        // 4. sWidth = 1.2 dp, alpha = 0.26
+        float hw4 = 0.60 * dp;
+        float stream4 = smoothstep(hw4 + 1.0, hw4 - 1.0, d4) * 0.26;
+
+        // 5. sWidth = 3.0 dp, alpha = 0.22
+        float hw5 = 1.50 * dp;
+        float stream5 = smoothstep(hw5 + 1.0, hw5 - 1.0, d5) * 0.22;
+
+        // 6. sWidth = 2.0 dp, alpha = 0.25
+        float hw6 = 1.00 * dp;
+        float stream6 = smoothstep(hw6 + 1.0, hw6 - 1.0, d6) * 0.25;
+
+        // 7. sWidth = 1.4 dp, alpha = 0.28
+        float hw7 = 0.70 * dp;
+        float stream7 = smoothstep(hw7 + 1.0, hw7 - 1.0, d7) * 0.28;
+
+        // Background ambient gradient matching bgGradientBrush (alpha = 0.07)
+        float bgAlpha = 0.07;
+
+        float streamAlpha = stream1 + stream2 + stream3 + stream4 + stream5 + stream6 + stream7;
+        float totalAlpha = clamp(bgAlpha + streamAlpha, 0.0, 1.0) * strength;
 
         // Edge fades
-        float edgeX = smoothstep(0.0, 0.05, x) * smoothstep(1.0, 0.95, x);
-        float edgeY = smoothstep(0.0, 0.08, y) * smoothstep(1.0, 0.92, y);
-        float alpha = clamp(intensity * edgeX * edgeY, 0.0, 0.45);
-
-        float3 finalRgb = mix(baseCol, highlightCol, clamp(crest * 2.2, 0.0, 1.0));
+        float edgeX = smoothstep(0.0, 0.02, x) * smoothstep(1.0, 0.98, x);
+        float edgeY = smoothstep(0.0, 0.03, y) * smoothstep(1.0, 0.97, y);
+        float alpha = totalAlpha * edgeX * edgeY;
 
         half a = half(alpha);
-        half3 rgb = half3(finalRgb) * a;
+        half3 rgb = half3(baseCol) * a;
 
         return half4(rgb, a);
     }
@@ -169,9 +180,12 @@ private fun AirflowShaderTiramisu(
     modifier: Modifier = Modifier,
     isReducedMotion: Boolean = false,
 ) {
+    val shader = remember { RuntimeShader(AIRFLOW_AGSL_SHADER) }
+    val brush = remember(shader) { ShaderBrush(shader) }
+
     val infiniteTransition = rememberInfiniteTransition(label = "AirflowShaderTransition")
     val animatedTime by if (isReducedMotion) {
-        remember { androidx.compose.runtime.mutableStateOf(0.5f) }
+        remember { mutableFloatStateOf(0.5f) }
     } else {
         infiniteTransition.animateFloat(
             initialValue = 0f,
@@ -184,17 +198,11 @@ private fun AirflowShaderTiramisu(
         )
     }
 
-    val shader = remember { RuntimeShader(AIRFLOW_AGSL_SHADER) }
-
-    Canvas(
-        modifier = modifier.graphicsLayer {
-            shader.setFloatUniform("resolution", size.width, size.height)
-            shader.setFloatUniform("time", animatedTime * (2f * PI.toFloat()))
-            shader.setFloatUniform("strength", 1.0f)
-            renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "content").asComposeRenderEffect()
-        }
-    ) {
-        drawRect(color = Color.White)
+    Canvas(modifier = modifier) {
+        shader.setFloatUniform("resolution", size.width, size.height)
+        shader.setFloatUniform("time", animatedTime * (2f * PI.toFloat()))
+        shader.setFloatUniform("strength", 1.0f)
+        drawRect(brush = brush)
     }
 }
 
@@ -205,7 +213,7 @@ private fun AirflowCanvasFallback(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "AirflowCanvasTransition")
     val animatedTime by if (isReducedMotion) {
-        remember { androidx.compose.runtime.mutableStateOf(0.5f) }
+        remember { mutableFloatStateOf(0.5f) }
     } else {
         infiniteTransition.animateFloat(
             initialValue = 0f,

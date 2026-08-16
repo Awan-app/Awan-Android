@@ -10,7 +10,6 @@ import com.awan.feature.profile.impl.ui.McpSettingsScreen
 @Composable
 fun McpSettingsRouteScreen(
     viewModel: McpSettingsViewModel = hiltViewModel(),
-    onNavigateToInfo: () -> Unit,
     onBack: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -18,7 +17,6 @@ fun McpSettingsRouteScreen(
     McpSettingsScreen(
         uiState = uiState,
         onAction = viewModel::onAction,
-        onInfoClick = onNavigateToInfo,
         onBackClick = onBack,
     )
 }

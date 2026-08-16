@@ -1,20 +1,16 @@
 package com.awan.app.core.data.mcp
 
 import com.awan.app.core.common.error.AppError
-import com.awan.app.core.network.BuildConfig
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.mcp.remote.McpRemoteDataSource
 import com.awan.app.core.data.mcp.repository.McpRepositoryImpl
-import com.awan.app.core.database.dao.McpTokenDao
-import com.awan.app.core.database.model.McpTokenEntity
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
-import com.awan.app.core.network.dto.mcp.ApiKeyResponseDto
-import com.awan.app.core.network.dto.mcp.ApiKeySummaryDto
+import com.awan.app.core.network.dto.mcp.McpConnectionDetailsDto
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -22,65 +18,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 private class FakeMcpRemoteDataSource : McpRemoteDataSource {
-    var apiKeysList = mutableListOf<ApiKeySummaryDto>()
-    var createApiKeyResponse = ApiKeyResponseDto(
-        id = "token-1",
-        name = "Default Token",
-        keyValue = "raw-secret-123",
-        createdAt = "2026-08-11T00:00:00Z",
+    var details = McpConnectionDetailsDto(
+        mcpUrl = "https://awanproduction.up.railway.app/mcp",
+        clientId = "awan-mcp",
     )
-    var getApiKeysResult: Result<List<ApiKeySummaryDto>>? = null
-    var createApiKeyResult: Result<ApiKeyResponseDto>? = null
-    var revokeApiKeyResult: Result<Unit>? = null
-    var lastCreatedName: String? = null
-    var lastRevokedId: String? = null
+    var getConnectionDetailsResult: Result<McpConnectionDetailsDto>? = null
 
-    override suspend fun getApiKeys(): Result<List<ApiKeySummaryDto>> =
-        getApiKeysResult ?: Result.Success(apiKeysList)
-
-    override suspend fun createApiKey(name: String): Result<ApiKeyResponseDto> {
-        lastCreatedName = name
-        return createApiKeyResult ?: Result.Success(createApiKeyResponse.copy(name = name))
-    }
-
-    override suspend fun revokeApiKey(id: String): Result<Unit> {
-        lastRevokedId = id
-        return revokeApiKeyResult ?: Result.Success(Unit)
-    }
-}
-private class FakeMcpTokenDao : McpTokenDao {
-    private val tokensState = MutableStateFlow<List<McpTokenEntity>>(emptyList())
-    val storedTokens: List<McpTokenEntity> get() = tokensState.value
-    var shouldFailOnUpsert: Boolean = false
-    var replaceCount: Int = 0
-
-    override fun getMcpTokens(): Flow<List<McpTokenEntity>> = tokensState
-
-    override suspend fun upsertMcpTokens(tokens: List<McpTokenEntity>) {
-        if (shouldFailOnUpsert) {
-            throw IllegalStateException("Database write error")
-        }
-        val current = tokensState.value.toMutableList()
-        tokens.forEach { newToken ->
-            current.removeAll { it.id == newToken.id }
-            current.add(newToken)
-        }
-        tokensState.value = current
-    }
-
-    override suspend fun deleteMcpToken(id: String) {
-        tokensState.value = tokensState.value.filterNot { it.id == id }
-    }
-
-    override suspend fun clearAll() {
-        tokensState.value = emptyList()
-    }
-
-    override suspend fun replaceMcpTokens(tokens: List<McpTokenEntity>) {
-        replaceCount++
-        clearAll()
-        upsertMcpTokens(tokens)
-    }
+    override suspend fun getConnectionDetails(): Result<McpConnectionDetailsDto> =
+        getConnectionDetailsResult ?: Result.Success(details)
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -100,223 +45,49 @@ class McpRepositoryImplTest {
 
     private fun buildRepository(
         remoteDataSource: McpRemoteDataSource = FakeMcpRemoteDataSource(),
-        tokenDao: McpTokenDao = FakeMcpTokenDao(),
         monitor: NetworkConnectivityMonitor = onlineMonitor,
     ) = McpRepositoryImpl(
         remoteDataSource = remoteDataSource,
-        mcpTokenDao = tokenDao,
         connectivityMonitor = monitor,
         ioDispatcher = testDispatcher,
     )
 
     @Test
-    fun `getMcpConnectionDetails returns static connection details`() = runTest(testDispatcher) {
+    fun `getMcpConnectionDetails returns success with mapped domain model when online`() = runTest(testDispatcher) {
+        val remoteDataSource = FakeMcpRemoteDataSource()
+        val repository = buildRepository(remoteDataSource = remoteDataSource, monitor = onlineMonitor)
+
+        val emissions = repository.getMcpConnectionDetails().toList()
+
+        assertTrue(emissions.first() is Result.Loading)
+        val finalResult = emissions.last()
+        assertTrue(finalResult is Result.Success)
+        val data = (finalResult as Result.Success).data
+        assertEquals("https://awanproduction.up.railway.app/mcp", data.mcpUrl)
+        assertEquals("awan-mcp", data.clientId)
+    }
+
+    @Test
+    fun `getMcpConnectionDetails returns network error when offline`() = runTest(testDispatcher) {
         val repository = buildRepository(monitor = offlineMonitor)
 
         val result = repository.getMcpConnectionDetails().first()
 
-        assertTrue(result is Result.Success)
-        val details = (result as Result.Success).data
-        assertEquals("${BuildConfig.AWAN_BASE_URL.trimEnd('/')}/v1/mcp", details.mcpUrl)
-        assertEquals("awan-android-client", details.clientId)
-    }
-
-    @Test
-    fun `getMcpTokens fetches remote api keys and updates Room atomically when online`() = runTest(testDispatcher) {
-        val remoteDataSource = FakeMcpRemoteDataSource().apply {
-            apiKeysList.add(
-                ApiKeySummaryDto(
-                    id = "key-1",
-                    name = "Claude Desktop",
-                    keyPrefix = "mcp_...123",
-                    createdAt = "2026-08-11T00:00:00Z",
-                )
-            )
-        }
-        val tokenDao = FakeMcpTokenDao()
-        val repository = buildRepository(remoteDataSource = remoteDataSource, tokenDao = tokenDao, monitor = onlineMonitor)
-
-        val result = repository.getMcpTokens().first()
-
-        assertTrue(result is Result.Success)
-        val tokens = (result as Result.Success).data
-        assertEquals(1, tokens.size)
-        assertEquals("Claude Desktop", tokens.first().name)
-        assertEquals(1, tokenDao.storedTokens.size)
-        assertEquals("Claude Desktop", tokenDao.storedTokens.first().name)
-        assertEquals("mcp_...123", tokenDao.storedTokens.first().maskedToken)
-        assertEquals(1, tokenDao.replaceCount)
-    }
-
-    @Test
-    fun `getMcpTokens falls back to Room cached tokens when offline`() = runTest(testDispatcher) {
-        val tokenDao = FakeMcpTokenDao().apply {
-            upsertMcpTokens(
-                listOf(
-                    McpTokenEntity(
-                        id = "token-cached",
-                        name = "Cached Token",
-                        maskedToken = "mcp_...cached",
-                        createdAt = "2026-08-10T00:00:00Z",
-                    )
-                )
-            )
-        }
-        val repository = buildRepository(tokenDao = tokenDao, monitor = offlineMonitor)
-
-        val result = repository.getMcpTokens().first()
-
-        assertTrue(result is Result.Success)
-        val tokens = (result as Result.Success).data
-        assertEquals(1, tokens.size)
-        assertEquals("Cached Token", tokens.first().name)
-    }
-
-    @Test
-    fun `createMcpToken succeeds when online and upserts entity into Room`() = runTest(testDispatcher) {
-        val remoteDataSource = FakeMcpRemoteDataSource()
-        val tokenDao = FakeMcpTokenDao()
-        val repository = buildRepository(remoteDataSource = remoteDataSource, tokenDao = tokenDao, monitor = onlineMonitor)
-
-        val result = repository.createMcpToken("Claude Desktop")
-
-        assertTrue(result is Result.Success)
-        val createdToken = (result as Result.Success).data
-        assertEquals("Claude Desktop", createdToken.name)
-        assertEquals("raw-secret-123", createdToken.rawToken)
-        assertEquals("Claude Desktop", remoteDataSource.lastCreatedName)
-        assertEquals(1, tokenDao.storedTokens.size)
-        assertEquals("token-1", tokenDao.storedTokens.first().id)
-    }
-
-    @Test
-    fun `createMcpToken preserves raw token success even if Room write fails`() = runTest(testDispatcher) {
-        val remoteDataSource = FakeMcpRemoteDataSource()
-        val tokenDao = FakeMcpTokenDao().apply { shouldFailOnUpsert = true }
-        val repository = buildRepository(remoteDataSource = remoteDataSource, tokenDao = tokenDao, monitor = onlineMonitor)
-
-        val result = repository.createMcpToken("Claude Desktop")
-
-        assertTrue(result is Result.Success)
-        val createdToken = (result as Result.Success).data
-        assertEquals("Claude Desktop", createdToken.name)
-        assertEquals("raw-secret-123", createdToken.rawToken)
-    }
-
-    @Test
-    fun `createMcpToken returns network error when offline`() = runTest(testDispatcher) {
-        val repository = buildRepository(monitor = offlineMonitor)
-
-        val result = repository.createMcpToken("Claude Desktop")
-
         assertTrue(result is Result.Error)
-        assertTrue((result as Result.Error).error is AppError.Network)
+        assertEquals(AppError.Network, (result as Result.Error).error)
     }
 
     @Test
-    fun `deleteMcpToken revokes token on network and deletes from Room`() = runTest(testDispatcher) {
-        val remoteDataSource = FakeMcpRemoteDataSource()
-        val tokenDao = FakeMcpTokenDao().apply {
-            upsertMcpTokens(
-                listOf(
-                    McpTokenEntity("token-1", "Test", "mcp_...123", "2026-08-11T00:00:00Z")
-                )
-            )
-        }
-        val repository = buildRepository(remoteDataSource = remoteDataSource, tokenDao = tokenDao, monitor = onlineMonitor)
-
-        val result = repository.deleteMcpToken("token-1")
-
-        assertTrue(result is Result.Success)
-        assertEquals("token-1", remoteDataSource.lastRevokedId)
-        assertTrue(tokenDao.storedTokens.none { it.id == "token-1" })
-    }
-
-    @Test
-    fun `deleteMcpToken returns network error when offline`() = runTest(testDispatcher) {
-        val repository = buildRepository(monitor = offlineMonitor)
-
-        val result = repository.deleteMcpToken("token-1")
-
-        assertTrue(result is Result.Error)
-        assertTrue((result as Result.Error).error is AppError.Network)
-    }
-
-    @Test
-    fun `regenerateMcpToken creates new token, revokes old token on network, and updates Room`() = runTest(testDispatcher) {
+    fun `getMcpConnectionDetails propagates remote data source errors`() = runTest(testDispatcher) {
         val remoteDataSource = FakeMcpRemoteDataSource().apply {
-            createApiKeyResponse = ApiKeyResponseDto(
-                id = "token-2",
-                name = "Claude Desktop",
-                keyValue = "new-raw-secret",
-                createdAt = "2026-08-11T01:00:00Z",
-            )
+            getConnectionDetailsResult = Result.Error(AppError.Server(500))
         }
-        val tokenDao = FakeMcpTokenDao().apply {
-            upsertMcpTokens(
-                listOf(
-                    McpTokenEntity("token-1", "Claude Desktop", "mcp_...old", "2026-08-11T00:00:00Z")
-                )
-            )
-        }
-        val repository = buildRepository(remoteDataSource = remoteDataSource, tokenDao = tokenDao, monitor = onlineMonitor)
+        val repository = buildRepository(remoteDataSource = remoteDataSource, monitor = onlineMonitor)
 
-        val result = repository.regenerateMcpToken("token-1")
+        val emissions = repository.getMcpConnectionDetails().toList()
 
-        assertTrue(result is Result.Success)
-        val createdToken = (result as Result.Success).data
-        assertEquals("new-raw-secret", createdToken.rawToken)
-        assertEquals("Claude Desktop", remoteDataSource.lastCreatedName)
-        assertEquals("token-1", remoteDataSource.lastRevokedId)
-        assertTrue(tokenDao.storedTokens.none { it.id == "token-1" })
-        assertEquals(1, tokenDao.storedTokens.size)
-        assertEquals("token-2", tokenDao.storedTokens.first().id)
-    }
-
-    @Test
-    fun `regenerateMcpToken keeps old Room token when revocation fails`() = runTest(testDispatcher) {
-        val remoteDataSource = FakeMcpRemoteDataSource().apply {
-            createApiKeyResponse = ApiKeyResponseDto(
-                id = "token-2",
-                name = "Claude Desktop",
-                keyValue = "new-raw-secret",
-                createdAt = "2026-08-11T01:00:00Z",
-            )
-            revokeApiKeyResult = Result.Error(AppError.Server(500))
-        }
-        val tokenDao = FakeMcpTokenDao().apply {
-            upsertMcpTokens(
-                listOf(
-                    McpTokenEntity("token-1", "Claude Desktop", "mcp_...old", "2026-08-11T00:00:00Z")
-                )
-            )
-        }
-        val repository = buildRepository(remoteDataSource = remoteDataSource, tokenDao = tokenDao, monitor = onlineMonitor)
-
-        val result = repository.regenerateMcpToken("token-1")
-
-        assertTrue(result is Result.Error)
-        assertEquals(1, tokenDao.storedTokens.size)
-        assertEquals("token-1", tokenDao.storedTokens.first().id)
-    }
-    @Test
-    fun `regenerateMcpToken preserves raw token success even if Room write fails`() = runTest(testDispatcher) {
-        val remoteDataSource = FakeMcpRemoteDataSource().apply {
-            createApiKeyResponse = ApiKeyResponseDto(
-                id = "token-2",
-                name = "Claude Desktop",
-                keyValue = "new-raw-secret",
-                createdAt = "2026-08-11T01:00:00Z",
-            )
-        }
-        val tokenDao = FakeMcpTokenDao().apply { shouldFailOnUpsert = true }
-        val repository = buildRepository(remoteDataSource = remoteDataSource, tokenDao = tokenDao, monitor = onlineMonitor)
-
-        val result = repository.regenerateMcpToken("token-1")
-
-        assertTrue(result is Result.Success)
-        val createdToken = (result as Result.Success).data
-        assertEquals("new-raw-secret", createdToken.rawToken)
+        val finalResult = emissions.last()
+        assertTrue(finalResult is Result.Error)
+        assertEquals(AppError.Server(500), (finalResult as Result.Error).error)
     }
 }
-

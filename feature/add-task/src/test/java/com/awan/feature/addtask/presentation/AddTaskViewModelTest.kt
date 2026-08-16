@@ -1907,5 +1907,46 @@ class AddTaskViewModelTest {
         assertTrue(collector2Events.isEmpty())
         job2.cancel()
     }
+
+    @Test
+    fun `events are single-shot and do not replay to new collectors`() = runTest(testDispatcher) {
+        val proposal = GoalProposal(
+            title = "Goal Title",
+            description = "Goal description",
+            targetDate = "2026-09-01",
+            tasks = listOf(ProposedTask("Task 1", 30, 5)),
+        )
+        goalRepository.nextContinueReply = Result.Success(
+            GoalDecompositionReply(
+                sessionId = "sess-single-shot",
+                blocks = listOf(GoalDecompositionBlock.Proposal(proposal)),
+                hasProposal = true,
+            ),
+        )
+        goalRepository.nextConfirmResult = Result.Success(Goal(id = "g-single-shot", title = "Goal Title", emoji = ""))
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+        viewModel.onAction(AddTaskAction.InputChanged("Goal"))
+        viewModel.onAction(AddTaskAction.Submit)
+        viewModel.onAction(AddTaskAction.AcceptGoalProposal)
+        viewModel.onAction(AddTaskAction.AddGoalTasks)
+
+        val firstEvents = mutableListOf<AddTaskEvent>()
+        val firstJob = backgroundScope.launch {
+            viewModel.events.collect { firstEvents.add(it) }
+        }
+        testScheduler.advanceUntilIdle()
+        assertEquals(listOf(AddTaskEvent.GoalScheduleRequested("g-single-shot")), firstEvents)
+        firstJob.cancel()
+
+        val secondEvents = mutableListOf<AddTaskEvent>()
+        val secondJob = backgroundScope.launch {
+            viewModel.events.collect { secondEvents.add(it) }
+        }
+        testScheduler.advanceUntilIdle()
+        assertTrue("Events must not replay on subsequent collections", secondEvents.isEmpty())
+        secondJob.cancel()
+    }
 }
 
