@@ -11,6 +11,8 @@ import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.model.CategoryEntity
 import com.awan.app.core.database.model.SessionEntity
 import com.awan.app.core.database.model.TaskEntity
+import com.awan.app.core.data.gamification.GamificationEventBus
+import com.awan.app.core.data.gamification.mapper.toDomain
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.domain.task.repository.TaskRepository
@@ -26,6 +28,7 @@ import com.awan.app.core.network.dto.task.AddTaskSessionsRequest
 import com.awan.app.core.network.dto.task.AddSessionItemDto
 import com.awan.app.core.network.dto.task.AiTextToTasksRequest
 import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
+import com.awan.app.core.network.dto.task.TaskCompletionResponse
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
 import com.awan.app.core.network.dto.task.TaskDependencyRequest
 import com.awan.app.core.network.dto.task.TaskMoveRequest
@@ -47,6 +50,7 @@ class TaskRepositoryImpl @Inject constructor(
     private val categoryDao: CategoryDao,
     private val sessionDao: SessionDao,
     private val goalDao: GoalDao,
+    private val eventBus: GamificationEventBus,
     private val connectivityMonitor: NetworkConnectivityMonitor,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : TaskRepository {
@@ -161,6 +165,36 @@ class TaskRepositoryImpl @Inject constructor(
         remoteDataSource.scheduleTask(ScheduleTaskRequest(taskId)).map { it.toScheduleModel() }
     }
 
+    override suspend fun completeTask(taskId: String): Result<Task> = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return@withContext Result.Error(AppError.Network)
+        }
+        val result = remoteDataSource.completeTask(taskId)
+        if (result is Result.Success) {
+            val response = result.data
+            val t = response.task
+            val taskEntity = t.toEntity()
+            taskDao.upsertTask(taskEntity)
+
+            // Update sessions if any were returned as completed
+            val sessionEntities = response.completedSessions.map { s ->
+                s.toEntity(taskId = t.id, date = "")
+            }
+            if (sessionEntities.isNotEmpty()) {
+                sessionDao.upsertSessions(sessionEntities)
+            }
+
+            // Publish rewards if any were awarded
+            response.reward?.let { rewardDto ->
+                eventBus.publishSessionReward(rewardDto.toDomain())
+            }
+
+            Result.Success(t.toTaskModel())
+        } else {
+            Result.Error((result as Result.Error).error)
+        }
+    }
+
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) {
             return@withContext Result.Error(AppError.Network)
@@ -173,6 +207,7 @@ class TaskRepositoryImpl @Inject constructor(
             Result.Error((result as Result.Error).error)
         }
     }
+
 
     override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = withContext(ioDispatcher) {
         remoteDataSource.getInboxTasks().map { list -> list.map { it.toWithSessionsModel() } }

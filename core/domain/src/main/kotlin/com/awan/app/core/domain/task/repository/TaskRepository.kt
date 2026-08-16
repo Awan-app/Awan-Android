@@ -38,6 +38,9 @@ interface TaskRepository {
     /** Asks the scheduling engine to place an existing task. */
     suspend fun scheduleTask(taskId: String): Result<TaskSchedule>
 
+    /** Marks a task as COMPLETED on the backend and updates it locally. */
+    suspend fun completeTask(taskId: String): Result<Task>
+
     suspend fun deleteTask(taskId: String, cascade: Boolean = false): Result<Unit>
 
     /**

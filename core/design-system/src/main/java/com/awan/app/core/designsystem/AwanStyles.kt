@@ -36,6 +36,11 @@ object AwanStyles {
         contentColor(colors.textPrimary)
     }
 
+    val flatScreen = Style {
+        background(colors.background)
+        contentColor(colors.textPrimary)
+    }
+
     val surface = Style {
         background(colors.surface)
         border(2.dp, colors.line)

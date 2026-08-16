@@ -32,7 +32,7 @@ internal const val AwanUserAvatarFrameTestTag = "awan-user-avatar-frame"
 fun AwanUserAvatar(
     profilePictureUrl: String?,
     frameImageUrl: String?,
-    isDark: Boolean,
+    isDark: Boolean = AwanTheme.isDark,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
 ) {

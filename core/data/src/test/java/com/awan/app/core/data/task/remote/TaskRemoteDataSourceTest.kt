@@ -9,6 +9,7 @@ import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.task.ProposedTaskDto
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
 import com.awan.app.core.network.dto.task.ScheduledSessionResponse
+import com.awan.app.core.network.dto.task.TaskCompletionResponse
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
@@ -65,6 +66,8 @@ private open class FakeTaskApiService : TaskApiService {
 
     override suspend fun scheduleTask(request: ScheduleTaskRequest): TaskScheduleResponse =
         error("not used")
+
+    override suspend fun completeTask(taskId: String): TaskCompletionResponse = error("not used")
 
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Unit = error("not used")
 

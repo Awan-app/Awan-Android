@@ -6,12 +6,22 @@ import com.awan.app.core.model.GoalDecompositionReply
 import com.awan.app.core.model.GoalDecompositionTranscript
 import com.awan.app.core.model.GoalScheduleProposal
 import com.awan.app.core.model.ProposedGoalSession
+import kotlinx.coroutines.flow.Flow
 
 interface GoalRepository {
+    fun observeGoals(): Flow<List<Goal>>
+    fun observeGoal(goalId: String): Flow<Goal?>
     suspend fun getGoals(): Result<List<Goal>>
     suspend fun createGoal(title: String, description: String?, targetDate: String?): Result<Goal>
     suspend fun getInboxGoal(): Result<Goal>
     suspend fun getGoal(goalId: String): Result<Goal>
+    suspend fun updateGoal(
+        goalId: String,
+        title: String? = null,
+        description: String? = null,
+        status: String? = null,
+        targetDate: String? = null,
+    ): Result<Goal>
     suspend fun deleteGoal(goalId: String): Result<Unit>
     suspend fun continueDecomposition(
         sessionId: String?,

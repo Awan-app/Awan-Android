@@ -9,9 +9,11 @@ import com.awan.app.core.model.TaskWithSessions
 import com.awan.feature.goals.impl.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -26,6 +28,9 @@ class InboxViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(InboxUiState())
     val state: StateFlow<InboxUiState> = _state.asStateFlow()
+    
+    private val _events = Channel<InboxEvent>(Channel.BUFFERED)
+    val events = _events.receiveAsFlow()
     
     private var fetchJob: Job? = null
 
@@ -54,7 +59,17 @@ class InboxViewModel @Inject constructor(
                 current.copy(expandedTaskId = newId)
             }
 
+            InboxAction.FilterClicked -> updateState { it.copy(showFilterSheet = true) }
+
+            InboxAction.FilterDismissed -> updateState { it.copy(showFilterSheet = false) }
+
             InboxAction.RetryClicked -> loadInboxTasks()
+            
+            InboxAction.BackClicked -> {
+                viewModelScope.launch {
+                    _events.send(InboxEvent.NavigateBack)
+                }
+            }
         }
     }
 

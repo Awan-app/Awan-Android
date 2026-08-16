@@ -111,15 +111,18 @@ class AiTaskRepositoryImplTest {
         override suspend fun getTaskSessions(taskId: String, status: String?): Result<List<SessionDto>> = Result.Success(emptyList())
 
         override suspend fun addTaskSessions(taskId: String, request: AddTaskSessionsRequest): Result<List<SessionDto>> = Result.Success(emptyList())
+
+        override suspend fun completeTask(taskId: String): Result<com.awan.app.core.network.dto.task.TaskCompletionResponse> = error("not used")
+
+        override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = error("not used")
     }
+
 
     private val fakeTaskDao = object : TaskDao {
         override suspend fun upsertTask(task: TaskEntity) {}
         override suspend fun upsertTasks(tasks: List<TaskEntity>) {}
         override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
-        override fun observeInboxTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-        override fun observeAllTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-        override suspend fun getAllTasks(): List<TaskEntity> = emptyList()
+        override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = emptyList()
         override fun observeTask(taskId: String): Flow<TaskEntity?> = flowOf(null)
         override suspend fun getTask(taskId: String): TaskEntity? = null
         override suspend fun deleteTask(taskId: String) {}
@@ -127,6 +130,7 @@ class AiTaskRepositoryImplTest {
         override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
         override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
         override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+        override suspend fun getDependsOnIds(taskId: String): List<String> = emptyList()
         override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
         override suspend fun deleteAllDependenciesForTask(taskId: String) {}
         override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}

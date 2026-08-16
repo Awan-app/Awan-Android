@@ -11,6 +11,7 @@ import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.TaskCompletionResponse
 import com.awan.app.core.network.dto.task.TaskDependencyRequest
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskMoveRequest
@@ -47,6 +48,14 @@ class TaskRemoteDataSourceImpl @Inject constructor(
     ): Result<TaskWithSessionsDto> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             taskApiService.createTaskWithSessions(request)
+        }
+
+    override suspend fun updateTask(
+        taskId: String,
+        request: com.awan.app.core.network.dto.task.TaskUpdateRequest,
+    ): Result<TaskInfoResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.updateTask(taskId, request)
         }
 
     override suspend fun createTasksWithSessions(
@@ -86,6 +95,11 @@ class TaskRemoteDataSourceImpl @Inject constructor(
     override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             taskApiService.scheduleTask(request)
+        }
+
+    override suspend fun completeTask(taskId: String): Result<TaskCompletionResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            taskApiService.completeTask(taskId)
         }
 
 

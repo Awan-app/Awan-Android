@@ -7,6 +7,7 @@ import com.awan.app.core.datastore.auth.AuthTokenProvider
 import com.awan.app.core.network.device.DeviceIdProvider
 import com.awan.app.core.network.dto.devicetoken.DeviceTokenResponse
 import com.awan.app.core.network.dto.devicetoken.RegisterDeviceTokenRequest
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -16,6 +17,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DeviceTokenRepositoryImplTest {
 
     private lateinit var fakeRemoteDataSource: FakeDeviceTokenRemoteDataSource
