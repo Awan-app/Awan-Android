@@ -86,6 +86,10 @@
     <string name="add_task_goal_preview_revision_placeholder">اطلب تعديلات أو حسّن الخطة…</string>
     <string name="add_task_goal_preview_revision_description">طلب تعديل الخطة</string>
     <string name="add_task_goal_preview_revision_submit">تحديث الخطة</string>
+    <string name="add_task_goal_preview_approve_plan">الموافقة على الخطة</string>
+    <string name="add_task_goal_preview_remove_task">حذف المهمة</string>
+    <string name="add_task_goal_preview_task_title_placeholder">عنوان المهمة</string>
+    <string name="add_task_goal_preview_task_duration_select">اختر المدة</string>
     <string name="add_task_goal_preview_target_date">تاريخ الهدف: %1$s</string>
     <string name="add_task_goal_preview_duration">المدة التقديرية %1$s</string>
     <string name="add_task_goal_preview_points">%1$d نقاط</string>

@@ -105,5 +105,11 @@ fun GoalPreviewRouteRoot(
         micAmplitude = speechState.amplitude,
         speechError = speechState.errorMessage,
         isPermissionError = speechState.isPermissionError,
+        onUpdateProposedTask = { index, task ->
+            viewModel.onAction(AddTaskAction.UpdateProposedTask(index, task))
+        },
+        onRemoveProposedTask = { index ->
+            viewModel.onAction(AddTaskAction.RemoveProposedTask(index))
+        },
     )
 }

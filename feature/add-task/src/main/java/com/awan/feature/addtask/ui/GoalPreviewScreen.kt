@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Icon
@@ -20,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -42,16 +45,11 @@ import com.awan.app.core.designsystem.reducedMotion
 import com.awan.app.core.model.GoalDecompositionBlock
 import com.awan.app.core.model.GoalProposal
 import com.awan.app.core.model.ProposedTask
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.ui.platform.LocalFocusManager
 import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskMode
 import com.awan.feature.addtask.presentation.AddTaskState
 import com.awan.feature.addtask.presentation.GoalStep
-import com.awan.feature.addtask.ui.components.durationLabel
-import com.composables.icons.lucide.Calendar
-import com.composables.icons.lucide.Check
+import com.awan.feature.addtask.ui.components.GoalPreviewProposalCard
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.X
 import java.time.LocalDate
@@ -69,6 +67,8 @@ fun GoalPreviewScreen(
     micAmplitude: () -> Float,
     speechError: String?,
     modifier: Modifier = Modifier,
+    onUpdateProposedTask: (Int, ProposedTask) -> Unit = { _, _ -> },
+    onRemoveProposedTask: (Int) -> Unit = {},
     isPermissionError: Boolean = false,
 ) {
     val focusManager = LocalFocusManager.current
@@ -77,20 +77,20 @@ fun GoalPreviewScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(AwanTheme.colors.background)
             .statusBarsPadding()
             .imePadding(),
     ) {
         // ── Top bar ──────────────────────────────────────────────────────────
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = previewHorizontalPadding, vertical = AwanTheme.spacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             AwanIconButton(
                 onClick = onDismiss,
                 contentDescription = stringResource(R.string.add_task_goal_preview_close),
+                modifier = Modifier.align(Alignment.CenterStart),
             ) {
                 Icon(
                     imageVector = Lucide.X,
@@ -103,20 +103,8 @@ fun GoalPreviewScreen(
             AwanText(
                 text = stringResource(R.string.add_task_goal_preview_title),
                 style = AwanTheme.styles.titleText,
+                modifier = Modifier.align(Alignment.Center),
             )
-
-            AwanIconButton(
-                onClick = onAccept,
-                contentDescription = stringResource(R.string.add_task_goal_preview_accept_action),
-                enabled = state.canAcceptGoal,
-            ) {
-                Icon(
-                    imageVector = Lucide.Check,
-                    contentDescription = null,
-                    tint = if (state.canAcceptGoal) AwanTheme.colors.sky else AwanTheme.colors.textSecondary,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
         }
 
         // ── Scrollable content ───────────────────────────────────────────────
@@ -135,18 +123,30 @@ fun GoalPreviewScreen(
                 itemsIndexed(replyBlocks, key = { index, _ -> index }) { _, block ->
                     when (block) {
                         is GoalDecompositionBlock.Text -> PreviewAssistantTextCard(text = block.text)
-                        is GoalDecompositionBlock.Proposal -> PreviewProposalCard(proposal = block.proposal)
+                        is GoalDecompositionBlock.Proposal -> GoalPreviewProposalCard(
+                            proposal = block.proposal,
+                            onUpdateTask = onUpdateProposedTask,
+                            onRemoveTask = onRemoveProposedTask,
+                        )
                         is GoalDecompositionBlock.Question -> Unit // ignored per spec
                     }
                 }
                 if (!hasProposalBlock && goalStep is GoalStep.Preview) {
                     item {
-                        PreviewProposalCard(proposal = goalStep.proposal)
+                        GoalPreviewProposalCard(
+                            proposal = goalStep.proposal,
+                            onUpdateTask = onUpdateProposedTask,
+                            onRemoveTask = onRemoveProposedTask,
+                        )
                     }
                 }
             } else if (goalStep is GoalStep.Preview) {
                 item {
-                    PreviewProposalCard(proposal = goalStep.proposal)
+                    GoalPreviewProposalCard(
+                        proposal = goalStep.proposal,
+                        onUpdateTask = onUpdateProposedTask,
+                        onRemoveTask = onRemoveProposedTask,
+                    )
                 }
             }
 
@@ -244,24 +244,50 @@ fun GoalPreviewScreen(
                 )
             }
 
-            val submitLabel = if (state.goalStep is GoalStep.Preview) {
-                stringResource(R.string.add_task_goal_preview_revision_submit)
-            } else {
-                stringResource(R.string.add_task_goal_writing_continue)
+            val isPreview = state.goalStep is GoalStep.Preview
+            val hasInput = state.input.isNotBlank()
+
+            val (buttonLabel, buttonAction, buttonEnabled, buttonVariant) = when {
+                isPreview && hasInput -> {
+                    Quad(
+                        stringResource(R.string.add_task_goal_preview_revision_submit),
+                        onRevisionSubmit,
+                        state.canSubmit,
+                        AwanButtonVariant.Primary,
+                    )
+                }
+                isPreview -> {
+                    Quad(
+                        stringResource(R.string.add_task_goal_preview_approve_plan),
+                        onAccept,
+                        state.canAcceptGoal,
+                        AwanButtonVariant.Primary,
+                    )
+                }
+                else -> {
+                    Quad(
+                        stringResource(R.string.add_task_goal_writing_continue),
+                        onRevisionSubmit,
+                        state.canSubmit,
+                        AwanButtonVariant.Primary,
+                    )
+                }
             }
 
             AwanButton(
-                onClick = onRevisionSubmit,
-                enabled = state.canSubmit,
+                onClick = buttonAction,
+                enabled = buttonEnabled,
                 isLoading = state.isSubmitting,
-                variant = AwanButtonVariant.Quiet,
+                variant = buttonVariant,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                AwanText(submitLabel)
+                AwanText(buttonLabel)
             }
         }
     }
 }
+
+private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
 // ── Private composable helpers ────────────────────────────────────────────────
 
@@ -279,120 +305,22 @@ private fun PreviewAssistantTextCard(text: String) {
 }
 
 @Composable
-private fun PreviewProposalCard(proposal: GoalProposal) {
-    AwanCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
-            AwanText(
-                text = proposal.title,
-                style = AwanTheme.typography.title.copy(color = AwanTheme.colors.textPrimary),
-            )
-
-            proposal.description?.takeIf { it.isNotBlank() }?.let { desc ->
-                AwanText(
-                    text = desc,
-                    style = AwanTheme.typography.body.copy(color = AwanTheme.colors.textSecondary),
-                )
-            }
-
-            proposal.targetDate?.takeIf { it.isNotBlank() }?.let { dateStr ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs),
-                ) {
-                    Icon(
-                        imageVector = Lucide.Calendar,
-                        contentDescription = null,
-                        tint = AwanTheme.colors.sky,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    AwanText(
-                        text = stringResource(R.string.add_task_goal_preview_target_date, dateStr),
-                        style = AwanTheme.styles.metaText,
-                    )
-                }
-            }
-
-            if (proposal.tasks.isNotEmpty()) {
-                AwanText(
-                    text = stringResource(R.string.add_task_goal_preview_tasks_header, proposal.tasks.size),
-                    style = AwanTheme.typography.body.copy(
-                        color = AwanTheme.colors.textPrimary,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                    modifier = Modifier.padding(top = AwanTheme.spacing.xxs),
-                )
-
-                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-                    proposal.tasks.forEachIndexed { index, task ->
-                        PreviewTaskProposalItem(index = index + 1, task = task)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PreviewTaskProposalItem(index: Int, task: ProposedTask) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = AwanTheme.colors.background,
-                shape = AwanTheme.shapes.chip,
-            )
-            .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            AwanText(
-                text = stringResource(R.string.add_task_goal_preview_task_item_title, index, task.title),
-                style = AwanTheme.typography.body.copy(color = AwanTheme.colors.textPrimary),
-                modifier = Modifier.weight(1f),
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-                task.estimatedDuration?.let { dur ->
-                    val durText = durationLabel(dur)
-                    AwanText(
-                        text = stringResource(R.string.add_task_goal_preview_duration, durText),
-                        style = AwanTheme.styles.metaText,
-                    )
-                }
-
-                task.estimatedPoints?.let { pts ->
-                    AwanText(
-                        text = stringResource(R.string.add_task_goal_preview_points, pts),
-                        style = AwanTheme.styles.metaText,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun PreviewMcqOptionCard(
     option: String,
     isSelected: Boolean,
     enabled: Boolean,
     onOptionSelected: (String) -> Unit,
 ) {
-    val reduced = reducedMotion()
-    val scaleSpec = if (reduced) snap() else AwanTheme.motion.settle.spec<Float>()
     val scale by animateFloatAsState(
-        targetValue = if (isSelected && !reduced) 1.02f else 1.0f,
-        animationSpec = scaleSpec,
-        label = "mcqOptionScale",
+        targetValue = if (isSelected) 1.02f else 1f,
+        animationSpec = if (reducedMotion()) snap() else tween(durationMillis = 150),
+        label = "mcq_scale",
     )
+    val optionDescription = stringResource(R.string.add_task_goal_mcq_option_description, option)
 
-    val optionDesc = stringResource(R.string.add_task_goal_mcq_option_description, option)
     AwanCard(
-        selected = isSelected,
-        onClick = if (enabled) { { onOptionSelected(option) } } else null,
+        onClick = { if (enabled) onOptionSelected(option) },
+        background = if (isSelected) AwanTheme.colors.line else AwanTheme.colors.surface,
         modifier = Modifier
             .fillMaxWidth()
             .graphicsLayer {
@@ -400,8 +328,8 @@ private fun PreviewMcqOptionCard(
                 scaleY = scale
             }
             .semantics {
-                this.selected = isSelected
-                this.contentDescription = optionDesc
+                selected = isSelected
+                contentDescription = optionDescription
             },
     ) {
         Row(
@@ -412,18 +340,23 @@ private fun PreviewMcqOptionCard(
             AwanText(
                 text = option,
                 style = AwanTheme.typography.body.copy(
-                    color = if (isSelected) AwanTheme.colors.sky else AwanTheme.colors.textPrimary,
+                    color = if (isSelected) AwanTheme.colors.textPrimary else AwanTheme.colors.textSecondary,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                 ),
                 modifier = Modifier.weight(1f),
             )
             if (isSelected) {
-                Icon(
-                    imageVector = Lucide.Check,
-                    contentDescription = null,
-                    tint = AwanTheme.colors.sky,
-                    modifier = Modifier.size(20.dp),
-                )
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .background(AwanTheme.colors.sky, AwanTheme.shapes.pill),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AwanText(
+                        text = "✓",
+                        style = AwanTheme.styles.buttonCompactText.copy(color = AwanTheme.colors.background),
+                    )
+                }
             }
         }
     }
@@ -431,26 +364,28 @@ private fun PreviewMcqOptionCard(
 
 // ── Previews ──────────────────────────────────────────────────────────────────
 
-@Preview(name = "GoalPreviewScreen · Preview step", showBackground = true)
+private val sampleProposal = GoalProposal(
+    title = "Host a dinner party for four friends",
+    description = "Plan, shop for, and cook a relaxed home dinner for four friends.",
+    targetDate = "2026-08-15",
+    tasks = listOf(
+        ProposedTask("Pick the menu and write the shopping list", 45, 5),
+        ProposedTask("Send invites and confirm the guest count", 20, 3),
+        ProposedTask("Shop for all groceries and drinks", 60, 4),
+        ProposedTask("Cook and serve dinner", null, null),
+    ),
+)
+
+@Preview(name = "GoalPreviewScreen - Proposal - Light", showBackground = true)
 @Composable
-private fun GoalPreviewScreenPreviewStepPreview(dark: Boolean = false) {
-    AwanTheme(dark = dark) {
+private fun GoalPreviewScreenProposalLightPreview() {
+    AwanTheme {
         GoalPreviewScreen(
             state = AddTaskState(
-                today = LocalDate.of(2026, 7, 28),
+                today = LocalDate.of(2026, 7, 22),
                 mode = AddTaskMode.GOAL,
-                goalStep = GoalStep.Preview(
-                    proposal = GoalProposal(
-                        title = "Master Conversational Spanish",
-                        description = "A structured plan to reach conversational level in 3 months.",
-                        targetDate = "2026-10-28",
-                        tasks = listOf(
-                            ProposedTask(title = "Daily vocabulary drills", estimatedDuration = 20, estimatedPoints = 10),
-                            ProposedTask(title = "Grammar exercises", estimatedDuration = 30, estimatedPoints = 15),
-                        ),
-                    ),
-                ),
-                goalSessionId = "session-123",
+                goalStep = GoalStep.Preview(sampleProposal),
+                goalSessionId = "sess-preview-preview",
             ),
             onAccept = {},
             onDismiss = {},
@@ -464,25 +399,17 @@ private fun GoalPreviewScreenPreviewStepPreview(dark: Boolean = false) {
         )
     }
 }
-@Preview(name = "Goal preview dark", showBackground = true)
-@Composable
-private fun GoalPreviewScreenDarkPreview() {
-    GoalPreviewScreenPreviewStepPreview(dark = true)
-}
 
-@Preview(name = "GoalPreviewScreen · MCQ inline", showBackground = true)
+@Preview(name = "GoalPreviewScreen - Proposal - Dark", showBackground = true)
 @Composable
-private fun GoalPreviewScreenMcqPreview() {
-    AwanTheme {
+private fun GoalPreviewScreenProposalDarkPreview() {
+    AwanTheme(dark = true) {
         GoalPreviewScreen(
             state = AddTaskState(
-                today = LocalDate.of(2026, 7, 28),
+                today = LocalDate.of(2026, 7, 22),
                 mode = AddTaskMode.GOAL,
-                goalStep = GoalStep.MultipleChoice(
-                    question = "Would you like to adjust the timeline?",
-                    options = listOf("Keep 3 months", "Extend to 6 months", "Shorten to 6 weeks"),
-                    selectedOption = "Keep 3 months",
-                ),
+                goalStep = GoalStep.Preview(sampleProposal),
+                goalSessionId = "sess-preview-preview",
             ),
             onAccept = {},
             onDismiss = {},

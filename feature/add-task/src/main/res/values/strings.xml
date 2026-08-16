@@ -86,6 +86,10 @@
     <string name="add_task_goal_preview_revision_placeholder">Request changes or refine plan…</string>
     <string name="add_task_goal_preview_revision_description">Plan revision request</string>
     <string name="add_task_goal_preview_revision_submit">Update plan</string>
+    <string name="add_task_goal_preview_approve_plan">Approve plan</string>
+    <string name="add_task_goal_preview_remove_task">Remove task</string>
+    <string name="add_task_goal_preview_task_title_placeholder">Task title</string>
+    <string name="add_task_goal_preview_task_duration_select">Select duration</string>
     <string name="add_task_goal_preview_target_date">Target date: %1$s</string>
     <string name="add_task_goal_preview_duration">Est. %1$s</string>
     <string name="add_task_goal_preview_points">%1$d pts</string>
