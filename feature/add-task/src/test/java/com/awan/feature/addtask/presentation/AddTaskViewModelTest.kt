@@ -121,7 +121,7 @@ class AddTaskViewModelTest {
 
         override suspend fun scheduleTask(taskId: String) = error("not used")
 
-        override suspend fun deleteTask(taskId: String): Result<Unit> = error("not used")
+        override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = error("not used")
 
         override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = error("not used")
 

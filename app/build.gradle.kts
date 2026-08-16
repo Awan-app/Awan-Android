@@ -64,6 +64,8 @@ dependencies {
     implementation(project(":feature:marketplace:impl"))
     implementation(project(":feature:ai-tasks:api"))
     implementation(project(":feature:ai-tasks:impl"))
+    implementation(project(":feature:task-details:api"))
+    implementation(project(":feature:task-details:impl"))
     implementation(project(":feature:add-task"))
 
     // Core modules

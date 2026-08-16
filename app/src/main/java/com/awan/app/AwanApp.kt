@@ -87,6 +87,8 @@ import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.splash.api.SplashRoute
 import com.awan.feature.splash.impl.navigation.splashEntry
 import com.awan.feature.splash.impl.ui.SplashDestination
+import com.awan.feature.taskdetails.api.TaskDetailsRoute
+import com.awan.feature.taskdetails.impl.navigation.taskDetailsEntry
 
 /**
  * Decorates every sub-stack, not just the visible one.
@@ -294,6 +296,7 @@ fun AwanApp(
                     currentHomeDate = date.toString()
                 },
                 onRegisterOpenSession = { callback -> onOpenHomeSession = callback },
+                onNavigateToTaskDetails = { taskId -> navigator.navigate(TaskDetailsRoute(taskId)) },
             )
 
             calendarEntry(
@@ -324,6 +327,9 @@ fun AwanApp(
             goalPreviewEntry(
                 onBack = { navigator.goBack() },
                 onNavigateToGoals = { navigator.replaceAll(GoalsRoute) },
+            )
+            taskDetailsEntry(
+                onBack = { navigator.goBack() },
             )
         }
 

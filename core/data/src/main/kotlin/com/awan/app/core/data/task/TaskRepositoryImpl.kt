@@ -21,16 +21,23 @@ import com.awan.app.core.model.Task
 import com.awan.app.core.model.TaskDraft
 import com.awan.app.core.model.TaskProposals
 import com.awan.app.core.model.TaskSchedule
+import com.awan.app.core.model.TaskSession
 import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.model.TaskWithSessionsDraft
+import com.awan.app.core.network.dto.task.AddTaskSessionsRequest
+import com.awan.app.core.network.dto.task.AddSessionItemDto
 import com.awan.app.core.network.dto.task.AiTextToTasksRequest
 import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.TaskCompletionResponse
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.TaskDependencyRequest
+import com.awan.app.core.network.dto.task.TaskMoveRequest
+import com.awan.app.core.network.dto.task.TaskUpdateRequest
 import com.awan.app.core.data.common.extractDateFromIso
 import com.awan.app.core.data.common.extractTimeFromIso
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -188,31 +195,11 @@ class TaskRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun moveTask(taskId: String, goalId: String?): Result<Task> = withContext(ioDispatcher) {
+    override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) {
             return@withContext Result.Error(AppError.Network)
         }
-        // Moving a task is an update of its goalId.
-        // The backend's v1/tasks/{taskId} PATCH endpoint accepts goalId in the body.
-        val request = com.awan.app.core.network.dto.task.TaskUpdateRequest(goalId = goalId)
-        val result = remoteDataSource.updateTask(taskId, request)
-        when (result) {
-            is Result.Success -> {
-                val dto = result.data
-                val taskEntity = dto.toEntity()
-                taskDao.upsertTask(taskEntity)
-                Result.Success(dto.toTaskModel())
-            }
-            is Result.Error -> Result.Error(result.error)
-            Result.Loading -> Result.Loading
-        }
-    }
-
-    override suspend fun deleteTask(taskId: String): Result<Unit> = withContext(ioDispatcher) {
-        if (!connectivityMonitor.isCurrentlyOnline()) {
-            return@withContext Result.Error(AppError.Network)
-        }
-        val result = remoteDataSource.deleteTask(taskId)
+        val result = remoteDataSource.deleteTask(taskId, cascade)
         if (result is Result.Success) {
             taskDao.deleteTask(taskId)
             Result.Success(Unit)
@@ -221,7 +208,145 @@ class TaskRepositoryImpl @Inject constructor(
         }
     }
 
+
     override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = withContext(ioDispatcher) {
         remoteDataSource.getInboxTasks().map { list -> list.map { it.toWithSessionsModel() } }
+    }
+
+    // ── Task Details ──────────────────────────────────────────────────────────
+
+    override suspend fun getTask(taskId: String): Result<Task> = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return@withContext Result.Error(AppError.Network)
+        }
+        remoteDataSource.getTask(taskId).map { it.toTaskModel() }
+    }
+
+    override suspend fun updateTask(
+        taskId: String,
+        title: String?,
+        description: String?,
+        estimatedDuration: Int?,
+        status: String?,
+        mandatory: Boolean?,
+        estimatedPoints: Int?,
+        allowTaskSplitting: Boolean?,
+        categoryId: String?,
+    ): Result<Task> = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return@withContext Result.Error(AppError.Network)
+        }
+        val request = TaskUpdateRequest(
+            title = title,
+            description = description,
+            estimatedDuration = estimatedDuration,
+            status = status,
+            mandatory = mandatory,
+            estimatedPoints = estimatedPoints,
+            allowTaskSplitting = allowTaskSplitting,
+            categoryId = categoryId,
+        )
+        val result = remoteDataSource.updateTask(taskId, request)
+        if (result is Result.Success) {
+            taskDao.upsertTask(result.data.toEntity())
+            Result.Success(result.data.toTaskModel())
+        } else {
+            Result.Error((result as Result.Error).error)
+        }
+    }
+
+    override suspend fun moveTask(taskId: String, goalId: String?): Result<Task> = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return@withContext Result.Error(AppError.Network)
+        }
+        val result = if (goalId != null) {
+            remoteDataSource.moveTask(taskId, TaskMoveRequest(goalId))
+        } else {
+            remoteDataSource.updateTask(taskId, TaskUpdateRequest(goalId = null))
+        }
+        if (result is Result.Success) {
+            taskDao.upsertTask(result.data.toEntity())
+            Result.Success(result.data.toTaskModel())
+        } else {
+            Result.Error((result as Result.Error).error)
+        }
+    }
+
+    // ── Dependencies ──────────────────────────────────────────────────────────
+
+    override suspend fun addDependency(taskId: String, dependsOnTaskId: String): Result<Unit> =
+        withContext(ioDispatcher) {
+            if (!connectivityMonitor.isCurrentlyOnline()) {
+                return@withContext Result.Error(AppError.Network)
+            }
+            remoteDataSource.addDependency(taskId, TaskDependencyRequest(dependsOnTaskId))
+        }
+
+    override suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit> =
+        withContext(ioDispatcher) {
+            if (!connectivityMonitor.isCurrentlyOnline()) {
+                return@withContext Result.Error(AppError.Network)
+            }
+            remoteDataSource.removeDependency(taskId, dependsOnTaskId)
+        }
+
+    override suspend fun getTaskDependencies(taskId: String): Result<List<Task>> =
+        withContext(ioDispatcher) {
+            if (!connectivityMonitor.isCurrentlyOnline()) {
+                return@withContext Result.Error(AppError.Network)
+            }
+            remoteDataSource.getTaskDependencies(taskId).map { list -> list.map { it.toTaskModel() } }
+        }
+
+    override suspend fun getTaskDependents(taskId: String): Result<List<Task>> =
+        withContext(ioDispatcher) {
+            if (!connectivityMonitor.isCurrentlyOnline()) {
+                return@withContext Result.Error(AppError.Network)
+            }
+            remoteDataSource.getTaskDependents(taskId).map { list -> list.map { it.toTaskModel() } }
+        }
+
+    override suspend fun getTasksByGoal(goalId: String): Result<List<Task>> =
+        withContext(ioDispatcher) {
+            val entities = taskDao.getTasksByGoal(goalId)
+            Result.Success(entities.map { it.toTaskModel() })
+        }
+
+    // ── Sessions ──────────────────────────────────────────────────────────────
+
+    override suspend fun getTaskSessions(taskId: String, status: String?): Result<List<TaskSession>> =
+        withContext(ioDispatcher) {
+            if (!connectivityMonitor.isCurrentlyOnline()) {
+                return@withContext Result.Error(AppError.Network)
+            }
+            remoteDataSource.getTaskSessions(taskId, status)
+                .map { list -> list.mapNotNull { it.toSessionModel() } }
+        }
+
+    override suspend fun addTaskSessions(
+        taskId: String,
+        sessions: List<SessionDraft>,
+    ): Result<List<TaskSession>> = withContext(ioDispatcher) {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return@withContext Result.Error(AppError.Network)
+        }
+        val fmt = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+        val dtos = sessions.map { s ->
+            AddSessionItemDto(
+                start = s.start.format(fmt),
+                end = s.end.format(fmt),
+                zoneId = s.zoneId,
+            )
+        }
+        val result = remoteDataSource.addTaskSessions(taskId, AddTaskSessionsRequest(dtos))
+        if (result is Result.Success) {
+            val sessionEntities = result.data.mapNotNull { it.toEntity(taskId = taskId, date = "") }
+            if (sessionEntities.isNotEmpty()) {
+                sessionDao.upsertSessions(sessionEntities)
+            }
+            Result.Success(result.data.mapNotNull { it.toSessionModel() })
+        } else {
+            Result.Error((result as Result.Error).error)
+        }
     }
 }
