@@ -52,7 +52,7 @@ interface TaskRepository {
     // ── Task Details ──────────────────────────────────────────────────────────
 
     /** Fetches a single task by its ID. */
-    suspend fun getTask(taskId: String): Result<Task>
+    suspend fun getTask(taskId: String): Result<Task> = error("not implemented")
 
     /**
      * Partially updates a task. Any field that is `null` is left unchanged by the backend.
@@ -68,13 +68,13 @@ interface TaskRepository {
         estimatedPoints: Int? = null,
         allowTaskSplitting: Boolean? = null,
         categoryId: String? = null,
-    ): Result<Task>
+    ): Result<Task> = error("not implemented")
 
     /**
-     * Moves a task to a different goal. The backend enforces that all dependency links on the task
+     * Moves a task to a different goal (or to the inbox if [goalId] is null). The backend enforces that all dependency links on the task
      * must be removed before a move is allowed (dependencies are same-goal only).
      */
-    suspend fun moveTask(taskId: String, goalId: String): Result<Task>
+    suspend fun moveTask(taskId: String, goalId: String?): Result<Task> = error("not implemented")
 
     // ── Dependencies ──────────────────────────────────────────────────────────
 
@@ -82,22 +82,25 @@ interface TaskRepository {
      * Creates a prerequisite link: [taskId] will depend on [dependsOnTaskId].
      * Both tasks must be in the same goal. A cycle or self-reference is rejected by the backend.
      */
-    suspend fun addDependency(taskId: String, dependsOnTaskId: String): Result<Unit>
+    suspend fun addDependency(taskId: String, dependsOnTaskId: String): Result<Unit> = error("not implemented")
 
     /** Removes the dependency link between [taskId] and [dependsOnTaskId]. */
-    suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit>
+    suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit> = error("not implemented")
 
     /** Returns all tasks that [taskId] directly depends on (prerequisites). */
-    suspend fun getTaskDependencies(taskId: String): Result<List<Task>>
+    suspend fun getTaskDependencies(taskId: String): Result<List<Task>> = Result.Success(emptyList())
 
     /** Returns all downstream tasks that depend on [taskId] (successors). */
-    suspend fun getTaskDependents(taskId: String): Result<List<Task>>
+    suspend fun getTaskDependents(taskId: String): Result<List<Task>> = Result.Success(emptyList())
+
+    /** Returns all tasks that belong to [goalId]. Used to populate the dependency picker. */
+    suspend fun getTasksByGoal(goalId: String): Result<List<Task>> = Result.Success(emptyList())
 
     // ── Sessions ──────────────────────────────────────────────────────────────
 
     /** Returns all sessions booked for [taskId], optionally filtered by [status]. */
-    suspend fun getTaskSessions(taskId: String, status: String? = null): Result<List<TaskSession>>
+    suspend fun getTaskSessions(taskId: String, status: String? = null): Result<List<TaskSession>> = Result.Success(emptyList())
 
     /** Adds new calendar sessions to an existing task. */
-    suspend fun addTaskSessions(taskId: String, sessions: List<SessionDraft>): Result<List<TaskSession>>
+    suspend fun addTaskSessions(taskId: String, sessions: List<SessionDraft>): Result<List<TaskSession>> = error("not implemented")
 }

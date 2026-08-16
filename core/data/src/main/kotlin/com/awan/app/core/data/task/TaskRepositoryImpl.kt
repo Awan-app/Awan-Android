@@ -240,6 +240,7 @@ class TaskRepositoryImpl @Inject constructor(
             title = title,
             description = description,
             estimatedDuration = estimatedDuration,
+            status = status,
             mandatory = mandatory,
             estimatedPoints = estimatedPoints,
             allowTaskSplitting = allowTaskSplitting,
@@ -254,11 +255,21 @@ class TaskRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun moveTask(taskId: String, goalId: String): Result<Task> = withContext(ioDispatcher) {
+    override suspend fun moveTask(taskId: String, goalId: String?): Result<Task> = withContext(ioDispatcher) {
         if (!connectivityMonitor.isCurrentlyOnline()) {
             return@withContext Result.Error(AppError.Network)
         }
-        remoteDataSource.moveTask(taskId, TaskMoveRequest(goalId)).map { it.toTaskModel() }
+        val result = if (goalId != null) {
+            remoteDataSource.moveTask(taskId, TaskMoveRequest(goalId))
+        } else {
+            remoteDataSource.updateTask(taskId, TaskUpdateRequest(goalId = null))
+        }
+        if (result is Result.Success) {
+            taskDao.upsertTask(result.data.toEntity())
+            Result.Success(result.data.toTaskModel())
+        } else {
+            Result.Error((result as Result.Error).error)
+        }
     }
 
     // ── Dependencies ──────────────────────────────────────────────────────────
@@ -295,6 +306,12 @@ class TaskRepositoryImpl @Inject constructor(
             remoteDataSource.getTaskDependents(taskId).map { list -> list.map { it.toTaskModel() } }
         }
 
+    override suspend fun getTasksByGoal(goalId: String): Result<List<Task>> =
+        withContext(ioDispatcher) {
+            val entities = taskDao.getTasksByGoal(goalId)
+            Result.Success(entities.map { it.toTaskModel() })
+        }
+
     // ── Sessions ──────────────────────────────────────────────────────────────
 
     override suspend fun getTaskSessions(taskId: String, status: String?): Result<List<TaskSession>> =
@@ -321,7 +338,15 @@ class TaskRepositoryImpl @Inject constructor(
                 zoneId = s.zoneId,
             )
         }
-        remoteDataSource.addTaskSessions(taskId, AddTaskSessionsRequest(dtos))
-            .map { list -> list.mapNotNull { it.toSessionModel() } }
+        val result = remoteDataSource.addTaskSessions(taskId, AddTaskSessionsRequest(dtos))
+        if (result is Result.Success) {
+            val sessionEntities = result.data.mapNotNull { it.toEntity(taskId = taskId, date = "") }
+            if (sessionEntities.isNotEmpty()) {
+                sessionDao.upsertSessions(sessionEntities)
+            }
+            Result.Success(result.data.mapNotNull { it.toSessionModel() })
+        } else {
+            Result.Error((result as Result.Error).error)
+        }
     }
 }

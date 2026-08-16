@@ -15,6 +15,7 @@ import com.awan.app.core.domain.task.usecase.AddTaskSessionsUseCase
 import com.awan.app.core.domain.task.usecase.DeleteTaskUseCase
 import com.awan.app.core.domain.task.usecase.GetTaskDependenciesUseCase
 import com.awan.app.core.domain.task.usecase.GetTaskDependentsUseCase
+import com.awan.app.core.domain.task.usecase.GetTasksByGoalUseCase
 import com.awan.app.core.domain.task.usecase.GetTaskSessionsUseCase
 import com.awan.app.core.domain.task.usecase.GetTaskUseCase
 import com.awan.app.core.domain.task.usecase.MoveTaskUseCase
@@ -48,6 +49,7 @@ class TaskDetailsViewModel @Inject constructor(
     private val addTaskSessionsUseCase: AddTaskSessionsUseCase,
     private val deleteSessionUseCase: DeleteSessionUseCase,
     private val getGoalsUseCase: GetGoalsUseCase,
+    private val getTasksByGoalUseCase: GetTasksByGoalUseCase,
 ) : ViewModel() {
 
     private var taskId: String = ""
@@ -82,7 +84,7 @@ class TaskDetailsViewModel @Inject constructor(
             is TaskDetailsAction.DismissMoveGoalPicker -> _uiState.update { it.copy(showMoveGoalPicker = false) }
             is TaskDetailsAction.AddDependency         -> addDependency(action.dependsOnTaskId)
             is TaskDetailsAction.RemoveDependency      -> removeDependency(action.dependsOnTaskId)
-            is TaskDetailsAction.ShowAddDependencyPicker -> _uiState.update { it.copy(showAddDependencyPicker = true) }
+            is TaskDetailsAction.ShowAddDependencyPicker -> showAddDependencyPicker()
             is TaskDetailsAction.DismissAddDependencyPicker -> _uiState.update { it.copy(showAddDependencyPicker = false) }
             is TaskDetailsAction.AddSessions           -> addSessions(action.sessions)
             is TaskDetailsAction.RequestDeleteSession  -> _uiState.update { it.copy(sessionToDelete = action.session) }
@@ -114,6 +116,9 @@ class TaskDetailsViewModel @Inject constructor(
 
             if (taskResult is Result.Success) {
                 val task = taskResult.data
+                val goalTasksResult = task.goalId?.let { getTasksByGoalUseCase(it) }
+                val goalTasks = (goalTasksResult as? Result.Success)?.data ?: emptyList()
+
                 _uiState.update { state ->
                     state.copy(
                         isLoading = false,
@@ -129,6 +134,7 @@ class TaskDetailsViewModel @Inject constructor(
                         dependents = (depentsResult as? Result.Success)?.data ?: state.dependents,
                         sessions = (sessionsResult as? Result.Success)?.data ?: state.sessions,
                         goals = (goalsResult as? Result.Success)?.data ?: state.goals,
+                        goalTasks = goalTasks,
                         errorMessage = null,
                     )
                 }
@@ -244,12 +250,16 @@ class TaskDetailsViewModel @Inject constructor(
             val result = moveTaskUseCase(taskId, goalId)
             when (result) {
                 is Result.Success -> {
+                    val updatedTask = result.data
+                    val goalTasksResult = updatedTask.goalId?.let { getTasksByGoalUseCase(it) }
+                    val newGoalTasks = (goalTasksResult as? Result.Success)?.data ?: emptyList()
                     _uiState.update { s ->
                         s.copy(
                             isSaving = false,
-                            task = result.data,
+                            task = updatedTask,
                             // Dependencies are same-goal — moving clears them visually
                             dependencies = emptyList(),
+                            goalTasks = newGoalTasks,
                             successMessage = UiText.StringResource(R.string.task_details_moved),
                         )
                     }
@@ -263,6 +273,22 @@ class TaskDetailsViewModel @Inject constructor(
     }
 
     // ── Dependencies ──────────────────────────────────────────────────────────
+
+    private fun showAddDependencyPicker() {
+        val currentGoalId = _uiState.value.task?.goalId
+        if (currentGoalId != null) {
+            viewModelScope.launch {
+                val result = getTasksByGoalUseCase(currentGoalId)
+                if (result is Result.Success) {
+                    _uiState.update { it.copy(goalTasks = result.data, showAddDependencyPicker = true) }
+                } else {
+                    _uiState.update { it.copy(showAddDependencyPicker = true) }
+                }
+            }
+        } else {
+            _uiState.update { it.copy(showAddDependencyPicker = true) }
+        }
+    }
 
     private fun addDependency(dependsOnTaskId: String) {
         _uiState.update { it.copy(showAddDependencyPicker = false) }

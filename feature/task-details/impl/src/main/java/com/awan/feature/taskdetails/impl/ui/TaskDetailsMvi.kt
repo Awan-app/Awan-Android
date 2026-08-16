@@ -40,6 +40,8 @@ data class TaskDetailsUiState(
     val showAddSessionSheet: Boolean = false,
     val errorMessage: UiText? = null,
     val successMessage: UiText? = null,
+    /** All tasks in the same goal — loaded when the dependency picker is opened. */
+    val goalTasks: List<Task> = emptyList(),
 ) {
     /** Duration computed dynamically from the sum of all scheduled sessions, or fallback to task baseline. */
     val calculatedDurationMinutes: Int

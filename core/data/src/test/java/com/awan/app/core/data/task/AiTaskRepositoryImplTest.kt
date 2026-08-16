@@ -113,8 +113,6 @@ class AiTaskRepositoryImplTest {
         override suspend fun addTaskSessions(taskId: String, request: AddTaskSessionsRequest): Result<List<SessionDto>> = Result.Success(emptyList())
 
         override suspend fun completeTask(taskId: String): Result<com.awan.app.core.network.dto.task.TaskCompletionResponse> = error("not used")
-
-        override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = error("not used")
     }
 
 

@@ -50,14 +50,6 @@ class TaskRemoteDataSourceImpl @Inject constructor(
             taskApiService.createTaskWithSessions(request)
         }
 
-    override suspend fun updateTask(
-        taskId: String,
-        request: com.awan.app.core.network.dto.task.TaskUpdateRequest,
-    ): Result<TaskInfoResponse> =
-        safeApiCall(dispatcher = ioDispatcher, json = json) {
-            taskApiService.updateTask(taskId, request)
-        }
-
     override suspend fun createTasksWithSessions(
         request: BulkCreateTasksWithSessionsRequest,
     ): Result<TasksWithSessionsResponse> =

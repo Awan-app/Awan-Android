@@ -23,11 +23,6 @@ interface TaskRemoteDataSource {
 
     suspend fun createTaskWithSessions(request: CreateTaskWithSessionsRequest): Result<TaskWithSessionsDto>
 
-    suspend fun updateTask(
-        taskId: String,
-        request: com.awan.app.core.network.dto.task.TaskUpdateRequest,
-    ): Result<TaskInfoResponse>
-
     suspend fun createTasksWithSessions(
         request: BulkCreateTasksWithSessionsRequest,
     ): Result<TasksWithSessionsResponse>

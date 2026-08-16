@@ -236,7 +236,7 @@ internal fun TaskDetailsScreen(
 
         if (uiState.showAddDependencyPicker && uiState.task != null) {
             AddDependencySheet(
-                availableTasks = uiState.availableDependencyTasks(emptyList()),
+                availableTasks = uiState.availableDependencyTasks(uiState.goalTasks),
                 onTaskSelected = { onAction(TaskDetailsAction.AddDependency(it)) },
                 onDismiss = { onAction(TaskDetailsAction.DismissAddDependencyPicker) },
             )

@@ -11,11 +11,11 @@ import com.awan.app.core.domain.task.usecase.AddTaskSessionsUseCase
 import com.awan.app.core.domain.task.usecase.DeleteTaskUseCase
 import com.awan.app.core.domain.task.usecase.GetTaskDependenciesUseCase
 import com.awan.app.core.domain.task.usecase.GetTaskDependentsUseCase
+import com.awan.app.core.domain.task.usecase.GetTasksByGoalUseCase
 import com.awan.app.core.domain.task.usecase.GetTaskSessionsUseCase
 import com.awan.app.core.domain.task.usecase.GetTaskUseCase
 import com.awan.app.core.domain.task.usecase.MoveTaskUseCase
 import com.awan.app.core.domain.task.usecase.RemoveTaskDependencyUseCase
-import com.awan.app.core.domain.task.usecase.ScheduleTaskUseCase
 import com.awan.app.core.domain.task.usecase.UpdateTaskUseCase
 import com.awan.app.core.model.Goal
 import com.awan.app.core.model.SessionDraft
@@ -71,6 +71,7 @@ class TaskDetailsViewModelTest {
             addTaskSessionsUseCase = AddTaskSessionsUseCase(fakeTaskRepository),
             deleteSessionUseCase = com.awan.app.core.domain.home.usecase.DeleteSessionUseCase(fakeSessionRepository),
             getGoalsUseCase = GetGoalsUseCase(fakeGoalRepository),
+            getTasksByGoalUseCase = GetTasksByGoalUseCase(fakeTaskRepository),
         )
     }
 
@@ -254,6 +255,29 @@ class TaskDetailsViewModelTest {
         assertEquals(1, viewModel.uiState.value.goals.size)
         assertEquals("Launch Mobile App", viewModel.uiState.value.goals.first().title)
     }
+
+    @Test
+    fun `ShowAddDependencyPicker loads tasks belonging to same goal into goalTasks`() = runTest(testDispatcher) {
+        val currentTask = Task(id = "task-1", title = "Task 1", goalId = "goal-1")
+        val otherTaskInSameGoal = Task(id = "task-2", title = "Task 2", goalId = "goal-1")
+        val taskInDifferentGoal = Task(id = "task-3", title = "Task 3", goalId = "goal-2")
+
+        fakeTaskRepository.tasks["task-1"] = currentTask
+        fakeTaskRepository.tasks["task-2"] = otherTaskInSameGoal
+        fakeTaskRepository.tasks["task-3"] = taskInDifferentGoal
+
+        viewModel.initTaskId("task-1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onAction(TaskDetailsAction.ShowAddDependencyPicker)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.showAddDependencyPicker)
+        assertEquals(listOf(currentTask, otherTaskInSameGoal), state.goalTasks)
+        val available = state.availableDependencyTasks(state.goalTasks)
+        assertEquals(listOf(otherTaskInSameGoal), available)
+    }
 }
 
 // ── Test Fakes ────────────────────────────────────────────────────────────────
@@ -285,6 +309,7 @@ private class FakeTaskRepository : TaskRepository {
     override suspend fun proposeTasksFromText(text: String): Result<TaskProposals> = error("not used")
     override suspend fun proposeTasksFromImage(image: ByteArray, mimeType: String, note: String?): Result<TaskProposals> = error("not used")
     override suspend fun scheduleTask(taskId: String): Result<TaskSchedule> = error("not used")
+    override suspend fun completeTask(taskId: String): Result<Task> = error("not used")
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> {
         tasks.remove(taskId)
         return Result.Success(Unit)
@@ -322,7 +347,7 @@ private class FakeTaskRepository : TaskRepository {
         return Result.Success(updated)
     }
 
-    override suspend fun moveTask(taskId: String, goalId: String): Result<Task> {
+    override suspend fun moveTask(taskId: String, goalId: String?): Result<Task> {
         val existing = tasks[taskId] ?: return Result.Error(com.awan.app.core.common.error.AppError.NotFound)
         val updated = existing.copy(goalId = goalId)
         tasks[taskId] = updated
@@ -333,6 +358,7 @@ private class FakeTaskRepository : TaskRepository {
     override suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit> = Result.Success(Unit)
     override suspend fun getTaskDependencies(taskId: String): Result<List<Task>> = Result.Success(dependencies[taskId] ?: emptyList())
     override suspend fun getTaskDependents(taskId: String): Result<List<Task>> = Result.Success(dependents[taskId] ?: emptyList())
+    override suspend fun getTasksByGoal(goalId: String): Result<List<Task>> = Result.Success(tasks.values.filter { it.goalId == goalId })
     override suspend fun getTaskSessions(taskId: String, status: String?): Result<List<TaskSession>> = Result.Success(sessions[taskId] ?: emptyList())
 
     override suspend fun addTaskSessions(taskId: String, sessions: List<SessionDraft>): Result<List<TaskSession>> {
@@ -348,10 +374,19 @@ private class FakeTaskRepository : TaskRepository {
 private class FakeGoalRepository : GoalRepository {
     var goalsList: List<Goal> = emptyList()
 
+    override fun observeGoals(): Flow<List<Goal>> = flowOf(goalsList)
+    override fun observeGoal(goalId: String): Flow<Goal?> = flowOf(goalsList.find { it.id == goalId })
     override suspend fun getGoals(): Result<List<Goal>> = Result.Success(goalsList)
     override suspend fun createGoal(title: String, description: String?, targetDate: String?): Result<Goal> = error("not used")
     override suspend fun getInboxGoal(): Result<Goal> = error("not used")
     override suspend fun getGoal(goalId: String): Result<Goal> = error("not used")
+    override suspend fun updateGoal(
+        goalId: String,
+        title: String?,
+        description: String?,
+        status: String?,
+        targetDate: String?,
+    ): Result<Goal> = error("not used")
     override suspend fun deleteGoal(goalId: String): Result<Unit> = error("not used")
     override suspend fun continueDecomposition(sessionId: String?, message: String): Result<com.awan.app.core.model.GoalDecompositionReply> = error("not used")
     override suspend fun confirmDecomposition(sessionId: String): Result<Goal> = error("not used")
