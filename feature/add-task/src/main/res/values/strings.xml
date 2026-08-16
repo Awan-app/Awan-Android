@@ -72,14 +72,24 @@
     <string name="add_task_goal_writing_continue">Continue</string>
 
     <string name="add_task_goal_preview_title">Goal Plan</string>
+    <string name="add_task_goal_preview_read_more">Read more</string>
+    <string name="add_task_goal_preview_show_less">Show less</string>
     <string name="add_task_goal_preview_close">Close goal preview</string>
     <string name="add_task_goal_preview_accept_action">Accept goal plan</string>
     <string name="add_task_goal_preview_accept">Accept goal</string>
+    <string name="add_task_goal_save_choice_title">Save this goal</string>
+    <string name="add_task_goal_save_choice_body">Keep the goal as a draft, or add all proposed tasks now?</string>
+    <string name="add_task_goal_save_choice_draft">Save as draft</string>
+    <string name="add_task_goal_save_choice_add_tasks">Add tasks</string>
     <string name="add_task_goal_preview_tasks_header">Proposed tasks (%1$d)</string>
     <string name="add_task_goal_preview_task_item_title">%1$d. %2$s</string>
     <string name="add_task_goal_preview_revision_placeholder">Request changes or refine plan…</string>
     <string name="add_task_goal_preview_revision_description">Plan revision request</string>
     <string name="add_task_goal_preview_revision_submit">Update plan</string>
+    <string name="add_task_goal_preview_approve_plan">Approve plan</string>
+    <string name="add_task_goal_preview_remove_task">Remove task</string>
+    <string name="add_task_goal_preview_task_title_placeholder">Task title</string>
+    <string name="add_task_goal_preview_task_duration_select">Select duration</string>
     <string name="add_task_goal_preview_target_date">Target date: %1$s</string>
     <string name="add_task_goal_preview_duration">Est. %1$s</string>
     <string name="add_task_goal_preview_points">%1$d pts</string>

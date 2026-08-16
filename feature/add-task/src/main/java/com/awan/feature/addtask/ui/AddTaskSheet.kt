@@ -55,7 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.awan.app.core.designsystem.AwanAiAura
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
-import com.awan.app.core.designsystem.AwanConfirmDialog
+import com.awan.app.core.designsystem.AwanActionSheet
 import com.awan.app.core.designsystem.AwanDatePickerDialog
 import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanMicButton
@@ -147,7 +147,8 @@ fun AddTaskSheet(
                 onDismiss()
             }
 
-            is AddTaskEvent.GoalCreated -> {
+            is AddTaskEvent.GoalCreated,
+            is AddTaskEvent.GoalScheduleRequested -> {
                 onDismiss()
             }
 
@@ -183,13 +184,14 @@ fun AddTaskSheet(
     AttributePickers(state = state, onAction = viewModel::onAction)
 
     if (state.showDiscardConfirm) {
-        AwanConfirmDialog(
+        AwanActionSheet(
             title = stringResource(R.string.add_task_discard_title),
             body = stringResource(R.string.add_task_discard_body),
-            confirmLabel = stringResource(R.string.add_task_discard_confirm),
-            confirmVariant = AwanButtonVariant.Destructive,
-            onConfirm = { viewModel.onAction(AddTaskAction.DiscardConfirmed) },
-            dismissLabel = stringResource(R.string.add_task_discard_cancel),
+            primaryLabel = stringResource(R.string.add_task_discard_confirm),
+            primaryVariant = AwanButtonVariant.Destructive,
+            onPrimary = { viewModel.onAction(AddTaskAction.DiscardConfirmed) },
+            secondaryLabel = stringResource(R.string.add_task_discard_cancel),
+            onSecondary = { viewModel.onAction(AddTaskAction.DiscardCancelled) },
             onDismiss = { viewModel.onAction(AddTaskAction.DiscardCancelled) },
         )
     }

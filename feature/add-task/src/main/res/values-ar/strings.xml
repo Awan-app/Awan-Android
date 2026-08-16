@@ -72,14 +72,24 @@
     <string name="add_task_goal_writing_continue">متابعة</string>
 
     <string name="add_task_goal_preview_title">خطة الهدف</string>
+    <string name="add_task_goal_preview_read_more">عرض المزيد</string>
+    <string name="add_task_goal_preview_show_less">عرض أقل</string>
     <string name="add_task_goal_preview_close">إغلاق معاينة الهدف</string>
     <string name="add_task_goal_preview_accept_action">قبول خطة الهدف</string>
     <string name="add_task_goal_preview_accept">اعتماد الهدف</string>
+    <string name="add_task_goal_save_choice_title">حفظ هذا الهدف</string>
+    <string name="add_task_goal_save_choice_body">احتفظ بالهدف كمسودة، أم أضف كل المهام المقترحة الآن؟</string>
+    <string name="add_task_goal_save_choice_draft">حفظ كمسودة</string>
+    <string name="add_task_goal_save_choice_add_tasks">إضافة المهام</string>
     <string name="add_task_goal_preview_tasks_header">المهام المقترحة (%1$d)</string>
     <string name="add_task_goal_preview_task_item_title">%1$d. %2$s</string>
     <string name="add_task_goal_preview_revision_placeholder">اطلب تعديلات أو حسّن الخطة…</string>
     <string name="add_task_goal_preview_revision_description">طلب تعديل الخطة</string>
     <string name="add_task_goal_preview_revision_submit">تحديث الخطة</string>
+    <string name="add_task_goal_preview_approve_plan">الموافقة على الخطة</string>
+    <string name="add_task_goal_preview_remove_task">حذف المهمة</string>
+    <string name="add_task_goal_preview_task_title_placeholder">عنوان المهمة</string>
+    <string name="add_task_goal_preview_task_duration_select">اختر المدة</string>
     <string name="add_task_goal_preview_target_date">تاريخ الهدف: %1$s</string>
     <string name="add_task_goal_preview_duration">المدة التقديرية %1$s</string>
     <string name="add_task_goal_preview_points">%1$d نقاط</string>

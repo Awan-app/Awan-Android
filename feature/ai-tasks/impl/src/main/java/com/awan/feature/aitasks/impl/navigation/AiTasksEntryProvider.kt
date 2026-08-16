@@ -11,6 +11,7 @@ fun EntryProviderScope<Route>.aiTasksEntry(onBack: () -> Unit) {
             text = route.text,
             note = route.note,
             imageUri = route.imageUri,
+            goalId = route.goalId,
             onBack = onBack,
         )
     }

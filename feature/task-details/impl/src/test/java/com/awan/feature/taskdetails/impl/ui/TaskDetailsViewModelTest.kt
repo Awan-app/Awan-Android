@@ -18,6 +18,7 @@ import com.awan.app.core.domain.task.usecase.MoveTaskUseCase
 import com.awan.app.core.domain.task.usecase.RemoveTaskDependencyUseCase
 import com.awan.app.core.domain.task.usecase.UpdateTaskUseCase
 import com.awan.app.core.model.Goal
+import com.awan.app.core.model.ProposedTask
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.Task
@@ -377,7 +378,7 @@ private class FakeGoalRepository : GoalRepository {
     override fun observeGoals(): Flow<List<Goal>> = flowOf(goalsList)
     override fun observeGoal(goalId: String): Flow<Goal?> = flowOf(goalsList.find { it.id == goalId })
     override suspend fun getGoals(): Result<List<Goal>> = Result.Success(goalsList)
-    override suspend fun createGoal(title: String, description: String?, targetDate: String?): Result<Goal> = error("not used")
+    override suspend fun createGoal(title: String, description: String?, targetDate: String?, tasks: List<ProposedTask>): Result<Goal> = error("not used")
     override suspend fun getInboxGoal(): Result<Goal> = error("not used")
     override suspend fun getGoal(goalId: String): Result<Goal> = error("not used")
     override suspend fun updateGoal(
@@ -394,5 +395,7 @@ private class FakeGoalRepository : GoalRepository {
     override suspend fun cancelDecomposition(sessionId: String): Result<Unit> = error("not used")
     override suspend fun scheduleGoal(goalId: String): Result<Unit> = error("not used")
     override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.model.GoalScheduleProposal> = error("not used")
-    override suspend fun confirmGoalSchedule(goalId: String, sessions: List<com.awan.app.core.model.ProposedGoalSession>): Result<Unit> = error("not used")
+    override suspend fun confirmGoalSchedule(goalId: String, sessions: List<com.awan.app.core.model.ProposedGoalSession>): Result<List<com.awan.app.core.model.ConfirmedGoalSession>> = error("not used")
+    override suspend fun clearScheduleDraft(goalId: String) {}
+    override suspend fun getPendingScheduleDraftGoalId(): Result<String?> = Result.Success(null)
 }

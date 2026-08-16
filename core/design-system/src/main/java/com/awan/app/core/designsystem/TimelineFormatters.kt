@@ -1,6 +1,11 @@
 package com.awan.app.core.designsystem
 
+import java.time.Instant
+import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -25,4 +30,24 @@ fun formatTime(minutes: Int): String {
     val formatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
         .withLocale(Locale.getDefault())
     return time.format(formatter)
+}
+
+fun LocalTime.toMinutesOfDay(): Int = hour * 60 + minute
+
+/**
+ * Robustly parses date/time from ISO strings, handling UTC strings ('Z' suffix),
+ * offset strings ('+03:00'), and local strings ('2026-08-13T10:00:00').
+ * For strings with timezone/offset, converts to the given [zoneId] (defaulting to system default).
+ */
+fun parseIsoDateTime(value: String, zoneId: ZoneId = ZoneId.systemDefault()): LocalDateTime? {
+    if (value.isBlank()) return null
+    return runCatching {
+        OffsetDateTime.parse(value).atZoneSameInstant(zoneId).toLocalDateTime()
+    }.recoverCatching {
+        ZonedDateTime.parse(value).withZoneSameInstant(zoneId).toLocalDateTime()
+    }.recoverCatching {
+        Instant.parse(value).atZone(zoneId).toLocalDateTime()
+    }.recoverCatching {
+        LocalDateTime.parse(value)
+    }.getOrNull()
 }

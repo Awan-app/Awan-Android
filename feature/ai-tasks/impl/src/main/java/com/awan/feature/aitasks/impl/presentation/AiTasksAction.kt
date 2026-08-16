@@ -4,7 +4,12 @@ import java.time.LocalDate
 
 sealed interface AiTasksAction {
     /** Fired once from the Root composable; the ViewModel ignores a second call. */
-    data class Load(val text: String, val note: String?, val imageUri: String?) : AiTasksAction
+    data class Load(
+        val text: String = "",
+        val note: String? = null,
+        val imageUri: String? = null,
+        val goalId: String? = null,
+    ) : AiTasksAction
     data object Retry : AiTasksAction
 
     data class Removed(val id: Int) : AiTasksAction

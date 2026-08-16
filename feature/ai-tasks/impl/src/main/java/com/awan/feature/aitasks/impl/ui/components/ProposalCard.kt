@@ -94,42 +94,16 @@ fun ProposalCard(
         },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-                if (isExpanded) {
-                    AwanTextField(
-                        value = draft.title,
-                        onValueChange = onTitleChanged,
-                        placeholder = stringResource(R.string.ai_tasks_title_placeholder),
-                        contentDescriptionText = stringResource(R.string.ai_tasks_title_placeholder),
-                        textStyle = AwanTheme.styles.headingText,
-                        modifier = Modifier.weight(1f),
-                    )
-                } else {
-                    AwanText(
-                        text = draft.title.ifBlank { stringResource(R.string.ai_tasks_title_placeholder) },
-                        style = AwanTheme.styles.headingText,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                if (draft.estimatedPoints > 0) {
-                    AwanBadge(
-                        text = stringResource(R.string.ai_tasks_points_badge, draft.estimatedPoints),
-                        tone = AwanBadgeTone.Sky,
-                    )
-                }
-                AwanIconButton(
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.Reject)
-                        onRemoved()
-                    },
-                    contentDescription = stringResource(R.string.ai_tasks_remove_content_description),
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Icon(imageVector = Lucide.X, contentDescription = null, tint = AwanTheme.colors.textSecondary)
-                }
-            }
-
             if (isExpanded) {
+                AwanTextField(
+                    value = draft.title,
+                    onValueChange = onTitleChanged,
+                    placeholder = stringResource(R.string.ai_tasks_title_placeholder),
+                    contentDescriptionText = stringResource(R.string.ai_tasks_title_placeholder),
+                    textStyle = AwanTheme.styles.headingText,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
                 AwanTextField(
                     value = draft.description.orEmpty(),
                     onValueChange = onDescriptionChanged,
@@ -140,13 +114,41 @@ fun ProposalCard(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                AttributeChips(
-                    draft = draft,
-                    categories = categories,
-                    onDurationPicked = onDurationPicked,
-                    onCategoryPicked = onCategoryPicked,
-                    onMandatoryToggled = onMandatoryToggled,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    AttributeChips(
+                        draft = draft,
+                        categories = categories,
+                        onDurationPicked = onDurationPicked,
+                        onCategoryPicked = onCategoryPicked,
+                        onMandatoryToggled = onMandatoryToggled,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
+                    ) {
+                        if (draft.estimatedPoints > 0) {
+                            AwanBadge(
+                                text = stringResource(R.string.ai_tasks_points_badge, draft.estimatedPoints),
+                                tone = AwanBadgeTone.Sky,
+                            )
+                        }
+                        AwanIconButton(
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.Reject)
+                                onRemoved()
+                            },
+                            contentDescription = stringResource(R.string.ai_tasks_remove_content_description),
+                        ) {
+                            Icon(imageVector = Lucide.X, contentDescription = null, tint = AwanTheme.colors.textSecondary)
+                        }
+                    }
+                }
 
                 reason?.let {
                     AwanText(
@@ -155,6 +157,33 @@ fun ProposalCard(
                     )
                 }
             } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
+                ) {
+                    AwanText(
+                        text = draft.title.ifBlank { stringResource(R.string.ai_tasks_title_placeholder) },
+                        style = AwanTheme.styles.headingText,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (draft.estimatedPoints > 0) {
+                        AwanBadge(
+                            text = stringResource(R.string.ai_tasks_points_badge, draft.estimatedPoints),
+                            tone = AwanBadgeTone.Sky,
+                        )
+                    }
+                    AwanIconButton(
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.Reject)
+                            onRemoved()
+                        },
+                        contentDescription = stringResource(R.string.ai_tasks_remove_content_description),
+                    ) {
+                        Icon(imageVector = Lucide.X, contentDescription = null, tint = AwanTheme.colors.textSecondary)
+                    }
+                }
+
                 SummaryRow(draft = draft, categories = categories)
             }
 
@@ -200,8 +229,10 @@ private fun AttributeChips(
     onDurationPicked: (Int) -> Unit,
     onCategoryPicked: (String?) -> Unit,
     onMandatoryToggled: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     FlowRow(
+        modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
     ) {
@@ -335,7 +366,6 @@ private fun SessionRow(session: ProposedSession, onClick: () -> Unit, onRemove: 
         AwanIconButton(
             onClick = onRemove,
             contentDescription = stringResource(R.string.ai_tasks_session_remove_content_description),
-            modifier = Modifier.size(32.dp),
         ) {
             Icon(imageVector = Lucide.X, contentDescription = null, tint = colors.textSecondary)
         }

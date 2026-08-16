@@ -199,6 +199,14 @@ private fun String?.toTaskStatus(): TaskStatus =
 private fun String?.toSessionStatus(): SessionStatus =
     runCatching { SessionStatus.valueOf(orEmpty()) }.getOrDefault(SessionStatus.UNKNOWN)
 
+internal fun com.awan.app.core.database.model.TaskEntity.toModel(
+    dependsOnTaskIds: List<String> = emptyList(),
+    category: com.awan.app.core.model.Category? = null,
+): Task = toTaskModel(
+    dependsOnTaskIds = dependsOnTaskIds,
+    category = category,
+)
+
 internal fun TaskInfoResponse.toEntity(
     goalId: String? = this.goalId,
     categoryId: String? = this.category?.id,

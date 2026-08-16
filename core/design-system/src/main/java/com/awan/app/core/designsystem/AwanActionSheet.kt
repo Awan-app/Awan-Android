@@ -61,11 +61,11 @@ fun AwanActionSheet(
             }
             if (secondaryLabel != null) {
                 AwanButton(
-                    onClick = onSecondary ?: {},
-                    variant = AwanButtonVariant.Quiet,
+                    onClick = onSecondary ?: onDismiss,
+                    variant = AwanButtonVariant.Secondary,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    AwanText(secondaryLabel, style = AwanTheme.styles.skipLink)
+                    AwanText(secondaryLabel)
                 }
             }
         }
