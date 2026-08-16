@@ -317,7 +317,10 @@ fun AwanApp(
                 onNavigateToTaskDetails = { taskId -> navigator.navigate(TaskDetailsRoute(taskId)) },
                 onBack = { navigator.goBack() },
             )
-            aiTasksEntry(onBack = { navigator.goBack() })
+            aiTasksEntry(
+                onBack = { navigator.resetCurrentSubStack(HomeRoute()) },
+                onTasksCreated = { navigator.resetCurrentSubStack(HomeRoute()) },
+            )
             inventoryEntry(onBack = { navigator.goBack() })
             profileEntry(
                 onNavigateToDailyZones = { navigator.navigate(DailyZonesRoute) },

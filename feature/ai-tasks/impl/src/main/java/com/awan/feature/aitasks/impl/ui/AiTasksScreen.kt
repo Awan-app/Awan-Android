@@ -75,6 +75,7 @@ fun AiTasksRouteScreen(
     imageUri: String? = null,
     goalId: String? = null,
     onBack: () -> Unit,
+    onTasksCreated: (Int) -> Unit = { onBack() },
     viewModel: AiTasksViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -92,7 +93,8 @@ fun AiTasksRouteScreen(
 
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
-            is AiTasksEvent.TasksCreated, AiTasksEvent.Dismissed -> onBack()
+            is AiTasksEvent.TasksCreated -> onTasksCreated(event.count)
+            AiTasksEvent.Dismissed -> onBack()
         }
     }
 
