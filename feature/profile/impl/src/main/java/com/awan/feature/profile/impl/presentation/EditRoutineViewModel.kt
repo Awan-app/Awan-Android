@@ -102,22 +102,25 @@ class EditRoutineViewModel @Inject constructor(
         val dayOfWeek = DailyZonesHelper.getCurrentDay(parsedDate)
         
         _uiState.update { state ->
-            val newState = state.copy(
+            if (state.isTodayOnly && !state.daysWithTemplates.contains(dayOfWeek)) {
+                return@update state.copy(
+                    validationError = UiText.StringResource(R.string.profile_daily_zones_error_no_base_routine)
+                )
+            }
+
+            var newState = state.copy(
                 date = date,
                 validationError = null,
                 error = null
             )
             
-            // If we are in "Today Only" mode, we want the selection to follow the date change
-            // and NOT accumulate multiple days unless explicitly selected via toggleDay
             if (state.isTodayOnly) {
-                newState.copy(
+                newState = newState.copy(
                     selectedDays = setOf(dayOfWeek),
                     dates = setOf(date)
                 )
-            } else {
-                newState
             }
+            newState
         }
     }
 
@@ -300,25 +303,32 @@ class EditRoutineViewModel @Inject constructor(
 
             if (state.isTodayOnly) {
                 if (!state.daysWithTemplates.contains(day)) {
-                    return@update state.copy(validationError = UiText.StringResource(R.string.profile_daily_zones_error_no_base_routine))
+                    return@update state.copy(
+                        validationError = UiText.StringResource(R.string.profile_daily_zones_error_no_base_routine)
+                    )
                 }
                 
                 val newDates = if (state.dates.contains(targetDate)) {
-                    if (state.dates.size <= 1) state.dates else state.dates - targetDate
+                    state.dates - targetDate
                 } else {
                     state.dates + targetDate
                 }
                 val newDays = newDates.map { DailyZonesHelper.getCurrentDay(LocalDate.parse(it)) }.toSet()
-                state.copy(selectedDays = newDays, dates = newDates, validationError = null)
+                state.copy(date = targetDate, selectedDays = newDays, dates = newDates, validationError = null)
             } else {
                 if (state.assignedDays.contains(day)) return@update state
                 
                 val newDays = if (state.selectedDays.contains(day)) {
-                    if (state.selectedDays.size <= 1) state.selectedDays else state.selectedDays - day
+                    state.selectedDays - day
                 } else {
                     state.selectedDays + day
                 }
-                state.copy(selectedDays = newDays, validationError = null)
+                
+                state.copy(
+                    date = targetDate,
+                    selectedDays = newDays,
+                    validationError = null
+                )
             }
         }
     }
