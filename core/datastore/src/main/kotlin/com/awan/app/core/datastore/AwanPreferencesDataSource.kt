@@ -93,13 +93,7 @@ class AwanPreferencesDataSource @Inject constructor(
             }
         } else {
             // Legacy migration: old users had a boolean 'dark_theme_enabled'.
-            // If they are existing users (onboarding completed), we preserve their choice.
-            // New users (onboarding not completed) default to FOLLOW_SYSTEM.
-            when {
-                darkThemeEnabled -> DarkThemeConfig.DARK
-                onboardingCompleted -> DarkThemeConfig.LIGHT
-                else -> DarkThemeConfig.FOLLOW_SYSTEM
-            }
+            if (darkThemeEnabled) DarkThemeConfig.DARK else DarkThemeConfig.FOLLOW_SYSTEM
         },
         useDynamicColor = useDynamicColor,
         onboardingCompleted = onboardingCompleted,

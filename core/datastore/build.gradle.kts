@@ -20,4 +20,7 @@ dependencies {
 
     // EncryptedSharedPreferences for hardware-backed token storage (Android Keystore).
     implementation(libs.androidx.security.crypto)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
