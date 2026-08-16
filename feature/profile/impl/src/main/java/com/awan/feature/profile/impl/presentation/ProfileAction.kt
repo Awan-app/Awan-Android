@@ -12,5 +12,6 @@ sealed interface ProfileAction {
     data class UpdatePersonalInfo(val firstName: String, val lastName: String) : ProfileAction
     data class UpdateProfilePicture(val uri: String) : ProfileAction
     data object DeleteProfilePicture : ProfileAction
+    data object DismissEditSheet : ProfileAction
     data object Logout : ProfileAction
 }

@@ -2,6 +2,7 @@ package com.awan.feature.profile.impl.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.error.toUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
@@ -24,6 +25,7 @@ import com.awan.app.core.domain.profile.usecase.UpdateSleepScheduleUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateTimezoneUseCase
 import com.awan.app.core.model.DarkThemeConfig
 import com.awan.app.core.model.StoreItemType
+import com.awan.app.core.model.sanitizeLastName
 import com.awan.feature.profile.impl.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -83,6 +85,9 @@ class ProfileViewModel @Inject constructor(
             }
             ProfileAction.DeleteProfilePicture -> {
                 _uiState.update { it.copy(pendingPicture = PendingPicture.Clear, fieldError = null) }
+            }
+            ProfileAction.DismissEditSheet -> {
+                _uiState.update { it.copy(pendingPicture = null, fieldError = null) }
             }
             ProfileAction.Logout -> logout()
         }
@@ -165,76 +170,93 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun updatePersonalInfo(firstName: String, lastName: String) {
-        if (_uiState.value.isUpdatingField) return
+        if (_uiState.value.isUpdatingField || _uiState.value.isUploadingPicture) return
+
+        val currentProfile = _uiState.value.profile
+        val currentFirst = currentProfile?.firstName?.trim().orEmpty()
+        val currentLast = currentProfile?.lastName?.sanitizeLastName().orEmpty()
+        val inputFirst = firstName.trim()
+        val inputLast = lastName.sanitizeLastName().orEmpty()
+
+        val isNameChanged = inputFirst != currentFirst || inputLast != currentLast
+        val pending = _uiState.value.pendingPicture
+
+        if (!isNameChanged && pending == null) {
+            viewModelScope.launch {
+                _events.send(ProfileEvent.UpdateSuccess)
+            }
+            return
+        }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isUpdatingField = true, fieldError = null) }
+            _uiState.update { it.copy(fieldError = null) }
 
-            // 1. Update Profile Info (Name)
-            val nameResult = updateProfilePartialUseCase(
-                firstName = firstName.trim(),
-                lastName = lastName.trim(),
-            )
-            if (nameResult is Result.Error) {
-                _uiState.update { it.copy(isUpdatingField = false, fieldError = nameResult.error.toUiText()) }
-                return@launch
+            var nameError: AppError? = null
+            var pictureError: AppError? = null
+
+            // 1. Update Profile Info (Name) if changed - passing raw inputs to use case
+            if (isNameChanged) {
+                _uiState.update { it.copy(isUpdatingField = true) }
+                when (val nameResult = updateProfilePartialUseCase(firstName = firstName, lastName = lastName)) {
+                    is Result.Success -> {
+                        _uiState.update { it.copy(isUpdatingField = false) }
+                    }
+                    is Result.Error -> {
+                        nameError = nameResult.error
+                        _uiState.update { it.copy(isUpdatingField = false) }
+                    }
+                    Result.Loading -> Unit
+                }
             }
 
-            val pending = _uiState.value.pendingPicture
+            // 2. Update Profile Picture independently if pending
             if (pending != null) {
                 _uiState.update { it.copy(isUploadingPicture = true) }
                 when (pending) {
                     PendingPicture.Clear -> {
-                        val deleteResult = deleteProfilePictureUseCase()
-                        if (deleteResult is Result.Error) {
-                            _uiState.update {
-                                it.copy(
-                                    isUpdatingField = false,
-                                    isUploadingPicture = false,
-                                    fieldError = deleteResult.error.toUiText()
-                                )
+                        when (val deleteResult = deleteProfilePictureUseCase()) {
+                            is Result.Success -> {
+                                _uiState.update { it.copy(isUploadingPicture = false, pendingPicture = null) }
                             }
-                            return@launch
+                            is Result.Error -> {
+                                pictureError = deleteResult.error
+                                _uiState.update { it.copy(isUploadingPicture = false) }
+                            }
+                            Result.Loading -> Unit
                         }
                     }
                     is PendingPicture.Picked -> {
-                        val imageResult = readImage(pending.uri)
-                        if (imageResult is Result.Error) {
-                            _uiState.update {
-                                it.copy(
-                                    isUpdatingField = false,
-                                    isUploadingPicture = false,
-                                    fieldError = imageResult.error.toUiText()
-                                )
+                        when (val imageResult = readImage(pending.uri)) {
+                            is Result.Success -> {
+                                val imageBytes = imageResult.data
+                                when (val uploadResult = updateProfilePictureUseCase(imageBytes.bytes, imageBytes.mimeType)) {
+                                    is Result.Success -> {
+                                        _uiState.update { it.copy(isUploadingPicture = false, pendingPicture = null) }
+                                    }
+                                    is Result.Error -> {
+                                        pictureError = uploadResult.error
+                                        _uiState.update { it.copy(isUploadingPicture = false) }
+                                    }
+                                    Result.Loading -> Unit
+                                }
                             }
-                            return@launch
-                        }
-
-                        val imageBytes = (imageResult as Result.Success).data
-                        val uploadResult = updateProfilePictureUseCase(imageBytes.bytes, imageBytes.mimeType)
-                        if (uploadResult is Result.Error) {
-                            _uiState.update {
-                                it.copy(
-                                    isUpdatingField = false,
-                                    isUploadingPicture = false,
-                                    fieldError = uploadResult.error.toUiText()
-                                )
+                            is Result.Error -> {
+                                pictureError = imageResult.error
+                                _uiState.update { it.copy(isUploadingPicture = false) }
                             }
-                            return@launch
+                            Result.Loading -> Unit
                         }
                     }
                 }
             }
 
-            _uiState.update {
-                it.copy(
-                    isUpdatingField = false,
-                    isUploadingPicture = false,
-                    pendingPicture = null,
-                    fieldError = null
-                )
+            val error = nameError ?: pictureError
+            if (error != null) {
+                _uiState.update { it.copy(fieldError = error.toUiText()) }
+            } else {
+                _uiState.update { it.copy(fieldError = null, pendingPicture = null) }
+                _events.send(ProfileEvent.UpdateSuccess)
             }
-            _events.send(ProfileEvent.UpdateSuccess)
         }
     }
 

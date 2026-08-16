@@ -71,13 +71,16 @@ fun ProfileScreen(
                     profilePictureUrl = uiState.profile.profilePictureUrl,
                     pendingPicture = uiState.pendingPicture,
                     error = uiState.fieldError,
-                    onDismiss = { showEditSheet = false },
+                    onDismiss = {
+                        showEditSheet = false
+                        onAction(ProfileAction.DismissEditSheet)
+                    },
                     onSave = { first, last ->
                         onAction(ProfileAction.UpdatePersonalInfo(first, last))
                     },
                     onPickPicture = { onAction(ProfileAction.UpdateProfilePicture(it)) },
                     onDeletePicture = { onAction(ProfileAction.DeleteProfilePicture) },
-                    isLoading = uiState.isUpdatingField
+                    isLoading = uiState.isUpdatingField || uiState.isUploadingPicture
                 )
             }
 
