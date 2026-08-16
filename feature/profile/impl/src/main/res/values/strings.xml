@@ -109,7 +109,7 @@
     <string name="profile_language_english">English</string>
     <string name="profile_language_arabic">Arabic</string>
     <string name="profile_select_timezone">Select Timezone</string>
-    <string name="profile_search_timezone">Search region or city...</string>
+    <string name="profile_search_timezone">Search region or city…</string>
     <string name="profile_close">Close</string>
     <string name="profile_minutes">minutes</string>
     <string name="profile_decrease">Decrease</string>

@@ -20,8 +20,8 @@ import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 fun ZoneTimelineItem(
     zone: DailyZone,
     isLast: Boolean,
-    onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     Row(

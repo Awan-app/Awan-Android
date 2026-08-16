@@ -24,7 +24,7 @@ fun ExpandableSessionDurationItem(
     isLoading: Boolean = false,
     showDivider: Boolean = false
 ) {
-    var localDuration by remember(duration, isExpanded) { mutableStateOf(duration) }
+    var localDuration by remember(duration, isExpanded) { mutableIntStateOf(duration) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         PreferenceRow(

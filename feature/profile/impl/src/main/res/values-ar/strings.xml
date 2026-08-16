@@ -89,6 +89,7 @@
     <string name="profile_daily_zones_error_overlap">تتداخل هذه المناطق. عدّل الأوقات وحاول مرة أخرى.</string>
     <string name="profile_daily_zones_error_network">حدث خطأ ما. تحقق من اتصالك وحاول مجددًا.</string>
     <string name="profile_daily_zones_error_generic">تعذّر حفظ تغييراتك. يرجى المحاولة مرة أخرى.</string>
+    <string name="profile_daily_zones_error_no_base_routine">لا يمكنك إنشاء تخصيص ليوم بدون روتين.</string>
     <string name="profile_daily_zones_error_day_assigned">يوم أو أكثر من الأيام المختارة لديه روتين بالفعل.</string>
     <string name="profile_daily_zones_custom_schedule">جدول مخصص</string>
     <string name="profile_daily_zones_edit_default">تعديل الروتين الافتراضي</string>
@@ -160,6 +161,7 @@
     <string name="profile_routine_no_routine_set">لم يتم تعيين روتين لهذا اليوم</string>
     <string name="profile_routine_connect_hint">قم بربط روتين لبدء جدولة المناطق.</string>
     <string name="profile_routine_create_for_day">إنشاء روتين لهذا اليوم</string>
+    <string name="profile_routine_customize_day_for_this_routine">تخصيص اليوم لهذا الروتين</string>
 
     <!-- Zone Editing -->
     <string name="profile_zone_add">إضافة منطقة</string>
