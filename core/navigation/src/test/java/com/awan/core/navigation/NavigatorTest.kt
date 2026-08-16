@@ -75,9 +75,27 @@ class NavigatorTest {
         assertEquals(before, state.generation)
     }
 
+    @Test
+    fun resetCurrentSubStack_clearsIntermediateScreensAndKeepsRoot() {
+        val state = NavigationState(
+            startKey = StartRoute,
+            topLevelStack = mutableStateListOf(TabRoute),
+            subStacks = mutableMapOf<Route, MutableList<Route>>(
+                TabRoute to mutableStateListOf(TabRoute, DeepRoute, OtherRoute),
+            ),
+        )
+        val navigator = Navigator(state)
+
+        navigator.resetCurrentSubStack(TabRoute)
+
+        assertEquals(listOf(TabRoute), state.currentSubStack)
+        assertEquals(TabRoute, state.currentKey)
+    }
+
     private data object StartRoute : Route
     private data object ReplacementRootRoute : Route
     private data object TabRoute : Route
     private data object OtherTabRoute : Route
     private data object DeepRoute : Route
+    private data object OtherRoute : Route
 }
