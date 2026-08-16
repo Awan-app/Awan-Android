@@ -6,7 +6,7 @@ import com.awan.app.core.model.Goal
 import com.awan.app.core.model.GoalProposal
 import javax.inject.Inject
 
-/** Saves a goal without tasks for drafts, or saves the customized/approved AI proposal for scheduling. */
+/** Saves a goal without tasks for drafts, or confirms the full AI proposal for scheduling. */
 class SaveGoalProposalUseCase @Inject constructor(
     private val repository: GoalRepository,
 ) {
@@ -14,17 +14,18 @@ class SaveGoalProposalUseCase @Inject constructor(
         sessionId: String,
         proposal: GoalProposal,
         addTasks: Boolean,
-    ): Result<Goal> {
-        val tasksToSave = if (addTasks) proposal.tasks else emptyList()
+    ): Result<Goal> = if (addTasks) {
+        repository.confirmDecomposition(sessionId)
+    } else {
         val result = repository.createGoal(
             title = proposal.title,
             description = proposal.description,
             targetDate = proposal.targetDate,
-            tasks = tasksToSave,
+            tasks = emptyList(),
         )
         if (result is Result.Success) {
             repository.cancelDecomposition(sessionId)
         }
-        return result
+        result
     }
 }

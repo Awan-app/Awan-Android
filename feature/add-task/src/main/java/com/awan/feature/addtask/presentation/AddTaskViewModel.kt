@@ -1,5 +1,6 @@
 package com.awan.feature.addtask.presentation
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
@@ -16,6 +17,8 @@ import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
 import com.awan.app.core.domain.task.usecase.TaskAttribute
 import com.awan.app.core.model.Category
 import com.awan.app.core.model.GoalDecompositionBlock
+import com.awan.app.core.model.GoalProposal
+import com.awan.app.core.model.ProposedTask
 import com.awan.app.core.model.Task
 import com.awan.feature.addtask.R
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,6 +40,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddTaskViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val parseTaskInput: ParseTaskInputUseCase,
     private val applyTaskAttribute: ApplyTaskAttributeUseCase,
     private val getCategories: GetCategoriesUseCase,
@@ -49,7 +53,9 @@ class AddTaskViewModel @Inject constructor(
     private val clock: Clock,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(AddTaskState(today = LocalDate.now(clock)))
+    private val _state = MutableStateFlow(
+        restoreStateFromSavedState(LocalDate.now(clock)) ?: AddTaskState(today = LocalDate.now(clock))
+    )
     val state: StateFlow<AddTaskState> = _state.asStateFlow()
 
     private val _events = MutableSharedFlow<AddTaskEvent>(
@@ -68,12 +74,35 @@ class AddTaskViewModel @Inject constructor(
     init {
         loadCategories()
         observeUserData()
+        viewModelScope.launch {
+            _state.collect { state ->
+                persistState(state)
+            }
+        }
     }
 
     private companion object {
         /** Roughly the length of SparkleBurst plus one mascot cheer cycle. */
         const val CELEBRATE_MILLIS = 900L
         const val MINUTES_PER_HOUR = 60
+
+        const val KEY_MODE = "add_task_mode"
+        const val KEY_INPUT = "add_task_input"
+        const val KEY_DESCRIPTION = "add_task_description"
+        const val KEY_MANDATORY = "add_task_mandatory"
+        const val KEY_IMAGE_URI = "add_task_image_uri"
+        const val KEY_AI_ENABLED = "add_task_ai_enabled"
+        const val KEY_GOAL_SESSION_ID = "add_task_goal_session_id"
+        const val KEY_GOAL_STEP_TYPE = "add_task_goal_step_type"
+        const val KEY_GOAL_STEP_QUESTION = "add_task_goal_step_question"
+        const val KEY_GOAL_STEP_OPTIONS = "add_task_goal_step_options"
+        const val KEY_GOAL_STEP_SELECTED_OPTION = "add_task_goal_step_selected_option"
+        const val KEY_GOAL_PROPOSAL_TITLE = "add_task_goal_proposal_title"
+        const val KEY_GOAL_PROPOSAL_DESCRIPTION = "add_task_goal_proposal_description"
+        const val KEY_GOAL_PROPOSAL_TARGET_DATE = "add_task_goal_proposal_target_date"
+        const val KEY_GOAL_PROPOSAL_TASK_TITLES = "add_task_goal_proposal_task_titles"
+        const val KEY_GOAL_PROPOSAL_TASK_DURATIONS = "add_task_goal_proposal_task_durations"
+        const val KEY_GOAL_PROPOSAL_TASK_POINTS = "add_task_goal_proposal_task_points"
     }
 
     fun onAction(action: AddTaskAction) {
@@ -96,6 +125,8 @@ class AddTaskViewModel @Inject constructor(
 
             AddTaskAction.Submit -> submit()
             is AddTaskAction.GoalOptionSelected -> selectGoalOption(action.option)
+            is AddTaskAction.UpdateProposedTask -> updateProposedTask(action.index, action.task)
+            is AddTaskAction.RemoveProposedTask -> removeProposedTask(action.index)
             AddTaskAction.AcceptGoalProposal -> acceptGoalProposal()
             AddTaskAction.SaveGoalAsDraft -> saveGoal(addTasks = false)
             AddTaskAction.AddGoalTasks -> saveGoal(addTasks = true)
@@ -525,6 +556,146 @@ class AddTaskViewModel @Inject constructor(
         close(AddTaskEvent.Dismissed)
     }
 
+    private fun updateProposedTask(index: Int, updatedTask: ProposedTask) {
+        val current = _state.value
+        val previewStep = current.goalStep as? GoalStep.Preview ?: return
+        val currentTasks = previewStep.proposal.tasks
+        if (index !in currentTasks.indices) return
+        val newTasks = currentTasks.toMutableList().apply { set(index, updatedTask) }
+        val newProposal = previewStep.proposal.copy(tasks = newTasks)
+        _state.update { it.copy(goalStep = GoalStep.Preview(newProposal)) }
+    }
+
+    private fun removeProposedTask(index: Int) {
+        val current = _state.value
+        val previewStep = current.goalStep as? GoalStep.Preview ?: return
+        val currentTasks = previewStep.proposal.tasks
+        if (index !in currentTasks.indices) return
+        val newTasks = currentTasks.toMutableList().apply { removeAt(index) }
+        val newProposal = previewStep.proposal.copy(tasks = newTasks)
+        _state.update { it.copy(goalStep = GoalStep.Preview(newProposal)) }
+    }
+
+    private fun restoreStateFromSavedState(today: LocalDate): AddTaskState? {
+        val modeName = savedStateHandle.get<String>(KEY_MODE) ?: return null
+        val mode = runCatching { AddTaskMode.valueOf(modeName) }.getOrDefault(AddTaskMode.TASK)
+        val input = savedStateHandle.get<String>(KEY_INPUT).orEmpty()
+        val description = savedStateHandle.get<String>(KEY_DESCRIPTION).orEmpty()
+        val mandatory = savedStateHandle.get<Boolean>(KEY_MANDATORY) ?: true
+        val imageUri = savedStateHandle.get<String>(KEY_IMAGE_URI)
+        val aiEnabled = savedStateHandle.get<Boolean>(KEY_AI_ENABLED) ?: false
+        val goalSessionId = savedStateHandle.get<String>(KEY_GOAL_SESSION_ID)
+
+        val stepType = savedStateHandle.get<String>(KEY_GOAL_STEP_TYPE)
+        val goalStep = when (stepType) {
+            "MCQ" -> {
+                val q = savedStateHandle.get<String>(KEY_GOAL_STEP_QUESTION).orEmpty()
+                val opts = savedStateHandle.get<ArrayList<String>>(KEY_GOAL_STEP_OPTIONS) ?: arrayListOf()
+                val sel = savedStateHandle.get<String>(KEY_GOAL_STEP_SELECTED_OPTION)
+                GoalStep.MultipleChoice(question = q, options = opts, selectedOption = sel)
+            }
+            "WRITING" -> {
+                val q = savedStateHandle.get<String>(KEY_GOAL_STEP_QUESTION).orEmpty()
+                GoalStep.WritingQuestion(question = q)
+            }
+            "PREVIEW" -> {
+                val title = savedStateHandle.get<String>(KEY_GOAL_PROPOSAL_TITLE).orEmpty()
+                val desc = savedStateHandle.get<String>(KEY_GOAL_PROPOSAL_DESCRIPTION)
+                val targetDate = savedStateHandle.get<String>(KEY_GOAL_PROPOSAL_TARGET_DATE)
+                val titles = savedStateHandle.get<ArrayList<String>>(KEY_GOAL_PROPOSAL_TASK_TITLES) ?: arrayListOf()
+                val durations = savedStateHandle.get<ArrayList<Int>>(KEY_GOAL_PROPOSAL_TASK_DURATIONS) ?: arrayListOf()
+                val points = savedStateHandle.get<ArrayList<Int>>(KEY_GOAL_PROPOSAL_TASK_POINTS) ?: arrayListOf()
+                val tasks = titles.indices.map { i ->
+                    ProposedTask(
+                        title = titles[i],
+                        estimatedDuration = durations.getOrNull(i)?.takeIf { it > 0 },
+                        estimatedPoints = points.getOrNull(i)?.takeIf { it > 0 },
+                    )
+                }
+                GoalStep.Preview(GoalProposal(title = title, description = desc, targetDate = targetDate, tasks = tasks))
+            }
+            else -> GoalStep.Initial
+        }
+
+        val parsed = if (mode == AddTaskMode.TASK && !aiEnabled && input.isNotBlank()) {
+            parseTaskInput(input)
+        } else {
+            ParsedTaskInput.Empty
+        }
+
+        return AddTaskState(
+            today = today,
+            mode = mode,
+            input = input,
+            description = description,
+            parsed = parsed,
+            mandatory = mandatory,
+            goalStep = goalStep,
+            goalSessionId = goalSessionId,
+            aiEnabled = aiEnabled,
+            imageUri = imageUri,
+        )
+    }
+
+    private fun persistState(state: AddTaskState) {
+        if (state.confirmation != null) {
+            clearSavedState()
+            return
+        }
+        savedStateHandle[KEY_MODE] = state.mode.name
+        savedStateHandle[KEY_INPUT] = state.input
+        savedStateHandle[KEY_DESCRIPTION] = state.description
+        savedStateHandle[KEY_MANDATORY] = state.mandatory
+        savedStateHandle[KEY_IMAGE_URI] = state.imageUri
+        savedStateHandle[KEY_AI_ENABLED] = state.aiEnabled
+        savedStateHandle[KEY_GOAL_SESSION_ID] = state.goalSessionId
+
+        when (val step = state.goalStep) {
+            is GoalStep.MultipleChoice -> {
+                savedStateHandle[KEY_GOAL_STEP_TYPE] = "MCQ"
+                savedStateHandle[KEY_GOAL_STEP_QUESTION] = step.question
+                savedStateHandle[KEY_GOAL_STEP_OPTIONS] = ArrayList(step.options)
+                savedStateHandle[KEY_GOAL_STEP_SELECTED_OPTION] = step.selectedOption
+            }
+            is GoalStep.WritingQuestion -> {
+                savedStateHandle[KEY_GOAL_STEP_TYPE] = "WRITING"
+                savedStateHandle[KEY_GOAL_STEP_QUESTION] = step.question
+            }
+            is GoalStep.Preview -> {
+                savedStateHandle[KEY_GOAL_STEP_TYPE] = "PREVIEW"
+                savedStateHandle[KEY_GOAL_PROPOSAL_TITLE] = step.proposal.title
+                savedStateHandle[KEY_GOAL_PROPOSAL_DESCRIPTION] = step.proposal.description
+                savedStateHandle[KEY_GOAL_PROPOSAL_TARGET_DATE] = step.proposal.targetDate
+                savedStateHandle[KEY_GOAL_PROPOSAL_TASK_TITLES] = ArrayList(step.proposal.tasks.map { it.title })
+                savedStateHandle[KEY_GOAL_PROPOSAL_TASK_DURATIONS] = ArrayList(step.proposal.tasks.map { it.estimatedDuration ?: 0 })
+                savedStateHandle[KEY_GOAL_PROPOSAL_TASK_POINTS] = ArrayList(step.proposal.tasks.map { it.estimatedPoints ?: 0 })
+            }
+            GoalStep.Initial -> {
+                savedStateHandle[KEY_GOAL_STEP_TYPE] = "INITIAL"
+            }
+        }
+    }
+
+    private fun clearSavedState() {
+        savedStateHandle.remove<String>(KEY_MODE)
+        savedStateHandle.remove<String>(KEY_INPUT)
+        savedStateHandle.remove<String>(KEY_DESCRIPTION)
+        savedStateHandle.remove<Boolean>(KEY_MANDATORY)
+        savedStateHandle.remove<String>(KEY_IMAGE_URI)
+        savedStateHandle.remove<Boolean>(KEY_AI_ENABLED)
+        savedStateHandle.remove<String>(KEY_GOAL_SESSION_ID)
+        savedStateHandle.remove<String>(KEY_GOAL_STEP_TYPE)
+        savedStateHandle.remove<String>(KEY_GOAL_STEP_QUESTION)
+        savedStateHandle.remove<ArrayList<String>>(KEY_GOAL_STEP_OPTIONS)
+        savedStateHandle.remove<String>(KEY_GOAL_STEP_SELECTED_OPTION)
+        savedStateHandle.remove<String>(KEY_GOAL_PROPOSAL_TITLE)
+        savedStateHandle.remove<String>(KEY_GOAL_PROPOSAL_DESCRIPTION)
+        savedStateHandle.remove<String>(KEY_GOAL_PROPOSAL_TARGET_DATE)
+        savedStateHandle.remove<ArrayList<String>>(KEY_GOAL_PROPOSAL_TASK_TITLES)
+        savedStateHandle.remove<ArrayList<Int>>(KEY_GOAL_PROPOSAL_TASK_DURATIONS)
+        savedStateHandle.remove<ArrayList<Int>>(KEY_GOAL_PROPOSAL_TASK_POINTS)
+    }
+
     /**
      * The only way out, and the only place the sheet is wiped. This ViewModel is scoped to the host
      * rather than to the sheet's composition, so it outlives every dismissal — without this the next
@@ -539,7 +710,8 @@ class AddTaskViewModel @Inject constructor(
         createJob = null
         initializeJob?.cancel()
         initializeJob = null
-        
+        clearSavedState()
+
         // Reset state but preserve the long-lived data already fetched
         _state.update { 
             AddTaskState(

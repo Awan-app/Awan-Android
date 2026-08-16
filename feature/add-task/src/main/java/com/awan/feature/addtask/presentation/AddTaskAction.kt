@@ -26,6 +26,8 @@ sealed interface AddTaskAction {
     data object Submit : AddTaskAction
 
     data class GoalOptionSelected(val option: String) : AddTaskAction
+    data class UpdateProposedTask(val index: Int, val task: com.awan.app.core.model.ProposedTask) : AddTaskAction
+    data class RemoveProposedTask(val index: Int) : AddTaskAction
     data object AcceptGoalProposal : AddTaskAction
     data object SaveGoalAsDraft : AddTaskAction
     data object AddGoalTasks : AddTaskAction

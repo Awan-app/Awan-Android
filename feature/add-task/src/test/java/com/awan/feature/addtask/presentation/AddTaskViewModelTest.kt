@@ -170,26 +170,10 @@ class AddTaskViewModelTest {
 
         override suspend fun getInboxGoal(): Result<Goal> = error("not used")
         override suspend fun getGoal(goalId: String): Result<Goal> = error("not used")
-<<<<<<< HEAD
-
-        override suspend fun updateGoal(
-            goalId: String,
-            title: String?,
-            description: String?,
-            status: String?,
-            targetDate: String?
-        ): Result<Goal> = error("not used")
-
-        override suspend fun deleteGoal(goalId: String): Result<Unit> = error("not used")
-
-        override fun observeGoal(goalId: String): Flow<Goal?> = flowOf(null)
-
-=======
         override suspend fun deleteGoal(goalId: String): Result<Unit> {
             deleteGoalCalls += goalId
             return Result.Success(Unit)
         }
->>>>>>> 99c21bd6 (AWAN-83: use goal task bulk endpoint)
         override suspend fun getDecompositionTranscript(sessionId: String): Result<com.awan.app.core.model.GoalDecompositionTranscript> = error("not used")
         override suspend fun cancelDecomposition(sessionId: String): Result<Unit> {
             cancelCalls += sessionId
@@ -281,7 +265,10 @@ class AddTaskViewModelTest {
 
     private val createdViewModels = mutableListOf<AddTaskViewModel>()
 
-    private fun viewModel(): AddTaskViewModel = AddTaskViewModel(
+    private fun viewModel(
+        savedStateHandle: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle(),
+    ): AddTaskViewModel = AddTaskViewModel(
+        savedStateHandle = savedStateHandle,
         parseTaskInput = ParseTaskInputUseCase(clock),
         applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
         getCategories = GetCategoriesUseCase(categoryRepository),
@@ -1260,33 +1247,18 @@ class AddTaskViewModelTest {
                 }
             }
             val customViewModel = AddTaskViewModel(
-<<<<<<< HEAD
-                ParseTaskInputUseCase(clock),
-                ApplyTaskAttributeUseCase(clock),
-                GetCategoriesUseCase(categoryRepository),
-                GetZonesForDateUseCase(zoneRepository),
-                CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-                ContinueGoalDecompositionUseCase(gateRepository),
-                ConfirmGoalDecompositionUseCase(gateRepository),
-                GetUserDataUseCase(userDataRepository),
-                SetMicPermissionRequestedUseCase(userDataRepository),
-                clock,
-            ).also { createdViewModels.add(it) }
-
-            val events = mutableListOf<AddTaskEvent>()
-            backgroundScope.launch { customViewModel.events.collect { events.add(it) } }
-=======
+                savedStateHandle = androidx.lifecycle.SavedStateHandle(),
                 parseTaskInput = ParseTaskInputUseCase(clock),
                 applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
                 getCategories = GetCategoriesUseCase(categoryRepository),
+                getZonesForDate = GetZonesForDateUseCase(zoneRepository),
                 createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
                 continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
                 saveGoalProposal = SaveGoalProposalUseCase(gateRepository),
                 getUserDataUseCase = GetUserDataUseCase(userDataRepository),
                 setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
                 clock = clock,
-            )
->>>>>>> 7fccd763 (AWAN-83: add goal preview draft or tasks choice)
+            ).also { createdViewModels.add(it) }
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
             customViewModel.onAction(AddTaskAction.InputChanged("Goal"))
@@ -1301,18 +1273,8 @@ class AddTaskViewModelTest {
 
             confirmGate.complete(Result.Success(Goal(id = "g-1", title = "Goal Title", description = null, emoji = "🎯")))
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-            assertEquals(AddTaskEvent.GoalCreated("Goal Title"), events.first())
-            advanceUntilIdle()
-=======
-            assertEquals(listOf("g-1" to proposal.tasks), goalRepository.addTasksCalls)
-            assertEquals(AddTaskEvent.GoalCreated("Goal Title"), customViewModel.events.first())
->>>>>>> 99c21bd6 (AWAN-83: use goal task bulk endpoint)
-=======
             assertEquals(listOf("sess-confirm"), goalRepository.confirmCalls)
             assertEquals(AddTaskEvent.GoalScheduleRequested("g-1"), customViewModel.events.first())
->>>>>>> f20bbd00 (AWAN-83: reuse ai-tasks screen for goal schedule review, persist drafts, and resilient confirm parsing)
         }
 
     @Test
@@ -1439,33 +1401,18 @@ class AddTaskViewModelTest {
                 }
             }
             val customViewModel = AddTaskViewModel(
-<<<<<<< HEAD
-                ParseTaskInputUseCase(clock),
-                ApplyTaskAttributeUseCase(clock),
-                GetCategoriesUseCase(categoryRepository),
-                GetZonesForDateUseCase(zoneRepository),
-                CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-                ContinueGoalDecompositionUseCase(gateRepository),
-                ConfirmGoalDecompositionUseCase(gateRepository),
-                GetUserDataUseCase(userDataRepository),
-                SetMicPermissionRequestedUseCase(userDataRepository),
-                clock,
-            ).also { createdViewModels.add(it) }
-
-            val events = mutableListOf<AddTaskEvent>()
-            backgroundScope.launch { customViewModel.events.collect { events.add(it) } }
-=======
+                savedStateHandle = androidx.lifecycle.SavedStateHandle(),
                 parseTaskInput = ParseTaskInputUseCase(clock),
                 applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
                 getCategories = GetCategoriesUseCase(categoryRepository),
+                getZonesForDate = GetZonesForDateUseCase(zoneRepository),
                 createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
                 continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
                 saveGoalProposal = SaveGoalProposalUseCase(gateRepository),
                 getUserDataUseCase = GetUserDataUseCase(userDataRepository),
                 setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
                 clock = clock,
-            )
->>>>>>> 7fccd763 (AWAN-83: add goal preview draft or tasks choice)
+            ).also { createdViewModels.add(it) }
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
             customViewModel.onAction(AddTaskAction.InputChanged("In-flight Goal"))
@@ -1586,30 +1533,18 @@ class AddTaskViewModelTest {
                 }
             }
             val customViewModel = AddTaskViewModel(
-<<<<<<< HEAD
-                ParseTaskInputUseCase(clock),
-                ApplyTaskAttributeUseCase(clock),
-                GetCategoriesUseCase(categoryRepository),
-                GetZonesForDateUseCase(zoneRepository),
-                CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-                ContinueGoalDecompositionUseCase(gateRepository),
-                ConfirmGoalDecompositionUseCase(gateRepository),
-                GetUserDataUseCase(userDataRepository),
-                SetMicPermissionRequestedUseCase(userDataRepository),
-                clock,
-            ).also { createdViewModels.add(it) }
-=======
+                savedStateHandle = androidx.lifecycle.SavedStateHandle(),
                 parseTaskInput = ParseTaskInputUseCase(clock),
                 applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
                 getCategories = GetCategoriesUseCase(categoryRepository),
+                getZonesForDate = GetZonesForDateUseCase(zoneRepository),
                 createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
                 continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
                 saveGoalProposal = SaveGoalProposalUseCase(gateRepository),
                 getUserDataUseCase = GetUserDataUseCase(userDataRepository),
                 setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
                 clock = clock,
-            )
->>>>>>> 7fccd763 (AWAN-83: add goal preview draft or tasks choice)
+            ).also { createdViewModels.add(it) }
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
             customViewModel.onAction(AddTaskAction.InputChanged("My Goal"))
@@ -1710,30 +1645,18 @@ class AddTaskViewModelTest {
                 }
             }
             val customViewModel = AddTaskViewModel(
-<<<<<<< HEAD
-                ParseTaskInputUseCase(clock),
-                ApplyTaskAttributeUseCase(clock),
-                GetCategoriesUseCase(categoryRepository),
-                GetZonesForDateUseCase(zoneRepository),
-                CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-                ContinueGoalDecompositionUseCase(gateRepository),
-                ConfirmGoalDecompositionUseCase(gateRepository),
-                GetUserDataUseCase(userDataRepository),
-                SetMicPermissionRequestedUseCase(userDataRepository),
-                clock,
-            ).also { createdViewModels.add(it) }
-=======
+                savedStateHandle = androidx.lifecycle.SavedStateHandle(),
                 parseTaskInput = ParseTaskInputUseCase(clock),
                 applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
                 getCategories = GetCategoriesUseCase(categoryRepository),
+                getZonesForDate = GetZonesForDateUseCase(zoneRepository),
                 createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
                 continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
                 saveGoalProposal = SaveGoalProposalUseCase(gateRepository),
                 getUserDataUseCase = GetUserDataUseCase(userDataRepository),
                 setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
                 clock = clock,
-            )
->>>>>>> 7fccd763 (AWAN-83: add goal preview draft or tasks choice)
+            ).also { createdViewModels.add(it) }
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
             customViewModel.onAction(AddTaskAction.InputChanged("Captured input"))
@@ -1748,7 +1671,7 @@ class AddTaskViewModelTest {
             gate.complete(
                 Result.Success(
                     GoalDecompositionReply(
-                        sessionId = "sess-in-flight",
+                        sessionId = "sess-gate-input",
                         blocks = listOf(GoalDecompositionBlock.Question("Q", emptyList())),
                         hasProposal = false,
                     ),
@@ -1805,4 +1728,107 @@ class AddTaskViewModelTest {
             assertFalse(viewModel.state.value.hasRequestedMicPermission)
             assertFalse(userDataRepository._userData.value.micPermissionRequested)
         }
+
+    @Test
+    fun `UpdateProposedTask modifies task in proposal`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+        val initialProposal = GoalProposal(
+            title = "Learn Guitar",
+            description = "Play chords",
+            targetDate = "2026-12-31",
+            tasks = listOf(
+                ProposedTask(title = "Practice chords", estimatedDuration = 30, estimatedPoints = 10),
+                ProposedTask(title = "Learn tabs", estimatedDuration = 45, estimatedPoints = 15),
+            ),
+        )
+        goalRepository.nextContinueReply = Result.Success(
+            GoalDecompositionReply(
+                sessionId = "s-guitar",
+                blocks = listOf(GoalDecompositionBlock.Proposal(initialProposal)),
+                hasProposal = true,
+            )
+        )
+
+        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+        viewModel.onAction(AddTaskAction.InputChanged("I want to learn guitar"))
+        viewModel.onAction(AddTaskAction.Submit)
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        val previewStep = state.goalStep as GoalStep.Preview
+        assertEquals(2, previewStep.proposal.tasks.size)
+
+        val updatedTask = ProposedTask(title = "Practice barre chords", estimatedDuration = 60, estimatedPoints = 20)
+        viewModel.onAction(AddTaskAction.UpdateProposedTask(index = 0, task = updatedTask))
+
+        val updatedState = viewModel.state.value
+        val updatedPreview = updatedState.goalStep as GoalStep.Preview
+        assertEquals("Practice barre chords", updatedPreview.proposal.tasks[0].title)
+        assertEquals(60, updatedPreview.proposal.tasks[0].estimatedDuration)
+        assertEquals(20, updatedPreview.proposal.tasks[0].estimatedPoints)
+    }
+
+    @Test
+    fun `RemoveProposedTask removes task from proposal`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+        val initialProposal = GoalProposal(
+            title = "Learn Guitar",
+            description = "Play chords",
+            targetDate = "2026-12-31",
+            tasks = listOf(
+                ProposedTask(title = "Practice chords", estimatedDuration = 30, estimatedPoints = 10),
+                ProposedTask(title = "Learn tabs", estimatedDuration = 45, estimatedPoints = 15),
+            ),
+        )
+        goalRepository.nextContinueReply = Result.Success(
+            GoalDecompositionReply(
+                sessionId = "s-guitar",
+                blocks = listOf(GoalDecompositionBlock.Proposal(initialProposal)),
+                hasProposal = true,
+            )
+        )
+
+        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+        viewModel.onAction(AddTaskAction.InputChanged("I want to learn guitar"))
+        viewModel.onAction(AddTaskAction.Submit)
+        advanceUntilIdle()
+
+        viewModel.onAction(AddTaskAction.RemoveProposedTask(index = 0))
+
+        val updatedState = viewModel.state.value
+        val updatedPreview = updatedState.goalStep as GoalStep.Preview
+        assertEquals(1, updatedPreview.proposal.tasks.size)
+        assertEquals("Learn tabs", updatedPreview.proposal.tasks[0].title)
+    }
+
+    @Test
+    fun `proposal state restores correctly from SavedStateHandle on process recreation`() = runTest(testDispatcher) {
+        val savedStateHandle = androidx.lifecycle.SavedStateHandle()
+        savedStateHandle["add_task_mode"] = "GOAL"
+        savedStateHandle["add_task_goal_session_id"] = "s-restored"
+        savedStateHandle["add_task_goal_step_type"] = "PREVIEW"
+        savedStateHandle["add_task_goal_proposal_title"] = "Restored Goal"
+        savedStateHandle["add_task_goal_proposal_description"] = "Restored Description"
+        savedStateHandle["add_task_goal_proposal_target_date"] = "2026-11-20"
+        savedStateHandle["add_task_goal_proposal_task_titles"] = arrayListOf("Task 1", "Task 2")
+        savedStateHandle["add_task_goal_proposal_task_durations"] = arrayListOf(25, 50)
+        savedStateHandle["add_task_goal_proposal_task_points"] = arrayListOf(5, 10)
+
+        val restoredViewModel = viewModel(savedStateHandle = savedStateHandle)
+        val state = restoredViewModel.state.value
+
+        assertEquals(AddTaskMode.GOAL, state.mode)
+        assertEquals("s-restored", state.goalSessionId)
+        assertTrue(state.goalStep is GoalStep.Preview)
+        val preview = state.goalStep as GoalStep.Preview
+        assertEquals("Restored Goal", preview.proposal.title)
+        assertEquals("Restored Description", preview.proposal.description)
+        assertEquals("2026-11-20", preview.proposal.targetDate)
+        assertEquals(2, preview.proposal.tasks.size)
+        assertEquals("Task 1", preview.proposal.tasks[0].title)
+        assertEquals(25, preview.proposal.tasks[0].estimatedDuration)
+        assertEquals("Task 2", preview.proposal.tasks[1].title)
+        assertEquals(50, preview.proposal.tasks[1].estimatedDuration)
+        assertTrue(state.canAcceptGoal)
+    }
 }
