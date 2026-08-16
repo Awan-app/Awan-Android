@@ -17,7 +17,8 @@ data class MarketplaceUiState(
     @StringRes val error: Int? = null,
     val isBuying: Boolean = false,
     val isEquipping: Boolean = false,
-    val selectedItem: StoreItem? = null
+    val selectedItem: StoreItem? = null,
+    val accessToken: String? = null
 ) {
     val filteredItems: List<StoreItem> = items.filter { item ->
         (selectedCategory == null || item.type == selectedCategory) &&

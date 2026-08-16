@@ -30,6 +30,7 @@ fun StoreItemCard(
     item: StoreItem,
     isOwned: Boolean,
     isEquipped: Boolean,
+    accessToken: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -72,6 +73,7 @@ fun StoreItemCard(
             ) {
                 AwanRemoteImage(
                     url = item.image,
+                    accessToken = accessToken,
                     contentDescription = item.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
