@@ -15,6 +15,7 @@ import com.awan.app.core.domain.network.usecase.ObserveNetworkConnectivityUseCas
 import com.awan.app.core.model.EquippedItem
 import com.awan.app.core.model.OwnedItem
 import com.awan.app.core.model.StoreItem
+import com.awan.app.core.model.StoreItemRarity
 import com.awan.app.core.model.StoreItemType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -452,6 +453,7 @@ class InventoryViewModelTest {
         acquiredAt: String,
         type: StoreItemType = StoreItemType.FRAME,
         info: String? = null,
+        rarity: StoreItemRarity? = null,
         isSeen: Boolean = true,
     ) = OwnedItem(
         id = "inventory-$id",
@@ -464,6 +466,17 @@ class InventoryViewModelTest {
             price = 0,
             version = "",
             type = type,
+            rarity = rarity ?: when {
+                info?.contains("legendary", ignoreCase = true) == true -> StoreItemRarity.LEGENDARY
+                info?.contains("epic", ignoreCase = true) == true -> StoreItemRarity.EPIC
+                info?.contains("rare", ignoreCase = true) == true -> StoreItemRarity.RARE
+                info?.contains("uncommon", ignoreCase = true) == true -> StoreItemRarity.UNCOMMON
+                name.contains("legendary", ignoreCase = true) -> StoreItemRarity.LEGENDARY
+                name.contains("epic", ignoreCase = true) -> StoreItemRarity.EPIC
+                name.contains("rare", ignoreCase = true) -> StoreItemRarity.RARE
+                name.contains("uncommon", ignoreCase = true) -> StoreItemRarity.UNCOMMON
+                else -> StoreItemRarity.COMMON
+            }
         ),
         boughtAt = acquiredAt,
         isSeen = isSeen,

@@ -17,6 +17,7 @@ import com.awan.app.core.network.dto.gamification.WheelConfigDto
 import com.awan.app.core.network.dto.gamification.WheelSegmentDto
 import com.awan.app.core.network.dto.gamification.WheelSpinDto
 import com.awan.app.core.network.dto.store.StoreItemDto
+import com.awan.app.core.network.resolveBackendImageUrl
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 
@@ -72,7 +73,7 @@ fun WheelSpinDto.toDomain(): WheelSpinResult = WheelSpinResult(
 
 private fun StoreItemDto.toWonItem(): WonItem? {
     val itemName = name?.takeIf { it.isNotBlank() } ?: return null
-    return WonItem(id = id, name = itemName, imageUrl = image?.takeIf { it.isNotBlank() })
+    return WonItem(id = id, name = itemName, imageUrl = resolveBackendImageUrl(image))
 }
 
 /** Unparseable dates are dropped rather than failing the whole month's calendar. */

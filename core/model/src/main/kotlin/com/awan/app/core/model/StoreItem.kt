@@ -15,7 +15,8 @@ data class StoreItem(
     val info: String?,
     val price: Int,
     val version: String,
-    val type: StoreItemType
+    val type: StoreItemType,
+    val rarity: StoreItemRarity = StoreItemRarity.COMMON,
 )
 
 data class OwnedItem(

@@ -67,7 +67,7 @@ internal fun inventorySections(
         .filter { selectedType == null || it.item.type == selectedType }
         .filter {
             selectedRarities.isEmpty() ||
-                CustomizationRarity.fromInfo(it.item.info) in selectedRarities
+                CustomizationRarity.fromStoreItemRarity(it.item.rarity) in selectedRarities
         }
         .map { ownedItem ->
             InventoryItem(
@@ -76,7 +76,7 @@ internal fun inventorySections(
                 description = ownedItem.item.description,
                 imageUrl = ownedItem.item.image,
                 type = ownedItem.item.type,
-                rarity = CustomizationRarity.fromInfo(ownedItem.item.info),
+                rarity = CustomizationRarity.fromStoreItemRarity(ownedItem.item.rarity),
                 price = ownedItem.item.price,
                 isEquipped = ownedItem.item.id in equippedItemIds,
                 isSeen = ownedItem.isSeen,

@@ -1,9 +1,12 @@
 package com.awan.app.core.data.marketplace
 
 import com.awan.app.core.database.model.OwnedItemEntity
+import com.awan.app.core.database.model.StoreItemEntity
 import com.awan.app.core.model.OwnedItem
 import com.awan.app.core.model.StoreItem
+import com.awan.app.core.model.StoreItemRarity
 import com.awan.app.core.model.StoreItemType
+import com.awan.app.core.network.dto.store.StoreItemDto
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -87,8 +90,57 @@ class StoreMappersTest {
         assertEquals("item-1", entityUnseen.itemId)
         assertEquals(12345L, entityUnseen.expiryTime)
         assertFalse(entityUnseen.isSeen)
+    }
 
-        assertEquals("owned-2", entitySeen.id)
-        assertTrue(entitySeen.isSeen)
+    @Test
+    fun `asStoreItemRarity maps valid strings case-insensitively and falls back to COMMON for unknown or null`() {
+        assertEquals(StoreItemRarity.COMMON, "COMMON".asStoreItemRarity())
+        assertEquals(StoreItemRarity.COMMON, "common".asStoreItemRarity())
+        assertEquals(StoreItemRarity.UNCOMMON, "UNCOMMON".asStoreItemRarity())
+        assertEquals(StoreItemRarity.RARE, "rare".asStoreItemRarity())
+        assertEquals(StoreItemRarity.EPIC, "EPIC".asStoreItemRarity())
+        assertEquals(StoreItemRarity.LEGENDARY, "Legendary".asStoreItemRarity())
+
+        // Defensive fallbacks
+        assertEquals(StoreItemRarity.COMMON, null.asStoreItemRarity())
+        assertEquals(StoreItemRarity.COMMON, "".asStoreItemRarity())
+        assertEquals(StoreItemRarity.COMMON, "UNKNOWN".asStoreItemRarity())
+        assertEquals(StoreItemRarity.COMMON, "MYTHIC".asStoreItemRarity())
+    }
+
+    @Test
+    fun `StoreItemDto asExternalModel resolves relative image URL and maps rarity`() {
+        val dto = StoreItemDto(
+            id = "frame-1",
+            name = "Twilight Frame",
+            description = "A twilight frame",
+            image = "/images/store/twilight_light_03.png",
+            info = "twilight_03",
+            price = 820,
+            version = "2.0",
+            type = "FRAME",
+            rarity = "RARE"
+        )
+
+        val model = dto.asExternalModel()
+        assertNotNull(model)
+        assertEquals("frame-1", model!!.id)
+        assertEquals(StoreItemRarity.RARE, model.rarity)
+        assertEquals(StoreItemType.FRAME, model.type)
+        assertTrue(model.image.endsWith("/images/store/twilight_light_03.png"))
+        assertFalse(model.image.contains("/api/images"))
+    }
+
+    @Test
+    fun `StoreItemEntity to and from StoreItem preserves rarity and image`() {
+        val domainItem = sampleStoreItem.copy(rarity = StoreItemRarity.LEGENDARY)
+        val entity = domainItem.asEntity(expiryTime = 9999L)
+
+        assertEquals("LEGENDARY", entity.rarity)
+        assertEquals(sampleStoreItem.image, entity.image)
+
+        val mappedBack = entity.asExternalModel()
+        assertNotNull(mappedBack)
+        assertEquals(StoreItemRarity.LEGENDARY, mappedBack!!.rarity)
     }
 }

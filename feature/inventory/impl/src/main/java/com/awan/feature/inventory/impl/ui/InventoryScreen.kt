@@ -508,7 +508,7 @@ internal fun CustomizationDetailsSheet(
     onEquip: () -> Unit,
 ) {
     val isEquipped = item.item.id in state.equippedItemIds
-    val rarity = CustomizationRarity.fromInfo(item.item.info)
+    val rarity = CustomizationRarity.fromStoreItemRarity(item.item.rarity)
     val accent = rarityAccent(rarity)
 
     // Outermost Box: the gradient is drawn BEHIND everything via bowlGradientBackdrop.

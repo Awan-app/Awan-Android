@@ -13,5 +13,6 @@ data class StoreItemEntity(
     val price: Int,
     val version: String,
     val type: String, // StoreItemType.name
+    val rarity: String = "COMMON",
     val expiryTime: Long = 0L
 )
