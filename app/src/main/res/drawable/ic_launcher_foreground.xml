@@ -4,39 +4,35 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-
-    <!-- The cloud silhouette redrawn three times, each nudged further down-right at a lower alpha.
-         Vector drawables have no blur filter, so the overlap between the copies is what softens the
-         edge; a single copy reads as a hard cut-out. -->
     <group
         android:scaleX="0.78"
         android:scaleY="0.78"
-        android:translateX="27.4"
-        android:translateY="32.8">
-        <path android:fillColor="#0B3A55" android:fillAlpha="0.08" android:pathData="M9,36 a15,15 0 1,0 30,0 a15,15 0 1,0 -30,0 z" />
-        <path android:fillColor="#0B3A55" android:fillAlpha="0.08" android:pathData="M25,26 a19,19 0 1,0 38,0 a19,19 0 1,0 -38,0 z" />
-        <path android:fillColor="#0B3A55" android:fillAlpha="0.08" android:pathData="M49,38 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0 z" />
-        <path android:fillColor="#0B3A55" android:fillAlpha="0.08" android:pathData="M13,43 a29,14 0 1,0 58,0 a29,14 0 1,0 -58,0 z" />
+        android:translateX="24.6"
+        android:translateY="29.6">
+        <path
+            android:fillColor="#0B3A55"
+            android:fillAlpha="0.03"
+            android:pathData="M13,43 C13,35.3 18,29 25.6,29 C25.4,27.7 25,26.5 25,26 C25,15.5 33.5,7 44,7 C53.5,7 61.3,14 62.8,23.2 C70.1,23.6 75,29.5 75,38 C75,40.2 74.5,42.3 73.5,44.2 C75,46.7 71,57 42,57 C26,57 13,51.6 13,43 z" />
     </group>
     <group
         android:scaleX="0.78"
         android:scaleY="0.78"
-        android:translateX="25.6"
-        android:translateY="30.9">
-        <path android:fillColor="#0B3A55" android:fillAlpha="0.10" android:pathData="M9,36 a15,15 0 1,0 30,0 a15,15 0 1,0 -30,0 z" />
-        <path android:fillColor="#0B3A55" android:fillAlpha="0.10" android:pathData="M25,26 a19,19 0 1,0 38,0 a19,19 0 1,0 -38,0 z" />
-        <path android:fillColor="#0B3A55" android:fillAlpha="0.10" android:pathData="M49,38 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0 z" />
-        <path android:fillColor="#0B3A55" android:fillAlpha="0.10" android:pathData="M13,43 a29,14 0 1,0 58,0 a29,14 0 1,0 -58,0 z" />
+        android:translateX="23.8"
+        android:translateY="28.8">
+        <path
+            android:fillColor="#0B3A55"
+            android:fillAlpha="0.05"
+            android:pathData="M13,43 C13,35.3 18,29 25.6,29 C25.4,27.7 25,26.5 25,26 C25,15.5 33.5,7 44,7 C53.5,7 61.3,14 62.8,23.2 C70.1,23.6 75,29.5 75,38 C75,40.2 74.5,42.3 73.5,44.2 C75,46.7 71,57 42,57 C26,57 13,51.6 13,43 z" />
     </group>
     <group
         android:scaleX="0.78"
         android:scaleY="0.78"
-        android:translateX="23.9"
-        android:translateY="29.1">
-        <path android:fillColor="#0B3A55" android:fillAlpha="0.12" android:pathData="M9,36 a15,15 0 1,0 30,0 a15,15 0 1,0 -30,0 z" />
-        <path android:fillColor="#0B3A55" android:fillAlpha="0.12" android:pathData="M25,26 a19,19 0 1,0 38,0 a19,19 0 1,0 -38,0 z" />
-        <path android:fillColor="#0B3A55" android:fillAlpha="0.12" android:pathData="M49,38 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0 z" />
-        <path android:fillColor="#0B3A55" android:fillAlpha="0.12" android:pathData="M13,43 a29,14 0 1,0 58,0 a29,14 0 1,0 -58,0 z" />
+        android:translateX="23"
+        android:translateY="28">
+        <path
+            android:fillColor="#0B3A55"
+            android:fillAlpha="0.07"
+            android:pathData="M13,43 C13,35.3 18,29 25.6,29 C25.4,27.7 25,26.5 25,26 C25,15.5 33.5,7 44,7 C53.5,7 61.3,14 62.8,23.2 C70.1,23.6 75,29.5 75,38 C75,40.2 74.5,42.3 73.5,44.2 C75,46.7 71,57 42,57 C26,57 13,51.6 13,43 z" />
     </group>
 
     <group
