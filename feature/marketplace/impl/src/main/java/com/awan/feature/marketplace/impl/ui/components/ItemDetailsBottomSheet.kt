@@ -32,7 +32,6 @@ fun ItemDetailsBottomSheet(
     isOwned: Boolean,
     isEquipped: Boolean,
     currentPoints: Int,
-    accessToken: String?,
     onBuyClick: () -> Unit,
     onEquipClick: () -> Unit,
     onUnequipClick: () -> Unit,
@@ -79,7 +78,6 @@ fun ItemDetailsBottomSheet(
 
             AwanRemoteImage(
                 url = item.image,
-                accessToken = accessToken,
                 contentDescription = item.name,
                 modifier = Modifier
                     .size(180.dp)

@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
-import com.awan.app.core.datastore.auth.AuthTokenProvider
 import com.awan.app.core.domain.marketplace.usecase.BuyItemUseCase
 import com.awan.app.core.domain.marketplace.usecase.EquipItemUseCase
 import com.awan.app.core.domain.marketplace.usecase.GetEquippedItemsUseCase
@@ -35,8 +34,7 @@ class MarketplaceViewModel @Inject constructor(
     private val equipItemUseCase: EquipItemUseCase,
     private val unequipItemUseCase: UnequipItemUseCase,
     private val refreshMarketplaceUseCase: RefreshMarketplaceUseCase,
-    private val observeProfileUseCase: ObserveProfileUseCase,
-    private val authTokenProvider: AuthTokenProvider
+    private val observeProfileUseCase: ObserveProfileUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MarketplaceUiState())
@@ -62,10 +60,6 @@ class MarketplaceViewModel @Inject constructor(
 
     init {
         refresh()
-        viewModelScope.launch {
-            val token = authTokenProvider.getAccessToken()
-            _uiState.update { it.copy(accessToken = token) }
-        }
     }
 
     fun onAction(action: MarketplaceAction) {
@@ -141,11 +135,15 @@ class MarketplaceViewModel @Inject constructor(
     }
 
     private fun unequipItem(type: StoreItemType) {
+        if (state.value.isEquipping) return
+        
+        _uiState.update { it.copy(isEquipping = true) }
         viewModelScope.launch {
             val result = unequipItemUseCase(type)
             if (result is Result.Error) {
                 _uiState.update { it.copy(error = R.string.marketplace_error_unequipping) }
             }
+            _uiState.update { it.copy(isEquipping = false) }
         }
     }
 }

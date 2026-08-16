@@ -51,8 +51,7 @@ class MarketplaceViewModelTest {
             equipItemUseCase = EquipItemUseCase(storeRepository),
             unequipItemUseCase = UnequipItemUseCase(storeRepository),
             refreshMarketplaceUseCase = RefreshMarketplaceUseCase(storeRepository),
-            observeProfileUseCase = ObserveProfileUseCase(profileRepository),
-            authTokenProvider = authTokenProvider
+            observeProfileUseCase = ObserveProfileUseCase(profileRepository)
         )
     }
 

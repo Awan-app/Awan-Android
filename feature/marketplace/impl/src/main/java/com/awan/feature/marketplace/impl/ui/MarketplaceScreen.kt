@@ -93,7 +93,6 @@ fun MarketplaceScreen(
                         item = item,
                         isOwned = item.id in state.ownedItemIds,
                         isEquipped = item.id in state.equippedItemIds,
-                        accessToken = state.accessToken,
                         onClick = { viewModel.onAction(MarketplaceAction.SelectItem(item)) }
                     )
                 }
@@ -107,7 +106,6 @@ fun MarketplaceScreen(
             isOwned = item.id in state.ownedItemIds,
             isEquipped = item.id in state.equippedItemIds,
             currentPoints = state.points,
-            accessToken = state.accessToken,
             onBuyClick = { itemToBuy = item },
             onEquipClick = { itemToEquip = item },
             onUnequipClick = { itemToUnequip = item },
