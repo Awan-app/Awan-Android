@@ -1,7 +1,6 @@
 package com.awan.app.core.database.model
 
 import androidx.room.Entity
-import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
@@ -14,14 +13,6 @@ import androidx.room.PrimaryKey
  */
 @Entity(
     tableName = "tasks",
-    foreignKeys = [
-        ForeignKey(
-            entity = CategoryEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["categoryId"],
-            onDelete = ForeignKey.NO_ACTION,
-        ),
-    ],
     indices = [
         Index("goalId"),
         Index("categoryId"),
@@ -41,9 +32,9 @@ data class TaskEntity(
     val mandatory: Boolean,
     val estimatedPoints: Int,
     val allowTaskSplitting: Boolean,
-    /** Optional foreign key to the parent [GoalEntity]. Null for Inbox tasks. */
+    /** Optional reference to the parent [GoalEntity]. Null for Inbox tasks. */
     val goalId: String? = null,
-    /** Optional foreign key to [CategoryEntity]. */
+    /** Optional reference to [CategoryEntity]. */
     val categoryId: String? = null,
     val completedAt: String? = null,
     val expiryTime: Long = 0L,

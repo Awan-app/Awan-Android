@@ -83,6 +83,14 @@ class TaskDaoTest {
     }
 
     @Test
+    fun upsertTask_withUncachedCategoryId_succeedsWithoutForeignKeyException() = runTest {
+        insertGoal()
+        val taskWithUncachedCategory = task().copy(categoryId = "uncached-category-id")
+        dao.upsertTask(taskWithUncachedCategory)
+        assertEquals("uncached-category-id", dao.getTask("t1")?.categoryId)
+    }
+
+    @Test
     fun upsertUpdatesExistingTask() = runTest {
         insertGoal()
         dao.upsertTask(task(title = "Old"))
