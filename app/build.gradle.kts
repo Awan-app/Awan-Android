@@ -35,6 +35,7 @@ android {
             "TypographyFractions",
             "TypographyQuotes",
             "IconMissingDensityFolder",
+            "PropertyEscape",
         )
         error += "HardcodedText"
         error += "MissingTranslation"

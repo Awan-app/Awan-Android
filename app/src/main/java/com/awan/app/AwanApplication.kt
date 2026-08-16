@@ -44,12 +44,4 @@ class AwanApplication : Application(), Configuration.Provider, SingletonImageLoa
         // what keeps alarms current after a background sync rewrites the schedule.
         sessionNotificationStarter.start()
     }
-
-    override fun newImageLoader(context: PlatformContext): ImageLoader {
-        return ImageLoader.Builder(context)
-            .components {
-                add(OkHttpNetworkFetcherFactory(callFactory = { okHttpClient }))
-            }
-            .build()
-    }
 }
