@@ -68,6 +68,7 @@ fun AwanScheduleTaskCard(
 ) {
     val isCompleted = status is TaskStatus.Completed
     val cardShape = RoundedCornerShape(16.dp)
+    val hapticCardClick = rememberHapticClick(onClick = { onClick?.invoke() })
 
     val strokeColor = if (isCompleted)
         AwanTheme.colors.line
@@ -84,7 +85,7 @@ fun AwanScheduleTaskCard(
     )
 
     val cardModifier = if (onClick != null && !isDragging) {
-        modifier.clickable(onClick = onClick)
+        modifier.clickable(onClick = hapticCardClick)
     } else {
         modifier
     }

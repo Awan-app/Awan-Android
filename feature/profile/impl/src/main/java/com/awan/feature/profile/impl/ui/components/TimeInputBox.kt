@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.rememberHapticClick
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 
 @Composable
@@ -27,6 +28,7 @@ fun TimeInputBox(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val hapticClick = rememberHapticClick(onClick)
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         AwanText(
             text = label,
@@ -39,7 +41,7 @@ fun TimeInputBox(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onClick)
+                .clickable(onClick = hapticClick)
                 .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(12.dp)),
             color = AwanTheme.colors.surface
         ) {

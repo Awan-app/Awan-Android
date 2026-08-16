@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.reducedMotion
+import com.awan.app.core.designsystem.rememberHapticClick
 import com.awan.app.core.domain.zones.model.Zone
 import com.awan.feature.onboarding.impl.R
 import com.awan.feature.onboarding.impl.ui.formatClock
@@ -57,6 +58,7 @@ fun ZoneRow(
     val zoneColor = Color(zone.colorArgb)
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
+    val hapticClick = rememberHapticClick(onClick)
     val reduced = reducedMotion()
     val pressScale by animateFloatAsState(
         targetValue = if (pressed && !reduced) PRESS_SCALE else 1f,
@@ -82,7 +84,7 @@ fun ZoneRow(
                 interactionSource = interactionSource,
                 indication = ripple(),
                 onClickLabel = stringResource(R.string.onboarding_zone_edit_hours),
-                onClick = onClick,
+                onClick = hapticClick,
             )
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),

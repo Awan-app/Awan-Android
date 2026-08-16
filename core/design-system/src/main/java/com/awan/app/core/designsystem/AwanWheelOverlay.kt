@@ -211,6 +211,10 @@ fun AwanWheelOverlay(
         }
     }
 
+    LaunchedEffect(landed, reduced) {
+        if (landed && !reduced) haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+    }
+
     val isWin = landingSegmentId != null
     val showResult = resultText != null && (landed || !isWin)
     val inMotion = isSpinning || (isWin && !showResult)
@@ -341,10 +345,7 @@ fun AwanWheelOverlay(
                         darknessAlpha = darknessAlpha,
                         spotlightAlpha = spotlightAlpha,
                         winningHighlightAlpha = winningHighlightAlpha,
-                        onSpin = {
-                            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                            onSpin()
-                        },
+                        onSpin = onSpin,
                     )
 
                     // White Pointer Pin at Top (-90°) with active Flashlight Lens

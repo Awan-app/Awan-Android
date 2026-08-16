@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -79,11 +80,15 @@ internal fun InboxTaskCard(
                     if (isExpanded) R.string.inbox_collapse_sessions_content_description
                     else R.string.inbox_expand_sessions_content_description
                 )
+                val hapticExpandToggle = rememberHapticClick(
+                    onClick = onExpandToggle,
+                    haptic = HapticFeedbackType.SegmentTick,
+                )
                 Box(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .clickable(onClick = onExpandToggle),
+                        .clickable(onClick = hapticExpandToggle),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(

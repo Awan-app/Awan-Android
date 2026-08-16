@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -113,6 +114,7 @@ fun AwanDropdownMenuItem(
     enabled: Boolean = true,
     leading: @Composable (() -> Unit)? = null,
 ) {
+    val hapticClick = rememberHapticClick(onClick, HapticFeedbackType.SegmentTick)
     val colors = AwanTheme.colors
     val ink = when {
         !enabled -> colors.meta
@@ -120,7 +122,7 @@ fun AwanDropdownMenuItem(
         else -> colors.textSecondary
     }
     DropdownMenuItem(
-        onClick = onClick,
+        onClick = hapticClick,
         modifier = modifier,
         enabled = enabled,
         leadingIcon = leading,

@@ -11,10 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.rememberHapticClick
 import com.awan.feature.profile.impl.R as ProfileR
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,9 +89,13 @@ private fun PhotoOption(
     onClick: () -> Unit,
     isDestructive: Boolean = false
 ) {
+    val hapticClick = rememberHapticClick(
+        onClick = onClick,
+        haptic = if (isDestructive) HapticFeedbackType.Reject else HapticFeedbackType.ContextClick,
+    )
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(onClick = onClick)
+        modifier = Modifier.clickable(onClick = hapticClick)
     ) {
         Box(
             modifier = Modifier

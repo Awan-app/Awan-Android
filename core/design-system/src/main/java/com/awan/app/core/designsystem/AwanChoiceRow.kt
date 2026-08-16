@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
@@ -172,6 +173,7 @@ private fun ChoiceKey(
 
     val shape = AwanTheme.shapes.chip
     val interactionSource = remember { MutableInteractionSource() }
+    val hapticClick = rememberHapticClick(onClick, HapticFeedbackType.SegmentTick)
 
     Box(
         modifier = modifier
@@ -183,7 +185,7 @@ private fun ChoiceKey(
                 interactionSource = interactionSource,
                 indication = ripple(),
                 enabled = enabled,
-                onClick = onClick,
+                onClick = hapticClick,
             )
             // One of a set, which a plain clickable does not say on its own.
             .semantics {

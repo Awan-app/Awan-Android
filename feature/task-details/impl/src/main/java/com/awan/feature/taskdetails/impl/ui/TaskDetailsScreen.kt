@@ -75,6 +75,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -90,6 +91,7 @@ import com.awan.app.core.designsystem.AwanDatePickerDialog
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.AwanTimePickerDialog
+import com.awan.app.core.designsystem.rememberHapticClick
 import com.awan.app.core.model.Goal
 import com.awan.app.core.model.SessionDraft
 import com.awan.app.core.model.SessionStatus
@@ -784,6 +786,7 @@ private fun AddNewSessionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val hapticClick = rememberHapticClick(onClick, HapticFeedbackType.Confirm)
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -794,7 +797,7 @@ private fun AddNewSessionCard(
                 color = AwanTheme.colors.sky.copy(alpha = 0.35f),
                 shape = RoundedCornerShape(12.dp),
             )
-            .clickable(onClick = onClick)
+            .clickable(onClick = hapticClick)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
@@ -1166,6 +1169,7 @@ private fun QuickSelectionChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val hapticClick = rememberHapticClick(onClick, HapticFeedbackType.SegmentTick)
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
@@ -1178,7 +1182,7 @@ private fun QuickSelectionChip(
                 color = if (isSelected) AwanTheme.colors.sky else AwanTheme.colors.line.copy(alpha = 0.4f),
                 shape = RoundedCornerShape(10.dp),
             )
-            .clickable(onClick = onClick)
+            .clickable(onClick = hapticClick)
             .padding(horizontal = 12.dp, vertical = 9.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -1270,6 +1274,7 @@ private data class StatusConfig(
 
 @Composable
 private fun StatusChip(status: TaskStatus, onClick: () -> Unit) {
+    val hapticClick = rememberHapticClick(onClick, HapticFeedbackType.SegmentTick)
     val config = when (status) {
         TaskStatus.COMPLETED -> StatusConfig(
             bg = AwanTheme.colors.zoneGreen.copy(alpha = 0.18f),
@@ -1308,7 +1313,7 @@ private fun StatusChip(status: TaskStatus, onClick: () -> Unit) {
             .clip(RoundedCornerShape(20.dp))
             .background(config.bg)
             .border(1.dp, config.fg.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
+            .clickable(onClick = hapticClick)
             .padding(horizontal = 10.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(5.dp),

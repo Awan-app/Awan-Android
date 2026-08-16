@@ -60,6 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -72,6 +73,7 @@ import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.formatTime
+import com.awan.app.core.designsystem.rememberHapticClick
 import com.awan.app.core.model.SessionStatus
 import com.awan.app.core.model.SessionTaskDetail
 import com.awan.app.core.model.TaskStatus
@@ -268,6 +270,7 @@ private fun MainSessionTaskDetailView(
             }
 
             if (onDeleteClick != null) {
+                val hapticDeleteClick = rememberHapticClick(onDeleteClick, HapticFeedbackType.Reject)
                 Box(
                     modifier = Modifier
                         .size(32.dp)
@@ -278,7 +281,7 @@ private fun MainSessionTaskDetailView(
                             color = AwanTheme.colors.destructive.copy(alpha = 0.20f),
                             shape = CircleShape,
                         )
-                        .clickable(onClick = onDeleteClick),
+                        .clickable(onClick = hapticDeleteClick),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -620,6 +623,9 @@ private fun TimeStepperCard(
     modifier: Modifier = Modifier,
 ) {
     val formattedStr = formatTime(minutesValue)
+    val decreaseHapticClick = rememberHapticClick(onDecrease, HapticFeedbackType.SegmentTick)
+    val timeDisplayHapticClick = rememberHapticClick(onTimeDisplayClick)
+    val increaseHapticClick = rememberHapticClick(onIncrease, HapticFeedbackType.SegmentTick)
 
     Column(
         modifier = modifier
@@ -652,7 +658,7 @@ private fun TimeStepperCard(
                         color = AwanTheme.colors.line.copy(alpha = 0.6f),
                         shape = CircleShape,
                     )
-                    .clickable(onClick = onDecrease),
+                    .clickable(onClick = decreaseHapticClick),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -668,7 +674,7 @@ private fun TimeStepperCard(
                     .clip(RoundedCornerShape(8.dp))
                     .background(AwanTheme.colors.surface)
                     .border(1.dp, AwanTheme.colors.sky.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                    .clickable(onClick = onTimeDisplayClick)
+                    .clickable(onClick = timeDisplayHapticClick)
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -692,7 +698,7 @@ private fun TimeStepperCard(
                         color = AwanTheme.colors.line.copy(alpha = 0.6f),
                         shape = CircleShape,
                     )
-                    .clickable(onClick = onIncrease),
+                    .clickable(onClick = increaseHapticClick),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -1116,6 +1122,15 @@ private fun DateStepperCard(
     modifier: Modifier = Modifier,
 ) {
     val dateDisplayStr = formatSessionDateDisplay(dateValue)
+    val previousDateHapticClick = rememberHapticClick(
+        onClick = { onDateChange(dateValue.minusDays(1)) },
+        haptic = HapticFeedbackType.SegmentTick,
+    )
+    val dateDisplayHapticClick = rememberHapticClick(onDateDisplayClick)
+    val nextDateHapticClick = rememberHapticClick(
+        onClick = { onDateChange(dateValue.plusDays(1)) },
+        haptic = HapticFeedbackType.SegmentTick,
+    )
 
     Column(
         modifier = modifier
@@ -1149,7 +1164,7 @@ private fun DateStepperCard(
                         color = AwanTheme.colors.line.copy(alpha = 0.6f),
                         shape = CircleShape,
                     )
-                    .clickable { onDateChange(dateValue.minusDays(1)) },
+                    .clickable(onClick = previousDateHapticClick),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -1167,7 +1182,7 @@ private fun DateStepperCard(
                     .clip(RoundedCornerShape(8.dp))
                     .background(AwanTheme.colors.surface)
                     .border(1.dp, AwanTheme.colors.sky.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                    .clickable(onClick = onDateDisplayClick)
+                    .clickable(onClick = dateDisplayHapticClick)
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -1203,7 +1218,7 @@ private fun DateStepperCard(
                         color = AwanTheme.colors.line.copy(alpha = 0.6f),
                         shape = CircleShape,
                     )
-                    .clickable { onDateChange(dateValue.plusDays(1)) },
+                    .clickable(onClick = nextDateHapticClick),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
