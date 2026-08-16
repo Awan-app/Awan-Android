@@ -39,6 +39,7 @@ include(":core:datastore-proto")
 include(":core:datastore")
 include(":core:network")
 include(":core:database")
+include(":core:notifications")
 
 // Feature modules
 include(":feature:splash:api")

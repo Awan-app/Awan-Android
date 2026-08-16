@@ -49,7 +49,9 @@ internal fun GoalInfoResponse.toModel(): Goal {
         description = description,
         emoji = extractedEmoji,
         status = status.toModel(),
-        tasks = tasks.map { it.toTaskModel() },
+        tasks = tasks?.map { it.toTaskModel() } ?: emptyList(),
+        targetDate = targetDate,
+        createdAt = createdAt ?: "",
     )
 }
 
@@ -68,6 +70,8 @@ internal fun GoalEntity.toModel(): Goal {
         emoji = extractedEmoji,
         status = goalStatus,
         tasks = emptyList(), // tasks are stored separately in TaskEntity
+        targetDate = targetDate,
+        createdAt = createdAt,
     )
 }
 

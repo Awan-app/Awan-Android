@@ -18,6 +18,7 @@ import com.awan.app.core.database.model.EquippedItemEntity
 import com.awan.app.core.database.model.GoalEntity
 import com.awan.app.core.database.model.OwnedItemEntity
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.UpcomingSessionRow
 import com.awan.app.core.database.model.StoreItemEntity
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
@@ -98,6 +99,11 @@ private class FakeTaskRemoteDataSource(
     override suspend fun getTasksByRange(startDate: String, endDate: String) = rangeResult
     override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = Result.Success(emptyList())
     override suspend fun scheduleTask(request: ScheduleTaskRequest) = error("not used")
+    override suspend fun updateTask(
+        taskId: String,
+        request: com.awan.app.core.network.dto.task.TaskUpdateRequest
+    ): Result<TaskInfoResponse> = error("not used")
+    override suspend fun completeTask(taskId: String): Result<com.awan.app.core.network.dto.task.TaskCompletionResponse> = error("not used")
     override suspend fun deleteTask(taskId: String) = error("not used")
 }
 
@@ -107,7 +113,8 @@ private class FakeGoalRemoteDataSource(
     override suspend fun getGoals(): Result<List<GoalInfoResponse>> = goalsResult
     override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest) = error("not used")
     override suspend fun getInboxGoal() = error("not used")
-    override suspend fun getGoal(goalId: String) = error("not used")
+    override suspend fun getGoal(goalId: String, expand: Boolean) = error("not used")
+    override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest) = error("not used")
     override suspend fun deleteGoal(goalId: String) = error("not used")
     override suspend fun continueDecomposition(request: GoalDecomposeRequest) = error("not used")
     override suspend fun confirmDecomposition(sessionId: String) = error("not used")
@@ -185,9 +192,7 @@ private class FakeTaskDao : TaskDao {
     override suspend fun upsertTask(task: TaskEntity) { upsertedTasks += task }
     override suspend fun upsertTasks(tasks: List<TaskEntity>) { upsertedTasks += tasks }
     override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override fun observeInboxTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override fun observeAllTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override suspend fun getAllTasks(): List<TaskEntity> = emptyList()
+    override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = emptyList()
     override fun observeTask(taskId: String): Flow<TaskEntity?> = MutableStateFlow(null)
     override suspend fun getTask(taskId: String): TaskEntity? = null
     override suspend fun deleteTask(taskId: String) {}
@@ -195,6 +200,7 @@ private class FakeTaskDao : TaskDao {
     override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
     override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
     override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+    override suspend fun getDependsOnIds(taskId: String): List<String> = emptyList()
     override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
     override suspend fun deleteAllDependenciesForTask(taskId: String) {}
     override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}
@@ -223,6 +229,8 @@ private class FakeSessionDao : SessionDao {
     override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<SessionEntity>> = flowOf(emptyList())
     override suspend fun getSessionsForDate(date: String): List<SessionEntity> = emptyList()
     override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = emptyList()
+    override fun observeUpcomingSessions(startDate: String, endDate: String): Flow<List<UpcomingSessionRow>> = flowOf(emptyList())
+    override suspend fun getUpcomingSessions(startDate: String, endDate: String): List<UpcomingSessionRow> = emptyList()
     override suspend fun getSession(id: String): SessionEntity? = null
     override suspend fun deleteSessionsForDates(dates: List<String>) { replacedDates += dates }
     override suspend fun deleteSession(id: String) {}
@@ -237,9 +245,7 @@ private class FakeGoalDao : GoalDao {
     override fun observeGoalsByStatus(status: String): Flow<List<GoalEntity>> = flowOf(emptyList())
     override fun observeGoal(goalId: String): Flow<GoalEntity?> = MutableStateFlow(null)
     override suspend fun getGoal(goalId: String): GoalEntity? = null
-    override fun observeInboxGoal(): Flow<GoalEntity?> = MutableStateFlow(null)
     override suspend fun deleteGoal(goalId: String) {}
-    override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
     override suspend fun getMinExpiryTime(): Long? = null
 }
 

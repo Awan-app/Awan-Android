@@ -75,6 +75,7 @@ dependencies {
     implementation(project(":core:network"))
     implementation(project(":core:design-system"))
     implementation(project(":core:navigation"))
+    implementation(project(":core:notifications"))
     implementation(project(":feature:splash:api"))
 
     // Firebase
@@ -94,6 +95,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.core.splashscreen)
 
     // Navigation 3
     implementation(libs.androidx.navigation3.ui)

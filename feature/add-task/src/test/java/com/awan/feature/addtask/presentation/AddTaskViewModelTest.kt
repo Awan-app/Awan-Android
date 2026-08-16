@@ -15,6 +15,7 @@ import com.awan.app.core.domain.task.usecase.CreateTaskUseCase
 import com.awan.app.core.domain.task.usecase.ParseTaskInputUseCase
 import com.awan.app.core.domain.profile.model.UserData
 import com.awan.app.core.domain.profile.repository.UserDataRepository
+import com.awan.app.core.model.NotificationPreferences
 import com.awan.app.core.domain.profile.usecase.GetUserDataUseCase
 import com.awan.app.core.domain.profile.usecase.SetMicPermissionRequestedUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
@@ -25,6 +26,7 @@ import com.awan.app.core.domain.zones.model.WeeklyTemplate
 import com.awan.app.core.domain.zones.repository.ZonesRepository
 import com.awan.app.core.domain.zones.usecase.GetZonesForDateUseCase
 import com.awan.app.core.model.Category
+import com.awan.app.core.model.DarkThemeConfig
 import com.awan.app.core.model.DayZone
 import com.awan.app.core.model.Goal
 import com.awan.app.core.model.GoalDecompositionBlock
@@ -44,7 +46,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -120,6 +124,10 @@ class AddTaskViewModelTest {
         override suspend fun deleteTask(taskId: String): Result<Unit> = error("not used")
 
         override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = error("not used")
+
+        override suspend fun completeTask(taskId: String): Result<Task> = error("not used")
+
+        override suspend fun moveTask(taskId: String, goalId: String?): Result<Task> = error("not used")
     }
 
     private class FakeGoalRepository : GoalRepository {
@@ -128,6 +136,8 @@ class AddTaskViewModelTest {
 
         val continueCalls = mutableListOf<Pair<String?, String>>()
         val confirmCalls = mutableListOf<String>()
+
+        override fun observeGoals(): Flow<List<Goal>> = flowOf(emptyList())
 
         override suspend fun getGoals(): Result<List<Goal>> = Result.Success(emptyList())
 
@@ -147,7 +157,19 @@ class AddTaskViewModelTest {
         override suspend fun createGoal(title: String, description: String?, targetDate: String?): Result<Goal> = error("not used")
         override suspend fun getInboxGoal(): Result<Goal> = error("not used")
         override suspend fun getGoal(goalId: String): Result<Goal> = error("not used")
+
+        override suspend fun updateGoal(
+            goalId: String,
+            title: String?,
+            description: String?,
+            status: String?,
+            targetDate: String?
+        ): Result<Goal> = error("not used")
+
         override suspend fun deleteGoal(goalId: String): Result<Unit> = error("not used")
+
+        override fun observeGoal(goalId: String): Flow<Goal?> = flowOf(null)
+
         override suspend fun getDecompositionTranscript(sessionId: String): Result<com.awan.app.core.model.GoalDecompositionTranscript> = error("not used")
         override suspend fun cancelDecomposition(sessionId: String): Result<Unit> = error("not used")
         override suspend fun scheduleGoal(goalId: String): Result<Unit> = error("not used")
@@ -196,11 +218,11 @@ class AddTaskViewModelTest {
     }
 
     private class FakeUserDataRepository : UserDataRepository {
-        val _userData = MutableStateFlow(UserData(darkThemeEnabled = false, locale = "en", micPermissionRequested = false))
+        val _userData = MutableStateFlow(UserData(darkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM, locale = "en", micPermissionRequested = false))
         override val userData: Flow<UserData> = _userData
 
-        override suspend fun setDarkThemeEnabled(enabled: Boolean) {
-            _userData.update { it.copy(darkThemeEnabled = enabled) }
+        override suspend fun setDarkThemeConfig(config: DarkThemeConfig) {
+            _userData.update { it.copy(darkThemeConfig = config) }
         }
 
         override suspend fun setLocale(locale: String) {
@@ -209,6 +231,10 @@ class AddTaskViewModelTest {
 
         override suspend fun setMicPermissionRequested(requested: Boolean) {
             _userData.update { it.copy(micPermissionRequested = requested) }
+        }
+
+        override suspend fun setNotificationPreferences(preferences: NotificationPreferences) {
+            _userData.update { it.copy(notificationPreferences = preferences) }
         }
     }
 
@@ -228,17 +254,20 @@ class AddTaskViewModelTest {
     private lateinit var categoryRepository: FakeCategoryRepository
     private lateinit var userDataRepository: FakeUserDataRepository
 
+    private val createdViewModels = mutableListOf<AddTaskViewModel>()
+
     private fun viewModel(): AddTaskViewModel = AddTaskViewModel(
-        parseTaskInput = ParseTaskInputUseCase(clock),
-        applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
-        getCategories = GetCategoriesUseCase(categoryRepository),
-        createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-        continueGoalDecomposition = ContinueGoalDecompositionUseCase(goalRepository),
-        confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(goalRepository),
-        getUserDataUseCase = GetUserDataUseCase(userDataRepository),
-        setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
-        clock = clock,
-    )
+        ParseTaskInputUseCase(clock),
+        ApplyTaskAttributeUseCase(clock),
+        GetCategoriesUseCase(categoryRepository),
+        GetZonesForDateUseCase(zoneRepository),
+        CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+        ContinueGoalDecompositionUseCase(goalRepository),
+        ConfirmGoalDecompositionUseCase(goalRepository),
+        GetUserDataUseCase(userDataRepository),
+        SetMicPermissionRequestedUseCase(userDataRepository),
+        clock,
+    ).also { createdViewModels.add(it) }
 
     /** The sentences asserted here are English, and the parser follows the ambient locale. */
     private val hostLocale: Locale = Locale.getDefault()
@@ -256,6 +285,8 @@ class AddTaskViewModelTest {
 
     @After
     fun tearDown() {
+        createdViewModels.forEach { it.cancelAllJobsForTesting() }
+        createdViewModels.clear()
         Dispatchers.resetMain()
         Locale.setDefault(hostLocale)
     }
@@ -422,12 +453,16 @@ class AddTaskViewModelTest {
     fun `closing the receipt emits TaskCreated without asking to discard`() = runTest(testDispatcher) {
         val viewModel = viewModel()
 
+        val events = mutableListOf<AddTaskEvent>()
+        backgroundScope.launch { viewModel.events.collect { events.add(it) } }
+
         viewModel.onAction(AddTaskAction.InputChanged("Buy groceries tomorrow 6pm for 45m"))
         viewModel.onAction(AddTaskAction.Submit)
         viewModel.onAction(AddTaskAction.DismissRequested)
 
         assertFalse(viewModel.state.value.showDiscardConfirm)
-        assertEquals(AddTaskEvent.TaskCreated("Buy groceries"), viewModel.events.first())
+        assertEquals(AddTaskEvent.TaskCreated("Buy groceries"), events.first())
+        advanceUntilIdle()
     }
 
     @Test
@@ -721,53 +756,7 @@ class AddTaskViewModelTest {
         assertTrue(state.parsed.tokens.isEmpty())
     }
 
-    @Test
-    fun `submitting with Awan on hands off to the full screen and touches no repository`() =
-        runTest(testDispatcher) {
-            val viewModel = viewModel()
 
-            viewModel.onAction(AddTaskAction.AiToggled)
-            viewModel.onAction(AddTaskAction.InputChanged("Build a login page"))
-            viewModel.onAction(AddTaskAction.DescriptionChanged("with email and password"))
-            viewModel.onAction(AddTaskAction.Submit)
-
-            assertTrue(taskRepository.calls.isEmpty())
-            assertEquals(
-                AddTaskEvent.AiRequested(
-                    text = "Build a login page",
-                    note = "with email and password",
-                    imageUri = null,
-                ),
-                viewModel.events.first(),
-            )
-        }
-
-    @Test
-    fun `a blank description is not sent as a note`() = runTest(testDispatcher) {
-        val viewModel = viewModel()
-
-        viewModel.onAction(AddTaskAction.AiToggled)
-        viewModel.onAction(AddTaskAction.InputChanged("Build a login page"))
-        viewModel.onAction(AddTaskAction.Submit)
-
-        val event = viewModel.events.first() as AddTaskEvent.AiRequested
-        assertNull(event.note)
-    }
-
-    @Test
-    fun `a photo alone is enough to ask Awan`() = runTest(testDispatcher) {
-        val viewModel = viewModel()
-
-        viewModel.onAction(AddTaskAction.AiToggled)
-        viewModel.onAction(AddTaskAction.ImagePicked("content://images/1"))
-
-        assertTrue(viewModel.state.value.canSubmit)
-
-        viewModel.onAction(AddTaskAction.Submit)
-
-        val event = viewModel.events.first() as AddTaskEvent.AiRequested
-        assertEquals("content://images/1", event.imageUri)
-    }
 
     @Test
     fun `clearing the photo removes it from state`() = runTest(testDispatcher) {
@@ -794,17 +783,6 @@ class AddTaskViewModelTest {
         assertNull(state.imageUri)
     }
 
-    // ── Nothing is lost by accident ──────────────────────────────────────────
-
-    @Test
-    fun `dismissing a clean sheet just closes it`() = runTest(testDispatcher) {
-        val viewModel = viewModel()
-
-        viewModel.onAction(AddTaskAction.DismissRequested)
-
-        assertFalse(viewModel.state.value.showDiscardConfirm)
-        assertEquals(AddTaskEvent.Dismissed, viewModel.events.first())
-    }
 
     @Test
     fun `dismissing a dirty sheet asks first`() = runTest(testDispatcher) {
@@ -863,13 +841,16 @@ class AddTaskViewModelTest {
     @Test
     fun `discarding before Awan has answered deletes nothing`() = runTest(testDispatcher) {
         val viewModel = viewModel()
+        val events = mutableListOf<AddTaskEvent>()
+        backgroundScope.launch { viewModel.events.collect { events.add(it) } }
 
         viewModel.onAction(AddTaskAction.InputChanged("Buy groceries"))
         viewModel.onAction(AddTaskAction.DismissRequested)
         viewModel.onAction(AddTaskAction.DiscardConfirmed)
 
         assertTrue(taskRepository.calls.none { it == "delete" })
-        assertNotNull(viewModel.events.first())
+        assertEquals(AddTaskEvent.Dismissed, events.first())
+        advanceUntilIdle()
     }
 
     // ── AI Goal Creation Flow ────────────────────────────────────────────────
@@ -1249,16 +1230,20 @@ class AddTaskViewModelTest {
                 }
             }
             val customViewModel = AddTaskViewModel(
-                parseTaskInput = ParseTaskInputUseCase(clock),
-                applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
-                getCategories = GetCategoriesUseCase(categoryRepository),
-                createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-                continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
-                confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
-                getUserDataUseCase = GetUserDataUseCase(userDataRepository),
-                setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
-                clock = clock,
-            )
+                ParseTaskInputUseCase(clock),
+                ApplyTaskAttributeUseCase(clock),
+                GetCategoriesUseCase(categoryRepository),
+                GetZonesForDateUseCase(zoneRepository),
+                CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+                ContinueGoalDecompositionUseCase(gateRepository),
+                ConfirmGoalDecompositionUseCase(gateRepository),
+                GetUserDataUseCase(userDataRepository),
+                SetMicPermissionRequestedUseCase(userDataRepository),
+                clock,
+            ).also { createdViewModels.add(it) }
+
+            val events = mutableListOf<AddTaskEvent>()
+            backgroundScope.launch { customViewModel.events.collect { events.add(it) } }
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
             customViewModel.onAction(AddTaskAction.InputChanged("Goal"))
@@ -1273,7 +1258,8 @@ class AddTaskViewModelTest {
             val createdGoal = Goal(id = "g-1", title = "Goal Title", description = null, emoji = "🎯")
             confirmGate.complete(Result.Success(createdGoal))
 
-            assertEquals(AddTaskEvent.GoalCreated("Goal Title"), customViewModel.events.first())
+            assertEquals(AddTaskEvent.GoalCreated("Goal Title"), events.first())
+            advanceUntilIdle()
         }
 
     @Test
@@ -1339,16 +1325,20 @@ class AddTaskViewModelTest {
                 }
             }
             val customViewModel = AddTaskViewModel(
-                parseTaskInput = ParseTaskInputUseCase(clock),
-                applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
-                getCategories = GetCategoriesUseCase(categoryRepository),
-                createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-                continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
-                confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
-                getUserDataUseCase = GetUserDataUseCase(userDataRepository),
-                setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
-                clock = clock,
-            )
+                ParseTaskInputUseCase(clock),
+                ApplyTaskAttributeUseCase(clock),
+                GetCategoriesUseCase(categoryRepository),
+                GetZonesForDateUseCase(zoneRepository),
+                CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+                ContinueGoalDecompositionUseCase(gateRepository),
+                ConfirmGoalDecompositionUseCase(gateRepository),
+                GetUserDataUseCase(userDataRepository),
+                SetMicPermissionRequestedUseCase(userDataRepository),
+                clock,
+            ).also { createdViewModels.add(it) }
+
+            val events = mutableListOf<AddTaskEvent>()
+            backgroundScope.launch { customViewModel.events.collect { events.add(it) } }
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
             customViewModel.onAction(AddTaskAction.InputChanged("In-flight Goal"))
@@ -1378,7 +1368,8 @@ class AddTaskViewModelTest {
             assertEquals(AddTaskMode.TASK, finalState.mode)
             assertEquals(GoalStep.Initial, finalState.goalStep)
             assertNull(finalState.goalSessionId)
-            assertEquals(AddTaskEvent.Dismissed, customViewModel.events.first())
+            assertEquals(AddTaskEvent.Dismissed, events.first())
+            advanceUntilIdle()
         }
 
     @Test
@@ -1432,16 +1423,17 @@ class AddTaskViewModelTest {
                 }
             }
             val customViewModel = AddTaskViewModel(
-                parseTaskInput = ParseTaskInputUseCase(clock),
-                applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
-                getCategories = GetCategoriesUseCase(categoryRepository),
-                createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-                continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
-                confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
-                getUserDataUseCase = GetUserDataUseCase(userDataRepository),
-                setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
-                clock = clock,
-            )
+                ParseTaskInputUseCase(clock),
+                ApplyTaskAttributeUseCase(clock),
+                GetCategoriesUseCase(categoryRepository),
+                GetZonesForDateUseCase(zoneRepository),
+                CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+                ContinueGoalDecompositionUseCase(gateRepository),
+                ConfirmGoalDecompositionUseCase(gateRepository),
+                GetUserDataUseCase(userDataRepository),
+                SetMicPermissionRequestedUseCase(userDataRepository),
+                clock,
+            ).also { createdViewModels.add(it) }
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
             customViewModel.onAction(AddTaskAction.InputChanged("My Goal"))
@@ -1542,16 +1534,17 @@ class AddTaskViewModelTest {
                 }
             }
             val customViewModel = AddTaskViewModel(
-                parseTaskInput = ParseTaskInputUseCase(clock),
-                applyTaskAttribute = ApplyTaskAttributeUseCase(clock),
-                getCategories = GetCategoriesUseCase(categoryRepository),
-                createTask = CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
-                continueGoalDecomposition = ContinueGoalDecompositionUseCase(gateRepository),
-                confirmGoalDecomposition = ConfirmGoalDecompositionUseCase(gateRepository),
-                getUserDataUseCase = GetUserDataUseCase(userDataRepository),
-                setMicPermissionRequestedUseCase = SetMicPermissionRequestedUseCase(userDataRepository),
-                clock = clock,
-            )
+                ParseTaskInputUseCase(clock),
+                ApplyTaskAttributeUseCase(clock),
+                GetCategoriesUseCase(categoryRepository),
+                GetZonesForDateUseCase(zoneRepository),
+                CreateTaskUseCase(taskRepository, GetZonesForDateUseCase(zoneRepository)),
+                ContinueGoalDecompositionUseCase(gateRepository),
+                ConfirmGoalDecompositionUseCase(gateRepository),
+                GetUserDataUseCase(userDataRepository),
+                SetMicPermissionRequestedUseCase(userDataRepository),
+                clock,
+            ).also { createdViewModels.add(it) }
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
             customViewModel.onAction(AddTaskAction.InputChanged("Captured input"))

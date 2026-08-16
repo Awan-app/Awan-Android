@@ -435,5 +435,7 @@ class CalendarViewModelTest {
         override suspend fun spinWheel(): Result<WheelSpinResult> = error("Not needed")
 
         override suspend fun publishWheelReward(result: WheelSpinResult) = error("Not needed")
+
+        override fun publishReward(event: RewardEvent) {}
     }
 }

@@ -2,12 +2,19 @@ package com.awan.app.core.data.task
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.database.dao.CategoryDao
+import com.awan.app.core.database.dao.GoalDao
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.dao.TaskDao
+import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.model.CategoryEntity
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.UpcomingSessionRow
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
+import com.awan.app.core.database.model.UserEntity
+import com.awan.app.core.database.model.UserPreferencesEntity
+import com.awan.app.core.database.model.UserWithPreferences
+import com.awan.app.core.data.gamification.GamificationEventBus
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.model.SessionDraft
@@ -22,6 +29,7 @@ import com.awan.app.core.network.dto.task.ScheduleTaskRequest
 import com.awan.app.core.network.dto.task.ScheduledSessionResponse
 import com.awan.app.core.network.dto.task.SessionDraftDto
 import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.network.dto.task.TaskCompletionResponse
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
@@ -49,9 +57,7 @@ private class FakeTaskDao : TaskDao {
     override suspend fun upsertTask(task: TaskEntity) { upsertedTasks += task }
     override suspend fun upsertTasks(tasks: List<TaskEntity>) { upsertedTasks += tasks }
     override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override fun observeInboxTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override fun observeAllTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override suspend fun getAllTasks(): List<TaskEntity> = emptyList()
+    override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = emptyList()
     override fun observeTask(taskId: String): Flow<TaskEntity?> = MutableStateFlow(null)
     override suspend fun getTask(taskId: String): TaskEntity? = null
     override suspend fun deleteTask(taskId: String) { deletedTaskIds += taskId }
@@ -59,6 +65,7 @@ private class FakeTaskDao : TaskDao {
     override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
     override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
     override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+    override suspend fun getDependsOnIds(taskId: String): List<String> = emptyList()
     override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
     override suspend fun deleteAllDependenciesForTask(taskId: String) {}
     override suspend fun replaceTasksForGoal(
@@ -90,9 +97,25 @@ private class FakeSessionDao : SessionDao {
     override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<SessionEntity>> = flowOf(emptyList())
     override suspend fun getSessionsForDate(date: String): List<SessionEntity> = emptyList()
     override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = emptyList()
+    override fun observeUpcomingSessions(startDate: String, endDate: String): Flow<List<UpcomingSessionRow>> = flowOf(emptyList())
+    override suspend fun getUpcomingSessions(startDate: String, endDate: String): List<UpcomingSessionRow> = emptyList()
     override suspend fun getSession(id: String): SessionEntity? = null
     override suspend fun deleteSessionsForDates(dates: List<String>) {}
     override suspend fun deleteSession(id: String) {}
+}
+
+private class FakeUserDao : UserDao {
+    override suspend fun upsertUser(user: UserEntity) {}
+    override fun observeUser(userId: String): Flow<UserEntity?> = flowOf(null)
+    override suspend fun getUser(userId: String): UserEntity? = null
+    override suspend fun getFirstUser(): UserEntity? = null
+    override suspend fun deleteUser(userId: String) {}
+    override suspend fun upsertPreferences(preferences: UserPreferencesEntity) {}
+    override fun observePreferences(userId: String): Flow<UserPreferencesEntity?> = flowOf(null)
+    override suspend fun getPreferences(userId: String): UserPreferencesEntity? = null
+    override fun observeUserWithPreferences(userId: String): Flow<UserWithPreferences?> = flowOf(null)
+    override suspend fun getUserWithPreferences(userId: String): UserWithPreferences? = null
+    override suspend fun getMinExpiryTime(): Long? = null
 }
 
 // ---------------------------------------------------------------------------
@@ -233,12 +256,32 @@ class TaskRepositoryImplTest {
                 )
             )
 
+        override suspend fun completeTask(taskId: String): Result<TaskCompletionResponse> =
+            Result.Success(
+                TaskCompletionResponse(
+                    task = TaskInfoResponse(id = taskId, title = "Completed Task", status = "COMPLETED"),
+                )
+            )
+
         override suspend fun deleteTask(taskId: String): Result<Unit> {
             deletedTaskId = taskId
             return Result.Success(Unit)
         }
 
         override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = Result.Success(emptyList())
+
+        override suspend fun updateTask(
+            taskId: String,
+            request: com.awan.app.core.network.dto.task.TaskUpdateRequest
+        ): Result<TaskInfoResponse> {
+            return Result.Success(
+                TaskInfoResponse(
+                    id = taskId,
+                    title = request.title ?: "Updated",
+                    status = request.status ?: "SCHEDULED",
+                )
+            )
+        }
     }
 
 private class FakeGoalDao : com.awan.app.core.database.dao.GoalDao {
@@ -249,9 +292,7 @@ private class FakeGoalDao : com.awan.app.core.database.dao.GoalDao {
     override fun observeGoalsByStatus(status: String): Flow<List<com.awan.app.core.database.model.GoalEntity>> = flowOf(emptyList())
     override fun observeGoal(goalId: String): Flow<com.awan.app.core.database.model.GoalEntity?> = MutableStateFlow(null)
     override suspend fun getGoal(goalId: String): com.awan.app.core.database.model.GoalEntity? = null
-    override fun observeInboxGoal(): Flow<com.awan.app.core.database.model.GoalEntity?> = MutableStateFlow(null)
     override suspend fun deleteGoal(goalId: String) {}
-    override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
     override suspend fun getMinExpiryTime(): Long? = null
 }
 
@@ -262,7 +303,17 @@ private class FakeGoalDao : com.awan.app.core.database.dao.GoalDao {
         sessionDao: SessionDao = FakeSessionDao(),
         goalDao: com.awan.app.core.database.dao.GoalDao = FakeGoalDao(),
         monitor: NetworkConnectivityMonitor = onlineMonitor,
-    ) = TaskRepositoryImpl(remote, taskDao, categoryDao, sessionDao, goalDao, monitor, testDispatcher)
+        eventBus: GamificationEventBus = GamificationEventBus(FakeUserDao()),
+    ) = TaskRepositoryImpl(
+        remoteDataSource = remote,
+        taskDao = taskDao,
+        categoryDao = categoryDao,
+        sessionDao = sessionDao,
+        goalDao = goalDao,
+        eventBus = eventBus,
+        connectivityMonitor = monitor,
+        ioDispatcher = testDispatcher
+    )
 
     @Test
     fun `createTask maps the draft to a request and the response to a model`() = runTest(testDispatcher) {

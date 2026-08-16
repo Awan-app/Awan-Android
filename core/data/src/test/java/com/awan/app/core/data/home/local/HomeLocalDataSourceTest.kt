@@ -7,6 +7,7 @@ import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.dao.ZoneDao
 import com.awan.app.core.database.model.CategoryEntity
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.UpcomingSessionRow
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
 import com.awan.app.core.database.model.UserEntity
@@ -120,6 +121,8 @@ private class FakeSessionDao : SessionDao {
 
     override suspend fun upsertSession(session: SessionEntity) { rows[session.id] = session }
     override suspend fun upsertSessions(sessions: List<SessionEntity>) { sessions.forEach { rows[it.id] = it } }
+    override fun observeUpcomingSessions(startDate: String, endDate: String): Flow<List<UpcomingSessionRow>> = flowOf(emptyList())
+    override suspend fun getUpcomingSessions(startDate: String, endDate: String): List<UpcomingSessionRow> = emptyList()
     override suspend fun getSession(id: String): SessionEntity? = rows[id]
     override suspend fun deleteSession(id: String) { rows.remove(id) }
     override fun observeSessionsForDate(date: String): Flow<List<SessionEntity>> = flowOf(emptyList())
@@ -140,17 +143,21 @@ private class FakeTaskDao : TaskDao {
     override suspend fun deleteAllDependenciesForTask(taskId: String) { clearedDependencies += taskId }
     override suspend fun upsertTasks(tasks: List<TaskEntity>) {}
     override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override fun observeInboxTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override fun observeAllTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override suspend fun getAllTasks(): List<TaskEntity> = emptyList()
+    override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = emptyList()
     override fun observeTask(taskId: String): Flow<TaskEntity?> = flowOf(null)
     override suspend fun upsertDependency(dependency: TaskDependencyEntity) {}
     override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
     override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
     override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+    override suspend fun getDependsOnIds(taskId: String): List<String> = emptyList()
     override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
     override suspend fun deleteTasksByGoal(goalId: String) {}
     override suspend fun nullifyOrphanedGoalReferences() {}
+    override suspend fun replaceTasksForGoal(
+        goalId: String,
+        tasks: List<TaskEntity>,
+        dependencies: List<TaskDependencyEntity>
+    ) {}
 }
 
 private class FakeUserDao : UserDao {

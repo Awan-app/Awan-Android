@@ -5,6 +5,7 @@ import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.TaskCompletionResponse
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
@@ -90,6 +91,11 @@ interface TaskApiService {
 
     @GET("v1/goals/inbox")
     suspend fun getInboxTasks(): InboxTasksResponse
+
+    @POST("v1/tasks/{taskId}/complete")
+    suspend fun completeTask(
+        @Path("taskId") taskId: String,
+    ): TaskCompletionResponse
 
     @DELETE("v1/tasks/{taskId}")
     suspend fun deleteTask(

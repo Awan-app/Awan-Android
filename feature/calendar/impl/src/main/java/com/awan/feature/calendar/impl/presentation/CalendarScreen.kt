@@ -77,9 +77,11 @@ import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.TriangleAlert
+import com.awan.app.core.designsystem.AwanBackButton
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
+import com.awan.app.core.designsystem.AwanIconButton
 import com.awan.app.core.designsystem.AwanSurface
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextStyle
@@ -98,64 +100,6 @@ import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration.Companion.milliseconds
 
 
-
-@Composable
-private fun CalendarIconButton(
-    onClick: () -> Unit,
-    contentDescription: String,
-    modifier: Modifier = Modifier,
-    testTag: String? = null,
-    icon: @Composable () -> Unit,
-) {
-    val colors = AwanTheme.colors
-    val shape = RoundedCornerShape(12.dp)
-    val hapticFeedback = LocalHapticFeedback.current
-    val haptic = awanButtonHaptic(AwanButtonVariant.Secondary)
-    val scope = rememberCoroutineScope()
-    val pressAnim = remember { Animatable(0f) }
-
-    val currentTopInset = (2.5.dp * pressAnim.value)
-    val currentBottomPadding = (2.5.dp * (1f - pressAnim.value))
-
-    Box(
-        modifier = modifier
-            .size(42.dp)
-            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                role = Role.Button,
-                onClick = {
-                    haptic.let(hapticFeedback::performHapticFeedback)
-                    scope.launch {
-                        pressAnim.animateTo(1f, animationSpec = tween(40, easing = LinearOutSlowInEasing))
-                        pressAnim.animateTo(0f, animationSpec = tween(60, easing = LinearOutSlowInEasing))
-                    }
-                    onClick()
-                },
-            ),
-    ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .padding(top = currentTopInset)
-                .clip(shape)
-                .background(colors.line)
-        )
-        CompositionLocalProvider(LocalContentColor provides colors.textPrimary) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .padding(top = currentTopInset, bottom = currentBottomPadding)
-                    .clip(shape)
-                    .background(colors.surface)
-                    .border(2.dp, colors.line, shape),
-                contentAlignment = Alignment.Center,
-                content = { icon() },
-            )
-        }
-    }
-}
 
 @Composable
 fun rememberIsReducedMotion(): Boolean {
@@ -189,7 +133,6 @@ fun CalendarScreen(
     onBack: () -> Unit,
 ) {
     val isReducedMotion = rememberIsReducedMotion()
-    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     var showDeadlineInfoSheet by remember { mutableStateOf(false) }
 
     Column(
@@ -201,34 +144,30 @@ fun CalendarScreen(
             .padding(horizontal = AwanTheme.spacing.md, vertical = AwanTheme.spacing.lg),
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
     ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CalendarIconButton(
-                    onClick = onBack,
-                    contentDescription = stringResource(R.string.calendar_back),
-                ) {
-                    Icon(
-                        imageVector = if (isRtl) Lucide.ArrowRight else Lucide.ArrowLeft,
-                        contentDescription = null,
-                    )
-                }
-                Spacer(modifier = Modifier.width(AwanTheme.spacing.sm))
-                AwanText(
-                    text = stringResource(R.string.calendar_title),
-                    style = AwanTextStyle(AwanTheme.typography.title.copy(fontSize = 26.sp), AwanTheme.colors.textPrimary),
-                    modifier = Modifier.testTag("calendar_title"),
-                )
-            }
-            StreakHeaderCard(
-                state = state.streakHeaderState,
-                streak = state.streak,
-                isReducedMotion = isReducedMotion,
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AwanBackButton(onClick = onBack)
+            Spacer(modifier = Modifier.width(AwanTheme.spacing.sm))
+            val titleStyle = AwanTheme.styles.titleText
+            AwanText(
+                text = stringResource(R.string.calendar_title),
+                style = titleStyle.copy(
+                    textStyle = titleStyle.textStyle.copy(fontSize = 26.sp)
+                ),
+                modifier = Modifier.testTag("calendar_title"),
             )
+        }
+        StreakHeaderCard(
+            state = state.streakHeaderState,
+            streak = state.streak,
+            isReducedMotion = isReducedMotion,
+        )
 
-            MonthHeader(
-                yearMonth = state.currentYearMonth,
-                onPrevMonth = { onAction(CalendarAction.PreviousMonth) },
-                onNextMonth = { onAction(CalendarAction.NextMonth) },
-            )
+        MonthHeader(
+            yearMonth = state.currentYearMonth,
+            onPrevMonth = { onAction(CalendarAction.PreviousMonth) },
+            onNextMonth = { onAction(CalendarAction.NextMonth) },
+        )
+
 
             WeekdayHeader()
 
@@ -249,10 +188,10 @@ fun CalendarScreen(
                     text = stringResource(R.string.calendar_upcoming_deadlines),
                     style = AwanTheme.styles.headingText,
                 )
-                CalendarIconButton(
+                AwanIconButton(
                     onClick = { showDeadlineInfoSheet = true },
                     contentDescription = stringResource(R.string.calendar_deadline_info_button),
-                    testTag = "calendar_deadline_info_button",
+                    modifier = Modifier.testTag("calendar_deadline_info_button"),
                 ) {
                     Icon(
                         imageVector = Lucide.Info,
@@ -515,20 +454,20 @@ private fun MonthHeader(
             style = AwanTheme.styles.titleText,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
-            CalendarIconButton(
+            AwanIconButton(
                 onClick = onPrevMonth,
                 contentDescription = stringResource(R.string.calendar_prev_month),
-                testTag = "prev_month_button",
+                modifier = Modifier.testTag("prev_month_button"),
             ) {
                 Icon(
                     imageVector = if (isRtl) Lucide.ChevronRight else Lucide.ChevronLeft,
                     contentDescription = null,
                 )
             }
-            CalendarIconButton(
+            AwanIconButton(
                 onClick = onNextMonth,
                 contentDescription = stringResource(R.string.calendar_next_month),
-                testTag = "next_month_button",
+                modifier = Modifier.testTag("next_month_button"),
             ) {
                 Icon(
                     imageVector = if (isRtl) Lucide.ChevronLeft else Lucide.ChevronRight,

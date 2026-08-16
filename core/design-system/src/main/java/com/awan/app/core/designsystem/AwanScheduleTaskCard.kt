@@ -290,7 +290,7 @@ fun AwanScheduleTaskCard(
 }
 
 @Composable
-private fun CalendarStyleCheckbox(
+fun CalendarStyleCheckbox(
     isCompleted: Boolean,
     categoryColor: Color,
     onClick: () -> Unit,
@@ -352,10 +352,7 @@ private fun CalendarStyleCheckbox(
                 onClick = {
                     rewardAnchors.lastTapOrigin = checkboxBounds
                     isPressed = true
-                    haptic.performHapticFeedback(
-                        if (isCompleted) HapticFeedbackType.TextHandleMove
-                        else HapticFeedbackType.Confirm,
-                    )
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                     onClick()
                 },
             ),

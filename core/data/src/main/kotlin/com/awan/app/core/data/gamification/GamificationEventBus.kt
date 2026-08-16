@@ -2,6 +2,7 @@ package com.awan.app.core.data.gamification
 
 import com.awan.app.core.domain.gamification.model.GamificationProgress
 import com.awan.app.core.domain.gamification.model.RewardEvent
+import com.awan.app.core.domain.gamification.model.RewardSource
 import com.awan.app.core.domain.gamification.model.SessionReward
 import com.awan.app.core.domain.gamification.model.WheelSpinResult
 import com.awan.app.core.database.dao.UserDao
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,8 +39,13 @@ class GamificationEventBus @Inject constructor(
     val rewards: Flow<RewardEvent> = _rewards.asSharedFlow()
 
     suspend fun setProgress(progress: GamificationProgress) {
-        _progress.value = progress
-        cacheProgress(progress)
+        val updated = _progress.updateAndGet { progress }
+        cacheProgress(updated)
+    }
+
+    suspend fun updatePoints(newPoints: Int) {
+        val updated = _progress.updateAndGet { it.copy(points = newPoints) }
+        cacheProgress(updated)
     }
 
     /** Seeds from cache without clobbering fresher numbers already published by an award. */
@@ -49,12 +56,19 @@ class GamificationEventBus @Inject constructor(
     }
 
     suspend fun publishSessionReward(reward: SessionReward) {
+        var latest: GamificationProgress? = null
         reward.points?.let { award ->
-            _progress.update { it.copy(points = award.newValue) }
-            _rewards.tryEmit(RewardEvent.Points(amount = award.amount, newTotal = award.newValue))
+            latest = _progress.updateAndGet { it.copy(points = award.newValue) }
+            _rewards.tryEmit(
+                RewardEvent.Points(
+                    amount = award.amount,
+                    newTotal = award.newValue,
+                    source = RewardSource.SESSION_COMPLETION,
+                )
+            )
         }
         reward.streak?.let { change ->
-            _progress.update {
+            latest = _progress.updateAndGet {
                 it.copy(streak = change.newValue, maxStreak = change.maxStreakNew)
             }
             _rewards.tryEmit(
@@ -66,7 +80,8 @@ class GamificationEventBus @Inject constructor(
                 )
             )
         }
-        cacheProgress(_progress.value)
+        val toCache = latest ?: _progress.value
+        cacheProgress(toCache)
     }
 
     /**
@@ -74,16 +89,25 @@ class GamificationEventBus @Inject constructor(
      * way — on an item win it is the unchanged balance, so it is safe to apply unconditionally.
      */
     suspend fun publishWheelSpin(result: WheelSpinResult) {
-        _progress.update { it.copy(points = result.newBalance) }
-        cacheProgress(_progress.value)
+        val updated = _progress.updateAndGet { it.copy(points = result.newBalance) }
+        cacheProgress(updated)
         val item = result.item
         if (item != null) {
             _rewards.tryEmit(RewardEvent.Item(name = item.name, imageUrl = item.imageUrl))
         } else {
             _rewards.tryEmit(
-                RewardEvent.Points(amount = result.coins, newTotal = result.newBalance)
+                RewardEvent.Points(
+                    amount = result.coins,
+                    newTotal = result.newBalance,
+                    source = RewardSource.DAILY_WHEEL,
+                )
             )
         }
+    }
+
+    /** Publishes an arbitrary reward event to the global celebration queue. */
+    fun publishReward(event: RewardEvent) {
+        _rewards.tryEmit(event)
     }
 
     /** Room is the progress cache — `UserEntity` already owns these three columns. */
