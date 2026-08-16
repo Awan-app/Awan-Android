@@ -17,6 +17,7 @@ dependencies {
     api(libs.androidx.compose.ui.graphics)
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.compose.icons.lucide.cmp)

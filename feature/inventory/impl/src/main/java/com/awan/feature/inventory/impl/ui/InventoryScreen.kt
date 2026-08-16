@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Payments
@@ -64,6 +63,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import com.awan.app.core.designsystem.AwanBackButton
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
@@ -107,11 +107,8 @@ fun InventoryScreen(
                         )
                     },
                     navigationIcon = {
-                        AwanIconButton(
-                            onClick = onBack,
-                            contentDescription = stringResource(R.string.inventory_back),
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Box(modifier = Modifier.padding(start = 12.dp)) {
+                            AwanBackButton(onClick = onBack)
                         }
                     },
                     actions = {

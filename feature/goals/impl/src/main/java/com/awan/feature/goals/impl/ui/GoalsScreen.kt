@@ -1,9 +1,9 @@
 package com.awan.feature.goals.impl.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,34 +12,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.style.styleable
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import com.awan.app.core.designsystem.AwanButton
+import com.awan.app.core.designsystem.AwanButtonVariant
+import com.awan.app.core.designsystem.AwanConfirmDialog
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.goals.impl.R
 import com.awan.feature.goals.impl.presentation.GoalsAction
 import com.awan.feature.goals.impl.presentation.GoalsState
-import com.awan.feature.goals.impl.presentation.GoalsTab
-import com.awan.feature.goals.impl.ui.components.completedGoalColor
-import com.awan.feature.goals.impl.ui.components.GoalCard
-import com.awan.feature.goals.impl.ui.components.GoalsMascotHeader
-import com.awan.feature.goals.impl.ui.components.GoalsTabRow
-import com.awan.feature.goals.impl.ui.components.goalAccentColor
+import com.awan.feature.goals.impl.ui.components.*
 
-/**
- * Root Goals screen.
- *
- * Assembles the mascot header, tab row, and the goal list (or empty / error state).
- * All sub-composables live in [com.awan.feature.goals.impl.ui.components].
- */
 @Composable
 fun GoalsScreen(
     state: GoalsState,
@@ -47,27 +37,45 @@ fun GoalsScreen(
     modifier: Modifier = Modifier,
 ) {
     val colors = AwanTheme.colors
+    val spacing = AwanTheme.spacing
+
+    if (state.deletingGoalId != null) {
+        AwanConfirmDialog(
+            title = stringResource(R.string.goals_dialog_delete_goal_title),
+            body = stringResource(R.string.goals_dialog_delete_goal_body),
+            confirmLabel = stringResource(R.string.goals_dialog_delete_confirm),
+            confirmVariant = AwanButtonVariant.Destructive,
+            dismissLabel = stringResource(R.string.goals_dialog_delete_cancel),
+            onConfirm = { onAction(GoalsAction.DeleteGoalConfirmed) },
+            onDismiss = { onAction(GoalsAction.DeleteGoalCancelled) }
+        )
+    }
 
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .styleable(null, AwanTheme.styles.flatScreen)
+            .statusBarsPadding(),
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
         ) {
-        // ── Mascot header ─────────────────────────────────────────────────
-            GoalsMascotHeader()
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ── Tab row ───────────────────────────────────────────────────────
-            GoalsTabRow(
-                selectedTab = state.tab,
-                activeCount = state.activeGoals.size,
-                completedCount = state.completedGoals.size,
-                onTabSelected = { onAction(GoalsAction.TabSelected(it)) },
+            // ── Top Bar ─────────────────────────────────────────────────────
+            GoalsTopBar(
+                inboxTaskCount = state.inboxTaskCount,
+                onInboxClick = { onAction(GoalsAction.InboxClicked) }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // ── Search Bar ──────────────────────────────────────────────────
+            GoalsSearchBar(
+                query = state.searchQuery,
+                onQueryChange = { onAction(GoalsAction.SearchQueryChanged(it)) },
+                modifier = Modifier.padding(horizontal = spacing.md),
+                isFilterActive = state.isAnyFilterApplied,
+                onFilterClick = { onAction(GoalsAction.FilterClicked) }
+            )
+
+            Spacer(modifier = Modifier.height(spacing.xl))
 
             // ── Content area ──────────────────────────────────────────────────
             when {
@@ -78,7 +86,6 @@ fun GoalsScreen(
                     ) {
                         CircularProgressIndicator(
                             color = colors.sky,
-                            strokeWidth = 3.dp,
                         )
                     }
                 }
@@ -88,34 +95,69 @@ fun GoalsScreen(
                 }
 
                 else -> {
-                    val goals = when (state.tab) {
-                        GoalsTab.Active -> state.activeGoals
-                        GoalsTab.Completed -> state.completedGoals
-                    }
-                    val isCompletedTab = state.tab == GoalsTab.Completed
-
-                    if (goals.isEmpty()) {
-                        GoalsEmptyState(tab = state.tab)
+                    val filteredGoals = state.filteredGoals
+                    
+                    if (state.goals.isEmpty()) {
+                        GoalsEmptyState()
+                    } else if (filteredGoals.isEmpty()) {
+                        // Filtered Empty State
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(spacing.xl),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            AwanText(
+                                text = stringResource(R.string.goals_empty_matching_results),
+                                style = AwanTheme.typography.heading.copy(color = colors.textPrimary)
+                            )
+                            Spacer(modifier = Modifier.height(spacing.xs))
+                            AwanText(
+                                text = stringResource(R.string.goals_empty_matching_results_subtitle),
+                                style = AwanTheme.typography.body.copy(
+                                    color = colors.textSecondary,
+                                    textAlign = TextAlign.Center
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(spacing.lg))
+                            AwanButton(
+                                onClick = { onAction(GoalsAction.ClearFiltersClicked) },
+                                variant = AwanButtonVariant.Secondary
+                            ) {
+                                AwanText(stringResource(R.string.goals_filter_clear))
+                            }
+                        }
                     } else {
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                                .padding(horizontal = spacing.md),
+                            verticalArrangement = Arrangement.spacedBy(spacing.md),
+                            contentPadding = PaddingValues(bottom = 140.dp)
                         ) {
-                            itemsIndexed(goals, key = { _, goal -> goal.id }) { index, goal ->
+                            itemsIndexed(filteredGoals, key = { _, goal -> goal.id }) { _, goal ->
                                 GoalCard(
                                     goal = goal,
-                                    accentColor = if (isCompletedTab) completedGoalColor()
-                                              else goalAccentColor(index),
-                                    isCompleted = isCompletedTab,
+                                    onClick = { onAction(GoalsAction.GoalClicked(goal.id)) },
+                                    onAction = onAction,
+                                    modifier = Modifier.animateItem()
                                 )
                             }
-                            item { Spacer(modifier = Modifier.height(8.dp)) }
                         }
                     }
                 }
             }
+        }
+
+        // ── Filter Bottom Sheet ─────────────────────────────────────────────
+        if (state.isFilterSheetOpen) {
+            GoalsFilterSheet(
+                state = state,
+                onAction = onAction,
+                onDismiss = { onAction(GoalsAction.DismissFilterSheet) }
+            )
         }
     }
 }

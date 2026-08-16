@@ -45,5 +45,6 @@ data class TaskEntity(
     val goalId: String? = null,
     /** Optional foreign key to [CategoryEntity]. */
     val categoryId: String? = null,
+    val completedAt: String? = null,
     val expiryTime: Long = 0L,
 )

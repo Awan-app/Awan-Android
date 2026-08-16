@@ -28,25 +28,16 @@ private val StyleScope.shapes: AwanShapes
 internal fun buttonPressedTranslationX(layoutDirection: LayoutDirection) =
     if (layoutDirection == LayoutDirection.Ltr) -AwanButtonRimSide else AwanButtonRimSide
 
-private fun StyleScope.buttonPressedTransform() {
-    pressed {
-        animate(
-            tween(
-                durationMillis = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
-                easing = LinearOutSlowInEasing,
-            )
-        ) {
-            translationX(buttonPressedTranslationX(LocalLayoutDirection.currentValue).toPx())
-            translationY(AwanButtonRimDepth.toPx())
-        }
-    }
-}
-
 private fun text(textStyle: androidx.compose.ui.text.TextStyle, color: Color) = AwanTextStyle(textStyle, color)
 
 object AwanStyles {
     val screen = Style {
         background(Brush.verticalGradient(listOf(colors.backgroundStart, colors.background)))
+        contentColor(colors.textPrimary)
+    }
+
+    val flatScreen = Style {
+        background(colors.background)
         contentColor(colors.textPrimary)
     }
 
@@ -116,7 +107,6 @@ object AwanStyles {
         contentColor(colors.onFilledControl)
         textStyle(typography.button)
         fontFamily(typography.button.fontFamily!!)
-        buttonPressedTransform()
         disabled {
             animate(tween(AwanMotionTokens.standardMillis)) {
                 background(colors.disabledSurface)
@@ -139,7 +129,6 @@ object AwanStyles {
         contentColor(colors.skyPressed)
         textStyle(typography.button)
         fontFamily(typography.button.fontFamily!!)
-        buttonPressedTransform()
         disabled {
             background(colors.disabledSurface)
             borderColor(colors.line)
@@ -161,7 +150,6 @@ object AwanStyles {
         contentColor(colors.onDestructive)
         textStyle(typography.button)
         fontFamily(typography.button.fontFamily!!)
-        buttonPressedTransform()
         disabled {
             background(colors.disabledSurface)
             contentColor(colors.disabledContent)
@@ -203,7 +191,6 @@ object AwanStyles {
         contentColor(colors.textSecondary)
         textStyle(typography.buttonCompact)
         fontFamily(typography.buttonCompact.fontFamily!!)
-        buttonPressedTransform()
         disabled {
             background(colors.disabledSurface)
             borderColor(colors.line)
@@ -303,14 +290,12 @@ object AwanStyles {
         contentColor(colors.textPrimary)
         textStyle(typography.button)
         fontFamily(typography.button.fontFamily!!)
-        buttonPressedTransform()
     }
 
     val iconButtonFace = Style {
         background(colors.surface)
         border(2.dp, colors.line)
         shape(androidx.compose.foundation.shape.RoundedCornerShape(percent = 30))
-        buttonPressedTransform()
     }
 }
 

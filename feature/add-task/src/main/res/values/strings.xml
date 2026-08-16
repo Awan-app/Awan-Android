@@ -84,19 +84,13 @@
     <string name="add_task_goal_preview_duration">Est. %1$s</string>
     <string name="add_task_goal_preview_points">%1$d pts</string>
 
-    <string name="add_task_goal_mic_idle">Dictate text</string>
-    <string name="add_task_goal_mic_listening">Listening… tap to stop</string>
-    <string name="add_task_goal_speech_permission_denied">Microphone permission is required for speech recognition.</string>
-    <string name="add_task_goal_speech_unavailable">Speech recognition is unavailable on this device.</string>
-    <string name="add_task_goal_speech_no_match">Didn\'t catch that. Try speaking again.</string>
-    <string name="add_task_goal_speech_error">Speech recognition error. Please try again.</string>
-
     <string name="add_task_error_create_failed">Couldn\'t add that task. Check your connection and try again.</string>
     <string name="add_task_error_goal_continuation_failed">Awan couldn\'t break down that goal. Check your connection and try again.</string>
     <string name="add_task_error_goal_confirm_failed">Couldn\'t save this goal. Check your connection and try again.</string>
 
-    <string name="add_task_goal_permission_dialog_title">Microphone Permission Required</string>
-    <string name="add_task_goal_permission_dialog_body">Microphone access is turned off. Please enable it in device settings to use speech recognition.</string>
-    <string name="add_task_goal_permission_dialog_confirm">Open Settings</string>
-    <string name="add_task_goal_permission_dialog_cancel">Cancel</string>
+    <string name="add_task_goal_thinking_1">Reading your goal…</string>
+    <string name="add_task_goal_thinking_2">Breaking it into steps…</string>
+    <string name="add_task_goal_thinking_3">Sizing each piece…</string>
+    <string name="add_task_goal_thinking_4">Almost there…</string>
+    <string name="add_task_goal_plan_ready">Your plan is ready!</string>
 </resources>

@@ -105,6 +105,11 @@ class GamificationEventBus @Inject constructor(
         }
     }
 
+    /** Publishes an arbitrary reward event to the global celebration queue. */
+    fun publishReward(event: RewardEvent) {
+        _rewards.tryEmit(event)
+    }
+
     /** Room is the progress cache — `UserEntity` already owns these three columns. */
     private suspend fun cacheProgress(progress: GamificationProgress) {
         val cached = userDao.getFirstUser() ?: return
