@@ -4,6 +4,7 @@ import com.awan.app.core.data.task.toTaskModel
 import com.awan.app.core.database.model.GoalEntity
 import com.awan.app.core.model.Goal
 import com.awan.app.core.model.GoalStatus
+import com.awan.app.core.model.Task
 import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.GoalStatusDto
 import java.text.BreakIterator
@@ -58,7 +59,7 @@ internal fun GoalInfoResponse.toModel(): Goal {
  * The entity's [GoalEntity.title] is stored as received from the API and may
  * contain a leading emoji; this mapper extracts it with the same logic.
  */
-internal fun GoalEntity.toModel(): Goal {
+internal fun GoalEntity.toModel(tasks: List<Task> = emptyList()): Goal {
     val (extractedEmoji, cleanTitle) = extractEmojiAndTitle(title)
     val goalStatus = runCatching { GoalStatus.valueOf(status) }.getOrDefault(GoalStatus.UNKNOWN)
     return Goal(
@@ -67,7 +68,7 @@ internal fun GoalEntity.toModel(): Goal {
         description = description,
         emoji = extractedEmoji,
         status = goalStatus,
-        tasks = emptyList(), // tasks are stored separately in TaskEntity
+        tasks = tasks,
     )
 }
 

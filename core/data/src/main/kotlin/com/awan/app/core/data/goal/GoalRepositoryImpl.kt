@@ -6,6 +6,7 @@ import com.awan.app.core.common.result.map
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
 import com.awan.app.core.data.sync.SyncTtl
 import com.awan.app.core.data.task.toEntity
+import com.awan.app.core.data.task.toModel
 import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
 import com.awan.app.core.database.dao.ScheduleDraftDao
@@ -53,12 +54,27 @@ class GoalRepositoryImpl @Inject constructor(
                 is Result.Success -> {
                     val remoteGoals = remoteResult.data
                     goalDao.upsertGoals(remoteGoals.map { it.toEntity() })
-                    return Result.Success(goalDao.getAllGoals().map { it.toModel() })
+                    remoteGoals.forEach { goalResponse ->
+                        if (goalResponse.tasks.isNotEmpty()) {
+                            taskDao.upsertTasks(goalResponse.tasks.map { it.toEntity(goalId = goalResponse.id) })
+                        }
+                    }
+                    val allTasks = taskDao.getAllTasks()
+                    val goals = goalDao.getAllGoals().map { entity ->
+                        val tasks = allTasks.filter { it.goalId == entity.id }.map { it.toModel() }
+                        entity.toModel(tasks = tasks)
+                    }
+                    return Result.Success(goals)
                 }
                 is Result.Error -> {
+                    val allTasks = taskDao.getAllTasks()
                     val cached = goalDao.getAllGoals()
                     return if (cached.isNotEmpty()) {
-                        Result.Success(cached.map { it.toModel() })
+                        val goals = cached.map { entity ->
+                            val tasks = allTasks.filter { it.goalId == entity.id }.map { it.toModel() }
+                            entity.toModel(tasks = tasks)
+                        }
+                        Result.Success(goals)
                     } else {
                         Result.Error(remoteResult.error)
                     }
@@ -66,8 +82,13 @@ class GoalRepositoryImpl @Inject constructor(
                 Result.Loading -> { /* no-op */ }
             }
         }
+        val allTasks = taskDao.getAllTasks()
         val cached = goalDao.getAllGoals()
-        return Result.Success(cached.map { it.toModel() })
+        val goals = cached.map { entity ->
+            val tasks = allTasks.filter { it.goalId == entity.id }.map { it.toModel() }
+            entity.toModel(tasks = tasks)
+        }
+        return Result.Success(goals)
     }
 
     override suspend fun createGoal(
@@ -156,7 +177,8 @@ class GoalRepositoryImpl @Inject constructor(
                 is Result.Error -> {
                     val cached = goalDao.getGoal(goalId)
                     return if (cached != null) {
-                        Result.Success(cached.toModel())
+                        val allTasks = taskDao.getAllTasks().filter { it.goalId == goalId }.map { it.toModel() }
+                        Result.Success(cached.toModel(tasks = allTasks))
                     } else {
                         Result.Error(result.error)
                     }
@@ -166,7 +188,8 @@ class GoalRepositoryImpl @Inject constructor(
         }
         val cached = goalDao.getGoal(goalId)
         return if (cached != null) {
-            Result.Success(cached.toModel())
+            val allTasks = taskDao.getAllTasks().filter { it.goalId == goalId }.map { it.toModel() }
+            Result.Success(cached.toModel(tasks = allTasks))
         } else {
             Result.Error(AppError.Network)
         }
@@ -236,6 +259,19 @@ class GoalRepositoryImpl @Inject constructor(
     }
 
     override suspend fun proposeGoalSchedule(goalId: String): Result<GoalScheduleProposal> {
+        if (goalDao.getGoal(goalId) == null) {
+            goalDao.upsertGoal(
+                com.awan.app.core.database.model.GoalEntity(
+                    id = goalId,
+                    title = "",
+                    description = null,
+                    status = "ACTIVE",
+                    targetDate = null,
+                    createdAt = "",
+                    isInbox = false,
+                )
+            )
+        }
         scheduleDraftDao.insertDraftIfNotExists(
             ScheduleDraftEntity(goalId = goalId, state = "AWAITING_PROPOSAL")
         )

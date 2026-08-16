@@ -562,4 +562,31 @@ class GoalRepositoryTest {
         assertTrue(result is Result.Success)
         assertEquals("READY", draftDao.draftStates["g1"])
     }
+
+    @Test
+    fun `proposeGoalSchedule inserts stub GoalEntity when missing locally`() = runTest(testDispatcher) {
+        val remote = object : FakeGoalRemoteDataSource() {
+            override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse> {
+                return Result.Success(com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse("g-stub"))
+            }
+        }
+        val goalDao = FakeGoalDao()
+        val draftDao = TestScheduleDraftDao()
+        val repository = GoalRepositoryImpl(
+            remoteDataSource = remote,
+            goalDao = goalDao,
+            connectivityMonitor = object : com.awan.app.core.domain.network.NetworkConnectivityMonitor {
+                override val isOnline: kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.flowOf(true)
+                override fun isCurrentlyOnline(): Boolean = true
+            },
+            categoryDao = TestCategoryDao(),
+            taskDao = TestTaskDao(),
+            scheduleDraftDao = draftDao,
+            sessionDao = TestSessionDao()
+        )
+
+        val result = repository.proposeGoalSchedule("g-stub")
+        assertTrue(result is Result.Success)
+        assertTrue(goalDao.upserted.any { it.id == "g-stub" })
+    }
 }
