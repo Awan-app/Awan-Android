@@ -23,6 +23,9 @@ import com.awan.app.core.model.TaskWithSessionsDraft
 import com.awan.feature.aitasks.impl.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -105,8 +108,59 @@ class AiTasksViewModelTest {
         override suspend fun read(uri: String): Result<ImageBytes> = result
     }
 
+    private class FakeGoalRepository : com.awan.app.core.domain.goal.repository.GoalRepository {
+        var proposeResult: Result<com.awan.app.core.model.GoalScheduleProposal> = Result.Success(
+            com.awan.app.core.model.GoalScheduleProposal("goal-1", emptyList(), emptyList(), emptyList())
+        )
+        var confirmResult: Result<List<com.awan.app.core.model.ConfirmedGoalSession>> = Result.Success(emptyList())
+        var proposeCallCount = 0
+        var confirmCallCount = 0
+        var clearCallCount = 0
+        var lastConfirmedSessions: List<com.awan.app.core.model.ProposedGoalSession> = emptyList()
+
+        override fun observeGoals(): Flow<List<com.awan.app.core.model.Goal>> = flowOf(emptyList())
+        override fun observeGoal(goalId: String): Flow<com.awan.app.core.model.Goal?> = flowOf(null)
+        override suspend fun updateGoal(
+            goalId: String,
+            title: String?,
+            description: String?,
+            status: String?,
+            targetDate: String?,
+        ): Result<com.awan.app.core.model.Goal> = error("not used")
+        override suspend fun getGoals(): Result<List<com.awan.app.core.model.Goal>> = error("not used")
+        override suspend fun continueDecomposition(sessionId: String?, message: String): Result<com.awan.app.core.model.GoalDecompositionReply> = error("not used")
+        override suspend fun confirmDecomposition(sessionId: String): Result<com.awan.app.core.model.Goal> = error("not used")
+        override suspend fun createGoal(title: String, description: String?, targetDate: String?, tasks: List<com.awan.app.core.model.ProposedTask>): Result<com.awan.app.core.model.Goal> = error("not used")
+        override suspend fun getInboxGoal(): Result<com.awan.app.core.model.Goal> = error("not used")
+        override suspend fun getGoal(goalId: String): Result<com.awan.app.core.model.Goal> = error("not used")
+        override suspend fun deleteGoal(goalId: String): Result<Unit> = error("not used")
+        override suspend fun getDecompositionTranscript(sessionId: String): Result<com.awan.app.core.model.GoalDecompositionTranscript> = error("not used")
+        override suspend fun cancelDecomposition(sessionId: String): Result<Unit> = error("not used")
+        override suspend fun scheduleGoal(goalId: String): Result<Unit> = error("not used")
+
+        override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.model.GoalScheduleProposal> {
+            proposeCallCount++
+            return proposeResult
+        }
+
+        override suspend fun confirmGoalSchedule(
+            goalId: String,
+            sessions: List<com.awan.app.core.model.ProposedGoalSession>,
+        ): Result<List<com.awan.app.core.model.ConfirmedGoalSession>> {
+            confirmCallCount++
+            lastConfirmedSessions = sessions
+            return confirmResult
+        }
+
+        override suspend fun clearScheduleDraft(goalId: String) {
+            clearCallCount++
+        }
+        override suspend fun getPendingScheduleDraftGoalId(): Result<String?> = Result.Success(null)
+    }
+
     private val playCategory = Category(id = "cat-play", name = "Play")
     private lateinit var taskRepository: FakeTaskRepository
+    private lateinit var goalRepository: FakeGoalRepository
 
     private fun viewModel(
         imageRepository: ImageRepository = FakeImageRepository(Result.Success(ImageBytes(ByteArray(1), "image/jpeg"))),
@@ -116,6 +170,9 @@ class AiTasksViewModelTest {
         createTasks = CreateTasksUseCase(taskRepository),
         getCategories = GetCategoriesUseCase(FakeCategoryRepository(listOf(playCategory))),
         readImage = ReadImageUseCase(imageRepository),
+        proposeGoalScheduleUseCase = com.awan.app.core.domain.goal.usecase.ProposeGoalScheduleUseCase(goalRepository),
+        confirmGoalScheduleUseCase = com.awan.app.core.domain.goal.usecase.ConfirmGoalScheduleUseCase(goalRepository),
+        clearScheduleDraftUseCase = com.awan.app.core.domain.goal.usecase.ClearScheduleDraftUseCase(goalRepository),
         clock = clock,
     )
 
@@ -130,6 +187,7 @@ class AiTasksViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         taskRepository = FakeTaskRepository()
+        goalRepository = FakeGoalRepository()
     }
 
     @After
@@ -535,5 +593,123 @@ class AiTasksViewModelTest {
 
         assertNull(viewModel.state.value.errorMessage)
         assertEquals(1, viewModel.state.value.proposals.size)
+    }
+
+    @Test
+    fun `loading with goalId loads proposals from GoalScheduleProposal`() = runTest(testDispatcher) {
+        goalRepository.proposeResult = Result.Success(
+            com.awan.app.core.model.GoalScheduleProposal(
+                goalId = "goal-1",
+                proposedSessions = listOf(
+                    com.awan.app.core.model.ProposedGoalSession(
+                        taskId = "t1",
+                        taskTitle = "Goal Task 1",
+                        zoneId = "z1",
+                        start = "2026-07-25T10:00:00",
+                        end = "2026-07-25T11:00:00",
+                        isSelected = true,
+                    )
+                ),
+                suggestions = listOf(
+                    com.awan.app.core.model.GoalScheduleSuggestion(
+                        taskId = "t2",
+                        taskTitle = "Goal Task 2",
+                        zoneId = null,
+                        start = "2026-07-25T14:00:00",
+                        end = "2026-07-25T15:00:00",
+                        suggestionType = "NO_ZONE",
+                        reason = "No slot in zone",
+                        overlapInfo = null,
+                        isSelected = false,
+                    )
+                ),
+                unscheduledTasks = listOf(
+                    com.awan.app.core.model.UnscheduledTask(
+                        taskId = "u1",
+                        taskTitle = "Unscheduled Goal Task",
+                        message = "No available time",
+                    )
+                ),
+            )
+        )
+        val viewModel = viewModel()
+        viewModel.onAction(AiTasksAction.Load(goalId = "goal-1"))
+
+        val state = viewModel.state.value
+        assertFalse(state.isLoading)
+        assertEquals(3, state.proposals.size)
+        assertEquals("Goal Task 1", state.proposals[0].draft.title)
+        assertEquals("Goal Task 2", state.proposals[1].draft.title)
+        assertEquals("Unscheduled Goal Task", state.proposals[2].draft.title)
+        assertTrue(state.proposals[2].isUnscheduled)
+        assertEquals(1, goalRepository.proposeCallCount)
+    }
+
+    @Test
+    fun `accept with goalId calls confirmGoalSchedule and emits TasksCreated`() = runTest(testDispatcher) {
+        goalRepository.proposeResult = Result.Success(
+            com.awan.app.core.model.GoalScheduleProposal(
+                goalId = "goal-1",
+                proposedSessions = listOf(
+                    com.awan.app.core.model.ProposedGoalSession(
+                        taskId = "t1",
+                        taskTitle = "Task 1",
+                        zoneId = "z1",
+                        start = "2026-07-25T10:00:00",
+                        end = "2026-07-25T11:00:00",
+                        isSelected = true,
+                    )
+                ),
+                suggestions = emptyList(),
+                unscheduledTasks = emptyList(),
+            )
+        )
+        goalRepository.confirmResult = Result.Success(
+            listOf(
+                com.awan.app.core.model.ConfirmedGoalSession(
+                    id = "s1",
+                    taskId = "t1",
+                    zoneId = "z1",
+                    start = "2026-07-25T10:00:00",
+                    end = "2026-07-25T11:00:00",
+                )
+            )
+        )
+        val viewModel = viewModel()
+        viewModel.onAction(AiTasksAction.Load(goalId = "goal-1"))
+        viewModel.onAction(AiTasksAction.Accept)
+
+        assertEquals(1, goalRepository.confirmCallCount)
+        assertEquals(1, goalRepository.lastConfirmedSessions.size)
+        assertEquals("t1", goalRepository.lastConfirmedSessions[0].taskId)
+        assertEquals(AiTasksEvent.TasksCreated(1), viewModel.events.first())
+    }
+
+    @Test
+    fun `discard with goalId clears schedule draft and emits Dismissed`() = runTest(testDispatcher) {
+        goalRepository.proposeResult = Result.Success(
+            com.awan.app.core.model.GoalScheduleProposal(
+                goalId = "goal-1",
+                proposedSessions = listOf(
+                    com.awan.app.core.model.ProposedGoalSession(
+                        taskId = "t1",
+                        taskTitle = "Task 1",
+                        zoneId = null,
+                        start = "2026-07-25T10:00:00",
+                        end = "2026-07-25T11:00:00",
+                        isSelected = true,
+                    )
+                ),
+                suggestions = emptyList(),
+                unscheduledTasks = emptyList(),
+            )
+        )
+        val viewModel = viewModel()
+        viewModel.onAction(AiTasksAction.Load(goalId = "goal-1"))
+        viewModel.onAction(AiTasksAction.BackRequested)
+        viewModel.onAction(AiTasksAction.DiscardConfirmed)
+
+        assertEquals(1, goalRepository.clearCallCount)
+        assertEquals(AiTasksEvent.Dismissed, viewModel.events.first())
     }
 }

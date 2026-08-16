@@ -266,6 +266,10 @@ fun AwanApp(
                         SplashDestination.Auth -> navigator.replaceAll(LoginRoute)
                         SplashDestination.Onboarding -> navigator.replaceAll(OnboardingRoute)
                         SplashDestination.Home -> navigator.replaceAll(HomeRoute())
+                        is SplashDestination.ResumeGoalScheduling -> {
+                            navigator.replaceAll(HomeRoute())
+                            navigator.navigate(AiTaskProposalsRoute(goalId = destination.goalId))
+                        }
                         SplashDestination.Loading -> { /* Keep showing splash */ }
                     }
                 }
@@ -326,7 +330,10 @@ fun AwanApp(
             )
             goalPreviewEntry(
                 onBack = { navigator.goBack() },
-                onNavigateToGoals = { navigator.replaceAll(GoalsRoute) },
+                onNavigateToGoals = { navigator.goBack() },
+                onNavigateToGoalSchedule = { goalId ->
+                    navigator.navigate(AiTaskProposalsRoute(goalId = goalId))
+                },
             )
             taskDetailsEntry(
                 onBack = { navigator.goBack() },

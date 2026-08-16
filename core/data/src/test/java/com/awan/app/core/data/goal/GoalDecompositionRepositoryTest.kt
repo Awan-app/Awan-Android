@@ -190,7 +190,7 @@ class GoalDecompositionRepositoryTest {
         override suspend fun getGoals(): Result<List<GoalInfoResponse>> = Result.Success(emptyList())
         override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun getInboxGoal(): Result<GoalInfoResponse> = error("Not implemented")
-        override suspend fun getGoal(goalId: String, expand: Boolean): Result<GoalInfoResponse> = error("Not implemented")
+        override suspend fun getGoal(goalId: String): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun deleteGoal(goalId: String): Result<Unit> = error("Not implemented")
         override suspend fun continueDecomposition(request: GoalDecomposeRequest): Result<GoalDecomposeResponse> = error("Not implemented")
@@ -199,7 +199,7 @@ class GoalDecompositionRepositoryTest {
         override suspend fun cancelDecomposition(sessionId: String): Result<Unit> = error("Not implemented")
         override suspend fun scheduleGoal(goalId: String): Result<com.awan.app.core.network.dto.task.TaskScheduleResponse> = error("Not implemented")
         override suspend fun proposeGoalSchedule(goalId: String): Result<com.awan.app.core.network.dto.goal.AiGoalScheduleProposalResponse> = error("Not implemented")
-        override suspend fun confirmGoalSchedule(request: com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest): Result<Unit> = error("Not implemented")
+        override suspend fun confirmGoalSchedule(request: com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest): Result<List<com.awan.app.core.network.dto.goal.AiConfirmedSessionItemDto>> = error("Not implemented")
     }
 
     @Test
@@ -213,10 +213,11 @@ class GoalDecompositionRepositoryTest {
         val repository = GoalRepositoryImpl(
             remoteDataSource = fakeDs,
             goalDao = noOpGoalDao,
-            taskDao = noOpTaskDao,
-            categoryDao = noOpCategoryDao,
             connectivityMonitor = onlineMonitor,
-            ioDispatcher = testDispatcher
+            categoryDao = TestCategoryDao(),
+            taskDao = TestTaskDao(),
+            scheduleDraftDao = TestScheduleDraftDao(),
+            sessionDao = TestSessionDao()
         )
         val result = repository.continueDecomposition(sessionId = null, message = "Test")
 
@@ -234,10 +235,11 @@ class GoalDecompositionRepositoryTest {
         val repository = GoalRepositoryImpl(
             remoteDataSource = fakeDs,
             goalDao = noOpGoalDao,
-            taskDao = noOpTaskDao,
-            categoryDao = noOpCategoryDao,
             connectivityMonitor = onlineMonitor,
-            ioDispatcher = testDispatcher
+            categoryDao = TestCategoryDao(),
+            taskDao = TestTaskDao(),
+            scheduleDraftDao = TestScheduleDraftDao(),
+            sessionDao = TestSessionDao(),
         )
 
         val result = repository.confirmDecomposition(sessionId = "sess-x")
