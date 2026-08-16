@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "9ec46d8c94844c2fe0b1333f20dc32d2",
+    "identityHash": "6197cbb6cc88eaf603f61e1d1f865649",
     "entities": [
       {
         "tableName": "users",
@@ -216,7 +216,7 @@
       },
       {
         "tableName": "tasks",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `estimatedDuration` INTEGER NOT NULL, `status` TEXT NOT NULL, `mandatory` INTEGER NOT NULL, `estimatedPoints` INTEGER NOT NULL, `allowTaskSplitting` INTEGER NOT NULL, `goalId` TEXT, `categoryId` TEXT, `expiryTime` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `estimatedDuration` INTEGER NOT NULL, `status` TEXT NOT NULL, `mandatory` INTEGER NOT NULL, `estimatedPoints` INTEGER NOT NULL, `allowTaskSplitting` INTEGER NOT NULL, `goalId` TEXT, `categoryId` TEXT, `completedAt` TEXT, `expiryTime` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
         "fields": [
           {
             "fieldPath": "id",
@@ -273,6 +273,11 @@
           {
             "fieldPath": "categoryId",
             "columnName": "categoryId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "completedAt",
+            "columnName": "completedAt",
             "affinity": "TEXT"
           },
           {
@@ -962,7 +967,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9ec46d8c94844c2fe0b1333f20dc32d2')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6197cbb6cc88eaf603f61e1d1f865649')"
     ]
   }
 }

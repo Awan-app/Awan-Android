@@ -4,8 +4,13 @@ import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSourceImpl
+import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
+import com.awan.app.core.database.dao.TaskDao
+import com.awan.app.core.database.model.CategoryEntity
 import com.awan.app.core.database.model.GoalEntity
+import com.awan.app.core.database.model.TaskDependencyEntity
+import com.awan.app.core.database.model.TaskEntity
 import com.awan.app.core.network.api.GoalApiService
 import com.awan.app.core.network.dto.GoalInfoResponse
 import com.awan.app.core.network.dto.GoalStatusDto
@@ -38,6 +43,7 @@ class GoalRepositoryTest {
         override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): GoalInfoResponse = error("Not implemented")
         override suspend fun getInboxGoal(): GoalInfoResponse = error("Not implemented")
         override suspend fun getGoal(goalId: String, expand: Boolean): GoalInfoResponse = error("Not implemented")
+        override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest): GoalInfoResponse = error("Not implemented")
         override suspend fun deleteGoal(goalId: String) = error("Not implemented")
 
         override suspend fun decomposeGoal(
@@ -61,7 +67,8 @@ class GoalRepositoryTest {
         override suspend fun getGoals(): Result<List<GoalInfoResponse>> = response
         override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun getInboxGoal(): Result<GoalInfoResponse> = error("Not implemented")
-        override suspend fun getGoal(goalId: String): Result<GoalInfoResponse> = error("Not implemented")
+        override suspend fun getGoal(goalId: String, expand: Boolean): Result<GoalInfoResponse> = error("Not implemented")
+        override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun deleteGoal(goalId: String): Result<Unit> = error("Not implemented")
         override suspend fun continueDecomposition(request: com.awan.app.core.network.dto.GoalDecomposeRequest): Result<com.awan.app.core.network.dto.GoalDecomposeResponse> = error("Not implemented")
         override suspend fun confirmDecomposition(sessionId: String): Result<GoalInfoResponse> = error("Not implemented")
@@ -84,9 +91,38 @@ class GoalRepositoryTest {
         override fun observeGoalsByStatus(status: String): Flow<List<GoalEntity>> = flowOf(emptyList())
         override fun observeGoal(goalId: String): Flow<GoalEntity?> = MutableStateFlow(null)
         override suspend fun getGoal(goalId: String): GoalEntity? = stored.firstOrNull { it.id == goalId }
-        override fun observeInboxGoal(): Flow<GoalEntity?> = MutableStateFlow(null)
         override suspend fun deleteGoal(goalId: String) {}
-        override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
+        override suspend fun getMinExpiryTime(): Long? = null
+    }
+
+    private class FakeTaskDao : TaskDao {
+        override suspend fun upsertTask(task: TaskEntity) {}
+        override suspend fun upsertTasks(tasks: List<TaskEntity>) {}
+        override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
+        override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = emptyList()
+        override fun observeTask(taskId: String): Flow<TaskEntity?> = flowOf(null)
+        override suspend fun getTask(taskId: String): TaskEntity? = null
+        override suspend fun deleteTask(taskId: String) {}
+        override suspend fun upsertDependency(dependency: TaskDependencyEntity) {}
+        override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
+        override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
+        override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+        override suspend fun getDependsOnIds(taskId: String): List<String> = emptyList()
+        override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+        override suspend fun deleteAllDependenciesForTask(taskId: String) {}
+        override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}
+        override suspend fun deleteTasksByGoal(goalId: String) {}
+        override suspend fun nullifyOrphanedGoalReferences() {}
+    }
+
+    private class FakeCategoryDao : CategoryDao {
+        override suspend fun upsertCategories(categories: List<CategoryEntity>) {}
+        override suspend fun upsertCategory(category: CategoryEntity) {}
+        override fun observeAllCategories(): Flow<List<CategoryEntity>> = flowOf(emptyList())
+        override suspend fun getAllCategories(): List<CategoryEntity> = emptyList()
+        override suspend fun getCategory(id: String): CategoryEntity? = null
+        override suspend fun deleteCategory(id: String) {}
+        override suspend fun deleteAllCategories() {}
         override suspend fun getMinExpiryTime(): Long? = null
     }
 
@@ -146,10 +182,12 @@ class GoalRepositoryTest {
             override fun isCurrentlyOnline(): Boolean = true
         }
         val repository = GoalRepositoryImpl(
-
             remoteDataSource = FakeGoalRemoteDataSource(),
             goalDao = dao,
+            taskDao = FakeTaskDao(),
+            categoryDao = FakeCategoryDao(),
             connectivityMonitor = onlineMonitor,
+            ioDispatcher = testDispatcher,
         )
 
         val result = repository.getGoals()
@@ -171,7 +209,10 @@ class GoalRepositoryTest {
         val repository = GoalRepositoryImpl(
             remoteDataSource = FakeGoalRemoteDataSource(),
             goalDao = FakeGoalDao(stored = emptyList()),
+            taskDao = FakeTaskDao(),
+            categoryDao = FakeCategoryDao(),
             connectivityMonitor = onlineMonitor,
+            ioDispatcher = testDispatcher,
         )
 
 

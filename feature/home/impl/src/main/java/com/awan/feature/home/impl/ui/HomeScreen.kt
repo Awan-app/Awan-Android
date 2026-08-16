@@ -52,12 +52,6 @@ import com.awan.feature.home.impl.R
 import com.awan.feature.home.impl.ui.components.SessionTaskDetailDialog
 import java.time.LocalDate
 
-private sealed interface TimelineContentState {
-    data object Loading : TimelineContentState
-    data class Error(val message: UiText) : TimelineContentState
-    data object Ready : TimelineContentState
-}
-
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
@@ -65,11 +59,16 @@ fun HomeScreen(
     onNavigateToCalendar: () -> Unit = {},
     onRegisterSelectDate: ((LocalDate) -> Unit) -> Unit = {},
     onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
+    onDateChanged: (LocalDate) -> Unit = {},
     onRegisterOpenSession: ((String) -> Unit) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(uiState.selectedDate) {
+        onDateChanged(uiState.selectedDate)
+    }
 
     LaunchedEffect(Unit) {
         onRegisterSelectDate(viewModel::selectDate)

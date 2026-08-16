@@ -13,16 +13,17 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.ComposeFoundationFlags
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.os.LocaleListCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import java.util.Locale
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.awan.app.MainActivityUiState.*
@@ -31,6 +32,7 @@ import com.awan.app.core.data.sync.SyncWorker.Companion.schedulePeriodicSync
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.LocalRewardAnchors
 import com.awan.app.core.designsystem.RewardAnchors
+import com.awan.app.core.model.DarkThemeConfig
 import com.awan.app.core.notifications.NotificationIntents
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -84,34 +86,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
 
+        splashScreen.setKeepOnScreenCondition {
+            viewModel.uiState.value is Loading
+        }
         readDeepLink(intent)
-
-        var uiState: MainActivityUiState by mutableStateOf(Loading)
-        var isOnline by mutableStateOf(true)
 
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // Never assume the alarm fired: a force-stop, an OEM battery manager or a dropped
-                // exact alarm all leave the chain broken until something rebuilds it.
-                launch { notificationScheduler.rescheduleAll() }
-                launch {
-                    viewModel.isOnline.collectLatest { online ->
-                        isOnline = online
-                        if (online) {
-                            schedulePeriodicSync(this@MainActivity)
-                            enqueueImmediateSync(this@MainActivity)
-                        }
-                    }
-                }
-                launch {
-                    viewModel.uiState.collectLatest { state ->
-                        uiState = state
-                        if (state is Success) {
-                            val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags(state.language)
-                            AppCompatDelegate.setApplicationLocales(appLocale)
-                        }
+                viewModel.isOnline.collectLatest { online ->
+                    if (online) {
+                        schedulePeriodicSync(this@MainActivity)
+                        enqueueImmediateSync(this@MainActivity)
+                        // Never assume the alarm fired: a force-stop, an OEM battery manager or a dropped
+                        // exact alarm all leave the chain broken until something rebuilds it.
+                        notificationScheduler.rescheduleAll()
                     }
                 }
             }
@@ -123,10 +114,22 @@ class MainActivity : AppCompatActivity() {
         // TextStyle to BasicText instead, so nothing here needs the inherited path.
         ComposeFoundationFlags.isInheritedTextStyleEnabled = false
         enableEdgeToEdge()
+
         setContent {
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
+
             val currentLanguage = when (val state = uiState) {
                 Loading -> ""
                 is Success -> state.language
+            }
+
+            LaunchedEffect(currentLanguage) {
+                if (currentLanguage.isNotBlank()) {
+                    val appLocale: LocaleListCompat =
+                        LocaleListCompat.forLanguageTags(currentLanguage)
+                    AppCompatDelegate.setApplicationLocales(appLocale)
+                }
             }
 
             val locale = remember(currentLanguage) {
@@ -165,15 +168,19 @@ class MainActivity : AppCompatActivity() {
                     )
                 )
 
-                val useDarkTheme = when (val state = uiState) {
-                    Loading -> isSystemInDarkTheme()
-                    is Success -> state.useDarkTheme
+                val darkThemeConfig = when (val state = uiState) {
+                    Loading -> DarkThemeConfig.FOLLOW_SYSTEM
+                    is Success -> state.darkThemeConfig
                 }
 
-                AwanTheme(
-                    dark = useDarkTheme,
-                    light = !useDarkTheme
-                ) {
+                val systemDark = isSystemInDarkTheme()
+                val isDark = when (darkThemeConfig) {
+                    DarkThemeConfig.FOLLOW_SYSTEM -> systemDark
+                    DarkThemeConfig.DARK -> true
+                    DarkThemeConfig.LIGHT -> false
+                }
+
+                AwanTheme(dark = isDark) {
                     AwanApp(
                         appState = appState,
                         isOnline = isOnline,
@@ -186,4 +193,3 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
-

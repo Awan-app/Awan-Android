@@ -44,7 +44,7 @@ private fun DarkSurfacePreview() {
 @SuppressLint("HardcodedText")
 @Composable
 private fun SurfacePreview(darkTheme: Boolean) {
-    AwanTheme(dark = darkTheme, light = !darkTheme) {
+    AwanTheme(dark = darkTheme) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

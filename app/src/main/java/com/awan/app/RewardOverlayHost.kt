@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.snapshotFlow
 import com.awan.app.gamification.RewardBatcher
 import com.awan.app.gamification.TimestampedRewardEvent
+import com.awan.app.core.designsystem.GoalAchievementOverlay
 import com.awan.app.core.designsystem.ItemFlightOverlay
 import com.awan.app.core.designsystem.LocalRewardAnchors
 import com.awan.app.core.designsystem.PointsFlightOverlay
@@ -20,6 +21,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
+/**
+ * Plays reward celebrations over whatever screen the user is on.
+ *
+ * Rewards can arrive together — completing the day's first session pays points *and* moves the
+ * streak — so they queue and play one at a time rather than stacking on top of each other.
+ *
+ * Play order is whatever order they were earned in, which the data layer already publishes
+ * correctly: points before streak for a session, and a single payout for a spin. Re-sorting here
+ * would only risk shuffling one action's rewards in front of an earlier action's.
+ */
 @Composable
 fun RewardOverlayHost(
     rewardEvents: Flow<RewardEvent>,
@@ -83,6 +94,13 @@ fun RewardOverlayHost(
             newValue = event.newValue,
             maxStreakBroken = event.maxStreakBroken,
             maxStreakNew = event.maxStreakNew,
+            onDismiss = finish,
+            modifier = modifier,
+        )
+
+        is RewardEvent.GoalAchieved -> GoalAchievementOverlay(
+            goalTitle = event.title,
+            goalEmoji = event.emoji,
             onDismiss = finish,
             modifier = modifier,
         )

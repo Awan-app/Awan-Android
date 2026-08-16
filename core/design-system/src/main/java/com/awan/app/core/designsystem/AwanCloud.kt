@@ -33,8 +33,8 @@ import androidx.compose.ui.zIndex
 fun AwanCloud(
     modifier: Modifier = Modifier,
     size: Dp = 120.dp,
-    baseColor: Color = Color.White,
-    shadeColor: Color = Color(0xFFC7D2FE),
+    baseColor: Color = AwanTheme.colors.surface,
+    shadeColor: Color = AwanTheme.colors.line,
 ) {
     Canvas(modifier = modifier.size(size)) {
         val w = this.size.width
@@ -164,8 +164,6 @@ fun AwanCloudsHorizon(
     ) {
         AwanCloud(
             size = 140.dp,
-            baseColor = Color(0xFFF1F5F9),
-            shadeColor = Color(0xFFCBD5E1),
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .offset(x = (-20).dp, y = (10 + floatY2).dp),
@@ -173,8 +171,6 @@ fun AwanCloudsHorizon(
 
         AwanCloud(
             size = 150.dp,
-            baseColor = Color(0xFFF8FAFC),
-            shadeColor = Color(0xFFC7D2FE),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .offset(x = 25.dp, y = (5 + floatY3).dp),
@@ -182,8 +178,6 @@ fun AwanCloudsHorizon(
 
         AwanCloud(
             size = 160.dp,
-            baseColor = Color.White,
-            shadeColor = Color(0xFFCBD5E1),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .offset(x = (-50).dp, y = floatY1.dp),
@@ -191,8 +185,6 @@ fun AwanCloudsHorizon(
 
         AwanCloud(
             size = 145.dp,
-            baseColor = Color.White,
-            shadeColor = Color(0xFFC7D2FE),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .offset(x = 60.dp, y = (- floatY1).dp),

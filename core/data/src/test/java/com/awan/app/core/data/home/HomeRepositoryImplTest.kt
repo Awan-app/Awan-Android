@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import com.awan.app.core.domain.home.model.DaySchedule
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -171,6 +172,7 @@ private class FakeUserDao : UserDao {
     override suspend fun getUserWithPreferences(userId: String): UserWithPreferences? = TODO()
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeRepositoryImplTest {
 
     private val userDao = FakeUserDao()

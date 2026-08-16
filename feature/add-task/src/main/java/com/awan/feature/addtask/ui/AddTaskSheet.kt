@@ -132,14 +132,11 @@ fun AddTaskSheet(
     )
 
     // The dwell is what lets the plan-ready beat be seen at all; without it the sheet leaves on the
-    // frame the proposal arrives. It also lets the sheet shrink to the small ready panel first,
-    // rather than growing to full preview height while it slides away.
+    // frame the proposal arrives.
     LaunchedEffect(state.goalPhase) {
         if (state.goalPhase == GoalPhase.PlanReady) {
             delay(PlanReadyDwell)
-            sheetState.hide()          // suspends until SheetValue.Hidden
-            onDismiss()                // sets showAddTask = false
-            onNavigateToGoalPreview()  // navigator.navigate(GoalPreviewRoute)
+            onNavigateToGoalPreview()
         }
     }
 

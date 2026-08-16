@@ -17,5 +17,6 @@ data class TaskInfoResponse(
     @SerialName("goalId") val goalId: String? = null,
     @SerialName("dependsOnTaskIds") val dependsOnTaskIds: List<String>? = emptyList(),
     @SerialName("category") val category: CategoryDto? = null,
+    @SerialName("completedAt") val completedAt: String? = null,
 )
 
