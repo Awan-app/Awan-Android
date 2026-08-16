@@ -68,13 +68,12 @@ fun ProfileScreen(
                 EditPersonalInfoSheet(
                     initialFirstName = uiState.profile.firstName ?: "",
                     initialLastName = uiState.profile.lastName ?: "",
-                    initialBirthDate = uiState.profile.birthDate ?: "",
                     profilePictureUrl = uiState.profile.profilePictureUrl,
                     pendingPicture = uiState.pendingPicture,
                     error = uiState.fieldError,
                     onDismiss = { showEditSheet = false },
-                    onSave = { first, last, birth ->
-                        onAction(ProfileAction.UpdatePersonalInfo(first, last, birth))
+                    onSave = { first, last ->
+                        onAction(ProfileAction.UpdatePersonalInfo(first, last))
                     },
                     onPickPicture = { onAction(ProfileAction.UpdateProfilePicture(it)) },
                     onDeletePicture = { onAction(ProfileAction.DeleteProfilePicture) },

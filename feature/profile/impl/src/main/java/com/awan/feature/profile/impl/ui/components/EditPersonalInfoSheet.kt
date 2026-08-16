@@ -14,7 +14,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,30 +31,23 @@ import com.awan.app.core.common.text.UiText
 import com.awan.app.core.designsystem.*
 import com.awan.feature.profile.impl.presentation.PendingPicture
 import com.awan.feature.profile.impl.R as ProfileR
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditPersonalInfoSheet(
     initialFirstName: String,
     initialLastName: String,
-    initialBirthDate: String,
     profilePictureUrl: String?,
     pendingPicture: PendingPicture?,
     error: UiText?,
     onDismiss: () -> Unit,
-    onSave: (String, String, String) -> Unit,
+    onSave: (String, String) -> Unit,
     onPickPicture: (String) -> Unit,
     onDeletePicture: () -> Unit,
     isLoading: Boolean = false
 ) {
     var firstName by remember { mutableStateOf(initialFirstName) }
     var lastName by remember { mutableStateOf(initialLastName) }
-    var birthDate by remember { mutableStateOf(initialBirthDate) }
-    var showDatePicker by remember { mutableStateOf(false) }
     var showPhotoSheet by remember { mutableStateOf(false) }
     var showCameraRationaleDialog by remember { mutableStateOf(false) }
     var showCameraSettingsDialog by remember { mutableStateOf(false) }
@@ -119,10 +111,6 @@ fun EditPersonalInfoSheet(
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
     )
-
-    val birthDateFormat = remember {
-        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC)
-    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -266,28 +254,6 @@ fun EditPersonalInfoSheet(
                         )
                     }
                 }
-
-                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
-                    AwanText(
-                        text = stringResource(ProfileR.string.profile_birth_date),
-                        style = AwanTheme.styles.captionText.copy(
-                            textStyle = AwanTheme.typography.caption.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                        )
-                    )
-                    AwanCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { showDatePicker = true },
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        PreferenceRow(
-                            icon = Icons.Default.Cake,
-                            title = stringResource(ProfileR.string.profile_birth_date),
-                            value = birthDate.ifBlank { stringResource(ProfileR.string.profile_select_date) },
-                            onClick = { showDatePicker = true },
-                            iconColor = AwanTheme.colors.zoneTangerine
-                        )
-                    }
-                }
             }
 
             Row(
@@ -302,9 +268,9 @@ fun EditPersonalInfoSheet(
                     AwanText(stringResource(ProfileR.string.profile_cancel))
                 }
                 AwanButton(
-                    onClick = { onSave(firstName, lastName, birthDate) },
+                    onClick = { onSave(firstName, lastName) },
                     modifier = Modifier.weight(1f),
-                    enabled = !isLoading && firstName.isNotBlank() && lastName.isNotBlank(),
+                    enabled = !isLoading && firstName.isNotBlank(),
                     isLoading = isLoading,
                     variant = AwanButtonVariant.Primary
                 ) {
@@ -358,44 +324,5 @@ fun EditPersonalInfoSheet(
             onSecondary = { showCameraSettingsDialog = false },
             onDismiss = { showCameraSettingsDialog = false }
         )
-    }
-
-    if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = try {
-                LocalDate.parse(birthDate, birthDateFormat)
-                    .atStartOfDay(ZoneOffset.UTC)
-                    .toInstant()
-                    .toEpochMilli()
-            } catch (_: Exception) {
-                null
-            }
-        )
-        AwanDatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                AwanButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            birthDate = birthDateFormat.format(Instant.ofEpochMilli(millis))
-                        }
-                        showDatePicker = false
-                    },
-                    variant = AwanButtonVariant.Quiet
-                ) {
-                    AwanText(stringResource(ProfileR.string.profile_ok))
-                }
-            },
-            dismissButton = {
-                AwanButton(
-                    onClick = { showDatePicker = false },
-                    variant = AwanButtonVariant.Quiet
-                ) {
-                    AwanText(stringResource(ProfileR.string.profile_cancel))
-                }
-            }
-        ) {
-            AwanDatePicker(state = datePickerState)
-        }
     }
 }

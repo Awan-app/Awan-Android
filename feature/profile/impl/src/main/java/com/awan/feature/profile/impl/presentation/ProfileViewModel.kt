@@ -17,7 +17,6 @@ import com.awan.app.core.domain.profile.usecase.GetUserDataUseCase
 import com.awan.app.core.domain.profile.usecase.ObserveProfileUseCase
 import com.awan.app.core.domain.profile.usecase.SetDarkThemeUseCase
 import com.awan.app.core.domain.profile.usecase.SetLocaleUseCase
-import com.awan.app.core.domain.profile.usecase.UpdateBirthDateUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateProfilePartialUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateProfilePictureUseCase
 import com.awan.app.core.domain.profile.usecase.UpdateSessionSettingsUseCase
@@ -40,7 +39,6 @@ class ProfileViewModel @Inject constructor(
     private val updateSessionSettingsUseCase: UpdateSessionSettingsUseCase,
     private val updateTimezoneUseCase: UpdateTimezoneUseCase,
     private val updateProfilePartialUseCase: UpdateProfilePartialUseCase,
-    private val updateBirthDateUseCase: UpdateBirthDateUseCase,
     private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
     private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
     private val readImage: ReadImageUseCase,
@@ -78,8 +76,7 @@ class ProfileViewModel @Inject constructor(
             is ProfileAction.UpdateTimezone -> updateTimezone(action.timezone)
             is ProfileAction.UpdatePersonalInfo -> updatePersonalInfo(
                 action.firstName,
-                action.lastName,
-                action.birthDate
+                action.lastName
             )
             is ProfileAction.UpdateProfilePicture -> {
                 _uiState.update { it.copy(pendingPicture = PendingPicture.Picked(action.uri), fieldError = null) }
@@ -167,22 +164,19 @@ class ProfileViewModel @Inject constructor(
         executeFieldUpdate { updateTimezoneUseCase(timezone) }
     }
 
-    private fun updatePersonalInfo(firstName: String, lastName: String, birthDate: String) {
+    private fun updatePersonalInfo(firstName: String, lastName: String) {
         if (_uiState.value.isUpdatingField) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isUpdatingField = true, fieldError = null) }
 
-            // 1. Update Profile Info (Name & BirthDate)
-            val nameResult = updateProfilePartialUseCase(firstName = firstName, lastName = lastName)
+            // 1. Update Profile Info (Name)
+            val nameResult = updateProfilePartialUseCase(
+                firstName = firstName.trim(),
+                lastName = lastName.trim(),
+            )
             if (nameResult is Result.Error) {
                 _uiState.update { it.copy(isUpdatingField = false, fieldError = nameResult.error.toUiText()) }
-                return@launch
-            }
-
-            val birthDateResult = updateBirthDateUseCase(birthDate)
-            if (birthDateResult is Result.Error) {
-                _uiState.update { it.copy(isUpdatingField = false, fieldError = birthDateResult.error.toUiText()) }
                 return@launch
             }
 
