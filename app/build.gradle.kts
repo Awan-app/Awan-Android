@@ -99,6 +99,12 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.splashscreen)
 
+    // Image Loading
+    implementation(libs.coil.compose)
+    implementation(libs.coil)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.okhttp)
+
     // Navigation 3
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)

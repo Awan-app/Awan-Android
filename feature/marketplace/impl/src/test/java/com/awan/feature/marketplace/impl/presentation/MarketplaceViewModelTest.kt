@@ -1,5 +1,6 @@
 package com.awan.feature.marketplace.impl.presentation
 
+import com.awan.app.core.datastore.auth.AuthTokenProvider
 import com.awan.app.core.model.StoreItem
 import com.awan.app.core.model.StoreItemType
 import com.awan.app.core.model.OwnedItem
@@ -26,6 +27,7 @@ class MarketplaceViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var storeRepository: FakeStoreRepository
     private lateinit var profileRepository: FakeProfileRepository
+    private lateinit var authTokenProvider: FakeAuthTokenProvider
     private lateinit var viewModel: MarketplaceViewModel
 
     @Before
@@ -33,6 +35,7 @@ class MarketplaceViewModelTest {
         Dispatchers.setMain(testDispatcher)
         storeRepository = FakeStoreRepository()
         profileRepository = FakeProfileRepository()
+        authTokenProvider = FakeAuthTokenProvider()
         
         val item1 = StoreItem("1", "Frame 1", "Desc", "img", null, 100, "1.0", StoreItemType.FRAME)
         val item2 = StoreItem("2", "Skin 1", "Desc", "img", null, 200, "1.0", StoreItemType.SKIN)
@@ -106,4 +109,20 @@ class MarketplaceViewModelTest {
         
         assertTrue(item.id in viewModel.state.value.ownedItemIds)
     }
+}
+
+private class FakeAuthTokenProvider : AuthTokenProvider {
+    override suspend fun getAccessToken(): String? = "test-token"
+    override suspend fun getRefreshToken(): String? = null
+    override suspend fun saveTokens(accessToken: String, refreshToken: String) {}
+    override suspend fun saveUserData(userId: String?, email: String?) {}
+    override suspend fun getUserId(): String? = null
+    override suspend fun getUserEmail(): String? = null
+    override suspend fun clearTokens() {}
+    override fun observeIsLoggedIn(): kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.emptyFlow()
+    override suspend fun setLoggedIn(loggedIn: Boolean) {}
+    override suspend fun saveFcmToken(token: String) {}
+    override suspend fun getFcmToken(): String? = null
+    override val sessionExpired: kotlinx.coroutines.flow.Flow<Unit> = kotlinx.coroutines.flow.emptyFlow()
+    override fun notifySessionExpired() {}
 }

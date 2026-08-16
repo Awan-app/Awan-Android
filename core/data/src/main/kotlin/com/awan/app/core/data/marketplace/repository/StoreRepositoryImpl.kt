@@ -22,7 +22,6 @@ import com.awan.app.core.model.StoreItemType
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -105,19 +104,11 @@ class StoreRepositoryImpl @Inject constructor(
                 return@withContext Result.Error(AppError.Network)
             }
 
-            // Find current equipped item ID for this type
-            val equipped = storeDao.observeEquippedItems().first()
-            val item = equipped.find { it.type == itemType.name }
-
-            if (item != null) {
-                val result = remoteDataSource.unequipItem(item.itemId)
-                if (result is Result.Success) {
-                    storeDao.deleteEquippedItemByType(itemType.name)
-                }
-                result
-            } else {
-                Result.Success(Unit)
+            val result = remoteDataSource.unequipItem(itemType.name)
+            if (result is Result.Success) {
+                storeDao.deleteEquippedItemByType(itemType.name)
             }
+            result
         }
 
     override suspend fun refreshStoreItems(type: StoreItemType?) = withContext(ioDispatcher) {

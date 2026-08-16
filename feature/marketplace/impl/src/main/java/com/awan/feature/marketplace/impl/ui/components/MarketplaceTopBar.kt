@@ -13,27 +13,26 @@ import com.awan.feature.marketplace.impl.R
 
 @Composable
 fun MarketplaceTopBar(
-    mascotExpression: MascotExpression,
+    pointsCount: Int,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         AwanText(
             text = stringResource(R.string.marketplace_title),
             style = AwanTheme.styles.titleText.textStyle.copy(
-                fontSize = 32.sp,
+                fontSize = 28.sp,
                 fontWeight = FontWeight.Bold
             )
         )
-        AwanMascot(
-            expression = mascotExpression,
-            width = 56.dp
+        AwanPointsBadge(
+            pointsCount = pointsCount
         )
     }
 }

@@ -8,6 +8,7 @@ import com.awan.app.core.domain.profile.model.UserPreferences
 import com.awan.app.core.model.sanitizeLastName
 import com.awan.app.core.network.dto.profile.ProfileResponse
 import com.awan.app.core.network.dto.profile.UserPreferencesResponse
+import com.awan.app.core.network.util.UrlResolver
 
 @Suppress("UNCHECKED_CAST")
 internal fun ProfileResponse.toDomain(): Profile = Profile(
@@ -19,7 +20,7 @@ internal fun ProfileResponse.toDomain(): Profile = Profile(
     points = points,
     streak = streak,
     maxStreak = maxStreak,
-    profilePictureUrl = profilePictureUrl,
+    profilePictureUrl = UrlResolver.resolve(profilePictureUrl),
     isNew = isNew,
     preferences = preferences?.toDomain(),
 )

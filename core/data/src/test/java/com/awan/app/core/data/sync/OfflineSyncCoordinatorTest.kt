@@ -151,7 +151,7 @@ private class FakeStoreRemoteDataSource : StoreRemoteDataSource {
     override suspend fun buyItem(itemId: String): Result<Unit> = Result.Success(Unit)
     override suspend fun getEquippedItems(): Result<List<EquippedItemDto>> = Result.Success(emptyList())
     override suspend fun equipItem(itemId: String): Result<Unit> = Result.Success(Unit)
-    override suspend fun unequipItem(itemId: String): Result<Unit> = Result.Success(Unit)
+    override suspend fun unequipItem(type: String): Result<Unit> = Result.Success(Unit)
 }
 
 private class FakeProfileRemoteDataSource : ProfileRemoteDataSource {

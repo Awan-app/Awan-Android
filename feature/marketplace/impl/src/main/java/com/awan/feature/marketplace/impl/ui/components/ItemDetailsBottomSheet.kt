@@ -34,6 +34,7 @@ fun ItemDetailsBottomSheet(
     currentPoints: Int,
     onBuyClick: () -> Unit,
     onEquipClick: () -> Unit,
+    onUnequipClick: () -> Unit,
     onDismiss: () -> Unit,
     isProcessing: Boolean
 ) {
@@ -165,13 +166,19 @@ fun ItemDetailsBottomSheet(
             val canAfford = currentPoints >= item.price
 
             AwanButton(
-                onClick = { if (isOwned) onEquipClick() else onBuyClick() },
+                onClick = {
+                    when {
+                        isEquipped -> onUnequipClick()
+                        isOwned -> onEquipClick()
+                        else -> onBuyClick()
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isProcessing && (isOwned || canAfford),
+                enabled = !isProcessing && (isOwned || canAfford || isEquipped),
                 variant = if (isEquipped) AwanButtonVariant.Secondary else AwanButtonVariant.Primary
             ) {
                 val label = when {
-                    isEquipped -> stringResource(R.string.marketplace_details_action_equipped)
+                    isEquipped -> stringResource(R.string.marketplace_action_unequip)
                     isOwned -> stringResource(R.string.marketplace_details_action_equip)
                     else -> stringResource(R.string.marketplace_details_action_buy, item.price)
                 }
