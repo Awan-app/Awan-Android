@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.*
 import com.awan.app.core.model.StoreItem
-import com.awan.app.core.model.StoreItemRarity
 import com.awan.feature.marketplace.impl.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,13 +42,6 @@ fun ItemDetailsBottomSheet(
     )
 
     val itemTypeName = item.type.name.lowercase().replaceFirstChar { it.uppercase() }
-    val rarityColor = when (item.rarity) {
-        StoreItemRarity.COMMON -> AwanTheme.colors.zoneBlue
-        StoreItemRarity.UNCOMMON -> AwanTheme.colors.zoneGreen
-        StoreItemRarity.RARE -> AwanTheme.colors.sky
-        StoreItemRarity.EPIC -> AwanTheme.colors.zoneViolet
-        StoreItemRarity.LEGENDARY -> AwanTheme.colors.zoneSun
-    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -98,37 +90,18 @@ fun ItemDetailsBottomSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.Start
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    color = AwanTheme.colors.sky.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Surface(
-                        color = AwanTheme.colors.sky.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        AwanText(
-                            text = itemTypeName,
-                            style = AwanTheme.styles.captionText.textStyle.copy(
-                                color = AwanTheme.colors.sky,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-
-                    Surface(
-                        color = rarityColor.copy(alpha = 0.12f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        AwanText(
-                            text = item.rarity.name.lowercase().replaceFirstChar { it.uppercase() },
-                            style = AwanTheme.styles.captionText.textStyle.copy(
-                                color = rarityColor,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
+                    AwanText(
+                        text = itemTypeName,
+                        style = AwanTheme.styles.captionText.textStyle.copy(
+                            color = AwanTheme.colors.sky,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

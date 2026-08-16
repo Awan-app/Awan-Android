@@ -23,7 +23,6 @@ import com.awan.app.core.designsystem.AwanRemoteImage
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.model.StoreItem
-import com.awan.app.core.model.StoreItemRarity
 import com.awan.feature.marketplace.impl.R
 
 @Composable
@@ -31,18 +30,9 @@ fun StoreItemCard(
     item: StoreItem,
     isOwned: Boolean,
     isEquipped: Boolean,
-    canAfford: Boolean = true,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val rarityColor = when (item.rarity) {
-        StoreItemRarity.COMMON -> AwanTheme.colors.zoneBlue
-        StoreItemRarity.UNCOMMON -> AwanTheme.colors.zoneGreen
-        StoreItemRarity.RARE -> AwanTheme.colors.sky
-        StoreItemRarity.EPIC -> AwanTheme.colors.zoneViolet
-        StoreItemRarity.LEGENDARY -> AwanTheme.colors.zoneSun
-    }
-
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -64,23 +54,6 @@ fun StoreItemCard(
                     fontSize = 10.sp,
                     color = AwanTheme.colors.sky,
                     fontWeight = FontWeight.Medium
-                ),
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-            )
-        }
-
-        // Rarity Badge at top right
-        Surface(
-            color = rarityColor.copy(alpha = 0.12f),
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier.align(Alignment.TopEnd)
-        ) {
-            AwanText(
-                text = item.rarity.name.lowercase().replaceFirstChar { it.uppercase() },
-                style = AwanTheme.styles.captionText.textStyle.copy(
-                    fontSize = 10.sp,
-                    color = rarityColor,
-                    fontWeight = FontWeight.SemiBold
                 ),
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
             )

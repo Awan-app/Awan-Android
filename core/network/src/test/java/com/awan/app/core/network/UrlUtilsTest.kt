@@ -16,6 +16,15 @@ class UrlUtilsTest {
     }
 
     @Test
+    fun `resolveBackendImageUrl resolves store item image path correctly without api suffix`() {
+        val result = resolveBackendImageUrl(
+            imagePath = "/images/store/cloud_stratus_dark_01.png",
+            baseUrl = "https://backend-production-c701.up.railway.app/api/"
+        )
+        assertEquals("https://backend-production-c701.up.railway.app/images/store/cloud_stratus_dark_01.png", result)
+    }
+
+    @Test
     fun `resolveBackendImageUrl with relative path without leading slash and baseUrl without trailing slash`() {
         val result = resolveBackendImageUrl(
             imagePath = "images/store/twilight_light_03.png",

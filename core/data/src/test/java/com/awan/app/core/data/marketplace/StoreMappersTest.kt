@@ -132,6 +132,30 @@ class StoreMappersTest {
     }
 
     @Test
+    fun `StoreItemDto asExternalModel resolves cloud_stratus image path without api suffix`() {
+        val dto = StoreItemDto(
+            id = "skin-cloud-1",
+            name = "Cloud Stratus Dark",
+            description = "Dark stratus cloud mascot skin",
+            image = "/images/store/cloud_stratus_dark_01.png",
+            info = "cloud_01",
+            price = 500,
+            version = "1.0",
+            type = "SKIN",
+            rarity = "EPIC"
+        )
+
+        val model = dto.asExternalModel()
+        assertNotNull(model)
+        assertEquals("skin-cloud-1", model!!.id)
+        assertEquals(StoreItemRarity.EPIC, model.rarity)
+        assertEquals(StoreItemType.SKIN, model.type)
+        assertTrue(model.image.endsWith("/images/store/cloud_stratus_dark_01.png"))
+        assertFalse(model.image.contains("/api/images"))
+        assertFalse(model.image.contains("/api/"))
+    }
+
+    @Test
     fun `StoreItemEntity to and from StoreItem preserves rarity and image`() {
         val domainItem = sampleStoreItem.copy(rarity = StoreItemRarity.LEGENDARY)
         val entity = domainItem.asEntity(expiryTime = 9999L)

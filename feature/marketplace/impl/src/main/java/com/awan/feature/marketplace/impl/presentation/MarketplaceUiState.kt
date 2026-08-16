@@ -19,12 +19,10 @@ data class MarketplaceUiState(
     val isEquipping: Boolean = false,
     val selectedItem: StoreItem? = null
 ) {
-    val filteredItems: List<StoreItem> = items
-        .filter { item ->
-            (selectedCategory == null || item.type == selectedCategory) &&
-            (searchQuery.isEmpty() || item.name.contains(searchQuery, ignoreCase = true))
-        }
-        .sortedWith(compareBy<StoreItem> { it.price }.thenBy { it.name })
+    val filteredItems: List<StoreItem> = items.filter { item ->
+        (selectedCategory == null || item.type == selectedCategory) &&
+        (searchQuery.isEmpty() || item.name.contains(searchQuery, ignoreCase = true))
+    }
 
     val ownedItemIds: Set<String> = inventory.map { it.item.id }.toSet()
     val equippedItemIds: Set<String> = equipped.map { it.item.id }.toSet()

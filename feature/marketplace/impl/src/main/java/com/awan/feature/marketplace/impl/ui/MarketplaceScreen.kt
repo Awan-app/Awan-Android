@@ -111,7 +111,6 @@ fun MarketplaceScreen(
                                     item = item,
                                     isOwned = item.id in state.ownedItemIds,
                                     isEquipped = item.id in state.equippedItemIds,
-                                    canAfford = state.points >= item.price,
                                     onClick = { viewModel.onAction(MarketplaceAction.SelectItem(item)) }
                                 )
                             }
