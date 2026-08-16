@@ -9,11 +9,13 @@ import com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest
 import com.awan.app.core.network.dto.goal.CreateGoalRequest
 import com.awan.app.core.network.dto.goal.GoalDecompositionTranscriptResponse
 import com.awan.app.core.network.dto.goal.ScheduleGoalRequest
+import com.awan.app.core.network.dto.goal.UpdateGoalRequest
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import kotlinx.serialization.json.JsonObject
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -38,6 +40,12 @@ interface GoalApiService {
     suspend fun getGoal(
         @Path("goalId") goalId: String,
         @Query("expand") expand: Boolean = false,
+    ): GoalInfoResponse
+
+    @PATCH("v1/goals/{goalId}")
+    suspend fun updateGoal(
+        @Path("goalId") goalId: String,
+        @Body request: UpdateGoalRequest,
     ): GoalInfoResponse
 
     @DELETE("v1/goals/{goalId}")

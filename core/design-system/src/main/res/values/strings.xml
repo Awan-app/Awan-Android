@@ -74,4 +74,8 @@
     <string name="ds_next_day">Next day</string>
     <string name="ds_previous_day">Previous day</string>
     <string name="ds_combo_bonus">%1$d× COMBO BONUS!</string>
+
+    <!-- Achievements -->
+    <string name="goal_achieved_title">Goal Achieved!</string>
+    <string name="goal_achieved_encouragement">You\'re making amazing progress!</string>
 </resources>

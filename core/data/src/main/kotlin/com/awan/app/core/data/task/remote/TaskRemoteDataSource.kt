@@ -6,6 +6,7 @@ import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.TaskCompletionResponse
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
@@ -16,6 +17,11 @@ interface TaskRemoteDataSource {
     suspend fun createTask(request: CreateTaskRequest): Result<TaskInfoResponse>
 
     suspend fun createTaskWithSessions(request: CreateTaskWithSessionsRequest): Result<TaskWithSessionsDto>
+
+    suspend fun updateTask(
+        taskId: String,
+        request: com.awan.app.core.network.dto.task.TaskUpdateRequest,
+    ): Result<TaskInfoResponse>
 
     suspend fun createTasksWithSessions(
         request: BulkCreateTasksWithSessionsRequest,
@@ -37,6 +43,8 @@ interface TaskRemoteDataSource {
     ): Result<Map<String, List<TaskWithSessionsDto>>>
 
     suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse>
+
+    suspend fun completeTask(taskId: String): Result<TaskCompletionResponse>
 
     suspend fun deleteTask(taskId: String): Result<Unit>
 

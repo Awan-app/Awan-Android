@@ -74,5 +74,9 @@ class GamificationRepositoryImpl @Inject constructor(
     override suspend fun publishWheelReward(result: WheelSpinResult) {
         eventBus.publishWheelSpin(result)
     }
+
+    override fun publishReward(event: RewardEvent) {
+        eventBus.publishReward(event)
+    }
 }
 

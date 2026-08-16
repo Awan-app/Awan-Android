@@ -34,4 +34,9 @@ sealed interface AddTaskAction {
     data object DiscardCancelled : AddTaskAction
     data object Dismiss : AddTaskAction
     data class SetMicPermissionRequested(val requested: Boolean) : AddTaskAction
+    data class Initialize(
+        val goalId: String? = null,
+        val zoneId: String? = null,
+        val date: LocalDate? = null
+    ) : AddTaskAction
 }
