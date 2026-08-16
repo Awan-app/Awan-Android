@@ -1,12 +1,14 @@
-﻿package com.awan.app.core.data.goal
+package com.awan.app.core.data.goal
 
 import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.result.map
 import com.awan.app.core.data.goal.remote.GoalRemoteDataSource
 import com.awan.app.core.data.sync.SyncTtl
+import com.awan.app.core.data.category.toModel
 import com.awan.app.core.data.task.toEntity
 import com.awan.app.core.data.task.toModel
+import com.awan.app.core.data.task.toTaskModel
 import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
 import com.awan.app.core.database.dao.ScheduleDraftDao
@@ -34,6 +36,11 @@ import com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest
 import com.awan.app.core.network.dto.goal.ConfirmedGoalSessionDto
 import com.awan.app.core.network.dto.goal.CreateGoalRequest
 import com.awan.app.core.network.dto.goal.CreateGoalTaskDto
+import com.awan.app.core.network.dto.goal.UpdateGoalRequest
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -48,6 +55,55 @@ class GoalRepositoryImpl @Inject constructor(
     private val sessionDao: SessionDao,
 ) : GoalRepository {
 
+    override fun observeGoals(): Flow<List<Goal>> {
+        val goalsFlow = goalDao.observeAllGoals()
+        val categoriesFlow = categoryDao.observeAllCategories()
+
+        return combine(goalsFlow, categoriesFlow) { goalEntities, categoryEntities ->
+            val categoryMap = categoryEntities.associateBy { it.id }
+            goalEntities to categoryMap
+        }.flatMapLatest { (goalEntities, categoryMap) ->
+            if (goalEntities.isEmpty()) return@flatMapLatest kotlinx.coroutines.flow.flowOf(emptyList())
+
+            val goalFlows = goalEntities.map { entity ->
+                taskDao.observeTasksByGoal(entity.id).map { taskEntities ->
+                    val tasks = taskEntities.map { taskEntity ->
+                        val category = taskEntity.categoryId?.let { catId ->
+                            categoryMap[catId]?.let { it.toModel() }
+                        }
+                        taskEntity.toTaskModel(
+                            dependsOnTaskIds = taskDao.getDependsOnIds(taskEntity.id),
+                            category = category
+                        )
+                    }
+                    entity.toModel(tasks = tasks)
+                }
+            }
+            combine(goalFlows) { it.toList() }
+        }
+    }
+
+    override fun observeGoal(goalId: String): Flow<Goal?> {
+        val goalFlow = goalDao.observeGoal(goalId)
+        val categoriesFlow = categoryDao.observeAllCategories()
+
+        return combine(goalFlow, categoriesFlow) { entity, categoryEntities ->
+            if (entity == null) return@combine kotlinx.coroutines.flow.flowOf(null)
+            val categoryMap = categoryEntities.associateBy { it.id }
+
+            taskDao.observeTasksByGoal(entity.id).map { taskEntities ->
+                val tasks = taskEntities.map { taskEntity ->
+                    val category = taskEntity.categoryId?.let { categoryMap[it]?.toModel() }
+                    taskEntity.toTaskModel(
+                        dependsOnTaskIds = taskDao.getDependsOnIds(taskEntity.id),
+                        category = category
+                    )
+                }
+                entity.toModel(tasks = tasks)
+            }
+        }.flatMapLatest { it }
+    }
+
     override suspend fun getGoals(): Result<List<Goal>> {
         if (connectivityMonitor.isCurrentlyOnline()) {
             when (val remoteResult = remoteDataSource.getGoals()) {
@@ -55,23 +111,22 @@ class GoalRepositoryImpl @Inject constructor(
                     val remoteGoals = remoteResult.data
                     goalDao.upsertGoals(remoteGoals.map { it.toEntity() })
                     remoteGoals.forEach { goalResponse ->
-                        if (goalResponse.tasks.isNotEmpty()) {
-                            taskDao.upsertTasks(goalResponse.tasks.map { it.toEntity(goalId = goalResponse.id) })
+                        val tasks = goalResponse.tasks
+                        if (!tasks.isNullOrEmpty()) {
+                            taskDao.upsertTasks(tasks.map { it.toEntity(goalId = goalResponse.id) })
                         }
                     }
-                    val allTasks = taskDao.getAllTasks()
                     val goals = goalDao.getAllGoals().map { entity ->
-                        val tasks = allTasks.filter { it.goalId == entity.id }.map { it.toModel() }
+                        val tasks = taskDao.getTasksByGoal(entity.id).map { it.toModel() }
                         entity.toModel(tasks = tasks)
                     }
                     return Result.Success(goals)
                 }
                 is Result.Error -> {
-                    val allTasks = taskDao.getAllTasks()
                     val cached = goalDao.getAllGoals()
                     return if (cached.isNotEmpty()) {
                         val goals = cached.map { entity ->
-                            val tasks = allTasks.filter { it.goalId == entity.id }.map { it.toModel() }
+                            val tasks = taskDao.getTasksByGoal(entity.id).map { it.toModel() }
                             entity.toModel(tasks = tasks)
                         }
                         Result.Success(goals)
@@ -82,10 +137,9 @@ class GoalRepositoryImpl @Inject constructor(
                 Result.Loading -> { /* no-op */ }
             }
         }
-        val allTasks = taskDao.getAllTasks()
         val cached = goalDao.getAllGoals()
         val goals = cached.map { entity ->
-            val tasks = allTasks.filter { it.goalId == entity.id }.map { it.toModel() }
+            val tasks = taskDao.getTasksByGoal(entity.id).map { it.toModel() }
             entity.toModel(tasks = tasks)
         }
         return Result.Success(goals)
@@ -120,8 +174,9 @@ class GoalRepositoryImpl @Inject constructor(
             is Result.Success -> {
                 val goalResponse = result.data
                 goalDao.upsertGoal(goalResponse.toEntity())
-                if (goalResponse.tasks.isNotEmpty()) {
-                    val taskEntities = goalResponse.tasks.map { it.toEntity(goalId = goalResponse.id) }
+                val responseTasks = goalResponse.tasks
+                if (!responseTasks.isNullOrEmpty()) {
+                    val taskEntities = responseTasks.map { it.toEntity(goalId = goalResponse.id) }
                     taskDao.upsertTasks(taskEntities)
                 }
                 Result.Success(goalResponse.toModel())
@@ -137,8 +192,9 @@ class GoalRepositoryImpl @Inject constructor(
                 is Result.Success -> {
                     val goalResponse = result.data
                     goalDao.upsertGoal(goalResponse.toEntity())
-                    if (goalResponse.tasks.isNotEmpty()) {
-                        val taskEntities = goalResponse.tasks.map { it.toEntity(goalId = goalResponse.id) }
+                    val responseTasks = goalResponse.tasks
+                    if (!responseTasks.isNullOrEmpty()) {
+                        val taskEntities = responseTasks.map { it.toEntity(goalId = goalResponse.id) }
                         taskDao.upsertTasks(taskEntities)
                     }
                     return Result.Success(goalResponse.toModel())
@@ -146,7 +202,8 @@ class GoalRepositoryImpl @Inject constructor(
                 is Result.Error -> {
                     val cached = goalDao.getAllGoals().firstOrNull { it.isInbox }
                     return if (cached != null) {
-                        Result.Success(cached.toModel())
+                        val allTasks = taskDao.getTasksByGoal(cached.id).map { it.toModel() }
+                        Result.Success(cached.toModel(tasks = allTasks))
                     } else {
                         Result.Error(result.error)
                     }
@@ -156,7 +213,8 @@ class GoalRepositoryImpl @Inject constructor(
         }
         val cached = goalDao.getAllGoals().firstOrNull { it.isInbox }
         return if (cached != null) {
-            Result.Success(cached.toModel())
+            val allTasks = taskDao.getTasksByGoal(cached.id).map { it.toModel() }
+            Result.Success(cached.toModel(tasks = allTasks))
         } else {
             Result.Error(AppError.Network)
         }
@@ -168,8 +226,9 @@ class GoalRepositoryImpl @Inject constructor(
                 is Result.Success -> {
                     val goalResponse = result.data
                     goalDao.upsertGoal(goalResponse.toEntity())
-                    if (goalResponse.tasks.isNotEmpty()) {
-                        val taskEntities = goalResponse.tasks.map { it.toEntity(goalId = goalResponse.id) }
+                    val responseTasks = goalResponse.tasks
+                    if (!responseTasks.isNullOrEmpty()) {
+                        val taskEntities = responseTasks.map { it.toEntity(goalId = goalResponse.id) }
                         taskDao.upsertTasks(taskEntities)
                     }
                     return Result.Success(goalResponse.toModel())
@@ -177,7 +236,7 @@ class GoalRepositoryImpl @Inject constructor(
                 is Result.Error -> {
                     val cached = goalDao.getGoal(goalId)
                     return if (cached != null) {
-                        val allTasks = taskDao.getAllTasks().filter { it.goalId == goalId }.map { it.toModel() }
+                        val allTasks = taskDao.getTasksByGoal(goalId).map { it.toModel() }
                         Result.Success(cached.toModel(tasks = allTasks))
                     } else {
                         Result.Error(result.error)
@@ -188,10 +247,46 @@ class GoalRepositoryImpl @Inject constructor(
         }
         val cached = goalDao.getGoal(goalId)
         return if (cached != null) {
-            val allTasks = taskDao.getAllTasks().filter { it.goalId == goalId }.map { it.toModel() }
+            val allTasks = taskDao.getTasksByGoal(goalId).map { it.toModel() }
             Result.Success(cached.toModel(tasks = allTasks))
         } else {
             Result.Error(AppError.Network)
+        }
+    }
+
+    override suspend fun updateGoal(
+        goalId: String,
+        title: String?,
+        description: String?,
+        status: String?,
+        targetDate: String?,
+    ): Result<Goal> {
+        if (!connectivityMonitor.isCurrentlyOnline()) {
+            return Result.Error(AppError.Network)
+        }
+
+        // Restriction: Inbox cannot be edited
+        val existing = goalDao.getGoal(goalId)
+        if (existing?.isInbox == true) {
+            return Result.Error(AppError.Unknown(Throwable("Inbox goal cannot be edited")))
+        }
+
+        return remoteDataSource.updateGoal(
+            goalId = goalId,
+            request = UpdateGoalRequest(
+                title = title,
+                description = description,
+                status = status,
+                targetDate = targetDate,
+            ),
+        ).map { dto ->
+            goalDao.upsertGoal(dto.toEntity())
+            val responseTasks = dto.tasks
+            if (!responseTasks.isNullOrEmpty()) {
+                val taskEntities = responseTasks.map { it.toEntity(goalId = dto.id) }
+                taskDao.upsertTasks(taskEntities)
+            }
+            dto.toModel()
         }
     }
 
@@ -221,17 +316,18 @@ class GoalRepositoryImpl @Inject constructor(
             is Result.Success -> {
                 val goalResponse = result.data
                 goalDao.upsertGoal(goalResponse.toEntity())
-                if (goalResponse.tasks.isNotEmpty()) {
-                    val categories = goalResponse.tasks.mapNotNull { it.category }.distinctBy { it.id }.map {
+                val responseTasks = goalResponse.tasks
+                if (!responseTasks.isNullOrEmpty()) {
+                    val categories = responseTasks.mapNotNull { it.category }.distinctBy { it.id }.map {
                         CategoryEntity(id = it.id, name = it.name)
                     }
                     if (categories.isNotEmpty()) {
                         categoryDao.upsertCategories(categories)
                     }
-                    val taskEntities = goalResponse.tasks.map { it.toEntity(goalId = goalResponse.id) }
+                    val taskEntities = responseTasks.map { it.toEntity(goalId = goalResponse.id) }
                     taskDao.upsertTasks(taskEntities)
 
-                    val dependencyEntities = goalResponse.tasks.flatMap { task ->
+                    val dependencyEntities = responseTasks.flatMap { task ->
                         task.dependsOnTaskIds.orEmpty().map { depId ->
                             TaskDependencyEntity(taskId = task.id, dependsOnTaskId = depId)
                         }

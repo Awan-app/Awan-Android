@@ -1,4 +1,4 @@
-﻿package com.awan.app.core.data.goal
+package com.awan.app.core.data.goal
 
 import com.awan.app.core.data.task.toTaskModel
 import com.awan.app.core.database.model.GoalEntity
@@ -50,7 +50,7 @@ internal fun GoalInfoResponse.toModel(): Goal {
         description = description,
         emoji = extractedEmoji,
         status = status.toModel(),
-        tasks = tasks.map { it.copy(goalId = id).toTaskModel() },
+        tasks = tasks?.map { it.copy(goalId = id).toTaskModel() } ?: emptyList(),
     )
 }
 

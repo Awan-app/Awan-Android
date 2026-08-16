@@ -1,4 +1,4 @@
-﻿package com.awan.app.core.data.goal.remote
+package com.awan.app.core.data.goal.remote
 
 import com.awan.app.core.common.dispatcher.AwanDispatchers
 import com.awan.app.core.common.dispatcher.Dispatcher
@@ -13,6 +13,7 @@ import com.awan.app.core.network.dto.goal.ConfirmAiScheduleRequest
 import com.awan.app.core.network.dto.goal.CreateGoalRequest
 import com.awan.app.core.network.dto.goal.GoalDecompositionTranscriptResponse
 import com.awan.app.core.network.dto.goal.ScheduleGoalRequest
+import com.awan.app.core.network.dto.goal.UpdateGoalRequest
 import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import com.awan.app.core.network.error.safeApiCall
@@ -48,6 +49,14 @@ class GoalRemoteDataSourceImpl @Inject constructor(
     override suspend fun getGoal(goalId: String): Result<GoalInfoResponse> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
             goalApiService.getGoal(goalId)
+        }
+
+    override suspend fun updateGoal(
+        goalId: String,
+        request: UpdateGoalRequest,
+    ): Result<GoalInfoResponse> =
+        safeApiCall(dispatcher = ioDispatcher, json = json) {
+            goalApiService.updateGoal(goalId, request)
         }
 
     override suspend fun deleteGoal(goalId: String): Result<Unit> =
