@@ -30,24 +30,35 @@ data class TaskDetailsUiState(
 
     // UI controls
     val isSaving: Boolean = false,
-    val isScheduling: Boolean = false,
     val isDeleting: Boolean = false,
+    val isDeletingSession: Boolean = false,
     val showDeleteConfirm: Boolean = false,
     val showDeleteCascadeOption: Boolean = false,
+    val sessionToDelete: TaskSession? = null,
     val showMoveGoalPicker: Boolean = false,
     val showAddDependencyPicker: Boolean = false,
     val showAddSessionSheet: Boolean = false,
     val errorMessage: UiText? = null,
     val successMessage: UiText? = null,
 ) {
+    /** Duration computed dynamically from the sum of all scheduled sessions, or fallback to task baseline. */
+    val calculatedDurationMinutes: Int
+        get() = if (sessions.isNotEmpty()) {
+            sessions.sumOf { session ->
+                val mins = java.time.Duration.between(session.start, session.end).toMinutes().toInt()
+                mins.coerceAtLeast(0)
+            }
+        } else {
+            task?.estimatedDurationMinutes ?: editDuration
+        }
+
     val hasUnsavedChanges: Boolean
         get() = task != null && (
-            editTitle != task.title ||
-            editDescription != (task.description ?: "") ||
-            editDuration != task.estimatedDurationMinutes ||
-            editPoints != task.estimatedPoints ||
+            editTitle.trim() != task.title.trim() ||
+            editDescription.trim() != (task.description ?: "").trim() ||
             editMandatory != task.mandatory ||
-            editAllowSplitting != task.allowTaskSplitting
+            editAllowSplitting != task.allowTaskSplitting ||
+            editStatus != task.status
         )
 
     /** Tasks in the same goal that are not already dependencies or this task itself. */
@@ -67,7 +78,6 @@ sealed interface TaskDetailsAction {
     data class AllowSplittingToggled(val value: Boolean) : TaskDetailsAction
     data class StatusChanged(val status: TaskStatus) : TaskDetailsAction
     data object SaveChanges : TaskDetailsAction
-    data object ScheduleWithAi : TaskDetailsAction
     data object RequestDelete : TaskDetailsAction
     data class ConfirmDelete(val cascade: Boolean) : TaskDetailsAction
     data object CancelDelete : TaskDetailsAction
@@ -79,6 +89,9 @@ sealed interface TaskDetailsAction {
     data object ShowAddDependencyPicker : TaskDetailsAction
     data object DismissAddDependencyPicker : TaskDetailsAction
     data class AddSessions(val sessions: List<SessionDraft>) : TaskDetailsAction
+    data class RequestDeleteSession(val session: TaskSession) : TaskDetailsAction
+    data object ConfirmDeleteSession : TaskDetailsAction
+    data object CancelDeleteSession : TaskDetailsAction
     data object ShowAddSessionSheet : TaskDetailsAction
     data object DismissAddSessionSheet : TaskDetailsAction
     data object DismissError : TaskDetailsAction

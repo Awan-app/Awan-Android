@@ -26,6 +26,10 @@ import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskUpdateRequest
+import com.awan.app.core.network.dto.task.TaskMoveRequest
+import com.awan.app.core.network.dto.task.TaskDependencyRequest
+import com.awan.app.core.network.dto.task.AddTaskSessionsRequest
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -236,12 +240,39 @@ class TaskRepositoryImplTest {
                 )
             )
 
-        override suspend fun deleteTask(taskId: String): Result<Unit> {
+        override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> {
             deletedTaskId = taskId
             return Result.Success(Unit)
         }
 
         override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = Result.Success(emptyList())
+
+        override suspend fun getTask(taskId: String): Result<TaskInfoResponse> =
+            Result.Success(TaskInfoResponse(id = taskId, title = "Task $taskId"))
+
+        override suspend fun updateTask(taskId: String, request: TaskUpdateRequest): Result<TaskInfoResponse> =
+            Result.Success(TaskInfoResponse(id = taskId, title = request.title ?: "Updated"))
+
+        override suspend fun moveTask(taskId: String, request: TaskMoveRequest): Result<TaskInfoResponse> =
+            Result.Success(TaskInfoResponse(id = taskId, title = "Moved", goalId = request.goalId))
+
+        override suspend fun addDependency(taskId: String, request: TaskDependencyRequest): Result<Unit> =
+            Result.Success(Unit)
+
+        override suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit> =
+            Result.Success(Unit)
+
+        override suspend fun getTaskDependencies(taskId: String): Result<List<TaskInfoResponse>> =
+            Result.Success(emptyList())
+
+        override suspend fun getTaskDependents(taskId: String): Result<List<TaskInfoResponse>> =
+            Result.Success(emptyList())
+
+        override suspend fun getTaskSessions(taskId: String, status: String?): Result<List<SessionDto>> =
+            Result.Success(emptyList())
+
+        override suspend fun addTaskSessions(taskId: String, request: AddTaskSessionsRequest): Result<List<SessionDto>> =
+            Result.Success(emptyList())
     }
 
 private class FakeGoalDao : com.awan.app.core.database.dao.GoalDao {

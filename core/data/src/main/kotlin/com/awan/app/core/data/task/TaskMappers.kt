@@ -172,7 +172,10 @@ private fun String.toLocalDateTimeOrNull(): LocalDateTime? =
     runCatching { LocalDateTime.parse(this, ApiDateTime) }.getOrNull()
 
 private fun String?.toTaskStatus(): TaskStatus =
-    runCatching { TaskStatus.valueOf(orEmpty()) }.getOrDefault(TaskStatus.UNKNOWN)
+    runCatching {
+        val raw = orEmpty().trim().uppercase()
+        TaskStatus.valueOf(raw)
+    }.getOrDefault(TaskStatus.SCHEDULED)
 
 private fun String?.toSessionStatus(): SessionStatus =
     runCatching { SessionStatus.valueOf(orEmpty()) }.getOrDefault(SessionStatus.UNKNOWN)

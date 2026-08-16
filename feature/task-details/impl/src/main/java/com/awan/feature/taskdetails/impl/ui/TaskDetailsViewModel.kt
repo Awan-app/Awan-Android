@@ -9,6 +9,7 @@ import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.goal.usecase.GetGoalsUseCase
+import com.awan.app.core.domain.home.usecase.DeleteSessionUseCase
 import com.awan.app.core.domain.task.usecase.AddTaskDependencyUseCase
 import com.awan.app.core.domain.task.usecase.AddTaskSessionsUseCase
 import com.awan.app.core.domain.task.usecase.DeleteTaskUseCase
@@ -18,7 +19,6 @@ import com.awan.app.core.domain.task.usecase.GetTaskSessionsUseCase
 import com.awan.app.core.domain.task.usecase.GetTaskUseCase
 import com.awan.app.core.domain.task.usecase.MoveTaskUseCase
 import com.awan.app.core.domain.task.usecase.RemoveTaskDependencyUseCase
-import com.awan.app.core.domain.task.usecase.ScheduleTaskUseCase
 import com.awan.app.core.domain.task.usecase.UpdateTaskUseCase
 import com.awan.app.core.model.Task
 import com.awan.app.core.model.TaskStatus
@@ -46,7 +46,7 @@ class TaskDetailsViewModel @Inject constructor(
     private val getDependentsUseCase: GetTaskDependentsUseCase,
     private val getTaskSessionsUseCase: GetTaskSessionsUseCase,
     private val addTaskSessionsUseCase: AddTaskSessionsUseCase,
-    private val scheduleTaskUseCase: ScheduleTaskUseCase,
+    private val deleteSessionUseCase: DeleteSessionUseCase,
     private val getGoalsUseCase: GetGoalsUseCase,
 ) : ViewModel() {
 
@@ -74,7 +74,6 @@ class TaskDetailsViewModel @Inject constructor(
             is TaskDetailsAction.AllowSplittingToggled -> _uiState.update { it.copy(editAllowSplitting = action.value) }
             is TaskDetailsAction.StatusChanged         -> _uiState.update { it.copy(editStatus = action.status) }
             is TaskDetailsAction.SaveChanges           -> saveChanges()
-            is TaskDetailsAction.ScheduleWithAi        -> scheduleWithAi()
             is TaskDetailsAction.RequestDelete         -> _uiState.update { it.copy(showDeleteConfirm = true) }
             is TaskDetailsAction.ConfirmDelete         -> deleteTask(action.cascade)
             is TaskDetailsAction.CancelDelete          -> _uiState.update { it.copy(showDeleteConfirm = false, showDeleteCascadeOption = false) }
@@ -86,6 +85,9 @@ class TaskDetailsViewModel @Inject constructor(
             is TaskDetailsAction.ShowAddDependencyPicker -> _uiState.update { it.copy(showAddDependencyPicker = true) }
             is TaskDetailsAction.DismissAddDependencyPicker -> _uiState.update { it.copy(showAddDependencyPicker = false) }
             is TaskDetailsAction.AddSessions           -> addSessions(action.sessions)
+            is TaskDetailsAction.RequestDeleteSession  -> _uiState.update { it.copy(sessionToDelete = action.session) }
+            is TaskDetailsAction.ConfirmDeleteSession  -> confirmDeleteSession()
+            is TaskDetailsAction.CancelDeleteSession   -> _uiState.update { it.copy(sessionToDelete = null, isDeletingSession = false) }
             is TaskDetailsAction.ShowAddSessionSheet   -> _uiState.update { it.copy(showAddSessionSheet = true) }
             is TaskDetailsAction.DismissAddSessionSheet-> _uiState.update { it.copy(showAddSessionSheet = false) }
             is TaskDetailsAction.DismissError          -> _uiState.update { it.copy(errorMessage = null) }
@@ -102,11 +104,13 @@ class TaskDetailsViewModel @Inject constructor(
             val depsDeferred       = async { getDependenciesUseCase(taskId) }
             val depentsDeferred    = async { getDependentsUseCase(taskId) }
             val sessionsDeferred   = async { getTaskSessionsUseCase(taskId) }
+            val goalsDeferred      = async { getGoalsUseCase() }
 
             val taskResult     = taskDeferred.await()
             val depsResult     = depsDeferred.await()
             val depentsResult  = depentsDeferred.await()
             val sessionsResult = sessionsDeferred.await()
+            val goalsResult    = goalsDeferred.await()
 
             if (taskResult is Result.Success) {
                 val task = taskResult.data
@@ -124,6 +128,7 @@ class TaskDetailsViewModel @Inject constructor(
                         dependencies = (depsResult as? Result.Success)?.data ?: state.dependencies,
                         dependents = (depentsResult as? Result.Success)?.data ?: state.dependents,
                         sessions = (sessionsResult as? Result.Success)?.data ?: state.sessions,
+                        goals = (goalsResult as? Result.Success)?.data ?: state.goals,
                         errorMessage = null,
                     )
                 }
@@ -150,9 +155,9 @@ class TaskDetailsViewModel @Inject constructor(
                 taskId = taskId,
                 title = state.editTitle.trim().takeIf { it.isNotBlank() },
                 description = state.editDescription.trim().ifBlank { null },
-                estimatedDuration = state.editDuration,
+                estimatedDuration = state.calculatedDurationMinutes,
                 mandatory = state.editMandatory,
-                estimatedPoints = state.editPoints,
+                estimatedPoints = state.task?.estimatedPoints ?: state.editPoints,
                 allowTaskSplitting = state.editAllowSplitting,
                 status = state.editStatus.name,
             )
@@ -162,6 +167,13 @@ class TaskDetailsViewModel @Inject constructor(
                         s.copy(
                             isSaving = false,
                             task = result.data,
+                            editTitle = result.data.title,
+                            editDescription = result.data.description ?: "",
+                            editMandatory = result.data.mandatory,
+                            editAllowSplitting = result.data.allowTaskSplitting,
+                            editStatus = result.data.status,
+                            editDuration = result.data.estimatedDurationMinutes,
+                            editPoints = result.data.estimatedPoints,
                             successMessage = UiText.StringResource(R.string.task_details_saved),
                         )
                     }
@@ -172,33 +184,6 @@ class TaskDetailsViewModel @Inject constructor(
                     }
                 }
                 else -> _uiState.update { it.copy(isSaving = false) }
-            }
-        }
-    }
-
-    // ── Schedule with AI ──────────────────────────────────────────────────────
-
-    private fun scheduleWithAi() {
-        if (_uiState.value.isScheduling) return
-        _uiState.update { it.copy(isScheduling = true, errorMessage = null) }
-        viewModelScope.launch {
-            val result = scheduleTaskUseCase(taskId)
-            when (result) {
-                is Result.Success -> {
-                    // Reload sessions so newly scheduled ones appear
-                    val sessionsResult = getTaskSessionsUseCase(taskId)
-                    _uiState.update { s ->
-                        s.copy(
-                            isScheduling = false,
-                            sessions = (sessionsResult as? Result.Success)?.data ?: s.sessions,
-                            successMessage = UiText.StringResource(R.string.task_details_scheduled),
-                        )
-                    }
-                }
-                is Result.Error -> _uiState.update { s ->
-                    s.copy(isScheduling = false, errorMessage = result.error.toUiText())
-                }
-                else -> _uiState.update { it.copy(isScheduling = false) }
             }
         }
     }
@@ -320,10 +305,13 @@ class TaskDetailsViewModel @Inject constructor(
             val result = addTaskSessionsUseCase(taskId, sessions)
             when (result) {
                 is Result.Success -> {
+                    val updatedSessionsResult = getTaskSessionsUseCase(taskId)
+                    val finalSessions = (updatedSessionsResult as? Result.Success)?.data
+                        ?: (uiState.value.sessions + result.data)
                     _uiState.update { s ->
                         s.copy(
                             isSaving = false,
-                            sessions = s.sessions + result.data,
+                            sessions = finalSessions,
                             successMessage = UiText.StringResource(R.string.task_details_sessions_added),
                         )
                     }
@@ -332,6 +320,35 @@ class TaskDetailsViewModel @Inject constructor(
                     s.copy(isSaving = false, errorMessage = result.error.toUiText())
                 }
                 else -> _uiState.update { it.copy(isSaving = false) }
+            }
+        }
+    }
+
+    private fun confirmDeleteSession() {
+        val session = _uiState.value.sessionToDelete ?: return
+        _uiState.update { it.copy(isDeletingSession = true) }
+        viewModelScope.launch {
+            val result = deleteSessionUseCase(session.id)
+            when (result) {
+                is Result.Success -> {
+                    _uiState.update { s ->
+                        s.copy(
+                            isDeletingSession = false,
+                            sessionToDelete = null,
+                            sessions = s.sessions.filter { it.id != session.id },
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update { s ->
+                        s.copy(
+                            isDeletingSession = false,
+                            sessionToDelete = null,
+                            errorMessage = result.error.toUiText(),
+                        )
+                    }
+                }
+                else -> _uiState.update { it.copy(isDeletingSession = false, sessionToDelete = null) }
             }
         }
     }
