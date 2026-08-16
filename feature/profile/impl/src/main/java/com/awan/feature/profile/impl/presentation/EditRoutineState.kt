@@ -18,6 +18,7 @@ data class EditRoutineState(
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val isTodayOnly: Boolean = false,
+    val canToggleTodayOnly: Boolean = false,
     val error: UiText? = null,
     val validationError: UiText? = null
 )

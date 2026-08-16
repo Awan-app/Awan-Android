@@ -155,7 +155,7 @@ class DailyZonesViewModel @Inject constructor(
         val selectedDateStr = state.selectedDate?.toString()
 
         // 1. Check for override for this specific date
-        val override = state.overrides.find { it.dateOfDay == selectedDateStr }
+        val override = DailyZonesHelper.findOverrideForDate(state.overrides, selectedDateStr)
         
         if (override != null) {
             val zones = override.zones.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }

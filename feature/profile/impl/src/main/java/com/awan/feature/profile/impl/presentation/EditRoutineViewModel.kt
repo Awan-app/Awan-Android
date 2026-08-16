@@ -68,7 +68,13 @@ class EditRoutineViewModel @Inject constructor(
             is EditRoutineAction.DeleteZone -> deleteZone(action.zone)
             is EditRoutineAction.ReorderZones -> reorderZones(action.from, action.to)
             is EditRoutineAction.CreateCategory -> createCategory(action.name)
-            is EditRoutineAction.ToggleTodayOnly -> _uiState.update { it.copy(isTodayOnly = action.isTodayOnly) }
+            is EditRoutineAction.ToggleTodayOnly -> {
+                if (_uiState.value.canToggleTodayOnly) {
+                    _uiState.update { it.copy(isTodayOnly = action.isTodayOnly, validationError = null) }
+                } else {
+                    _uiState.update { it.copy(validationError = UiText.StringResource(R.string.profile_daily_zones_error_no_base_routine)) }
+                }
+            }
             is EditRoutineAction.DateChange -> onDateChange(action.date)
             EditRoutineAction.SaveRoutine -> saveRoutine()
             EditRoutineAction.DeleteRoutine -> deleteRoutine()
@@ -118,22 +124,32 @@ class EditRoutineViewModel @Inject constructor(
                 .flatMap { it.daysOfWeek }
                 .toSet()
 
+            val canToggleTodayOnly = if (date != null) {
+                runCatching { LocalDate.parse(date) }.getOrNull()?.let {
+                    DailyZonesHelper.hasTemplateForDay(allTemplates, DailyZonesHelper.getCurrentDay(it))
+                } ?: false
+            } else {
+                false
+            }
+
             if (templateId == null || (date != null && overrideId == null)) {
                 // Check if there's an override for this date or ID
                 val override = overrideId?.let { id -> allOverrides.find { it.id == id } }
-                    ?: if (date != null) allOverrides.find { it.dateOfDay == date } else null
+                    ?: DailyZonesHelper.findOverrideForDate(allOverrides, date)
                 
                 if (override != null) {
                     // EDIT OVERRIDE MODE
+                    val effectiveDate = date ?: override.dateOfDay
                     val sortedZones = override.zones.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
                     _uiState.update { it.copy(
                         isLoading = false,
                         overrideId = override.id,
                         name = override.name ?: "",
-                        date = date,
-                        dates = if (date != null) setOf(date) else emptySet(),
+                        date = effectiveDate,
+                        dates = setOf(effectiveDate),
                         isTodayOnly = true,
-                        selectedDays = setOf(DailyZonesHelper.getCurrentDay(LocalDate.parse(date))),
+                        canToggleTodayOnly = canToggleTodayOnly,
+                        selectedDays = setOf(DailyZonesHelper.getCurrentDay(LocalDate.parse(effectiveDate))),
                         assignedDays = otherAssigned,
                         zones = sortedZones,
                         availableCategories = categories
@@ -150,6 +166,7 @@ class EditRoutineViewModel @Inject constructor(
                         date = date,
                         dates = if (date != null) setOf(date) else emptySet(),
                         isTodayOnly = true,
+                        canToggleTodayOnly = canToggleTodayOnly,
                         selectedDays = setOf(DailyZonesHelper.getCurrentDay(LocalDate.parse(date))),
                         assignedDays = otherAssigned,
                         zones = sortedZones,
@@ -172,6 +189,7 @@ class EditRoutineViewModel @Inject constructor(
                             overrideId = null,
                             name = "",
                             isTodayOnly = false, // Must be a template if no base exists
+                            canToggleTodayOnly = canToggleTodayOnly,
                             selectedDays = initialSelectedDays,
                             date = date,
                             dates = if (date != null) setOf(date) else emptySet(),
@@ -192,6 +210,7 @@ class EditRoutineViewModel @Inject constructor(
                             name = template.name,
                             selectedDays = template.daysOfWeek.toSet(),
                             assignedDays = otherAssigned,
+                            canToggleTodayOnly = false, // When editing a template proper, it's always recurring
                             zones = sortedZones,
                             availableCategories = categories
                         ) }

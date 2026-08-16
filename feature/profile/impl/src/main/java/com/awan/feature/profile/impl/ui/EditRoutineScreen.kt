@@ -300,7 +300,7 @@ fun EditRoutineScreen(
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(12.dp),
                         onClick = {
-                            if (uiState.overrideId == null && uiState.templateId != null) {
+                            if (uiState.overrideId == null) {
                                 onAction(EditRoutineAction.ToggleTodayOnly(!uiState.isTodayOnly))
                             }
                         }
@@ -313,7 +313,7 @@ fun EditRoutineScreen(
                             Checkbox(
                                 checked = uiState.isTodayOnly,
                                 onCheckedChange = { onAction(EditRoutineAction.ToggleTodayOnly(it)) },
-                                enabled = uiState.overrideId == null && uiState.templateId != null,
+                                enabled = uiState.overrideId == null,
                                 colors = CheckboxDefaults.colors(checkedColor = AwanTheme.colors.sky)
                             )
                             Column(modifier = Modifier.weight(1f)) {
