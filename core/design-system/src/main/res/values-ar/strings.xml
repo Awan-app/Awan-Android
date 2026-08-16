@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">أوان</string>
     <string name="ds_no_sessions_in_zone">لا توجد جلسات مخصصة في هذه المنطقة</string>
     <string name="ds_done_count">%1$d/%2$d مكتمل</string>
     <string name="ds_tasks_count">%1$d/%2$d جلسات</string>
@@ -48,6 +49,22 @@
     <string name="ds_wheel_close">إغلاق</string>
     <string name="ds_wheel_item_wedge">هدية</string>
 
+    <!-- Speech to text -->
+    <string name="ds_mic_idle">إملاء نصي</string>
+    <string name="ds_mic_listening">جارٍ الاستماع… انقر للإيقاف</string>
+    <string name="ds_speech_permission_denied">إذن الميكروفون مطلوب للتعرف على الصوت.</string>
+    <string name="ds_speech_unavailable">التعرف على الصوت غير متاح على هذا الجهاز.</string>
+    <string name="ds_speech_no_match">لم أتمكن من التقاط الصوت. حاول التحدث مجددًا.</string>
+    <string name="ds_speech_error">حدث خطأ أثناء التعرف على الصوت. يُرجى المحاولة مرة أخرى.</string>
+    <string name="ds_speech_language_unsupported">التعرف على الصوت لا يدعم لغة التطبيق على هذا الجهاز.</string>
+    <string name="ds_speech_rationale_title">هل تريد استخدام صوتك؟</string>
+    <string name="ds_speech_rationale_body">يحتاج أوان إلى الميكروفون لتتمكن من الإملاء بدلًا من الكتابة. لا يتم تسجيل أي صوت أو تخزينه.</string>
+    <string name="ds_speech_rationale_confirm">متابعة</string>
+    <string name="ds_speech_rationale_cancel">ليس الآن</string>
+    <string name="ds_speech_settings_dialog_title">إذن الميكروفون مطلوب</string>
+    <string name="ds_speech_settings_dialog_body">تم إيقاف إذن الميكروفون. يرجى تفعيله من إعدادات التطبيق لاستخدام الإملاء الصوتي.</string>
+    <string name="ds_speech_settings_dialog_confirm">فتح الإعدادات</string>
+    <string name="ds_speech_settings_dialog_cancel">إلغاء</string>
     <!-- Points shortcuts -->
     <string name="ds_points_thousand">%1$s ألف</string>
     <string name="ds_points_million">%1$s مليون</string>
@@ -57,4 +74,8 @@
     <string name="ds_next_day">اليوم التالي</string>
     <string name="ds_previous_day">اليوم السابق</string>
     <string name="ds_combo_bonus">مكافأة تتابع %1$d×!</string>
+
+    <!-- Achievements -->
+    <string name="goal_achieved_title">تم تحقيق الهدف!</string>
+    <string name="goal_achieved_encouragement">أنت تحقق تقدماً مذهلاً!</string>
 </resources>

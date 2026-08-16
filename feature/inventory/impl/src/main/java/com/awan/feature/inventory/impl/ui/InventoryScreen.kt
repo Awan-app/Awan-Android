@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -32,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.awan.app.core.designsystem.AwanBackButton
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
@@ -61,11 +61,8 @@ fun InventoryScreen(
             CenterAlignedTopAppBar(
                 title = { AwanText(stringResource(R.string.inventory_title), style = AwanTheme.styles.titleText) },
                 navigationIcon = {
-                    AwanIconButton(
-                        onClick = onBack,
-                        contentDescription = stringResource(R.string.inventory_back),
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    Box(modifier = Modifier.padding(start = 12.dp)) {
+                        AwanBackButton(onClick = onBack)
                     }
                 },
                 actions = {

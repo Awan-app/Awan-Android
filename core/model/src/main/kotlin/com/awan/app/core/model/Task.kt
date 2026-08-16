@@ -12,4 +12,5 @@ data class Task(
     val goalId: String? = null,
     val dependsOnTaskIds: List<String> = emptyList(),
     val category: Category? = null,
+    val completedAt: String? = null,
 )

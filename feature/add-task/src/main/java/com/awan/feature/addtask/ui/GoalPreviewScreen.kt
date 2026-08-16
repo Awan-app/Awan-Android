@@ -1,11 +1,6 @@
 package com.awan.feature.addtask.ui
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -22,7 +17,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -40,6 +34,7 @@ import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanIconButton
+import com.awan.app.core.designsystem.AwanMicButton
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
@@ -58,8 +53,6 @@ import com.awan.feature.addtask.ui.components.durationLabel
 import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.Check
 import com.composables.icons.lucide.Lucide
-import com.composables.icons.lucide.Mic
-import com.composables.icons.lucide.MicOff
 import com.composables.icons.lucide.X
 import java.time.LocalDate
 
@@ -73,6 +66,7 @@ fun GoalPreviewScreen(
     onOptionSelected: (String) -> Unit,
     onToggleMic: () -> Unit,
     isListening: Boolean,
+    micAmplitude: () -> Float,
     speechError: String?,
     modifier: Modifier = Modifier,
     isPermissionError: Boolean = false,
@@ -107,7 +101,7 @@ fun GoalPreviewScreen(
 
             AwanText(
                 text = stringResource(R.string.add_task_goal_preview_title),
-                style = AwanTheme.typography.title.copy(color = AwanTheme.colors.textPrimary),
+                style = AwanTheme.styles.titleText,
             )
 
             AwanIconButton(
@@ -228,10 +222,11 @@ fun GoalPreviewScreen(
                     singleLine = false,
                     isError = isPermissionError,
                     trailingContent = {
-                        PreviewGoalMicButton(
+                        AwanMicButton(
                             isListening = isListening,
-                            onToggleMic = onToggleMic,
+                            onToggle = onToggleMic,
                             enabled = !state.isSubmitting,
+                            amplitude = micAmplitude,
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -433,54 +428,6 @@ private fun PreviewMcqOptionCard(
     }
 }
 
-@Composable
-private fun PreviewGoalMicButton(
-    isListening: Boolean,
-    onToggleMic: () -> Unit,
-    enabled: Boolean = true,
-) {
-    val reduced = reducedMotion()
-    val shouldPulse = isListening && !reduced && enabled
-    val pulseScale by if (shouldPulse) {
-        val infiniteTransition = rememberInfiniteTransition(label = "micPulse")
-        infiniteTransition.animateFloat(
-            initialValue = 1.0f,
-            targetValue = 1.05f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(800, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-            label = "micPulseScale",
-        )
-    } else {
-        rememberUpdatedState(1.0f)
-    }
-
-    val desc = stringResource(
-        if (isListening) R.string.add_task_goal_mic_listening
-        else R.string.add_task_goal_mic_idle,
-    )
-
-    AwanIconButton(
-        onClick = onToggleMic,
-        contentDescription = desc,
-        enabled = enabled,
-        modifier = Modifier.graphicsLayer {
-            scaleX = pulseScale
-            scaleY = pulseScale
-        },
-    ) {
-        Icon(
-            imageVector = if (isListening) Lucide.MicOff else Lucide.Mic,
-            contentDescription = null,
-            tint = if (isListening) AwanTheme.colors.sky else AwanTheme.colors.textSecondary,
-            modifier = Modifier.size(20.dp),
-        )
-    }
-}
-
-
-
 // ── Previews ──────────────────────────────────────────────────────────────────
 
 @Preview(name = "GoalPreviewScreen · Preview step", showBackground = true)
@@ -511,6 +458,7 @@ private fun GoalPreviewScreenPreviewStepPreview(dark: Boolean = false) {
             onOptionSelected = {},
             onToggleMic = {},
             isListening = false,
+            micAmplitude = { 0f },
             speechError = null,
         )
     }
@@ -542,6 +490,7 @@ private fun GoalPreviewScreenMcqPreview() {
             onOptionSelected = {},
             onToggleMic = {},
             isListening = false,
+            micAmplitude = { 0f },
             speechError = null,
         )
     }

@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.platform.app.InstrumentationRegistry
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.R as DsR
 import com.awan.app.core.model.GoalDecompositionBlock
 import com.awan.app.core.model.GoalProposal
 import com.awan.app.core.model.ProposedTask
@@ -64,7 +65,7 @@ class GoalFormTest {
 
         composeTestRule.onNodeWithText(getString(R.string.add_task_goal_initial_title)).assertIsDisplayed()
         composeTestRule.onNodeWithText("Learn Spanish for trip").assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription(getString(R.string.add_task_goal_mic_idle)).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(getString(DsR.string.ds_mic_idle)).assertIsDisplayed()
 
         val submitNode = composeTestRule.onNodeWithText(getString(R.string.add_task_goal_submit_initial))
         submitNode.assertIsDisplayed().assertIsEnabled()
@@ -105,7 +106,7 @@ class GoalFormTest {
         // Assert custom field and idle mic are present
         val customFieldDesc = getString(R.string.add_task_goal_mcq_custom_description)
         composeTestRule.onNodeWithContentDescription(customFieldDesc).assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription(getString(R.string.add_task_goal_mic_idle)).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(getString(DsR.string.ds_mic_idle)).assertIsDisplayed()
 
         // Typing dispatches InputChanged
         composeTestRule.onNodeWithContentDescription(customFieldDesc).performTextInput("Custom input")
@@ -149,7 +150,7 @@ class GoalFormTest {
 
         composeTestRule.onNodeWithText("How many hours per week?").assertIsDisplayed()
         composeTestRule.onNodeWithText("3 hours").assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription(getString(R.string.add_task_goal_mic_idle)).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(getString(DsR.string.ds_mic_idle)).assertIsDisplayed()
 
         val continueNode = composeTestRule.onNodeWithText(getString(R.string.add_task_goal_writing_continue))
         continueNode.assertIsDisplayed().assertIsEnabled()
@@ -183,7 +184,7 @@ class GoalFormTest {
     }
 
     @Test
-    fun preview_rendersTitleTasksAcceptAndRevision() {
+    fun preview_rendersPlanReadyPanel() {
         composeTestRule.setContent {
             AwanTheme {
                 GoalFormContent(
@@ -211,56 +212,11 @@ class GoalFormTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Conversational Spanish Goal").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Trip preparation plan").assertIsDisplayed()
-        composeTestRule.onNodeWithText(getString(R.string.add_task_goal_preview_task_item_title, 1, "Study vocab")).assertIsDisplayed()
-        composeTestRule.onNodeWithText(getString(R.string.add_task_goal_preview_task_item_title, 2, "Practice speaking")).assertIsDisplayed()
-
-        composeTestRule.onNodeWithText(getString(R.string.add_task_goal_preview_accept)).assertIsDisplayed().assertIsEnabled()
-        composeTestRule.onNodeWithText(getString(R.string.add_task_goal_preview_revision_submit)).assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription(getString(R.string.add_task_goal_mic_idle)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(getString(R.string.add_task_goal_plan_ready)).assertIsDisplayed()
     }
 
     @Test
-    fun preview_acceptDispatchesAccept_updateDispatchesSubmit() {
-        val actions = mutableListOf<AddTaskAction>()
-
-        composeTestRule.setContent {
-            AwanTheme {
-                GoalFormContent(
-                    state = AddTaskState(
-                        today = today,
-                        mode = AddTaskMode.GOAL,
-                        goalStep = GoalStep.Preview(
-                            proposal = GoalProposal(
-                                title = "Test Goal",
-                                description = null,
-                                targetDate = null,
-                                tasks = listOf(ProposedTask("Task 1", null, null)),
-                            ),
-                        ),
-                        goalSessionId = "session-123",
-                        input = "Make it shorter",
-                    ),
-                    onAction = { actions.add(it) },
-                    isListening = false,
-                    onToggleMic = {},
-                    speechError = null,
-                )
-            }
-        }
-
-        composeTestRule.onNodeWithText(getString(R.string.add_task_goal_preview_accept)).performClick()
-        assertEquals(1, actions.size)
-        assertEquals(AddTaskAction.AcceptGoalProposal, actions[0])
-
-        composeTestRule.onNodeWithText(getString(R.string.add_task_goal_preview_revision_submit)).performClick()
-        assertEquals(2, actions.size)
-        assertEquals(AddTaskAction.Submit, actions[1])
-    }
-
-    @Test
-    fun loading_disablesActionsAndMic() {
+    fun submitting_rendersThinkingPanel() {
         composeTestRule.setContent {
             AwanTheme {
                 GoalFormContent(
@@ -279,9 +235,8 @@ class GoalFormTest {
             }
         }
 
-        composeTestRule.onNodeWithText(getString(R.string.add_task_goal_submit_initial)).assertIsNotEnabled()
-        composeTestRule.onNodeWithContentDescription(getString(R.string.add_task_goal_mic_idle)).assertIsDisplayed().assertIsNotEnabled()
-
+        composeTestRule.onNodeWithText(getString(R.string.add_task_goal_thinking_1)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(getString(R.string.add_task_goal_submit_initial)).assertDoesNotExist()
     }
 
     @Test

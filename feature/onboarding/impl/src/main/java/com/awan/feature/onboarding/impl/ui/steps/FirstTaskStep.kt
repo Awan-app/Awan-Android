@@ -54,6 +54,7 @@ fun FirstTaskStepBody(state: OnboardingState, onAction: (OnboardingAction) -> Un
                 onValueChange = { onAction(OnboardingAction.FirstTaskTitleChanged(it.take(TITLE_MAX))) },
                 placeholder = stringResource(R.string.onboarding_first_task_placeholder),
                 modifier = Modifier.fillMaxWidth(),
+                enabled = state.firstTask == null && !state.isSubmittingTask,
             )
         }
         CascadeItem(2) {

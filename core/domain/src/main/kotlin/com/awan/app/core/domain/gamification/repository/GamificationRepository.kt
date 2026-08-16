@@ -28,4 +28,7 @@ interface GamificationRepository {
      * can hold it back until the wheel overlay is off screen.
      */
     suspend fun publishWheelReward(result: WheelSpinResult)
+
+    /** Publishes an arbitrary reward event for app-wide celebration. */
+    fun publishReward(event: RewardEvent)
 }

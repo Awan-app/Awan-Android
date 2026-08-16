@@ -67,7 +67,7 @@ fun StepScaffold(
         modifier = modifier
             .fillMaxSize()
             .styleable(null, AwanTheme.styles.screen)
-            .padding(top = AwanTheme.spacing.sm, bottom = AwanTheme.spacing.md),
+            .padding(top = AwanTheme.spacing.xxl, bottom = AwanTheme.spacing.md),
     ) {
         // Both buttons stay composed on every step. Welcome is the only step with neither, and
         // AnimatedVisibility would drop them once their fade ended — collapsing the row to zero

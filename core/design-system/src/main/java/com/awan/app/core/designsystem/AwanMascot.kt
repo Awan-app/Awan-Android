@@ -26,6 +26,7 @@ fun AwanMascot(
     modifier: Modifier = Modifier,
     width: Dp = 120.dp,
     blinkEnabled: Boolean = false,
+    thinking: Boolean = false,
 ) {
     var isBlinking by remember { mutableStateOf(false) }
 
@@ -56,19 +57,33 @@ fun AwanMascot(
 
     val transition = rememberInfiniteTransition(label = "mascot")
     val cheering = expression == MascotExpression.Celebrate
+    // The idle float is deliberately barely there; while Awan is working it has to read as alive.
+    val periodMillis = when {
+        cheering -> 1100
+        thinking -> 1400
+        else -> 3200
+    }
     val phase by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(if (cheering) 1100 else 3200, easing = LinearEasing),
+            animation = tween(periodMillis, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "mascotPhase",
     )
 
     val wave = kotlin.math.sin(phase * 2f * Math.PI).toFloat()
-    val translateY = if (cheering) -7f * kotlin.math.abs(wave) else -4f * ((wave + 1f) / 2f)
-    val rotation = if (cheering) 3f * wave else 0f
+    val translateY = when {
+        cheering -> -7f * kotlin.math.abs(wave)
+        thinking -> -6f * ((wave + 1f) / 2f)
+        else -> -4f * ((wave + 1f) / 2f)
+    }
+    val rotation = when {
+        cheering -> 3f * wave
+        thinking -> 2f * wave
+        else -> 0f
+    }
 
     Image(
         painter = painterResource(drawable),

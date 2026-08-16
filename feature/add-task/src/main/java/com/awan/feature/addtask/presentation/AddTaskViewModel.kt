@@ -6,6 +6,7 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.goal.usecase.ConfirmGoalDecompositionUseCase
 import com.awan.app.core.domain.goal.usecase.ContinueGoalDecompositionUseCase
+import com.awan.app.core.domain.zones.usecase.GetZonesForDateUseCase
 import com.awan.app.core.domain.profile.usecase.GetUserDataUseCase
 import com.awan.app.core.domain.profile.usecase.SetMicPermissionRequestedUseCase
 import com.awan.app.core.domain.task.parser.ParsedTaskInput
@@ -20,12 +21,14 @@ import com.awan.feature.addtask.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
@@ -37,6 +40,7 @@ class AddTaskViewModel @Inject constructor(
     private val parseTaskInput: ParseTaskInputUseCase,
     private val applyTaskAttribute: ApplyTaskAttributeUseCase,
     private val getCategories: GetCategoriesUseCase,
+    private val getZonesForDate: GetZonesForDateUseCase,
     private val createTask: CreateTaskUseCase,
     private val continueGoalDecomposition: ContinueGoalDecompositionUseCase,
     private val confirmGoalDecomposition: ConfirmGoalDecompositionUseCase,
@@ -48,10 +52,18 @@ class AddTaskViewModel @Inject constructor(
     private val _state = MutableStateFlow(AddTaskState(today = LocalDate.now(clock)))
     val state: StateFlow<AddTaskState> = _state.asStateFlow()
 
-    private val _events = Channel<AddTaskEvent>(Channel.BUFFERED)
-    val events = _events.receiveAsFlow()
+    private val _events = MutableSharedFlow<AddTaskEvent>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val events: SharedFlow<AddTaskEvent> = _events.asSharedFlow()
 
     private var activeGoalJob: Job? = null
+    private var celebrationJob: Job? = null
+    private var categoriesJob: Job? = null
+    private var userDataJob: Job? = null
+    private var createJob: Job? = null
+    private var initializeJob: Job? = null
 
     init {
         loadCategories()
@@ -90,11 +102,44 @@ class AddTaskViewModel @Inject constructor(
             AddTaskAction.DiscardCancelled -> _state.update { it.copy(showDiscardConfirm = false) }
             AddTaskAction.Dismiss -> close(AddTaskEvent.Dismissed)
             is AddTaskAction.SetMicPermissionRequested -> setMicPermissionRequested(action.requested)
+            is AddTaskAction.Initialize -> initialize(action.goalId, action.zoneId, action.date)
+        }
+    }
+
+    private fun initialize(goalId: String?, zoneId: String?, date: LocalDate?) {
+        _state.update { 
+            AddTaskState(
+                today = LocalDate.now(clock),
+                goalId = goalId,
+                zoneId = zoneId,
+                pendingDate = date,
+                availableCategories = it.availableCategories // Preserve categories to avoid re-fetch
+            ) 
+        }
+        
+        initializeJob?.cancel()
+        initializeJob = viewModelScope.launch {
+            if (date != null) {
+                // Pre-select the date in the parser
+                applyAttribute(TaskAttribute.On(date))
+                
+                if (zoneId != null) {
+                    // Try to find the zone to pre-select category
+                    val zonesResult = getZonesForDate(date)
+                    if (zonesResult is Result.Success) {
+                        val zone = zonesResult.data.find { it.id == zoneId }
+                        zone?.category?.let { category ->
+                            applyAttribute(TaskAttribute.In(category.name))
+                        }
+                    }
+                }
+            }
         }
     }
 
     private fun observeUserData() {
-        viewModelScope.launch {
+        userDataJob?.cancel()
+        userDataJob = viewModelScope.launch {
             getUserDataUseCase().collect { userData ->
                 _state.update { it.copy(hasRequestedMicPermission = userData.micPermissionRequested) }
             }
@@ -247,8 +292,9 @@ class AddTaskViewModel @Inject constructor(
      * an error the user sees: the chip stays unresolved and the task is created without a category.
      */
     private fun loadCategories() {
+        categoriesJob?.cancel()
         _state.update { it.copy(isResolvingCategory = true) }
-        viewModelScope.launch {
+        categoriesJob = viewModelScope.launch {
             val categories = when (val result = getCategories()) {
                 is Result.Success -> result.data
                 else -> emptyList()
@@ -405,7 +451,8 @@ class AddTaskViewModel @Inject constructor(
 
     private fun createDirectly() {
         val current = _state.value
-        viewModelScope.launch {
+        createJob?.cancel()
+        createJob = viewModelScope.launch {
             _state.update { it.copy(isSubmitting = true, errorMessage = null) }
             when (createTask(current.toDraft())) {
                 is Result.Success -> confirm(current.plannedConfirmation())
@@ -427,7 +474,8 @@ class AddTaskViewModel @Inject constructor(
         _state.update {
             it.copy(isSubmitting = false, isCelebrating = true, confirmation = confirmation)
         }
-        viewModelScope.launch {
+        celebrationJob?.cancel()
+        celebrationJob = viewModelScope.launch {
             delay(CELEBRATE_MILLIS)
             _state.update { it.copy(isCelebrating = false) }
         }
@@ -469,8 +517,36 @@ class AddTaskViewModel @Inject constructor(
     private fun close(event: AddTaskEvent) {
         activeGoalJob?.cancel()
         activeGoalJob = null
-        _state.value = AddTaskState(today = LocalDate.now(clock))
-        loadCategories()
-        viewModelScope.launch { _events.send(event) }
+        celebrationJob?.cancel()
+        celebrationJob = null
+        createJob?.cancel()
+        createJob = null
+        initializeJob?.cancel()
+        initializeJob = null
+        
+        // Reset state but preserve the long-lived data already fetched
+        _state.update { 
+            AddTaskState(
+                today = LocalDate.now(clock),
+                availableCategories = it.availableCategories,
+                hasRequestedMicPermission = it.hasRequestedMicPermission
+            )
+        }
+        _events.tryEmit(event)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        activeGoalJob?.cancel()
+        celebrationJob?.cancel()
+        categoriesJob?.cancel()
+        userDataJob?.cancel()
+        createJob?.cancel()
+        initializeJob?.cancel()
+    }
+    
+    /** Public for testing to ensure no leaking coroutines in runTest. */
+    internal fun cancelAllJobsForTesting() {
+        onCleared()
     }
 }
