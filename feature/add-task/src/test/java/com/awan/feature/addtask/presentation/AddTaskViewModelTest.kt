@@ -1841,4 +1841,27 @@ class AddTaskViewModelTest {
         assertEquals(50, preview.proposal.tasks[1].estimatedDuration)
         assertTrue(state.canAcceptGoal)
     }
+
+    @Test
+    fun `discard emits Dismissed event and does not replay to subsequent observers`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+        val receivedEvents = mutableListOf<AddTaskEvent>()
+        val job1 = backgroundScope.launch(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.events.collect { receivedEvents.add(it) }
+        }
+
+        viewModel.onAction(AddTaskAction.DiscardConfirmed)
+        assertEquals(listOf(AddTaskEvent.Dismissed), receivedEvents)
+
+        job1.cancel()
+
+        // Subsequent collector (simulating reopening the sheet) must not receive a stale Dismissed event
+        val newReceivedEvents = mutableListOf<AddTaskEvent>()
+        val job2 = backgroundScope.launch(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.events.collect { newReceivedEvents.add(it) }
+        }
+
+        assertTrue(newReceivedEvents.isEmpty())
+        job2.cancel()
+    }
 }

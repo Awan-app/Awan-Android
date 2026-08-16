@@ -24,14 +24,13 @@ import com.awan.feature.addtask.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
@@ -58,12 +57,8 @@ class AddTaskViewModel @Inject constructor(
     )
     val state: StateFlow<AddTaskState> = _state.asStateFlow()
 
-    private val _events = MutableSharedFlow<AddTaskEvent>(
-        replay = 1,
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-    val events: SharedFlow<AddTaskEvent> = _events.asSharedFlow()
+    private val _events = Channel<AddTaskEvent>(Channel.BUFFERED)
+    val events: Flow<AddTaskEvent> = _events.receiveAsFlow()
 
     private var activeGoalJob: Job? = null
     private var celebrationJob: Job? = null
@@ -722,7 +717,7 @@ class AddTaskViewModel @Inject constructor(
                 hasRequestedMicPermission = it.hasRequestedMicPermission
             )
         }
-        _events.tryEmit(event)
+        _events.trySend(event)
     }
 
     override fun onCleared() {
@@ -734,6 +729,7 @@ class AddTaskViewModel @Inject constructor(
         persistStateJob?.cancel()
         createJob?.cancel()
         initializeJob?.cancel()
+        _events.close()
     }
     
     /** Public for testing to ensure no leaking coroutines in runTest. */
