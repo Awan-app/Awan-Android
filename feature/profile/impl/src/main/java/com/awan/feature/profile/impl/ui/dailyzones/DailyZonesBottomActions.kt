@@ -31,16 +31,15 @@ fun DailyZonesBottomActions(
             .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        if (!hasOverride && hasTemplate) {
+        if (hasOverride || hasTemplate) {
             AwanButton(
                 onClick = { onCustomizeClick(null, selectedDate) },
                 modifier = Modifier.fillMaxWidth(),
-                variant = AwanButtonVariant.Secondary,
                 icon = { Icon(Icons.Default.Schedule, contentDescription = null) }
             ) {
-                AwanText(text = stringResource(R.string.profile_daily_zones_customize_day))
+                AwanText(text = stringResource(R.string.profile_routine_customize_day_for_this_routine))
             }
-        } else if (!hasOverride && !hasTemplate) {
+        } else {
             AwanButton(
                 onClick = { onCreateRoutineClick(null, null, selectedDate) },
                 modifier = Modifier.fillMaxWidth(),

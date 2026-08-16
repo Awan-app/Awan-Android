@@ -161,6 +161,7 @@
     <string name="profile_routine_no_routine_set">No routine set for this day</string>
     <string name="profile_routine_connect_hint">Connect a routine to start scheduling zones.</string>
     <string name="profile_routine_create_for_day">Create Routine for this Day</string>
+    <string name="profile_routine_customize_day_for_this_routine">Customize day for this routine</string>
 
     <!-- Zone Editing -->
     <string name="profile_zone_add">Add Zone</string>
