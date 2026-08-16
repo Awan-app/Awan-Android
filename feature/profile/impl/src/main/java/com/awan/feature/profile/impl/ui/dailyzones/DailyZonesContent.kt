@@ -33,6 +33,7 @@ import java.util.Locale
 fun DailyZonesContent(
     uiState: DailyZonesState,
     dayColors: Map<DayOfWeek, Color>,
+    specialDates: Map<String, Color>,
     onAction: (DailyZonesAction) -> Unit,
     onNavigateToRoutineDetails: (String?, String?, String?) -> Unit,
     onCreateRoutineClick: (String?, String?, String?) -> Unit,
@@ -93,6 +94,7 @@ fun DailyZonesContent(
                 DaySelector(
                     selectedDays = setOf(uiState.selectedDay),
                     dayColors = dayColors,
+                    specialDates = specialDates,
                     onDaySelected = { onAction(DailyZonesAction.SelectDay(it)) },
                     onNextWeek = { onAction(DailyZonesAction.NextWeek) },
                     onPreviousWeek = { onAction(DailyZonesAction.PreviousWeek) },
@@ -159,11 +161,11 @@ fun DailyZonesContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         DailyZonesBottomActions(
-            hasTemplate = uiState.currentTemplate != null || (uiState.templates.any { it.daysOfWeek.contains(uiState.selectedDay) }),
+            hasTemplate = uiState.currentTemplate != null || (uiState.templates.any { it.daysOfWeek.contains(uiState.selectedDay) && it.zones.isNotEmpty() }),
             hasOverride = uiState.currentOverride != null,
             onCreateRoutineClick = onCreateRoutineClick,
             onCustomizeClick = { _, date -> 
-                val templateToUse = uiState.currentTemplate ?: uiState.templates.find { it.daysOfWeek.contains(uiState.selectedDay) }
+                val templateToUse = uiState.currentTemplate ?: uiState.templates.find { it.daysOfWeek.contains(uiState.selectedDay) && it.zones.isNotEmpty() }
                 onNavigateToRoutineDetails(templateToUse?.id, uiState.currentOverride?.id, date)
             },
             selectedDate = uiState.selectedDate?.toString()

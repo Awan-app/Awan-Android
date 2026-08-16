@@ -169,7 +169,7 @@ class DailyZonesViewModel @Inject constructor(
 
         // 2. Fallback to template (either explicitly selected or for the day of week)
         val template = state.templates.find { it.id == state.selectedTemplateId }
-            ?: state.templates.find { it.daysOfWeek.contains(state.selectedDay) }
+            ?: state.templates.find { it.daysOfWeek.contains(state.selectedDay) && it.zones.isNotEmpty() }
 
         val zones = (template?.zones ?: emptyList())
             .sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }

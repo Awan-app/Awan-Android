@@ -47,23 +47,22 @@ fun DailyZonesScreen(
             colors.zoneGray
         )
         
-        // 1. Templates colors
-        uiState.templates.forEachIndexed { index, template ->
+        // 1. Templates colors - Only for templates with zones
+        uiState.templates.filter { it.zones.isNotEmpty() }.forEachIndexed { index, template ->
             val color = template.zones.firstOrNull()?.color?.toColor() 
                 ?: distinctColors[index % distinctColors.size]
             template.daysOfWeek.forEach { day ->
                 mapping[day] = color
             }
         }
+        mapping
+    }
 
-        // 2. Overrides (Custom Days) take precedence and use a special indicator color or their first zone color
-        uiState.overrides.forEach { override ->
-            val date = runCatching { LocalDate.parse(override.dateOfDay) }.getOrNull()
-            if (date != null) {
-                val day = DailyZonesHelper.getCurrentDay(date)
-                // Overrides use the sky color to indicate "special/customized" or their own zone color
-                mapping[day] = override.zones.firstOrNull()?.color?.toColor() ?: colors.sky
-            }
+    val specialDates = remember(uiState.overrides, colors) {
+        val mapping = mutableMapOf<String, Color>()
+        // 2. Overrides (Custom Days) - Only for overrides with zones
+        uiState.overrides.filter { it.zones.isNotEmpty() }.forEach { override ->
+            mapping[override.dateOfDay] = override.zones.firstOrNull()?.color?.toColor() ?: colors.sky
         }
         mapping
     }
@@ -104,6 +103,7 @@ fun DailyZonesScreen(
         DailyZonesContent(
             uiState = uiState,
             dayColors = dayColors,
+            specialDates = specialDates,
             onAction = onAction,
             onNavigateToRoutineDetails = onNavigateToRoutineDetails,
             onCreateRoutineClick = onCreateRoutineClick,

@@ -121,6 +121,6 @@ object DailyZonesHelper {
         templates: List<com.awan.app.core.domain.zones.model.WeeklyTemplate>,
         day: DayOfWeek
     ): Boolean {
-        return templates.any { it.daysOfWeek.contains(day) }
+        return templates.any { it.daysOfWeek.contains(day) && it.zones.isNotEmpty() }
     }
 }

@@ -300,9 +300,7 @@ fun EditRoutineScreen(
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(12.dp),
                         onClick = {
-                            if (uiState.overrideId == null) {
-                                onAction(EditRoutineAction.ToggleTodayOnly(!uiState.isTodayOnly))
-                            }
+                            onAction(EditRoutineAction.ToggleTodayOnly(!uiState.isTodayOnly))
                         }
                     ) {
                         Row(
@@ -313,7 +311,6 @@ fun EditRoutineScreen(
                             Checkbox(
                                 checked = uiState.isTodayOnly,
                                 onCheckedChange = { onAction(EditRoutineAction.ToggleTodayOnly(it)) },
-                                enabled = uiState.overrideId == null,
                                 colors = CheckboxDefaults.colors(checkedColor = AwanTheme.colors.sky)
                             )
                             Column(modifier = Modifier.weight(1f)) {
@@ -355,69 +352,79 @@ fun EditRoutineScreen(
                 }
 
                 // Days Selection
-                if (!uiState.isTodayOnly) {
-                    AwanCard(
+                AwanCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(16.dp)
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                            Column(
+                                modifier = Modifier.clickable { onAction(EditRoutineAction.DateChange(LocalDate.now().toString())) },
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Column(
-                                    modifier = Modifier.clickable { onAction(EditRoutineAction.DateChange(LocalDate.now().toString())) }
-                                ) {
-                                    val referenceDate = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
-                                    val dayNum = referenceDate.dayOfMonth
-                                    val suffix = getDayOfMonthSuffix(dayNum)
-                                    val formatter = DateTimeFormatter.ofPattern("MMMM d'$suffix' EEEE", Locale.ENGLISH)
-                                    val dateStr = referenceDate.format(formatter)
-                                    
-                                    AwanText(
-                                        text = dateStr,
-                                        style = AwanTheme.styles.bodyText.copy(
-                                            textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
-                                        )
+                                val referenceDate = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
+                                val dayNum = referenceDate.dayOfMonth
+                                val suffix = getDayOfMonthSuffix(dayNum)
+                                val formatter = DateTimeFormatter.ofPattern("MMMM d'$suffix' EEEE", Locale.ENGLISH)
+                                val dateStr = referenceDate.format(formatter)
+                                
+                                AwanText(
+                                    text = dateStr,
+                                    style = AwanTheme.styles.bodyText.copy(
+                                        textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
                                     )
-                                }
-
-                                AwanIconButton(
-                                    onClick = { showDatePicker = true },
-                                    contentDescription = null,
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CalendarToday,
-                                        contentDescription = null,
-                                        tint = AwanTheme.colors.sky,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
+                                )
                             }
 
-                            DaySelector(
-                                selectedDays = uiState.selectedDays,
-                                assignedDays = uiState.assignedDays,
-                                onDaySelected = { onAction(EditRoutineAction.ToggleDay(it)) },
-                                onNextWeek = { 
-                                    val current = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
-                                    onAction(EditRoutineAction.DateChange(current.plusWeeks(1).toString()))
-                                },
-                                onPreviousWeek = { 
-                                    val current = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
-                                    onAction(EditRoutineAction.DateChange(current.minusWeeks(1).toString()))
-                                },
-                                showTodayIndicator = false,
-                                referenceDate = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now()),
-                                today = LocalDate.now()
-                            )
+                            AwanIconButton(
+                                onClick = { showDatePicker = true },
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CalendarToday,
+                                    contentDescription = null,
+                                    tint = AwanTheme.colors.sky,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
+
+                        val dayColors = remember(uiState.dayColors) {
+                            uiState.dayColors.mapValues { it.value.toColor() }
+                        }
+                        val specialDates = remember(uiState.specialDates) {
+                            uiState.specialDates.mapValues { it.value.toColor() }
+                        }
+
+                        DaySelector(
+                            selectedDays = uiState.selectedDays,
+                            assignedDays = uiState.assignedDays,
+                            dayColors = dayColors,
+                            specialDates = specialDates,
+                            selectedDates = uiState.dates,
+                            isTodayOnly = uiState.isTodayOnly,
+                            onDaySelected = { onAction(EditRoutineAction.ToggleDay(it)) },
+                            onNextWeek = { 
+                                val current = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
+                                onAction(EditRoutineAction.DateChange(current.plusWeeks(1).toString()))
+                            },
+                            onPreviousWeek = { 
+                                val current = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
+                                onAction(EditRoutineAction.DateChange(current.minusWeeks(1).toString()))
+                            },
+                            showTodayIndicator = false,
+                            referenceDate = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now()),
+                            today = LocalDate.now()
+                        )
                     }
                 }
 

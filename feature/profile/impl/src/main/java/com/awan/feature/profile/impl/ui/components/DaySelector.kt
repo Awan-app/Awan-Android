@@ -39,9 +39,12 @@ fun DaySelector(
     modifier: Modifier = Modifier,
     assignedDays: Set<DayOfWeek> = emptySet(),
     dayColors: Map<DayOfWeek, Color> = emptyMap(),
+    specialDates: Map<String, Color> = emptyMap(),
     showTodayIndicator: Boolean = true,
     today: LocalDate = LocalDate.now(),
-    referenceDate: LocalDate = LocalDate.now()
+    referenceDate: LocalDate = LocalDate.now(),
+    selectedDates: Set<String> = emptySet(),
+    isTodayOnly: Boolean = false
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -67,14 +70,18 @@ fun DaySelector(
             val currentWeekStart = referenceDate.minusDays((referenceDate.dayOfWeek.value.toLong() - 1))
 
             DayOfWeek.entries.forEach { day ->
-                val isSelected = selectedDays.contains(day)
+                val dateForDay = currentWeekStart.plusDays(day.ordinal.toLong())
+                val isSelected = if (isTodayOnly) {
+                    selectedDates.contains(dateForDay.toString())
+                } else {
+                    selectedDays.contains(day)
+                }
                 val isAssigned = assignedDays.contains(day)
                 val isToday = if (showTodayIndicator) {
                     DailyZonesHelper.isToday(day, today) && referenceDate.year == today.year && referenceDate.dayOfYear == today.dayOfYear
                 } else false
-                val templateColor = dayColors[day]
+                val templateColor = specialDates[dateForDay.toString()] ?: dayColors[day]
                 
-                val dateForDay = currentWeekStart.plusDays(day.ordinal.toLong())
                 val dayOfMonth = dateForDay.dayOfMonth.toString()
                 val fullDayName = stringResource(DailyZonesHelper.getDayNameRes(day))
 
@@ -118,7 +125,12 @@ fun DaySelector(
                                 .fillMaxSize()
                                 .padding(top = if (isPressed) rimDepth else 0.dp)
                                 .background(
-                                    if (isAssigned) AwanTheme.colors.disabledSurface.copy(alpha = 0.5f) else rimColor,
+                                    when {
+                                        isSelected || isToday -> AwanTheme.colors.sky.copy(alpha = 0.5f)
+                                        templateColor != null -> templateColor.copy(alpha = 0.3f)
+                                        isAssigned && !isTodayOnly -> AwanTheme.colors.disabledSurface.copy(alpha = 0.5f)
+                                        else -> Color.Transparent
+                                    },
                                     RoundedCornerShape(12.dp)
                                 )
                         )
@@ -132,6 +144,7 @@ fun DaySelector(
                                         isSelected -> AwanTheme.colors.sky
                                         isToday -> AwanTheme.colors.sky.copy(alpha = 0.2f).compositeOver(surface)
                                         templateColor != null -> templateColor.copy(alpha = 0.12f).compositeOver(surface)
+                                        isAssigned && !isTodayOnly -> AwanTheme.colors.disabledSurface
                                         else -> surface
                                     },
                                     shape = RoundedCornerShape(12.dp)
@@ -141,9 +154,9 @@ fun DaySelector(
                                     color = when {
                                         isSelected -> AwanTheme.colors.sky
                                         isToday -> AwanTheme.colors.sky
-                                        isAssigned -> AwanTheme.colors.line.copy(alpha = 0.5f)
-                                        templateColor != null -> templateColor.copy(alpha = 0.4f).compositeOver(surface)
-                                        else -> AwanTheme.colors.line
+                                        templateColor != null -> templateColor.copy(alpha = 0.6f).compositeOver(surface)
+                                        isAssigned && !isTodayOnly -> AwanTheme.colors.line.copy(alpha = 0.5f)
+                                        else -> Color.Transparent // No border for empty days
                                     },
                                     shape = RoundedCornerShape(12.dp)
                                 ),
@@ -159,7 +172,7 @@ fun DaySelector(
                                     color = when {
                                         isSelected -> Color.White
                                         isToday -> AwanTheme.colors.sky
-                                        isAssigned -> AwanTheme.colors.disabledContent
+                                        isAssigned && !isTodayOnly -> AwanTheme.colors.disabledContent
                                         templateColor != null -> templateColor
                                         else -> AwanTheme.colors.textPrimary
                                     }
