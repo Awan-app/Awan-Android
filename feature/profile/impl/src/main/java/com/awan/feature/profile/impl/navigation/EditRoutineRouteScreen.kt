@@ -13,13 +13,15 @@ import com.awan.feature.profile.impl.ui.EditRoutineScreen
 @Composable
 fun EditRoutineRouteScreen(
     templateId: String?,
+    overrideId: String?,
+    date: String?,
     viewModel: EditRoutineViewModel = hiltViewModel(),
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(templateId) {
-        viewModel.onAction(EditRoutineAction.LoadTemplate(templateId))
+    LaunchedEffect(templateId, overrideId, date) {
+        viewModel.onAction(EditRoutineAction.LoadTemplate(templateId, overrideId, date))
     }
 
     LaunchedEffect(viewModel.events) {

@@ -21,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -67,8 +66,6 @@ import com.awan.feature.calendar.api.CalendarRoute
 import com.awan.feature.calendar.impl.navigation.calendarEntry
 import com.awan.feature.chat.impl.navigation.chatEntry
 import com.awan.feature.goals.api.GoalsRoute
-import com.awan.feature.goals.api.GoalDetailsRoute
-import com.awan.feature.goals.api.InboxRoute
 import com.awan.feature.goals.impl.navigation.goalsEntry
 import com.awan.feature.home.api.HomeRoute
 import com.awan.feature.home.impl.navigation.homeEntry
@@ -259,102 +256,101 @@ fun AwanApp(
                 }
             }
 
-        val entryProvider = entryProvider {
-            splashEntry(
-                onNavigateToNext = { destination ->
-                    when (destination) {
-                        SplashDestination.Auth -> navigator.replaceAll(LoginRoute)
-                        SplashDestination.Onboarding -> navigator.replaceAll(OnboardingRoute)
-                        SplashDestination.Home -> navigator.replaceAll(HomeRoute())
-                        is SplashDestination.ResumeGoalScheduling -> {
-                            navigator.replaceAll(HomeRoute())
-                            navigator.navigate(AiTaskProposalsRoute(goalId = destination.goalId))
+            val entryProvider = entryProvider {
+                splashEntry(
+                    onNavigateToNext = { destination ->
+                        when (destination) {
+                            SplashDestination.Auth -> navigator.replaceAll(LoginRoute)
+                            SplashDestination.Onboarding -> navigator.replaceAll(OnboardingRoute)
+                            SplashDestination.Home -> navigator.replaceAll(HomeRoute())
+                            is SplashDestination.ResumeGoalScheduling -> {
+                                navigator.replaceAll(HomeRoute())
+                                navigator.navigate(AiTaskProposalsRoute(goalId = destination.goalId))
+                            }
+                            SplashDestination.Loading -> { /* Keep showing splash */ }
                         }
-                        SplashDestination.Loading -> { /* Keep showing splash */ }
                     }
-                }
-            )
-            authEntry(
-                onNavigateToOtp = { email -> navigator.navigate(OtpRoute(email)) },
-                onNavigateToHome = { navigator.replaceAll(HomeRoute()) },
-                onNavigateToOnboarding = { navigator.replaceAll(OnboardingRoute) },
-                onPopBackStack = { navigator.goBack() }
-            )
-            onboardingEntry(
-                onComplete = { navigator.replaceAll(HomeRoute()) },
-                onExit = { navigator.replaceAll(LoginRoute) }
-            )
-            marketplaceEntry(
-                onNavigateToHome = { navigator.navigate(HomeRoute()) }
-            )
-            homeEntry(
-                onLogout = { navigator.replaceAll(LoginRoute) },
-                onNavigateToCalendar = { navigator.navigate(CalendarRoute()) },
-                onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
-                onNavigateToAddTask = { zoneId, date ->
-                    addTaskZoneId = zoneId
-                    addTaskDate = date?.toString()
-                    showAddTask = true
-                },
-                onDateChanged = { date ->
-                    currentHomeDate = date.toString()
-                },
-                onRegisterOpenSession = { callback -> onOpenHomeSession = callback },
-                onNavigateToTaskDetails = { taskId -> navigator.navigate(TaskDetailsRoute(taskId)) },
-            )
+                )
+                authEntry(
+                    onNavigateToOtp = { email -> navigator.navigate(OtpRoute(email)) },
+                    onNavigateToHome = { navigator.replaceAll(HomeRoute()) },
+                    onNavigateToOnboarding = { navigator.replaceAll(OnboardingRoute) },
+                    onPopBackStack = { navigator.goBack() }
+                )
+                onboardingEntry(
+                    onComplete = { navigator.replaceAll(HomeRoute()) },
+                    onExit = { navigator.replaceAll(LoginRoute) }
+                )
+                marketplaceEntry(
+                    onNavigateToHome = { navigator.navigate(HomeRoute()) }
+                )
+                homeEntry(
+                    onLogout = { navigator.replaceAll(LoginRoute) },
+                    onNavigateToCalendar = { navigator.navigate(CalendarRoute()) },
+                    onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
+                    onNavigateToAddTask = { zoneId, date ->
+                        addTaskZoneId = zoneId
+                        addTaskDate = date?.toString()
+                        showAddTask = true
+                    },
+                    onDateChanged = { date ->
+                        currentHomeDate = date.toString()
+                    },
+                    onRegisterOpenSession = { callback -> onOpenHomeSession = callback },
+                    onNavigateToTaskDetails = { taskId -> navigator.navigate(TaskDetailsRoute(taskId)) },
+                )
+                calendarEntry(
+                    onDateSelected = { date ->
+                        onSelectHomeDate?.invoke(date)
+                        navigator.goBack()
+                    },
+                    onBack = { navigator.goBack() },
+                )
+                chatEntry()
+                goalsEntry(
+                    onNavigateToGoalDetails = { id -> navigator.navigate(com.awan.feature.goals.api.GoalDetailsRoute(id)) },
+                    onNavigateToInbox = { navigator.navigate(com.awan.feature.goals.api.InboxRoute) },
+                    onBack = { navigator.goBack() },
+                )
+                aiTasksEntry(onBack = { navigator.goBack() })
+                inventoryEntry(onBack = { navigator.goBack() })
+                profileEntry(
+                    onNavigateToDailyZones = { navigator.navigate(DailyZonesRoute) },
+                    onNavigateToEditRoutine = { templateId, overrideId, date ->
+                        navigator.navigate(EditRoutineRoute(templateId = templateId, overrideId = overrideId, date = date))
+                    },
+                    onLogout = { navigator.replaceAll(LoginRoute) },
+                    onBack = { navigator.goBack() },
+                    onNavigateToInventory = { navigator.navigate(InventoryRoute) },
+                    onNavigateToMcpSettings = { navigator.navigate(McpSettingsRoute) },
+                    onNavigateToMcpInfo = { navigator.navigate(McpInfoRoute) },
+                    onNavigateToNotificationSettings = { navigator.navigate(NotificationSettingsRoute) },
+                )
+                goalPreviewEntry(
+                    onBack = { navigator.goBack() },
+                    onNavigateToGoals = { navigator.goBack() },
+                    onNavigateToGoalSchedule = { goalId ->
+                        navigator.navigate(AiTaskProposalsRoute(goalId = goalId))
+                    },
+                )
+                taskDetailsEntry(
+                    onBack = { navigator.goBack() },
+                )
+            }
 
-            calendarEntry(
-                onDateSelected = { date ->
-                    onSelectHomeDate?.invoke(date)
-                    navigator.goBack()
-                },
+            BackHandler(
+                enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack
+            ) {
+                navigator.goBack()
+            }
+
+            NavDisplay(
+                entries = appState.navigationState.rememberDecoratedEntries(entryProvider),
                 onBack = { navigator.goBack() },
-            )
-            chatEntry()
-            goalsEntry(
-                onNavigateToGoalDetails = { id -> navigator.navigate(com.awan.feature.goals.api.GoalDetailsRoute(id)) },
-                onNavigateToInbox = { navigator.navigate(com.awan.feature.goals.api.InboxRoute) },
-                onBack = { navigator.goBack() },
-            )
-            aiTasksEntry(onBack = { navigator.goBack() })
-            inventoryEntry(onBack = { navigator.goBack() })
-            profileEntry(
-                onNavigateToDailyZones = { navigator.navigate(DailyZonesRoute) },
-                onNavigateToEditRoutine = { templateId -> navigator.navigate(EditRoutineRoute(templateId)) },
-                onLogout = { navigator.replaceAll(LoginRoute) },
-                onBack = { navigator.goBack()},
-                onNavigateToInventory = { navigator.navigate(InventoryRoute) },
-                onNavigateToMcpSettings = { navigator.navigate(McpSettingsRoute) },
-                onNavigateToMcpInfo = { navigator.navigate(McpInfoRoute) },
-                onNavigateToNotificationSettings = { navigator.navigate(NotificationSettingsRoute) },
-            )
-            goalPreviewEntry(
-                onBack = { navigator.goBack() },
-                onNavigateToGoals = { navigator.goBack() },
-                onNavigateToGoalSchedule = { goalId ->
-                    navigator.navigate(AiTaskProposalsRoute(goalId = goalId))
-                },
-            )
-            taskDetailsEntry(
-                onBack = { navigator.goBack() },
+                modifier = Modifier.weight(1f)
             )
         }
 
-        BackHandler(
-            enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack
-        ) {
-            navigator.goBack()
-        }
-
-        NavDisplay(
-            entries = appState.navigationState.rememberDecoratedEntries(entryProvider),
-            onBack = { navigator.goBack() },
-            modifier = Modifier.weight(1f)
-        )
-    }
-
-
-        val currentRoute = appState.navigationState.currentKey
         val currentTopLevelKey = appState.navigationState.currentTopLevelKey
         val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route::class == currentRoute::class }
 

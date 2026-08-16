@@ -7,39 +7,43 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanButton
+import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanText
 import com.awan.feature.profile.impl.R
 
 @Composable
 fun DailyZonesBottomActions(
     hasTemplate: Boolean,
-    isSaving: Boolean,
-    onAddZoneClick: () -> Unit,
-    onCreateRoutineClick: () -> Unit,
+    hasOverride: Boolean,
+    onCreateRoutineClick: (String?, String?, String?) -> Unit,
+    onCustomizeClick: (String?, String?) -> Unit,
+    selectedDate: String? = null,
 ) {
     Column(
-        modifier = Modifier.padding(bottom = 20.dp),
+        modifier = Modifier
+            .padding(bottom = 32.dp)
+            .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        if (hasTemplate) {
+        if (hasOverride || hasTemplate) {
             AwanButton(
-                onClick = onAddZoneClick,
+                onClick = { onCustomizeClick(null, selectedDate) },
                 modifier = Modifier.fillMaxWidth(),
-                icon = Icons.Default.Add,
-                enabled = !isSaving
+                icon = { Icon(Icons.Default.Schedule, contentDescription = null) }
             ) {
-                AwanText(text = stringResource(R.string.profile_daily_zones_add_zone))
+                AwanText(text = stringResource(R.string.profile_routine_customize_day_for_this_routine))
             }
         } else {
             AwanButton(
-                onClick = onCreateRoutineClick,
+                onClick = { onCreateRoutineClick(null, null, selectedDate) },
                 modifier = Modifier.fillMaxWidth(),
-                icon = Icons.Default.Schedule
+                icon = { Icon(Icons.Default.Schedule, contentDescription = null) }
             ) {
                 AwanText(text = stringResource(R.string.profile_routine_create_for_day))
             }

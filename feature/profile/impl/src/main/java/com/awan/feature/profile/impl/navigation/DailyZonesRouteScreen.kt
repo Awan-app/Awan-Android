@@ -12,8 +12,8 @@ import com.awan.feature.profile.impl.ui.DailyZonesScreen
 @Composable
 fun DailyZonesRouteScreen(
     viewModel: DailyZonesViewModel = hiltViewModel(),
-    onRoutineClick: (String) -> Unit,
-    onCreateRoutineClick: () -> Unit,
+    onRoutineClick: (String?, String?, String?) -> Unit,
+    onCreateRoutineClick: (String?, String?, String?) -> Unit,
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -26,7 +26,12 @@ fun DailyZonesRouteScreen(
         uiState = uiState,
         onAction = viewModel::onAction,
         onNavigateToRoutineDetails = onRoutineClick,
-        onCreateRoutineClick = onCreateRoutineClick,
+        onCreateRoutineClick = { templateId, overrideId, selectedDate ->
+            // If templateId or selectedDate were passed from UI, use them;
+            // otherwise fallback to state's selectedDate if needed.
+            val targetDate = selectedDate ?: uiState.selectedDate?.toString()
+            onCreateRoutineClick(templateId, overrideId, targetDate)
+        },
         onBackClick = onBack,
     )
 }

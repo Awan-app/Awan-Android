@@ -26,7 +26,8 @@ fun RoutineSummaryCard(
     day: DayOfWeek,
     templateName: String,
     zoneCount: Int,
-    onEditRoutineClick: (() -> Unit)? = null
+    onEditRoutineClick: (() -> Unit)? = null,
+    isOverride: Boolean = false
 ) {
     AwanCard(
         modifier = Modifier.fillMaxWidth(),
@@ -76,7 +77,7 @@ fun RoutineSummaryCard(
 
             Surface(
                 shape = RoundedCornerShape(6.dp),
-                color = AwanTheme.colors.line.copy(alpha = 0.5f)
+                color = (if (isOverride) AwanTheme.colors.sky else AwanTheme.colors.line).copy(alpha = 0.5f)
             ) {
                 Row(
                     modifier = Modifier
@@ -86,15 +87,16 @@ fun RoutineSummaryCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
-                        Icons.Default.CalendarToday,
+                        if (isOverride) Icons.Default.CalendarToday else Icons.Default.CalendarToday, // Change icon if needed
                         contentDescription = null,
-                        tint = AwanTheme.colors.textSecondary,
+                        tint = if (isOverride) AwanTheme.colors.onSky else AwanTheme.colors.textSecondary,
                         modifier = Modifier.size(13.dp)
                     )
                     AwanText(
-                        text = stringResource(R.string.profile_routine_edit_summary),
+                        text = if (isOverride) stringResource(R.string.profile_routine_summary_subtitle_today) 
+                               else stringResource(R.string.profile_routine_edit_summary),
                         style = AwanTheme.styles.captionText.copy(
-                            color = AwanTheme.colors.textSecondary,
+                            color = if (isOverride) AwanTheme.colors.onSky else AwanTheme.colors.textSecondary,
                             textStyle = AwanTheme.styles.captionText.textStyle.copy(fontSize = 10.sp)
                         )
                     )

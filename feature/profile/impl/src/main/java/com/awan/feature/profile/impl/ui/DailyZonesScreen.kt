@@ -12,27 +12,27 @@ import com.awan.app.core.designsystem.*
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.feature.profile.impl.R
+import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 import com.awan.feature.profile.impl.presentation.DailyZonesAction
 import com.awan.feature.profile.impl.presentation.DailyZonesState
-import com.awan.feature.profile.impl.ui.dailyzones.AddEditZoneSheet
 import com.awan.feature.profile.impl.ui.dailyzones.DailyZonesContent
 import com.awan.feature.profile.impl.ui.dailyzones.DailyZonesTopBar
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DailyZonesScreen(
     uiState: DailyZonesState,
     onAction: (DailyZonesAction) -> Unit,
-    onNavigateToRoutineDetails: (String) -> Unit,
-    onCreateRoutineClick: () -> Unit,
+    onNavigateToRoutineDetails: (String?, String?, String?) -> Unit,
+    onCreateRoutineClick: (String?, String?, String?) -> Unit,
     onBackClick: () -> Unit,
 ) {
-    var showAddZoneSheet by remember { mutableStateOf(false) }
-    var editingZone by remember { mutableStateOf<DailyZone?>(null) }
     var showDeleteConfirm by remember { mutableStateOf<DailyZone?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val colors = AwanTheme.colors
-    val dayColors = remember(uiState.templates, colors) {
+    val dayColors = remember(uiState.templates, uiState.overrides, colors) {
         val mapping = mutableMapOf<DayOfWeek, Color>()
         val distinctColors = listOf(
             colors.zoneMelon,
@@ -47,7 +47,8 @@ fun DailyZonesScreen(
             colors.zoneGray
         )
         
-        uiState.templates.forEachIndexed { index, template ->
+        // 1. Templates colors - Only for templates with zones
+        uiState.templates.filter { it.zones.isNotEmpty() }.forEachIndexed { index, template ->
             val color = template.zones.firstOrNull()?.color?.toColor() 
                 ?: distinctColors[index % distinctColors.size]
             template.daysOfWeek.forEach { day ->
@@ -57,34 +58,25 @@ fun DailyZonesScreen(
         mapping
     }
 
-    if (showAddZoneSheet) {
-        AddEditZoneSheet(
-            zone = editingZone,
-            availableCategories = uiState.availableCategories,
-            defaultStartTime = uiState.selectedDayZones.lastOrNull()?.endTime,
-            onDismiss = {
-                showAddZoneSheet = false
-                editingZone = null
-            },
-            onConfirm = { zone ->
-                if (editingZone == null) {
-                    onAction(DailyZonesAction.AddZone(zone))
-                } else {
-                    onAction(DailyZonesAction.UpdateZone(zone))
-                }
-                showAddZoneSheet = false
-                editingZone = null
-            },
-            onAddCategory = { name ->
-                onAction(DailyZonesAction.CreateCategory(name))
-            },
-            onDelete = { zone ->
-                showAddZoneSheet = false
-                editingZone = null
-                showDeleteConfirm = zone
-            },
-            canDelete = uiState.selectedDayZones.size > 1,
-            isSaving = uiState.isSaving
+    val specialDates = remember(uiState.overrides, colors) {
+        val mapping = mutableMapOf<String, Color>()
+        // 2. Overrides (Custom Days) - Only for overrides with zones
+        uiState.overrides.filter { it.zones.isNotEmpty() }.forEach { override ->
+            mapping[override.dateOfDay] = override.zones.firstOrNull()?.color?.toColor() ?: colors.sky
+        }
+        mapping
+    }
+
+    if (showDatePicker) {
+        AwanDatePickerDialog(
+            initialDate = uiState.selectedDate ?: LocalDate.now(),
+            confirmLabel = stringResource(R.string.profile_ok),
+            cancelLabel = stringResource(R.string.profile_cancel),
+            onDismiss = { showDatePicker = false },
+            onConfirm = { date ->
+                onAction(DailyZonesAction.DateSelected(date))
+                showDatePicker = false
+            }
         )
     }
 
@@ -111,14 +103,11 @@ fun DailyZonesScreen(
         DailyZonesContent(
             uiState = uiState,
             dayColors = dayColors,
+            specialDates = specialDates,
             onAction = onAction,
             onNavigateToRoutineDetails = onNavigateToRoutineDetails,
             onCreateRoutineClick = onCreateRoutineClick,
-            onAddZoneClick = { showAddZoneSheet = true },
-            onEditZone = { zone ->
-                editingZone = zone
-                showAddZoneSheet = true
-            },
+            onShowDatePicker = { showDatePicker = true },
             padding = padding
         )
     }

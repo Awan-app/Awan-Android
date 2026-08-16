@@ -663,6 +663,7 @@ private fun DayCell(
 
     val streakDayString = stringResource(R.string.calendar_streak_day)
     val hasDeadlineString = stringResource(R.string.calendar_has_deadline)
+    val hasRoutineString = stringResource(R.string.calendar_has_routine)
     val dateDescription = remember(dayState, streakDayString, hasDeadlineString) {
         buildString {
             append(dayState.date.dayOfMonth)
@@ -673,6 +674,10 @@ private fun DayCell(
             if (dayState.hasDeadline) {
                 append(", ")
                 append(hasDeadlineString)
+            }
+            if (dayState.hasRoutine) {
+                append(", ")
+                append(hasRoutineString)
             }
         }
     }
@@ -728,15 +733,6 @@ private fun DayCell(
                             .background(colors.sky)
                             .testTag(todayPrimaryTag),
                     )
-                    // Deadline shader host if today has deadline
-                    if (dayState.hasDeadline) {
-                        DeadlineShaderHost(
-                            size = dayCellCircleSize,
-                            baseColor = deadlineColor,
-                            isReducedMotion = isReducedMotion,
-                            testTag = deadlineShaderTag,
-                        )
-                    }
                     // Day number on top
                     DayNumberText(
                         dayNumber = dayNumber,
@@ -880,9 +876,28 @@ private fun DayCell(
                 }
             }
         }
-
-        // Consistent bottom spacer replacing the old deadline dot
-        Spacer(modifier = Modifier.height(7.dp))
+        Row(
+            modifier = Modifier.height(7.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (dayState.hasDeadline) {
+                Box(
+                    modifier = Modifier
+                        .size(5.dp)
+                        .clip(CircleShape)
+                        .background(AwanTheme.colors.zoneCoral),
+                )
+            }
+            if (dayState.hasRoutine) {
+                Box(
+                    modifier = Modifier
+                        .size(5.dp)
+                        .clip(CircleShape)
+                        .background(AwanTheme.colors.sky),
+                )
+            }
+        }
     }
 }
 

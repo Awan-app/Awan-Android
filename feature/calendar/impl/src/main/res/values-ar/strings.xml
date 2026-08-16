@@ -23,6 +23,7 @@
     <string name="calendar_streak_day">يوم متتالي</string>
     <string name="calendar_has_deadline">لديه موعد نهائي</string>
     <string name="calendar_back">ارجع</string>
+    <string name="calendar_has_routine">لديه روتين</string>
     <string name="calendar_weekday_sun">&#x0627;&#x0644;&#x0623;&#x062D;&#x062F;</string>
     <string name="calendar_weekday_mon">&#x0627;&#x0644;&#x0627;&#x062B;&#x0646;&#x064A;&#x0646;</string>
     <string name="calendar_weekday_tue">&#x0627;&#x0644;&#x062B;&#x0644;&#x0627;&#x062B;&#x0627;&#x0621;</string>

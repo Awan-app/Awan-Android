@@ -3,15 +3,21 @@ package com.awan.feature.profile.impl.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.common.result.map
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.category.usecase.CreateCategoryUseCase
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
+import com.awan.app.core.domain.zones.usecase.CreateOverrideUseCase
 import com.awan.app.core.domain.zones.usecase.CreateWeeklyTemplateUseCase
+import com.awan.app.core.domain.zones.usecase.DeleteOverrideUseCase
 import com.awan.app.core.domain.zones.usecase.DeleteWeeklyTemplateUseCase
+import com.awan.app.core.domain.zones.usecase.GetOverridesUseCase
 import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplateUseCase
 import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplatesUseCase
+import com.awan.app.core.domain.zones.usecase.UpdateOverrideUseCase
+import com.awan.app.core.domain.zones.usecase.UpdateOverrideZonesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateWeeklyTemplateUseCase
 import com.awan.feature.profile.impl.R
@@ -26,29 +32,38 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 @HiltViewModel
 class EditRoutineViewModel @Inject constructor(
     private val getWeeklyTemplatesUseCase: GetWeeklyTemplatesUseCase,
     private val getWeeklyTemplateUseCase: GetWeeklyTemplateUseCase,
+    private val getOverridesUseCase: GetOverridesUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val createCategoryUseCase: CreateCategoryUseCase,
     private val createWeeklyTemplateUseCase: CreateWeeklyTemplateUseCase,
     private val updateWeeklyTemplateUseCase: UpdateWeeklyTemplateUseCase,
     private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase,
     private val deleteWeeklyTemplateUseCase: DeleteWeeklyTemplateUseCase,
+    private val createOverrideUseCase: CreateOverrideUseCase,
+    private val updateOverrideUseCase: UpdateOverrideUseCase,
+    private val updateOverrideZonesUseCase: UpdateOverrideZonesUseCase,
+    private val deleteOverrideUseCase: DeleteOverrideUseCase,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(EditRoutineState())
+    private val _uiState = MutableStateFlow(EditRoutineState(isLoading = true))
     val uiState: StateFlow<EditRoutineState> = _uiState.asStateFlow()
 
     private val _events = Channel<EditRoutineEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
+    private var cachedTemplates: List<com.awan.app.core.domain.zones.model.WeeklyTemplate> = emptyList()
+    private var cachedOverrides: List<com.awan.app.core.domain.zones.model.TemplateOverride> = emptyList()
+
     fun onAction(action: EditRoutineAction) {
         when (action) {
-            is EditRoutineAction.LoadTemplate -> loadTemplate(action.templateId)
+            is EditRoutineAction.LoadTemplate -> loadTemplate(action.templateId, action.overrideId, action.date)
             is EditRoutineAction.NameChange -> onNameChange(action.name)
             is EditRoutineAction.ToggleDay -> toggleDay(action.day)
             is EditRoutineAction.AddZone -> addZone(action.zone)
@@ -56,43 +71,194 @@ class EditRoutineViewModel @Inject constructor(
             is EditRoutineAction.DeleteZone -> deleteZone(action.zone)
             is EditRoutineAction.ReorderZones -> reorderZones(action.from, action.to)
             is EditRoutineAction.CreateCategory -> createCategory(action.name)
+            is EditRoutineAction.ToggleTodayOnly -> {
+                val state = _uiState.value
+                if (action.isTodayOnly) {
+                    val currentDay = DailyZonesHelper.getCurrentDay(LocalDate.parse(state.date ?: LocalDate.now().toString()))
+                    if (state.daysWithTemplates.contains(currentDay)) {
+                        val newZones = resolveZonesForDate(state.date ?: LocalDate.now().toString())
+                        _uiState.update { it.copy(
+                            isTodayOnly = true,
+                            selectedDays = setOf(currentDay),
+                            dates = setOf(state.date ?: LocalDate.now().toString()),
+                            zones = newZones,
+                            validationError = null
+                        ) }
+                    } else {
+                        _uiState.update { it.copy(validationError = UiText.StringResource(R.string.profile_daily_zones_error_no_base_routine)) }
+                    }
+                } else {
+                    _uiState.update { it.copy(isTodayOnly = false, validationError = null) }
+                }
+            }
+            is EditRoutineAction.DateChange -> onDateChange(action.date)
             EditRoutineAction.SaveRoutine -> saveRoutine()
             EditRoutineAction.DeleteRoutine -> deleteRoutine()
         }
     }
 
-    private fun loadTemplate(templateId: String?) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, templateId = templateId) }
+    private fun onDateChange(date: String) {
+        val parsedDate = runCatching { LocalDate.parse(date) }.getOrNull() ?: return
+        val dayOfWeek = DailyZonesHelper.getCurrentDay(parsedDate)
+        
+        _uiState.update { state ->
+            if (state.isTodayOnly && !state.daysWithTemplates.contains(dayOfWeek)) {
+                return@update state.copy(
+                    validationError = UiText.StringResource(R.string.profile_daily_zones_error_no_base_routine)
+                )
+            }
 
-            // 1. Fetch ALL templates, categories
+            var newState = state.copy(
+                date = date,
+                validationError = null,
+                error = null
+            )
+            
+            if (state.isTodayOnly) {
+                val newZones = resolveZonesForDate(date)
+                newState = newState.copy(
+                    selectedDays = setOf(dayOfWeek),
+                    dates = setOf(date),
+                    zones = newZones
+                )
+            }
+            newState
+        }
+    }
+
+    private fun loadTemplate(templateId: String?, overrideId: String?, date: String?) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(
+                isLoading = true, 
+                templateId = templateId, 
+                overrideId = overrideId, 
+                date = date,
+                dates = if (date != null) setOf(date) else emptySet()
+            ) }
+
+            // 1. Fetch ALL templates, overrides, categories
             val templatesDeferred = async { getWeeklyTemplatesUseCase() }
+            val overridesDeferred = async { getOverridesUseCase() }
             val categoriesDeferred = async { getCategoriesUseCase() }
 
             val templatesResult = templatesDeferred.await()
+            val overridesResult = overridesDeferred.await()
             val categoriesResult = categoriesDeferred.await()
 
             val allTemplates = (templatesResult as? Result.Success)?.data ?: emptyList()
+            val allOverrides = (overridesResult as? Result.Success)?.data ?: emptyList()
             val categories = (categoriesResult as? Result.Success)?.data ?: emptyList()
             
+            cachedTemplates = allTemplates
+            cachedOverrides = allOverrides
+
+            val dayColorsMapping = mutableMapOf<DayOfWeek, String>()
+            allTemplates.filter { it.zones.isNotEmpty() }.forEach { template ->
+                val color = template.zones.first().color
+                template.daysOfWeek.forEach { day ->
+                    dayColorsMapping[day] = color
+                }
+            }
+            val specialDatesMapping = mutableMapOf<String, String>()
+            allOverrides.filter { it.zones.isNotEmpty() }.forEach { override ->
+                val color = override.zones.first().color
+                specialDatesMapping[override.dateOfDay] = color
+            }
+
             val otherAssigned = allTemplates
                 .asSequence()
-                .filter { it.id != templateId }
+                .filter { it.id != templateId && it.zones.isNotEmpty() }
                 .flatMap { it.daysOfWeek }
                 .toSet()
 
-            if (templateId == null) {
-                // CREATE MODE: Clear everything but keep track of other routines' days
-                _uiState.update { 
-                    it.copy(
+            val daysWithTemplates = allTemplates
+                .filter { it.zones.isNotEmpty() }
+                .flatMap { it.daysOfWeek }
+                .toSet()
+
+            val canToggleTodayOnly = if (date != null) {
+                runCatching { LocalDate.parse(date) }.getOrNull()?.let {
+                    DailyZonesHelper.hasTemplateForDay(allTemplates, DailyZonesHelper.getCurrentDay(it))
+                } ?: false
+            } else {
+                false
+            }
+
+            if (templateId == null || (date != null && overrideId == null)) {
+                // Check if there's an override for this date or ID
+                val override = overrideId?.let { id -> allOverrides.find { it.id == id } }
+                    ?: DailyZonesHelper.findOverrideForDate(allOverrides, date)
+                
+                if (override != null) {
+                    // EDIT OVERRIDE MODE
+                    val effectiveDate = date ?: override.dateOfDay
+                    val sortedZones = override.zones.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
+                    _uiState.update { it.copy(
                         isLoading = false,
-                        templateId = null,
-                        name = "",
-                        selectedDays = emptySet(),
+                        overrideId = override.id,
+                        name = override.name ?: "",
+                        date = effectiveDate,
+                        dates = setOf(effectiveDate),
+                        isTodayOnly = true,
+                        canToggleTodayOnly = canToggleTodayOnly,
+                        selectedDays = setOf(DailyZonesHelper.getCurrentDay(LocalDate.parse(effectiveDate))),
                         assignedDays = otherAssigned,
-                        zones = emptyList(),
-                        availableCategories = categories
-                    ) 
+                        daysWithTemplates = daysWithTemplates,
+                        zones = sortedZones,
+                        availableCategories = categories,
+                        dayColors = dayColorsMapping,
+                        specialDates = specialDatesMapping
+                    ) }
+                } else if (templateId != null && date != null) {
+                    // CUSTOMIZE FROM TEMPLATE MODE
+                    val template = allTemplates.find { it.id == templateId }
+                    val sortedZones = template?.zones?.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 } ?: emptyList()
+                    _uiState.update { it.copy(
+                        isLoading = false,
+                        templateId = templateId,
+                        overrideId = null,
+                        name = template?.name ?: "",
+                        date = date,
+                        dates = if (date != null) setOf(date) else emptySet(),
+                        isTodayOnly = true,
+                        canToggleTodayOnly = canToggleTodayOnly,
+                        selectedDays = setOf(DailyZonesHelper.getCurrentDay(LocalDate.parse(date))),
+                        assignedDays = otherAssigned,
+                        daysWithTemplates = daysWithTemplates,
+                        zones = sortedZones,
+                        availableCategories = categories,
+                        dayColors = dayColorsMapping,
+                        specialDates = specialDatesMapping
+                    ) }
+                } else {
+                    // CREATE MODE
+                    val initialSelectedDays = if (date != null) {
+                        runCatching { LocalDate.parse(date) }.getOrNull()?.let {
+                            setOf(DailyZonesHelper.getCurrentDay(it))
+                        } ?: emptySet()
+                    } else {
+                        emptySet()
+                    }
+
+                    _uiState.update { 
+                        it.copy(
+                            isLoading = false,
+                            templateId = null,
+                            overrideId = null,
+                            name = "",
+                            isTodayOnly = false, // Must be a template if no base exists
+                            canToggleTodayOnly = canToggleTodayOnly,
+                            selectedDays = initialSelectedDays,
+                            date = date,
+                            dates = if (date != null) setOf(date) else emptySet(),
+                            assignedDays = otherAssigned,
+                            daysWithTemplates = daysWithTemplates,
+                            zones = emptyList(),
+                            availableCategories = categories,
+                            dayColors = dayColorsMapping,
+                            specialDates = specialDatesMapping
+                        ) 
+                    }
                 }
             } else {
                 // EDIT MODE: Load specific template and calculate assigned days excluding this one
@@ -105,16 +271,23 @@ class EditRoutineViewModel @Inject constructor(
                             name = template.name,
                             selectedDays = template.daysOfWeek.toSet(),
                             assignedDays = otherAssigned,
+                            daysWithTemplates = daysWithTemplates,
+                            canToggleTodayOnly = false, // When editing a template proper, it's always recurring
                             zones = sortedZones,
-                            availableCategories = categories
+                            availableCategories = categories,
+                            dayColors = dayColorsMapping,
+                            specialDates = specialDatesMapping
                         ) }
                     }
                     is Result.Error -> {
                         _uiState.update { it.copy(
                             isLoading = false,
                             assignedDays = otherAssigned,
+                            daysWithTemplates = daysWithTemplates,
                             error = ProfileErrorMapper.mapToUiText(result.error),
-                            availableCategories = categories
+                            availableCategories = categories,
+                            dayColors = dayColorsMapping,
+                            specialDates = specialDatesMapping
                         ) }
                     }
                     Result.Loading -> Unit
@@ -129,13 +302,42 @@ class EditRoutineViewModel @Inject constructor(
 
     private fun toggleDay(day: DayOfWeek) {
         _uiState.update { state ->
-            if (state.assignedDays.contains(day)) return@update state
-            val newDays = if (state.selectedDays.contains(day)) {
-                state.selectedDays - day
+            val reference = LocalDate.parse(state.date ?: LocalDate.now().toString())
+            val currentWeekStart = reference.minusDays((reference.dayOfWeek.value.toLong() - 1))
+            val targetDate = currentWeekStart.plusDays(day.ordinal.toLong()).toString()
+
+            if (state.isTodayOnly) {
+                if (!state.daysWithTemplates.contains(day)) {
+                    return@update state.copy(
+                        validationError = UiText.StringResource(R.string.profile_daily_zones_error_no_base_routine)
+                    )
+                }
+                
+                val newDates = if (state.dates.contains(targetDate)) {
+                    state.dates - targetDate
+                } else {
+                    state.dates + targetDate
+                }
+                val newDays = newDates.map { DailyZonesHelper.getCurrentDay(LocalDate.parse(it)) }.toSet()
+                
+                val newZones = resolveZonesForDate(targetDate)
+                
+                state.copy(date = targetDate, selectedDays = newDays, dates = newDates, zones = newZones, validationError = null)
             } else {
-                state.selectedDays + day
+                if (state.assignedDays.contains(day)) return@update state
+                
+                val newDays = if (state.selectedDays.contains(day)) {
+                    state.selectedDays - day
+                } else {
+                    state.selectedDays + day
+                }
+                
+                state.copy(
+                    date = targetDate,
+                    selectedDays = newDays,
+                    validationError = null
+                )
             }
-            state.copy(selectedDays = newDays, validationError = null, error = null)
         }
     }
 
@@ -232,36 +434,64 @@ class EditRoutineViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
-            val templateId = state.templateId
+            val stateNow = _uiState.value
+            
+            // Re-fetch overrides to be sure about what exists
+            val overridesRes = getOverridesUseCase()
+            val existingOverrides = (overridesRes as? Result.Success)?.data ?: emptyList()
 
-            if (templateId == null) {
-                when (val result = createWeeklyTemplateUseCase(state.name, state.selectedDays.toList(), state.zones)) {
-                    is Result.Success -> {
-                        _uiState.update { it.copy(isSaving = false) }
-                        _events.send(EditRoutineEvent.SaveSuccess)
-                    }
-                    is Result.Error -> {
-                        _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
-                    }
-                    Result.Loading -> Unit
-                }
-            } else {
-                val updateNameRes = updateWeeklyTemplateUseCase(templateId, state.name, state.selectedDays.toList())
-                if (updateNameRes is Result.Error) {
-                    _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(updateNameRes.error)) }
-                    return@launch
-                }
+            val result = if (stateNow.isTodayOnly && stateNow.dates.isNotEmpty()) {
+                var finalResult: Result<Unit> = Result.Success(Unit)
                 
-                when (val updateZonesRes = updateTemplateZonesUseCase(templateId, state.zones)) {
-                    is Result.Success -> {
-                        _uiState.update { it.copy(isSaving = false) }
-                        _events.send(EditRoutineEvent.SaveSuccess)
+                for (dateStr in stateNow.dates) {
+                    val existing = existingOverrides.find { it.dateOfDay == dateStr }
+                    if (existing != null) {
+                        // Update existing
+                        val updateNameRes = updateOverrideUseCase(existing.id, stateNow.name, dateStr)
+                        if (updateNameRes is Result.Error) {
+                            finalResult = Result.Error(updateNameRes.error)
+                            break
+                        }
+                        val updateZonesRes = updateOverrideZonesUseCase(existing.id, stateNow.zones)
+                        if (updateZonesRes is Result.Error) {
+                            finalResult = Result.Error(updateZonesRes.error)
+                            break
+                        }
+                    } else {
+                        // Create new
+                        val createRes = createOverrideUseCase(dateStr, stateNow.zones, stateNow.name)
+                        if (createRes is Result.Error) {
+                            finalResult = Result.Error(createRes.error)
+                            break
+                        }
                     }
-                    is Result.Error -> {
-                        _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(updateZonesRes.error)) }
-                    }
-                    Result.Loading -> Unit
                 }
+                finalResult
+            } else {
+                val templateId = stateNow.templateId
+                if (templateId != null) {
+                    // 3. Update existing weekly template
+                    val updateNameRes = updateWeeklyTemplateUseCase(templateId, stateNow.name, stateNow.selectedDays.toList())
+                    if (updateNameRes is Result.Error) {
+                        _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(updateNameRes.error)) }
+                        return@launch
+                    }
+                    updateTemplateZonesUseCase(templateId, stateNow.zones).map { Unit }
+                } else {
+                    // 4. Create new weekly template
+                    createWeeklyTemplateUseCase(stateNow.name, stateNow.selectedDays.toList(), stateNow.zones).map { Unit }
+                }
+            }
+
+            when (result) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(isSaving = false) }
+                    _events.send(EditRoutineEvent.SaveSuccess)
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
+                }
+                Result.Loading -> Unit
             }
         }
     }
@@ -290,13 +520,25 @@ class EditRoutineViewModel @Inject constructor(
     }
 
     private fun deleteRoutine() {
-        val templateId = _uiState.value.templateId ?: return
+        val templateId = _uiState.value.templateId
+        val overrideId = _uiState.value.overrideId
+        
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
-            when (val result = deleteWeeklyTemplateUseCase(templateId)) {
+            
+            val result = when {
+                templateId != null -> deleteWeeklyTemplateUseCase(templateId)
+                overrideId != null -> deleteOverrideUseCase(overrideId)
+                else -> {
+                    _uiState.update { it.copy(isSaving = false) }
+                    return@launch
+                }
+            }
+
+            when (result) {
                 is Result.Success -> {
                     _uiState.update { it.copy(isSaving = false) }
-                    _events.send(EditRoutineEvent.DeleteSuccess)
+                    _events.send(EditRoutineEvent.SaveSuccess)
                 }
                 is Result.Error -> {
                     _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
@@ -304,5 +546,15 @@ class EditRoutineViewModel @Inject constructor(
                 Result.Loading -> Unit
             }
         }
+    }
+
+    private fun resolveZonesForDate(date: String): List<com.awan.app.core.domain.zones.model.DailyZone> {
+        val parsedDate = runCatching { LocalDate.parse(date) }.getOrNull() ?: return emptyList()
+        val dayOfWeek = DailyZonesHelper.getCurrentDay(parsedDate)
+        val override = DailyZonesHelper.findOverrideForDate(cachedOverrides, date)
+        if (override != null) return override.zones
+        
+        val template = cachedTemplates.find { it.daysOfWeek.contains(dayOfWeek) }
+        return template?.zones ?: emptyList()
     }
 }

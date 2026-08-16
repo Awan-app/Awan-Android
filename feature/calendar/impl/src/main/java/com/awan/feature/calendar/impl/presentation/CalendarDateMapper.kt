@@ -1,5 +1,8 @@
 package com.awan.feature.calendar.impl.presentation
 
+import com.awan.app.core.domain.zones.model.DayOfWeek
+import com.awan.app.core.domain.zones.model.TemplateOverride
+import com.awan.app.core.domain.zones.model.WeeklyTemplate
 import com.awan.app.core.model.CalendarGoal as CoreCalendarGoal
 import java.time.LocalDate
 import java.time.YearMonth
@@ -49,6 +52,7 @@ object CalendarDateMapper {
         selectedDate: LocalDate?,
         streakDates: Set<LocalDate>,
         goals: List<CalendarGoal>,
+        routineDates: Set<LocalDate> = emptySet(),
     ): List<DayState> {
         val offset = yearMonth.atDay(1).dayOfWeek.value % 7
         val start = yearMonth.atDay(1).minusDays(offset.toLong())
@@ -57,8 +61,6 @@ object CalendarDateMapper {
 
         return (0 until count).map { index ->
             val date = start.plusDays(index.toLong())
-            // Goals passed in are filtered for active deadlines with valid target dates.
-            // A day has a deadline if there is at least one active goal whose targetDate matches and is not in the past.
             val dayGoals = goalsByDate[date].orEmpty()
             val hasDeadline = dayGoals.isNotEmpty() && !date.isBefore(today)
             val progress = if (hasDeadline) {
@@ -66,7 +68,6 @@ object CalendarDateMapper {
             } else {
                 null
             }
-
 
             DayState(
                 date = date,
@@ -76,19 +77,47 @@ object CalendarDateMapper {
                 isStreakDay = date in streakDates,
                 hasDeadline = hasDeadline,
                 deadlineProgress = progress,
+                hasRoutine = date in routineDates,
             )
         }
     }
 
-    fun buildMonthDays(
+    fun calculateRoutineDates(
         yearMonth: YearMonth,
-        today: LocalDate,
-        selectedDate: LocalDate?,
-        streakDates: Set<LocalDate>,
-        goalDates: Set<LocalDate>,
-    ): List<DayState> {
-        val goals = goalDates.map { CalendarGoal(id = it.toString(), title = "", targetDate = it) }
-        return buildMonthDays(yearMonth, today, selectedDate, streakDates, goals)
+        templates: List<WeeklyTemplate>,
+        overrides: List<TemplateOverride>,
+    ): Set<LocalDate> {
+        val routineDates = mutableSetOf<LocalDate>()
+        val start = yearMonth.atDay(1).minusDays(7) // buffer
+        val end = yearMonth.atEndOfMonth().plusDays(7) // buffer
+
+        // 1. Add specific override dates
+        overrides.forEach { override ->
+            parseLocalDate(override.dateOfDay)?.let { date ->
+                if (override.zones.isNotEmpty()) {
+                    routineDates.add(date)
+                }
+            }
+        }
+
+        // 2. Add recurring template dates (only if no override exists for that date)
+        val overrideDates = overrides.mapNotNull { parseLocalDate(it.dateOfDay) }.toSet()
+
+        var current = start
+        while (!current.isAfter(end)) {
+            if (current !in overrideDates) {
+                val targetDayOfWeek = DayOfWeek.valueOf(current.dayOfWeek.name)
+                val hasRoutine = templates.any {
+                    it.daysOfWeek.contains(targetDayOfWeek) && it.zones.isNotEmpty()
+                }
+                if (hasRoutine) {
+                    routineDates.add(current)
+                }
+            }
+            current = current.plusDays(1)
+        }
+
+        return routineDates
     }
 
     fun parseZoneIdOrDefault(value: String?): ZoneId =

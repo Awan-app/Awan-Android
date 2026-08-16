@@ -55,7 +55,15 @@ class FakeZonesRepository : ZonesRepository {
 
     override suspend fun getTemplateZones(templateId: String): Result<List<DailyZone>> = TODO()
 
-    override suspend fun createOverride(date: String, zones: List<DailyZone>): Result<TemplateOverride> = TODO()
+    override suspend fun createOverride(
+        date: String,
+        zones: List<DailyZone>,
+        name: String?,
+    ): Result<TemplateOverride> {
+        val new = TemplateOverride(id = "new", name = name, dateOfDay = date, zones = zones)
+        overrides = overrides + new
+        return Result.Success(new)
+    }
 
     override suspend fun getOverride(overrideId: String): Result<TemplateOverride> = TODO()
 

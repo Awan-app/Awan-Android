@@ -89,6 +89,7 @@
     <string name="profile_daily_zones_error_overlap">These zones overlap. Adjust the times and try again.</string>
     <string name="profile_daily_zones_error_network">Something went wrong. Check your connection and try again.</string>
     <string name="profile_daily_zones_error_generic">We couldn\'t save your changes. Please try again.</string>
+    <string name="profile_daily_zones_error_no_base_routine">You cannot create an override for a day without a routine.</string>
     <string name="profile_daily_zones_error_day_assigned">One or more selected days already have a routine.</string>
     <string name="profile_daily_zones_custom_schedule">Custom schedule</string>
     <string name="profile_daily_zones_edit_default">Edit Default Routine</string>
@@ -108,7 +109,7 @@
     <string name="profile_language_english">English</string>
     <string name="profile_language_arabic">Arabic</string>
     <string name="profile_select_timezone">Select Timezone</string>
-    <string name="profile_search_timezone">Search region or city...</string>
+    <string name="profile_search_timezone">Search region or city…</string>
     <string name="profile_close">Close</string>
     <string name="profile_minutes">minutes</string>
     <string name="profile_decrease">Decrease</string>
@@ -137,6 +138,7 @@
     <string name="profile_routine_create">Create Routine</string>
     <string name="profile_routine_edit">Edit Routine</string>
     <string name="profile_routine_summary_subtitle">Templates for your recurring schedule</string>
+    <string name="profile_routine_summary_subtitle_today">Custom routine for this day only</string>
     <string name="profile_routine_name">Routine Name</string>
     <string name="profile_routine_name_placeholder">e.g. Workday, Weekend, Vacation</string>
     <string name="profile_routine_apply_to_days">Apply to Days</string>
@@ -159,6 +161,7 @@
     <string name="profile_routine_no_routine_set">No routine set for this day</string>
     <string name="profile_routine_connect_hint">Connect a routine to start scheduling zones.</string>
     <string name="profile_routine_create_for_day">Create Routine for this Day</string>
+    <string name="profile_routine_customize_day_for_this_routine">Customize day for this routine</string>
 
     <!-- Zone Editing -->
     <string name="profile_zone_add">Add Zone</string>
@@ -246,4 +249,6 @@
     <string name="profile_mcp_cd_copy_snippet">Copy Configuration Snippet</string>
     <string name="profile_mcp_cd_delete_token">Delete Token %1$s</string>
     <string name="profile_mcp_cd_regenerate_token">Regenerate Token %1$s</string>
+    <string name="profile_routine_apply_to_today_only">Apply to Today Only</string>
+    <string name="profile_routine_has_routine">Has routine</string>
 </resources>

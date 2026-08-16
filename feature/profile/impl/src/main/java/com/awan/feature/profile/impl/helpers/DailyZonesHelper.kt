@@ -104,4 +104,23 @@ object DailyZonesHelper {
         val m = minutes % 60
         return String.format(Locale.US, "%02d:%02d:00", h, m)
     }
+
+    /**
+     * The API guarantees at most one override per date.
+     * This method resolves the active override for a given date.
+     */
+    fun findOverrideForDate(
+        overrides: List<com.awan.app.core.domain.zones.model.TemplateOverride>, 
+        dateStr: String?
+    ): com.awan.app.core.domain.zones.model.TemplateOverride? {
+        if (dateStr == null) return null
+        return overrides.find { it.dateOfDay == dateStr }
+    }
+
+    fun hasTemplateForDay(
+        templates: List<com.awan.app.core.domain.zones.model.WeeklyTemplate>,
+        day: DayOfWeek
+    ): Boolean {
+        return templates.any { it.daysOfWeek.contains(day) && it.zones.isNotEmpty() }
+    }
 }

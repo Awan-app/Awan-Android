@@ -1,6 +1,8 @@
 package com.awan.feature.calendar.impl.presentation
 
 import androidx.annotation.StringRes
+import com.awan.app.core.domain.zones.model.TemplateOverride
+import com.awan.app.core.domain.zones.model.WeeklyTemplate
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -39,6 +41,10 @@ data class CalendarUiState(
     val streakDates: Set<LocalDate> = emptySet(),
     val upcomingGoals: List<CalendarGoal> = emptyList(),
     val monthDays: List<DayState> = emptyList(),
+    /** Kept internal — only used by the ViewModel for routine-date derivation. */
+    internal val templates: List<WeeklyTemplate> = emptyList(),
+    /** Kept internal — only used by the ViewModel for routine-date derivation. */
+    internal val overrides: List<TemplateOverride> = emptyList(),
 )
 
 data class CalendarGoal(
@@ -55,6 +61,7 @@ data class DayState(
     val isSelected: Boolean,
     val isStreakDay: Boolean,
     val hasDeadline: Boolean,
+    val hasRoutine: Boolean = false,
     val deadlineProgress: Float? = null,
 )
 

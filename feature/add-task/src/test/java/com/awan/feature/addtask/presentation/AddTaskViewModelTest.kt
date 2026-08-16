@@ -214,7 +214,7 @@ class AddTaskViewModelTest {
         override suspend fun addZoneToTemplate(templateId: String, zone: DailyZone): Result<DailyZone> = error("not used")
         override suspend fun getTemplateZones(templateId: String): Result<List<DailyZone>> = error("not used")
         override suspend fun updateTemplateZones(templateId: String, zones: List<DailyZone>): Result<List<DailyZone>> = error("not used")
-        override suspend fun createOverride(date: String, zones: List<DailyZone>): Result<TemplateOverride> = error("not used")
+        override suspend fun createOverride(date: String, zones: List<DailyZone>, name: String?): Result<TemplateOverride> = error("not used")
         override suspend fun getOverrides(): Result<List<TemplateOverride>> = error("not used")
         override suspend fun getOverride(overrideId: String): Result<TemplateOverride> = error("not used")
         override suspend fun updateOverride(overrideId: String, name: String?, date: String): Result<TemplateOverride> = error("not used")

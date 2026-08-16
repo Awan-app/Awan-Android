@@ -4,4 +4,8 @@ import com.awan.core.navigation.Route
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class EditRoutineRoute(val templateId: String? = null) : Route
+data class EditRoutineRoute(
+    val templateId: String? = null,
+    val overrideId: String? = null,
+    val date: String? = null
+) : Route
