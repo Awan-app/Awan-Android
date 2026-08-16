@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Email Screen -->
+    <string name="auth_title">Awan</string>
+    <string name="auth_subtitle">Turn your goals into a day that plans itself</string>
+    <string name="auth_email_label">EMAIL</string>
+    <string name="auth_email_placeholder">you@email.com</string>
+    <string name="auth_email_input_description">Email address input</string>
+    <string name="auth_send_code">SEND CODE</string>
+    <string name="auth_send_code_timer">SEND CODE · %1$s</string>
+    <string name="auth_continue_with_google">Continue with Google</string>
+    <string name="auth_rate_limited_banner">Too many attempts. Try again in %1$s.</string>
+    <string name="auth_offline_banner">You\'re offline — we\'ll send the code when you reconnect.</string>
+    <string name="auth_error_firebase_token_invalid">Invalid sign-in token. Please try again.</string>
+    <string name="auth_error_firebase_provider_not_allowed">Google sign-in is not available.</string>
+    <string name="auth_error_firebase_email_missing">No email associated with this account.</string>
+    <string name="auth_error_firebase_email_not_verified">Please verify your Google email.</string>
+    <string name="auth_error_firebase_not_configured">Service unavailable, try later.</string>
+    <string name="auth_error_google_sign_in_failed">Google sign-in failed. Please try again.</string>
+
+    <!-- OTP Screen -->
+    <string name="auth_otp_title">Check your inbox!</string>
+    <string name="auth_verifying_code_description">Verifying your code</string>
+    <string name="auth_verifying_text">Verifying you in…</string>
+    <string name="auth_request_new_code">REQUEST A NEW CODE</string>
+    <string name="auth_resend_code">RESEND CODE</string>
+    <string name="auth_resend_code_timer">RESEND CODE · %1$s</string>
+    <string name="auth_resend_code_button_desc">Resend code button</string>
+    <string name="auth_resend_code_timer_desc">Resend code in %1$s</string>
+    <string name="auth_use_different_email">Use a different email</string>
+    <string name="auth_use_different_email_desc">Use a different email address</string>
+    <string name="auth_otp_digits_description">6-digit verification code input</string>
+    <string name="auth_otp_digit_cell_desc">Digit %1$d of 6%2$s</string>
+    <string name="auth_otp_digit_cell_empty">, empty</string>
+    <string name="auth_otp_digit_cell_filled">, %1$s</string>
+    <string name="auth_code_sent_to">We floated a 6-digit code to</string>
+    <string name="auth_code_sent_to_desc">Code sent to %1$s.</string>
+</resources>

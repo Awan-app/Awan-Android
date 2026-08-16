@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_task_mode_task">مهمة</string>
+    <string name="add_task_mode_goal">هدف</string>
+
+    <string name="add_task_title_placeholder">ما الذي تريد إنجازه؟</string>
+    <string name="add_task_description_placeholder">أضف ملاحظة</string>
+    <string name="add_task_title_content_description">عنوان المهمة ووقتها وفئتها</string>
+    <string name="add_task_description_content_description">ملاحظة المهمة</string>
+
+    <string name="add_task_hint">جرّب ‏“Gym session tomorrow 6pm @play”</string>
+    <string name="add_task_ai_hint">اكتبها بأسلوبك، وأوان يتكفّل بالباقي.</string>
+
+    <string name="add_task_chip_mandatory">لا بد منها</string>
+    <string name="add_task_chip_optional">يمكن تخطيها</string>
+    <string name="add_task_chip_today_no_time">اليوم</string>
+    <string name="add_task_chip_no_duration">أي مدة</string>
+    <string name="add_task_chip_no_category">بلا فئة</string>
+    <string name="add_task_category_menu_empty">لا توجد فئات بعد</string>
+    <string name="add_task_chip_category_unknown">الفئة ‏“%1$s” غير موجودة</string>
+    <string name="add_task_chip_category_resolving">جارٍ البحث عن الفئة…</string>
+
+    <string name="add_task_duration_minutes">%1$d دقيقة</string>
+    <string name="add_task_duration_hours">%1$d ساعة</string>
+    <string name="add_task_duration_hours_minutes">%1$d ساعة و%2$d دقيقة</string>
+
+    <string name="add_task_day_today">اليوم</string>
+    <string name="add_task_day_tomorrow">غدًا</string>
+    <string name="add_task_day_at_time">%1$s في %2$s</string>
+
+    <string name="add_task_picker_set">تعيين</string>
+    <string name="add_task_picker_next">التالي</string>
+    <string name="add_task_picker_cancel">إلغاء</string>
+
+    <string name="add_task_submit">أضف المهمة</string>
+
+    <string name="add_task_ai_switch">دع أوان يكملها</string>
+    <string name="add_task_ai_switch_body">اذكر ما تريد إنجازه، ويتولى ذكاء أوان الاصطناعي الباقي.</string>
+    <string name="add_task_ai_switch_content_description">دع أوان يستنتج تفاصيل المهمة</string>
+    <string name="add_task_ai_submit">اسأل أوان</string>
+
+    <string name="add_task_add_photo">أضف صورة</string>
+    <string name="add_task_photo_from_gallery">اختر صورة</string>
+    <string name="add_task_photo_take">التقط صورة</string>
+    <string name="add_task_remove_photo">إزالة الصورة</string>
+    <string name="add_task_photo_content_description">صورة مرفقة ليقرأها أوان</string>
+
+    <string name="add_task_confirm_title">تمّت الإضافة!</string>
+    <string name="add_task_confirm_first_session">تبدأ في</string>
+    <string name="add_task_confirm_inbox">في صندوق الوارد — بلا موعد بعد</string>
+    <string name="add_task_confirm_done">تمّ</string>
+
+    <string name="add_task_discard_title">هل تريد تجاهل هذه المهمة؟</string>
+    <string name="add_task_discard_body">سيضيع كل ما أدخلته هنا.</string>
+    <string name="add_task_discard_confirm">تجاهل</string>
+    <string name="add_task_discard_cancel">أكمل التعديل</string>
+
+    <string name="add_task_goal_initial_title">ما الهدف الذي تسعى لتحقيقه؟</string>
+    <string name="add_task_goal_initial_subtitle">صف هدفك وسيتكفّل أوان بتقسيمه إلى مهام قابلة للتنفيذ.</string>
+    <string name="add_task_goal_input_placeholder">مثلاً: تعلم الإسبانية لرحلة مدتها أسبوعان</string>
+    <string name="add_task_goal_input_description">إدخال وصف الهدف</string>
+    <string name="add_task_goal_submit_initial">قسّم الهدف</string>
+
+    <string name="add_task_goal_mcq_continue">متابعة</string>
+    <string name="add_task_goal_mcq_option_description">الخيار: %1$s</string>
+    <string name="add_task_goal_mcq_custom_placeholder">أو اكتب إجابتك الخاصة…</string>
+    <string name="add_task_goal_mcq_custom_description">إدخال الإجابة المخصصة</string>
+
+    <string name="add_task_goal_writing_placeholder">اكتب إجابتك أو أملِها…</string>
+    <string name="add_task_goal_writing_description">إجابة السؤال</string>
+    <string name="add_task_goal_writing_fallback_prompt">أضف مزيدًا من التفاصيل حول هدفك</string>
+    <string name="add_task_goal_writing_continue">متابعة</string>
+
+    <string name="add_task_goal_preview_title">خطة الهدف</string>
+    <string name="add_task_goal_preview_read_more">عرض المزيد</string>
+    <string name="add_task_goal_preview_show_less">عرض أقل</string>
+    <string name="add_task_goal_preview_close">إغلاق معاينة الهدف</string>
+    <string name="add_task_goal_preview_accept_action">قبول خطة الهدف</string>
+    <string name="add_task_goal_preview_accept">اعتماد الهدف</string>
+    <string name="add_task_goal_save_choice_title">حفظ هذا الهدف</string>
+    <string name="add_task_goal_save_choice_body">احتفظ بالهدف كمسودة، أم أضف كل المهام المقترحة الآن؟</string>
+    <string name="add_task_goal_save_choice_draft">حفظ كمسودة</string>
+    <string name="add_task_goal_save_choice_add_tasks">إضافة المهام</string>
+    <string name="add_task_goal_preview_tasks_header">المهام المقترحة (%1$d)</string>
+    <string name="add_task_goal_preview_task_item_title">%1$d. %2$s</string>
+    <string name="add_task_goal_preview_revision_placeholder">اطلب تعديلات أو حسّن الخطة…</string>
+    <string name="add_task_goal_preview_revision_description">طلب تعديل الخطة</string>
+    <string name="add_task_goal_preview_revision_submit">تحديث الخطة</string>
+    <string name="add_task_goal_preview_approve_plan">الموافقة على الخطة</string>
+    <string name="add_task_goal_preview_remove_task">حذف المهمة</string>
+    <string name="add_task_goal_preview_task_title_placeholder">عنوان المهمة</string>
+    <string name="add_task_goal_preview_task_duration_select">اختر المدة</string>
+    <string name="add_task_goal_preview_target_date">تاريخ الهدف: %1$s</string>
+    <string name="add_task_goal_preview_duration">المدة التقديرية %1$s</string>
+    <string name="add_task_goal_preview_points">%1$d نقاط</string>
+
+    <string name="add_task_error_create_failed">تعذّر إضافة المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
+    <string name="add_task_error_goal_continuation_failed">تعذّر على أوان تقسيم هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
+    <string name="add_task_error_goal_confirm_failed">تعذّر حفظ هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
+
+    <string name="add_task_goal_thinking_1">أقرأ هدفك…</string>
+    <string name="add_task_goal_thinking_2">أقسّمه إلى خطوات…</string>
+    <string name="add_task_goal_thinking_3">أقدّر مدة كل خطوة…</string>
+    <string name="add_task_goal_thinking_4">أوشكت على الانتهاء…</string>
+    <string name="add_task_goal_plan_ready">خطتك جاهزة!</string>
+
+    <string name="add_task_camera_permission_rationale_title">إذن الكاميرا مطلوب</string>
+    <string name="add_task_camera_permission_rationale_message">يلزم إذن الوصول إلى الكاميرا لالتقاط صورة لمهمتك.</string>
+    <string name="add_task_camera_permission_settings_title">الوصول إلى الكاميرا معطل</string>
+    <string name="add_task_camera_permission_settings_message">تم رفض إذن الكاميرا. يرجى تفعيل إذن الكاميرا من إعدادات جهازك لالتقاط صورة.</string>
+    <string name="add_task_grant_permission">منح الإذن</string>
+    <string name="add_task_open_settings">فتح الإعدادات</string>
+    <string name="add_task_cancel">إلغاء</string>
+</resources>

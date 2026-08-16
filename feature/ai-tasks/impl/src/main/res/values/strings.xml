@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_tasks_title">Awan\'s plan</string>
+
+    <string name="ai_tasks_loading_1">Reading what you sent…</string>
+    <string name="ai_tasks_loading_2">Checking your calendar…</string>
+    <string name="ai_tasks_loading_3">Working out how long each task takes…</string>
+    <string name="ai_tasks_loading_4">Almost there…</string>
+
+    <string name="ai_tasks_source_summary_title">What Awan read</string>
+    <string name="ai_tasks_source_summary_show_more">Show more</string>
+    <string name="ai_tasks_source_summary_show_less">Show less</string>
+    <string name="ai_tasks_image_content_description">The photo you sent</string>
+
+    <string name="ai_tasks_title_placeholder">Task title</string>
+    <string name="ai_tasks_description_placeholder">Add a note</string>
+    <string name="ai_tasks_remove_content_description">Remove this task</string>
+    <string name="ai_tasks_removed">Removed “%1$s”</string>
+    <string name="ai_tasks_undo">Undo</string>
+    <string name="ai_tasks_reset_plan">Back to Awan\'s original plan</string>
+
+    <string name="ai_tasks_chip_no_duration">Any length</string>
+    <string name="ai_tasks_duration_minutes">%1$d min</string>
+    <string name="ai_tasks_duration_hours">%1$d h</string>
+    <string name="ai_tasks_duration_hours_minutes">%1$d h %2$d min</string>
+
+    <string name="ai_tasks_chip_no_category">Unassigned</string>
+    <string name="ai_tasks_category_menu_empty">No categories set up yet</string>
+
+    <string name="ai_tasks_chip_mandatory">Must do</string>
+    <string name="ai_tasks_chip_optional">Can skip</string>
+
+    <string name="ai_tasks_session_suggested">Awan suggested</string>
+    <string name="ai_tasks_session_remove_content_description">Remove this time</string>
+    <string name="ai_tasks_session_add">Add a time</string>
+    <string name="ai_tasks_session_range">%1$s, %2$s–%3$s</string>
+    <string name="ai_tasks_no_sessions">No time set — lands in your Inbox</string>
+    <string name="ai_tasks_reason_prefix">Why: %1$s</string>
+    <string name="ai_tasks_points_badge">+%1$d</string>
+
+    <string name="ai_tasks_picker_set">Set</string>
+    <string name="ai_tasks_picker_next">Next</string>
+    <string name="ai_tasks_picker_cancel">Cancel</string>
+
+    <plurals name="ai_tasks_accept">
+        <item quantity="one">Add %1$d task</item>
+        <item quantity="other">Add %1$d tasks</item>
+    </plurals>
+    <string name="ai_tasks_accept_none">Nothing left to add</string>
+
+    <string name="ai_tasks_empty_title">No actionable tasks found</string>
+    <string name="ai_tasks_empty_body">Try a clearer photo, or describe what you need in a bit more detail.</string>
+    <string name="ai_tasks_retry">Try again</string>
+
+    <string name="ai_tasks_error_generic">Something went wrong. Try again.</string>
+    <string name="ai_tasks_error_timeout">That took too long. Check your connection and try again.</string>
+    <string name="ai_tasks_error_ai_unavailable">Awan is busy right now. Try again in a moment.</string>
+    <string name="ai_tasks_error_unsupported_image">That image format isn\'t supported. Try a PNG, JPEG, WebP or GIF.</string>
+    <string name="ai_tasks_error_invalid_image">That image couldn\'t be used. Try a different one.</string>
+    <string name="ai_tasks_error_validation">Awan couldn\'t make sense of that. Try describing it differently.</string>
+    <string name="ai_tasks_error_accept_failed">Couldn\'t add those tasks. Check your connection and try again.</string>
+    <string name="ai_tasks_error_blank_title">Give every task a title first.</string>
+    <string name="ai_tasks_error_text_blank">Tell Awan what you need, or attach a photo.</string>
+    <string name="ai_tasks_error_text_too_long">That\'s too long for Awan to read. Trim it down and try again.</string>
+    <string name="ai_tasks_error_image_too_large">That photo is too large. Try a smaller one.</string>
+
+    <string name="ai_tasks_discard_title">Discard these tasks?</string>
+    <string name="ai_tasks_discard_body">Nothing has been saved yet — going back will lose Awan\'s plan.</string>
+    <string name="ai_tasks_discard_confirm">Discard</string>
+    <string name="ai_tasks_discard_cancel">Keep reviewing</string>
+</resources>

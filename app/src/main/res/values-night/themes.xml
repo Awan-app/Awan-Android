@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Awan" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/awan_horizon</item>
+        <item name="android:colorAccent">@color/awan_sky</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <style name="Theme.Awan.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/awan_horizon</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Awan</item>
+    </style>
+</resources>

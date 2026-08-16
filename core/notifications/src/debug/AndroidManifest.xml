@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+
+        <!--
+          Exported so `adb shell am broadcast` can reach it. Debug source set only: it is not part of
+          a release build, so there is nothing here to leave open.
+        -->
+        <receiver
+            android:name=".receiver.DebugNotificationReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.awan.app.DEBUG_NOTIFICATION" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>

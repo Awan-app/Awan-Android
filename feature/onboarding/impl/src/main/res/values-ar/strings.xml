@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_continue">متابعة</string>
+    <string name="onboarding_skip">تخطّي</string>
+    <string name="onboarding_got_it">حسناً</string>
+
+    <string name="onboarding_greeting_morning">صباح الخير</string>
+    <string name="onboarding_greeting_afternoon">طاب يومك</string>
+    <string name="onboarding_greeting_evening">مساء الخير</string>
+    <string name="onboarding_name_greeting">%1$s، %2$s</string>
+
+    <plurals name="onboarding_duration_minutes">
+        <item quantity="zero">%1$d دقيقة</item>
+        <item quantity="one">دقيقة واحدة</item>
+        <item quantity="two">دقيقتان</item>
+        <item quantity="few">%1$d دقائق</item>
+        <item quantity="many">%1$d دقيقة</item>
+        <item quantity="other">%1$d دقيقة</item>
+    </plurals>
+    <plurals name="onboarding_duration_about_hours">
+        <item quantity="zero">حوالي %1$d ساعة</item>
+        <item quantity="one">حوالي ساعة واحدة</item>
+        <item quantity="two">حوالي ساعتين</item>
+        <item quantity="few">حوالي %1$d ساعات</item>
+        <item quantity="many">حوالي %1$d ساعة</item>
+        <item quantity="other">حوالي %1$d ساعة</item>
+    </plurals>
+    <string name="onboarding_duration_about_half_hours">حوالي %1$d ساعة ونصف</string>
+
+    <string name="onboarding_time_picker_set">تعيين</string>
+    <string name="onboarding_time_picker_cancel">إلغاء</string>
+    <string name="onboarding_time_range">%1$s – %2$s</string>
+
+    <string name="onboarding_welcome_lets_go">هيّا بنا</string>
+    <string name="onboarding_welcome_skip_setup">تخطّي الإعداد ←</string>
+    <string name="onboarding_welcome_greeting">مرحباً، أنا أوان.\nالسماء لك اليوم.</string>
+    <string name="onboarding_welcome_subtitle">أخبرني قليلاً عن يومك وسأبني جدولاً يعالج نفسه بهدوء عندما تتغيّر الظروف.</string>
+
+    <string name="onboarding_skip_confirm_title">متأكد من التخطي؟</string>
+    <string name="onboarding_skip_confirm_body">إذا تخطيت، سأضطر لتخمين جدولك باستخدام الإعدادات القياسية (7 ص – 11 م). لن يستغرق إعداد يومك الحقيقي سوى دقيقة واحدة!</string>
+    <string name="onboarding_skip_confirm_cancel">متابعة الإعداد</string>
+    <string name="onboarding_skip_confirm_action">تخطي على أي حال</string>
+
+    <string name="onboarding_name_title">بماذا أناديك؟</string>
+    <string name="onboarding_name_subtitle">حتى أحيّيك كما يليق كل صباح.</string>
+    <string name="onboarding_name_first_placeholder">الاسم الأول</string>
+    <string name="onboarding_name_last_placeholder">اسم العائلة (اختياري)</string>
+    <string name="onboarding_name_default_friend">صديقي</string>
+
+    <string name="onboarding_day_bounds_step_title">متى يبدأ يومك وينتهي؟</string>
+    <string name="onboarding_i_usually_wake_up_at">عادةً أستيقظ في</string>
+    <string name="onboarding_i_usually_sleep_at">عادةً أنام في</string>
+    <string name="onboarding_bounds_same_time_error">لا يمكن أن يكون وقت الاستيقاظ والنوم متطابقين.</string>
+    <string name="onboarding_bounds_short_day_warning">هذا يوم استيقاظ قصير — متأكّد؟</string>
+
+    <string name="onboarding_clock_format">%1$d:%2$02d %3$s</string>
+    <string name="onboarding_clock_am">ص</string>
+    <string name="onboarding_clock_pm">م</string>
+
+    <string name="onboarding_tick_minutes">%1$d د</string>
+    <string name="onboarding_tick_hours">%1$d س</string>
+
+    <string name="onboarding_day_preview_label">يومك</string>
+    <string name="onboarding_day_preview_open_sky">%1$d ساعة من السماء المفتوحة</string>
+    <string name="onboarding_day_preview_starred_task">★ %1$s</string>
+
+    <string name="onboarding_zones_use_this">استخدم هذا</string>
+    <string name="onboarding_zones_reset">العودة إلى اقتراحي</string>
+    <string name="onboarding_zones_title">إليك يوماً رسمته لك</string>
+    <string name="onboarding_zones_subtitle">تبقى أول وآخر 30 دقيقة فارغة لروتين استيقاظك واسترخائك.</string>
+    <string name="onboarding_zone_starts">يبدأ</string>
+    <string name="onboarding_zone_ends">ينتهي</string>
+    <string name="onboarding_zone_overlap">يتداخل مع منطقة أخرى</string>
+    <string name="onboarding_zone_drag_handle">إعادة ترتيب %1$s</string>
+    <string name="onboarding_zone_move_up">تحريك لأعلى</string>
+    <string name="onboarding_zone_move_down">تحريك لأسفل</string>
+    <string name="onboarding_zone_edit_hours">تحديد الساعات</string>
+    <string name="onboarding_zone_sheet_title">ساعات %1$s</string>
+    <string name="onboarding_zone_category">الفئة</string>
+    <string name="onboarding_zone_category_empty">لا توجد فئات بعد</string>
+
+    <string name="onboarding_task_length_title">كم تحبّ أن تركّز في الجلسة الواحدة؟</string>
+    <string name="onboarding_task_length_caption">مدة التركيز المفضّلة</string>
+    <string name="onboarding_task_length_hint_short">قصيرة وخفيفة — جلسات أكثر، وأسهل بكثير في البدء حين تكون مماطلاً في شيء ما.</string>
+    <string name="onboarding_task_length_hint_balanced">جلسة متوازنة. عميقة بما يكفي لتُحدث فرقاً، وقصيرة بما يكفي لتتسع لبقية يومك.</string>
+    <string name="onboarding_task_length_hint_deep">طويلة وعميقة. يقسّم أوان أي مدة بهذا الحجم إلى جلسات مترابطة تتخللها استراحات.</string>
+
+    <string name="onboarding_first_task_title">لنُضِف أول مهمة ليومك</string>
+    <string name="onboarding_first_task_placeholder">مثال: اقرأ الفصل 1 من Clean Code</string>
+    <string name="onboarding_first_task_examples">جرّب \"اذهب للجري\" أو \"اتّصل بأمّي\" أو \"أفرغ صندوق الوارد\".</string>
+    <string name="onboarding_first_task_scheduling">جارٍ الجدولة…</string>
+    <string name="onboarding_first_task_add">أضِفها</string>
+    <string name="onboarding_first_task_skip">تخطّي الآن ←</string>
+    <string name="onboarding_first_task_lands_label">…وتحطّ في يومك</string>
+    <string name="onboarding_first_task_duration_zone">%1$d دقيقة · %2$s</string>
+    <string name="onboarding_first_task_duration_only">%1$d دقيقة</string>
+    <string name="onboarding_first_task_unscheduled">أضفناها — لكن لم نجد وقتًا فارغًا في يومك بعد. يمكنك تحديد موعدها بنفسك لاحقًا.</string>
+    <string name="onboarding_first_task_new_badge">جديد</string>
+
+    <string name="onboarding_notifications_turn_on">تفعيل التنبيهات</string>
+    <string name="onboarding_notifications_not_now">ليس الآن</string>
+    <string name="onboarding_notifications_title">أتريد من أوان أن يرافقك خلال يومك؟</string>
+    <string name="onboarding_notifications_bullet_sessions">تنبيه قبل الجلسة، وعدّ تنازلي أثناءها.</string>
+    <string name="onboarding_notifications_bullet_checkin">سؤال ودود إذا تعثّرت جلسة، أو بقي يومك فارغاً.</string>
+    <string name="onboarding_notifications_bullet_control">لكل واحد منها مفتاح خاص به، في الملف الشخصي ← الإشعارات.</string>
+    <string name="onboarding_notifications_permission_note">سيسألك النظام تالياً — هذا فقط لتعرف السبب.</string>
+    <string name="onboarding_notifications_denied">الإشعارات معطّلة في إعدادات النظام — انقر \"تفعيل التنبيهات\" لفتحها.</string>
+
+    <!-- Mock notifications. Wording tracks the real ones in :core:notifications. -->
+    <string name="onboarding_notifications_preview_reminder_title">مراجعة التصميم</string>
+    <string name="onboarding_notifications_preview_reminder_body">تبدأ خلال 10 دقائق · 9:30 – 10:30</string>
+    <string name="onboarding_notifications_preview_live_title">مراجعة التصميم</string>
+    <string name="onboarding_notifications_preview_live_body">بقيت 27 دقيقة</string>
+    <string name="onboarding_notifications_preview_checkin_title">كيف سارت مراجعة التصميم؟</string>
+    <string name="onboarding_notifications_preview_checkin_body">حدّدها كمكتملة لتُحتسب.</string>
+</resources>

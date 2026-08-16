@@ -1,0 +1,158 @@
+package com.awan.app.core.network.api
+
+import com.awan.app.core.network.dto.task.AiTextToTasksRequest
+import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
+import com.awan.app.core.network.dto.task.CreateTaskRequest
+import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
+import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.TaskCompletionResponse
+import com.awan.app.core.network.dto.task.TaskInfoResponse
+import com.awan.app.core.network.dto.task.TaskProposalResponse
+import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskWithSessionsDto
+import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
+import com.awan.app.core.network.dto.task.InboxTasksResponse
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import retrofit2.http.Body
+import retrofit2.http.DELETE
+import retrofit2.http.GET
+import retrofit2.http.Multipart
+import retrofit2.http.POST
+import retrofit2.http.Part
+import retrofit2.http.Path
+import retrofit2.http.Query
+
+interface TaskApiService {
+
+    @POST("v1/tasks")
+    suspend fun createTask(
+        @Body request: CreateTaskRequest,
+    ): TaskInfoResponse
+
+    @POST("v1/tasks/with-sessions")
+    suspend fun createTaskWithSessions(
+        @Body request: CreateTaskWithSessionsRequest,
+    ): TaskWithSessionsDto
+
+    @POST("v1/tasks/with-sessions/bulk")
+    suspend fun createTasksWithSessions(
+        @Body request: BulkCreateTasksWithSessionsRequest,
+    ): TasksWithSessionsResponse
+
+
+    /**
+     * Asks Awan to turn a free-form note into one or more task proposals. Nothing is persisted —
+     * every proposal carries a ready-to-POST [com.awan.app.core.network.dto.task.ProposedTaskDto.draft].
+     */
+    @POST("v1/ai/task-create")
+    suspend fun proposeTasksFromText(
+        @Body request: AiTextToTasksRequest,
+    ): TaskProposalResponse
+
+    /**
+     * Same proposal contract as [proposeTasksFromText], sourced from a photo instead of typed text.
+     * [note] is optional extra context ("finish these by Friday").
+     */
+    @Multipart
+    @POST("v1/ai/image-to-tasks")
+    suspend fun proposeTasksFromImage(
+        @Part image: MultipartBody.Part,
+        @Part("note") note: RequestBody?,
+    ): TaskProposalResponse
+
+    @GET("v1/tasks/{taskId}")
+    suspend fun getTask(
+        @Path("taskId") taskId: String,
+    ): TaskInfoResponse
+
+    @retrofit2.http.PATCH("v1/tasks/{taskId}")
+    suspend fun updateTask(
+        @Path("taskId") taskId: String,
+        @Body request: com.awan.app.core.network.dto.task.TaskUpdateRequest,
+    ): TaskInfoResponse
+
+    @GET("v1/tasks/date/{date}")
+    suspend fun getTasksByDate(
+        @Path("date") date: String,
+    ): List<TaskWithSessionsDto>
+
+    @GET("v1/tasks/range")
+    suspend fun getTasksByRange(
+        @Query("startDate") startDate: String,
+        @Query("endDate") endDate: String,
+    ): Map<String, List<TaskWithSessionsDto>>
+
+
+    @POST("v1/schedule/task")
+    suspend fun scheduleTask(
+        @Body request: ScheduleTaskRequest,
+    ): TaskScheduleResponse
+
+    @GET("v1/goals/inbox")
+    suspend fun getInboxTasks(): InboxTasksResponse
+
+    @POST("v1/tasks/{taskId}/complete")
+    suspend fun completeTask(
+        @Path("taskId") taskId: String,
+    ): TaskCompletionResponse
+
+    @DELETE("v1/tasks/{taskId}")
+    suspend fun deleteTask(
+        @Path("taskId") taskId: String,
+        @Query("cascade") cascade: Boolean = false,
+    )
+
+    // ── Task Details: Move ────────────────────────────────────────────────────
+
+    /** Transfers a task from its current goal to [goalId]. Dependency links must be removed first. */
+    @retrofit2.http.PATCH("v1/tasks/{taskId}/move")
+    suspend fun moveTask(
+        @Path("taskId") taskId: String,
+        @Body request: com.awan.app.core.network.dto.task.TaskMoveRequest,
+    ): TaskInfoResponse
+
+    // ── Task Details: Dependencies ────────────────────────────────────────────
+
+    /** Creates a prerequisite: [taskId] depends on [dependsOnTaskId]. */
+    @POST("v1/tasks/{taskId}/dependencies")
+    suspend fun addDependency(
+        @Path("taskId") taskId: String,
+        @Body request: com.awan.app.core.network.dto.task.TaskDependencyRequest,
+    )
+
+    /** Removes the dependency link between [taskId] and [dependsOnTaskId]. */
+    @DELETE("v1/tasks/{taskId}/dependencies/{dependsOnTaskId}")
+    suspend fun removeDependency(
+        @Path("taskId") taskId: String,
+        @Path("dependsOnTaskId") dependsOnTaskId: String,
+    )
+
+    /** Returns all tasks that [taskId] directly depends on (prerequisites). */
+    @GET("v1/tasks/{taskId}/dependencies")
+    suspend fun getTaskDependencies(
+        @Path("taskId") taskId: String,
+    ): List<TaskInfoResponse>
+
+    /** Returns all tasks that depend on [taskId] (downstream successors). */
+    @GET("v1/tasks/{taskId}/dependents")
+    suspend fun getTaskDependents(
+        @Path("taskId") taskId: String,
+    ): List<TaskInfoResponse>
+
+    // ── Task Details: Sessions ────────────────────────────────────────────────
+
+    /** Lists sessions booked for [taskId], optionally filtered by [status]. */
+    @GET("v1/tasks/{taskId}/sessions")
+    suspend fun getTaskSessions(
+        @Path("taskId") taskId: String,
+        @Query("status") status: String? = null,
+    ): List<com.awan.app.core.network.dto.session.SessionDto>
+
+    /** Adds new calendar sessions to an already-existing task. */
+    @POST("v1/tasks/{taskId}/sessions")
+    suspend fun addTaskSessions(
+        @Path("taskId") taskId: String,
+        @Body request: com.awan.app.core.network.dto.task.AddTaskSessionsRequest,
+    ): List<com.awan.app.core.network.dto.session.SessionDto>
+}

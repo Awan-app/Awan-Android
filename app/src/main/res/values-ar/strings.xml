@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">أوان</string>
+    <string name="greeting_name">أندرويد</string>
+    <string name="greeting_text">مرحبًا %1$s!</string>
+    <string name="navigation_home">الرئيسية</string>
+    <string name="navigation_arena">الساحة</string>
+    <string name="navigation_calendar">التقويم</string>
+    <string name="navigation_settings">الإعدادات</string>
+    <string name="navigation_goals">الأهداف</string>
+    <string name="navigation_profile">الملف الشخصي</string>
+    <string name="navigation_add_task">أضف مهمة</string>
+    <string name="app_offline_banner_text">أنت غير متصل بالإنترنت. تعديل البيانات والمزامنة غير متاحة.</string>
+    <string name="app_offline_lock_explanation">هذا الإجراء يتطلب اتصالات بالإنترنت.</string>
+</resources>
+

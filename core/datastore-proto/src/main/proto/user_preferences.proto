@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+option java_package = "com.awan.app.core.datastore.proto";
+// Generates a separate .java file per top-level message/enum — avoids a single
+// monolithic outer class and improves incremental compilation.
+option java_multiple_files = true;
+
+/**
+ * UserPreferences — persisted application-level settings for a single Awan user.
+ *
+ * Schema evolution rules (protobuf wire-compatibility):
+ *  - NEVER renumber existing field tags (1–17 are frozen).
+ *  - NEVER change the type of an existing field.
+ *  - Add new optional fields with new tag numbers (18, 19, …).
+ *  - Use sensible proto3 defaults: bool → false, string → "".
+ *
+ * The Kotlin lite DSL allows immutable updates:
+ *   dataStore.updateData { current -> current.copy { darkThemeEnabled = true } }
+ */
+enum DarkThemeConfigProto {
+  DARK_THEME_CONFIG_FOLLOW_SYSTEM = 0;
+  DARK_THEME_CONFIG_LIGHT = 1;
+  DARK_THEME_CONFIG_DARK = 2;
+}
+
+message UserPreferences {
+  // Theme & display
+  bool dark_theme_enabled = 1;
+  bool use_dynamic_color   = 2;
+
+  // Onboarding
+  bool onboarding_completed = 3;
+
+  // Scheduling
+  // The name of the user's default scheduling zone (Study | Work | Play | Personal).
+  // Empty string means "not set" — the UI will prompt the user to choose.
+  string default_zone = 4;
+
+  // Localisation
+  // BCP-47 language tag, e.g. "en-US", "ar-EG". Empty = system default.
+  string locale = 5;
+
+  // Region used by the AI Architect for context-aware scheduling.
+  // ISO 3166-1 alpha-2, e.g. "EG", "US". Empty = not configured.
+  string default_region = 6;
+
+  // Tracks whether the RECORD_AUDIO permission was requested on this device.
+  bool mic_permission_requested = 7;
+
+  // Local notifications.
+  //
+  // Stored NEGATED on purpose: proto3 bools default to false, and every one of these must default
+  // to ON for a user who has never opened the settings screen. The flip happens once, in
+  // AwanPreferencesDataSource, so nothing above the datastore reads a double negative.
+  bool session_reminders_disabled        = 8;
+  bool session_live_activity_disabled    = 9;
+  bool session_end_notification_disabled = 10;
+  bool reward_notifications_disabled     = 11;
+
+  // 0 means "never set" — the mapper substitutes the default rather than firing a reminder at the
+  // exact moment the session starts.
+  int32 session_reminder_lead_minutes = 12;
+  int32 session_snooze_minutes        = 13;
+
+  // Engagement notifications, same negated convention.
+  //  - follow up: a check-in when a session ended and was never answered
+  //  - streak:    a warning before the day ends with nothing completed
+  //  - brief:     the morning summary, and the nudge to plan an empty day
+  bool session_follow_up_disabled = 14;
+  bool streak_reminder_disabled   = 15;
+  bool daily_brief_disabled       = 16;
+
+  // 0 means "never set", as above.
+  int32 session_follow_up_minutes = 17;
+
+  optional DarkThemeConfigProto dark_theme_config = 18;
+}

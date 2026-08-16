@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Awan</string>
+    <string name="ds_no_sessions_in_zone">No scheduled sessions in this zone</string>
+    <string name="ds_done_count">%1$d/%2$d done</string>
+    <string name="ds_tasks_count">%1$d/%2$d sessions</string>
+    <string name="ds_hrs_count"> / %1$s hrs</string>
+    <string name="ds_schedule_conflict_title">SCHEDULE CONFLICT DETECTED</string>
+    <string name="ds_later">LATER</string>
+    <string name="ds_fix_it">FIX IT</string>
+    <string name="ds_todays_plan">TODAY\'S PLAN</string>
+    <string name="ds_add_task">+ TASK</string>
+    <string name="ds_add_goal">+ GOAL</string>
+    <string name="ds_pts">+%1$d pts</string>
+    <string name="ds_friend">Friend</string>
+    <string name="ds_back">Back</string>
+
+    <!-- Streak celebration -->
+    <string name="ds_streak_days">day streak</string>
+    <string name="ds_streak_headline">You\'re on fire!</string>
+    <string name="ds_streak_best_headline">New personal best!</string>
+    <string name="ds_streak_best_subtitle">%1$d days — your longest streak yet.</string>
+    <string name="ds_streak_flame">Streak flame</string>
+    <string-array name="ds_streak_motivations">
+        <item>Day one is the hardest. You just did it.</item>
+        <item>Two in a row. That\'s a habit forming.</item>
+        <item>You keep showing up — and it shows.</item>
+        <item>Steady wins. Keep the flame going.</item>
+        <item>This is what consistency looks like.</item>
+        <item>Unstoppable. Same time tomorrow?</item>
+    </string-array>
+
+    <!-- Daily wheel -->
+    <string name="ds_wheel_badge">Daily gift — free spin available</string>
+    <string name="ds_wheel_title">Daily Gift</string>
+    <string name="ds_wheel_subtitle_available">Spin the wheel and reveal your reward</string>
+    <string name="ds_wheel_subtitle_claimed">Come back tomorrow for another gift</string>
+    <string name="ds_wheel_claimed_title">Today\'s gift is claimed</string>
+    <string name="ds_wheel_todays_reward">Today\'s reward</string>
+    <string name="ds_wheel_see_you_tomorrow">See you tomorrow!</string>
+    <string name="ds_wheel_you_won_headline">You won!</string>
+    <string name="ds_wheel_awesome">Awesome!</string>
+    <string name="ds_wheel_tap_to_spin">Tap the wheel to spin</string>
+    <string name="ds_wheel_spinning">Spinning…</string>
+    <string name="ds_wheel_won_coins">You won %1$d points!</string>
+    <string name="ds_wheel_won_item">You won %1$s!</string>
+    <string name="ds_wheel_claimed">You\'ve already spun today. Come back tomorrow!</string>
+    <string name="ds_wheel_collect">Collect</string>
+    <string name="ds_wheel_close">Close</string>
+    <string name="ds_wheel_item_wedge">Gift</string>
+
+    <!-- Speech to text -->
+    <string name="ds_mic_idle">Dictate text</string>
+    <string name="ds_mic_listening">Listening… tap to stop</string>
+    <string name="ds_speech_permission_denied">Microphone permission is required for speech recognition.</string>
+    <string name="ds_speech_unavailable">Speech recognition is unavailable on this device.</string>
+    <string name="ds_speech_no_match">Didn\'t catch that. Try speaking again.</string>
+    <string name="ds_speech_error">Speech recognition error. Please try again.</string>
+    <string name="ds_speech_language_unsupported">Speech recognition doesn\'t support your app language on this device.</string>
+    <string name="ds_speech_rationale_title">Use your voice?</string>
+    <string name="ds_speech_rationale_body">Awan needs the microphone so you can dictate instead of typing. Nothing is recorded or stored.</string>
+    <string name="ds_speech_rationale_confirm">Continue</string>
+    <string name="ds_speech_rationale_cancel">Not now</string>
+    <string name="ds_speech_settings_dialog_title">Microphone Permission Required</string>
+    <string name="ds_speech_settings_dialog_body">Microphone access is turned off. Please enable it in device settings to use speech recognition.</string>
+    <string name="ds_speech_settings_dialog_confirm">Open Settings</string>
+    <string name="ds_speech_settings_dialog_cancel">Cancel</string>
+    <!-- Points shortcuts -->
+    <string name="ds_points_thousand">%1$sk</string>
+    <string name="ds_points_million">%1$sM</string>
+    <string name="ds_points_billion">%1$sB</string>
+
+    <!-- Navigation & Combos -->
+    <string name="ds_next_day">Next day</string>
+    <string name="ds_previous_day">Previous day</string>
+    <string name="ds_combo_bonus">%1$d× COMBO BONUS!</string>
+
+    <!-- Achievements -->
+    <string name="goal_achieved_title">Goal Achieved!</string>
+    <string name="goal_achieved_encouragement">You\'re making amazing progress!</string>
+</resources>

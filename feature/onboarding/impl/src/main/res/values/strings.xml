@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_continue">CONTINUE</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_got_it">Got it</string>
+
+    <string name="onboarding_greeting_morning">Good morning</string>
+    <string name="onboarding_greeting_afternoon">Good afternoon</string>
+    <string name="onboarding_greeting_evening">Good evening</string>
+    <string name="onboarding_name_greeting">%1$s, %2$s</string>
+
+    <plurals name="onboarding_duration_minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
+    <plurals name="onboarding_duration_about_hours">
+        <item quantity="one">About %1$d hour</item>
+        <item quantity="other">About %1$d hours</item>
+    </plurals>
+    <string name="onboarding_duration_about_half_hours">About %1$d½ hours</string>
+
+    <string name="onboarding_time_picker_set">Set</string>
+    <string name="onboarding_time_picker_cancel">Cancel</string>
+    <string name="onboarding_time_range">%1$s – %2$s</string>
+
+    <string name="onboarding_welcome_lets_go">LET\'S GO</string>
+    <string name="onboarding_welcome_skip_setup">Skip setup →</string>
+    <string name="onboarding_welcome_greeting">Hi, I\'m Awan.\nThe sky is yours today.</string>
+    <string name="onboarding_welcome_subtitle">Tell me a little about your day and I\'ll build a schedule that quietly heals itself when life happens.</string>
+
+    <string name="onboarding_skip_confirm_title">Sure you want to skip?</string>
+    <string name="onboarding_skip_confirm_body">If we skip, I\'ll have to guess your schedule using standard defaults (7 AM – 11 PM). It only takes a minute to set up your real day!</string>
+    <string name="onboarding_skip_confirm_cancel">Continue setup</string>
+    <string name="onboarding_skip_confirm_action">Skip anyway</string>
+
+    <string name="onboarding_name_title">What should I call you?</string>
+    <string name="onboarding_name_subtitle">So I can greet you properly each morning.</string>
+    <string name="onboarding_name_first_placeholder">First name</string>
+    <string name="onboarding_name_last_placeholder">Last name (optional)</string>
+    <string name="onboarding_name_default_friend">Friend</string>
+
+    <string name="onboarding_day_bounds_step_title">When does your day begin and end?</string>
+    <string name="onboarding_i_usually_wake_up_at">I usually wake up at</string>
+    <string name="onboarding_i_usually_sleep_at">I usually sleep at</string>
+    <string name="onboarding_bounds_same_time_error">Wake and sleep times can\'t be the same.</string>
+    <string name="onboarding_bounds_short_day_warning">That\'s a short waking day — sure?</string>
+
+    <string name="onboarding_clock_format">%1$d:%2$02d %3$s</string>
+    <string name="onboarding_clock_am">AM</string>
+    <string name="onboarding_clock_pm">PM</string>
+
+    <string name="onboarding_tick_minutes">%1$dm</string>
+    <string name="onboarding_tick_hours">%1$dh</string>
+
+    <string name="onboarding_day_preview_label">YOUR DAY</string>
+    <string name="onboarding_day_preview_open_sky">%1$d h of open sky</string>
+    <string name="onboarding_day_preview_starred_task">★ %1$s</string>
+
+    <string name="onboarding_zones_use_this">USE THIS</string>
+    <string name="onboarding_zones_reset">Reset to my suggestion</string>
+    <string name="onboarding_zones_title">Here\'s a day I sketched for you</string>
+    <string name="onboarding_zones_subtitle">The first &amp; last 30 minutes stay free for your wake-up and wind-down routine.</string>
+    <string name="onboarding_zone_starts">Starts</string>
+    <string name="onboarding_zone_ends">Ends</string>
+    <string name="onboarding_zone_overlap">Overlaps another zone</string>
+    <string name="onboarding_zone_drag_handle">Reorder %1$s</string>
+    <string name="onboarding_zone_move_up">Move up</string>
+    <string name="onboarding_zone_move_down">Move down</string>
+    <string name="onboarding_zone_edit_hours">Set hours</string>
+    <string name="onboarding_zone_sheet_title">%1$s hours</string>
+    <string name="onboarding_zone_category">Category</string>
+    <string name="onboarding_zone_category_empty">No categories yet</string>
+
+    <string name="onboarding_task_length_title">How long do you like to focus in one go?</string>
+    <string name="onboarding_task_length_caption">preferred focus block</string>
+    <string name="onboarding_task_length_hint_short">Short and light — more blocks, and much easier to start when you are putting something off.</string>
+    <string name="onboarding_task_length_hint_balanced">A balanced block. Deep enough to matter, short enough to still fit around the rest of your day.</string>
+    <string name="onboarding_task_length_hint_deep">Long and deep. Awan splits anything this size into linked sessions with breaks between them.</string>
+
+    <string name="onboarding_first_task_title">Let\'s add your first thing for today</string>
+    <string name="onboarding_first_task_placeholder">e.g. Read Clean Code, Ch. 1</string>
+    <string name="onboarding_first_task_examples">Try \"Go for a run\", \"Call Mum\", or \"Inbox to zero\".</string>
+    <string name="onboarding_first_task_scheduling">SCHEDULING…</string>
+    <string name="onboarding_first_task_add">ADD IT</string>
+    <string name="onboarding_first_task_skip">Skip for now →</string>
+    <string name="onboarding_first_task_lands_label">…AND IT LANDS IN YOUR DAY</string>
+    <string name="onboarding_first_task_duration_zone">%1$d min · %2$s</string>
+    <string name="onboarding_first_task_duration_only">%1$d min</string>
+    <string name="onboarding_first_task_new_badge">NEW</string>
+    <string name="onboarding_first_task_unscheduled">Added it — but there was no free slot in your day just yet. You can place it yourself later.</string>
+
+    <string name="onboarding_notifications_turn_on">TURN ON NUDGES</string>
+    <string name="onboarding_notifications_not_now">Not now</string>
+    <string name="onboarding_notifications_title">Want Awan to nudge you through the day?</string>
+    <string name="onboarding_notifications_bullet_sessions">A heads-up before a block, and a countdown while you\'re in it.</string>
+    <string name="onboarding_notifications_bullet_checkin">A friendly check-in if a session slips, or the day is still empty.</string>
+    <string name="onboarding_notifications_bullet_control">Every one of these has its own switch, in Profile → Notifications.</string>
+    <string name="onboarding_notifications_permission_note">The system will ask next — this is just so you know why.</string>
+    <string name="onboarding_notifications_denied">Notifications are off in system settings — tap \"Turn on nudges\" to open them.</string>
+
+    <!-- Mock notifications. Wording tracks the real ones in :core:notifications. -->
+    <string name="onboarding_notifications_preview_reminder_title">Design review</string>
+    <string name="onboarding_notifications_preview_reminder_body">Starts in 10 minutes · 9:30 – 10:30</string>
+    <string name="onboarding_notifications_preview_live_title">Design review</string>
+    <string name="onboarding_notifications_preview_live_body">27 minutes left</string>
+    <string name="onboarding_notifications_preview_checkin_title">How did Design review go?</string>
+    <string name="onboarding_notifications_preview_checkin_body">Mark it done and it counts.</string>
+</resources>

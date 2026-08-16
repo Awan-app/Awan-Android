@@ -1,47 +1,195 @@
 package com.awan.app
 
+import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import android.text.TextUtils
+import android.view.View
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.awan.app.ui.theme.AwanTheme
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.ComposeFoundationFlags
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.core.os.LocaleListCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import java.util.Locale
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.awan.app.MainActivityUiState.*
+import com.awan.app.core.data.sync.SyncWorker.Companion.enqueueImmediateSync
+import com.awan.app.core.data.sync.SyncWorker.Companion.schedulePeriodicSync
+import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.LocalRewardAnchors
+import com.awan.app.core.designsystem.RewardAnchors
+import com.awan.app.core.model.DarkThemeConfig
+import com.awan.app.core.notifications.NotificationIntents
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
+import com.awan.app.core.notifications.SessionNotificationScheduler
+import javax.inject.Inject
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import com.awan.feature.calendar.api.CalendarRoute
+import com.awan.feature.chat.api.ChatRoute
+import com.awan.feature.goals.api.GoalsRoute
+import com.awan.feature.home.api.HomeRoute
+import com.awan.feature.marketplace.api.MarketplaceRoute
+import com.awan.feature.profile.api.ProfileRoute
+import com.awan.feature.splash.api.SplashRoute
+import dagger.hilt.android.AndroidEntryPoint
 
-class MainActivity : ComponentActivity() {
+@AndroidEntryPoint
+class MainActivity : AppCompatActivity() {
+
+    private val viewModel: MainActivityViewModel by viewModels()
+
+    @Inject
+    lateinit var notificationScheduler: SessionNotificationScheduler
+
+    /**
+     * One-shot, not state. A tap is an event: held as state it stays true after it has been acted
+     * on, and anything re-reading it later acts on it again.
+     */
+    private val deepLinks = Channel<SessionDeepLink>(Channel.BUFFERED)
+    private val deepLinkEvents = deepLinks.receiveAsFlow()
+
+    /**
+     * The Activity is `singleTop`, so a second notification tap while it is already showing arrives
+     * here rather than creating another instance.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        readDeepLink(intent)
+    }
+
+    private fun readDeepLink(intent: Intent?) {
+        val sessionId = intent?.getStringExtra(NotificationIntents.EXTRA_SESSION_ID) ?: return
+        val date = intent.getStringExtra(NotificationIntents.EXTRA_SESSION_DATE)
+
+        // Consumed off the Intent so a rotation does not reopen the sheet the user just dismissed.
+        intent.removeExtra(NotificationIntents.EXTRA_SESSION_ID)
+        intent.removeExtra(NotificationIntents.EXTRA_SESSION_DATE)
+
+        deepLinks.trySend(SessionDeepLink(sessionId = sessionId, date = date))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        splashScreen.setKeepOnScreenCondition {
+            viewModel.uiState.value is Loading
+        }
+        readDeepLink(intent)
+
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.isOnline.collectLatest { online ->
+                    if (online) {
+                        schedulePeriodicSync(this@MainActivity)
+                        enqueueImmediateSync(this@MainActivity)
+                        // Never assume the alarm fired: a force-stop, an OEM battery manager or a dropped
+                        // exact alarm all leave the chain broken until something rebuilds it.
+                        notificationScheduler.rescheduleAll()
+                    }
+                }
+            }
+        }
+
+        // Deliberately off. foundation 1.11.4's inherited-style cache (StyleOuterNode.ancestorNodes)
+        // is appended to on every resolve and never cleared, so text that moves or is reused merges
+        // in styles from nodes that are no longer its ancestors. AwanText passes a concrete
+        // TextStyle to BasicText instead, so nothing here needs the inherited path.
+        ComposeFoundationFlags.isInheritedTextStyleEnabled = false
         enableEdgeToEdge()
+
         setContent {
-            AwanTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
+
+            val currentLanguage = when (val state = uiState) {
+                Loading -> ""
+                is Success -> state.language
+            }
+
+            LaunchedEffect(currentLanguage) {
+                if (currentLanguage.isNotBlank()) {
+                    val appLocale: LocaleListCompat =
+                        LocaleListCompat.forLanguageTags(currentLanguage)
+                    AppCompatDelegate.setApplicationLocales(appLocale)
+                }
+            }
+
+            val locale = remember(currentLanguage) {
+                if (currentLanguage.isNotBlank()) Locale.forLanguageTag(currentLanguage) else Locale.getDefault()
+            }
+            val configuration = LocalConfiguration.current
+            val updatedConfiguration = remember(locale, configuration) {
+                Configuration(configuration).apply {
+                    setLocale(locale)
+                    setLayoutDirection(locale)
+                }
+            }
+            val layoutDirection = remember(locale) {
+                if (TextUtils.getLayoutDirectionFromLocale(locale) == View.LAYOUT_DIRECTION_RTL) {
+                    LayoutDirection.Rtl
+                } else {
+                    LayoutDirection.Ltr
+                }
+            }
+
+            // App-scoped so a reward earned on one screen can still fly to a badge on another.
+            val rewardAnchors = remember { RewardAnchors() }
+
+            CompositionLocalProvider(
+                LocalConfiguration provides updatedConfiguration,
+                LocalLayoutDirection provides layoutDirection,
+                LocalRewardAnchors provides rewardAnchors,
+            ) {
+                val appState = rememberAwanAppState(
+                    startKey = SplashRoute,
+                    topLevelKeys = listOf(
+                        HomeRoute(),
+                        GoalsRoute,
+                        MarketplaceRoute,
+                        ProfileRoute
+                    )
+                )
+
+                val darkThemeConfig = when (val state = uiState) {
+                    Loading -> DarkThemeConfig.FOLLOW_SYSTEM
+                    is Success -> state.darkThemeConfig
+                }
+
+                val systemDark = isSystemInDarkTheme()
+                val isDark = when (darkThemeConfig) {
+                    DarkThemeConfig.FOLLOW_SYSTEM -> systemDark
+                    DarkThemeConfig.DARK -> true
+                    DarkThemeConfig.LIGHT -> false
+                }
+
+                AwanTheme(dark = isDark) {
+                    AwanApp(
+                        appState = appState,
+                        isOnline = isOnline,
+                        sessionExpiredEvents = viewModel.sessionExpired,
+                        rewardEvents = viewModel.rewardEvents,
+                        deepLinkEvents = deepLinkEvents,
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    AwanTheme {
-        Greeting("Android")
     }
 }

@@ -1,0 +1,52 @@
+package com.awan.app.core.network.api
+
+import com.awan.app.core.network.dto.profile.ProfilePictureResponse
+import com.awan.app.core.network.dto.profile.ProfileResponse
+import com.awan.app.core.network.dto.profile.UpdateBirthDateRequest
+import com.awan.app.core.network.dto.profile.UpdateNameRequest
+import com.awan.app.core.network.dto.profile.UpdateProfilePartialRequest
+import com.awan.app.core.network.dto.profile.UpdateSchedulingTypeRequest
+import com.awan.app.core.network.dto.profile.UpdateSessionSettingsRequest
+import com.awan.app.core.network.dto.profile.UpdateSleepScheduleRequest
+import com.awan.app.core.network.dto.profile.UpdateTimezoneRequest
+import okhttp3.MultipartBody
+import retrofit2.http.Body
+import retrofit2.http.DELETE
+import retrofit2.http.GET
+import retrofit2.http.Multipart
+import retrofit2.http.PATCH
+import retrofit2.http.Part
+
+interface ProfileApiService {
+
+    @GET("v1/users/me")
+    suspend fun getProfileInfo(): ProfileResponse
+
+    @PATCH("v1/users/me/profile/name")
+    suspend fun updateProfileName(@Body request: UpdateNameRequest): ProfileResponse
+
+    @PATCH("v1/users/me/profile/birth-date")
+    suspend fun updateProfileBirthDate(@Body request: UpdateBirthDateRequest): ProfileResponse
+
+    @Multipart
+    @PATCH("v1/users/me/profile/picture")
+    suspend fun updateProfilePicture(@Part image: MultipartBody.Part): ProfilePictureResponse
+
+    @DELETE("v1/users/me/profile/picture")
+    suspend fun deleteProfilePicture()
+
+    @PATCH("v1/users/me")
+    suspend fun updateProfilePartial(@Body request: UpdateProfilePartialRequest): ProfileResponse
+
+    @PATCH("v1/users/me/preferences/timezone")
+    suspend fun updateTimezone(@Body request: UpdateTimezoneRequest): ProfileResponse
+
+    @PATCH("v1/users/me/preferences/session")
+    suspend fun updateSessionSettings(@Body request: UpdateSessionSettingsRequest): ProfileResponse
+
+    @PATCH("v1/users/me/preferences/sleep-schedule")
+    suspend fun updateSleepSchedule(@Body request: UpdateSleepScheduleRequest): ProfileResponse
+
+    @PATCH("v1/users/me/preferences/scheduling-type")
+    suspend fun updateSchedulingType(@Body request: UpdateSchedulingTypeRequest): ProfileResponse
+}

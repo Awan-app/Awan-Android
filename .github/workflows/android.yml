@@ -1,0 +1,104 @@
+name: Android Pull Request Check
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: 21
+
+jobs:
+  android-build:
+    name: Android Build & Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant Gradlew Permission
+        run: chmod +x gradlew
+
+      - name: Create google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+
+      - name: Run Unit Tests
+        id: test
+        continue-on-error: true
+        run: ./gradlew test
+
+      - name: Run Lint
+        id: lint
+        continue-on-error: true
+        run: ./gradlew lint
+
+      - name: Assemble Debug APK
+        id: build
+        continue-on-error: true
+        run: ./gradlew assembleDebug
+
+      - name: Check Results
+        if: always()
+        run: |
+          echo "Unit Tests: ${{ steps.test.outcome }}"
+          echo "Lint:       ${{ steps.lint.outcome }}"
+          echo "Build:      ${{ steps.build.outcome }}"
+
+          if [ "${{ steps.test.outcome }}" != "success" ] || \
+             [ "${{ steps.lint.outcome }}" != "success" ] || \
+             [ "${{ steps.build.outcome }}" != "success" ]; then
+            echo "::error::One or more checks failed — see logs above."
+            exit 1
+          fi
+
+      - name: Upload Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-reports
+          path: |
+            **/build/reports/lint-results*.xml
+            **/build/reports/lint-results*.html
+          if-no-files-found: ignore
+
+      - name: Upload Android APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
