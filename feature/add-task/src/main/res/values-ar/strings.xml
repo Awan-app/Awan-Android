@@ -103,4 +103,12 @@
     <string name="add_task_goal_thinking_3">أقدّر مدة كل خطوة…</string>
     <string name="add_task_goal_thinking_4">أوشكت على الانتهاء…</string>
     <string name="add_task_goal_plan_ready">خطتك جاهزة!</string>
+
+    <string name="add_task_camera_permission_rationale_title">إذن الكاميرا مطلوب</string>
+    <string name="add_task_camera_permission_rationale_message">يلزم إذن الوصول إلى الكاميرا لالتقاط صورة لمهمتك.</string>
+    <string name="add_task_camera_permission_settings_title">الوصول إلى الكاميرا معطل</string>
+    <string name="add_task_camera_permission_settings_message">تم رفض إذن الكاميرا. يرجى تفعيل إذن الكاميرا من إعدادات جهازك لالتقاط صورة.</string>
+    <string name="add_task_grant_permission">منح الإذن</string>
+    <string name="add_task_open_settings">فتح الإعدادات</string>
+    <string name="add_task_cancel">إلغاء</string>
 </resources>
