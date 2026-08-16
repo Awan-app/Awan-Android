@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
@@ -162,6 +163,7 @@ private fun NavTabItem(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val isFocused by interactionSource.collectIsFocusedAsState()
+    val hapticClick = rememberHapticClick(onClick)
 
     val scale by animateFloatAsState(
         targetValue = when {
@@ -194,7 +196,7 @@ private fun NavTabItem(
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
-                onClick = onClick
+                onClick = hapticClick
             )
             .focusable(interactionSource = interactionSource),
         contentAlignment = Alignment.Center
@@ -242,6 +244,7 @@ private fun SquareRounded3dPrimaryButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val isFocused by interactionSource.collectIsFocusedAsState()
+    val hapticClick = rememberHapticClick(onClick, HapticFeedbackType.Confirm)
 
     val buttonShape = RoundedCornerShape(18.dp)
     val rimDepth = 4.dp
@@ -266,7 +269,7 @@ private fun SquareRounded3dPrimaryButton(
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
-                onClick = onClick
+                onClick = hapticClick
             )
             .focusable(interactionSource = interactionSource),
         contentAlignment = Alignment.TopCenter

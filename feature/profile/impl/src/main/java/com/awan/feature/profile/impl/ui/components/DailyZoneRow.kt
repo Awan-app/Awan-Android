@@ -37,6 +37,7 @@ fun DailyZoneRow(
     val zoneColor = zone.color.toColor()
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
+    val hapticClick = rememberHapticClick(onClick)
     val reduced = reducedMotion()
     val pressScale by animateFloatAsState(
         targetValue = if (pressed && !reduced) PRESS_SCALE else 1f,
@@ -60,7 +61,7 @@ fun DailyZoneRow(
             .clickable(
                 interactionSource = interactionSource,
                 indication = ripple(),
-                onClick = onClick,
+                onClick = hapticClick,
             )
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),

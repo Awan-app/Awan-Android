@@ -10,6 +10,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.rememberHapticClick
 import com.awan.feature.goals.impl.R
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Search
@@ -24,6 +25,7 @@ internal fun GoalsSearchBar(
     onFilterClick: (() -> Unit)? = null,
 ) {
     val colors = AwanTheme.colors
+    val hapticFilterClick = rememberHapticClick(onClick = { onFilterClick?.invoke() })
     AwanTextField(
         value = query,
         onValueChange = onQueryChange,
@@ -44,7 +46,7 @@ internal fun GoalsSearchBar(
                     tint = if (isFilterActive) colors.sky else colors.textSecondary,
                     modifier = Modifier
                         .size(20.dp)
-                        .clickable(onClick = it)
+                        .clickable(onClick = hapticFilterClick)
                 )
             }
         },

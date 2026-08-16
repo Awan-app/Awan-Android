@@ -1,6 +1,11 @@
 package com.awan.app.core.designsystem
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 
 /**
  * The feel of each button variant. A primary commit lands solidly, a secondary is a light tap, a
@@ -17,4 +22,19 @@ fun awanButtonHaptic(variant: AwanButtonVariant): HapticFeedbackType = when (var
     AwanButtonVariant.Quiet -> HapticFeedbackType.SegmentTick
     AwanButtonVariant.Google -> HapticFeedbackType.Confirm
     AwanButtonVariant.Chip -> HapticFeedbackType.SegmentTick
+}
+
+@Composable
+fun rememberHapticClick(
+    onClick: () -> Unit,
+    haptic: HapticFeedbackType? = HapticFeedbackType.ContextClick,
+): () -> Unit {
+    val hapticFeedback = LocalHapticFeedback.current
+    val currentOnClick by rememberUpdatedState(onClick)
+    return remember(hapticFeedback, haptic) {
+        {
+            haptic?.let(hapticFeedback::performHapticFeedback)
+            currentOnClick()
+        }
+    }
 }

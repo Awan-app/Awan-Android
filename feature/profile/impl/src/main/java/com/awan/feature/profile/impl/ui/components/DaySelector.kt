@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.rememberHapticClick
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
 
@@ -48,6 +49,7 @@ fun DaySelector(
 
             val interactionSource = remember { MutableInteractionSource() }
             val isPressed by interactionSource.collectIsPressedAsState()
+            val hapticClick = rememberHapticClick(onClick = { onDaySelected(day) })
 
             val rimDepth = 4.dp
             val rimColor = AwanTheme.colors.line
@@ -63,7 +65,7 @@ fun DaySelector(
                         interactionSource = interactionSource,
                         indication = null,
                         enabled = !isAssigned,
-                        onClick = { onDaySelected(day) }
+                        onClick = hapticClick
                     )
             ) {
                 Box(modifier = Modifier.size(38.dp, 44.dp)) {

@@ -74,6 +74,7 @@ fun ZoneColorPicker(
                 val isSelected = selectedColor.equals(hex, ignoreCase = true)
                 val interactionSource = remember { MutableInteractionSource() }
                 val isPressed by interactionSource.collectIsPressedAsState()
+                val hapticClick = rememberHapticClick(onClick = { onColorSelected(hex) })
                 val colorName = stringResource(nameRes)
 
                 val rimDepth = 3.dp
@@ -87,7 +88,7 @@ fun ZoneColorPicker(
                             interactionSource = interactionSource,
                             indication = null,
                             role = Role.RadioButton,
-                            onClick = { onColorSelected(hex) }
+                            onClick = hapticClick
                         )
                         .semantics {
                             contentDescription = colorName

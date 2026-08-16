@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -37,6 +38,7 @@ fun AwanCard(
     selected: Boolean = false,
     selectedColor: Color = AwanTheme.colors.sky,
     onClick: (() -> Unit)? = null,
+    haptic: HapticFeedbackType? = HapticFeedbackType.ContextClick,
     background: Color = AwanTheme.colors.surface,
     customRimColor: Color? = null,
     contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 13.dp),
@@ -51,11 +53,12 @@ fun AwanCard(
     val rimColor by animateColorAsState(targetRimColor, label = "cardRim")
     val sizeSpec = if (reducedMotion()) snap() else AwanTheme.motion.settle.spec<IntSize>()
 
+    val hapticClick = rememberHapticClick(onClick = { onClick?.invoke() }, haptic = haptic)
     val clickModifier = if (onClick != null) {
         Modifier.clickable(
             interactionSource = remember { MutableInteractionSource() },
             indication = null,
-            onClick = onClick,
+            onClick = hapticClick,
         )
     } else {
         Modifier

@@ -35,6 +35,7 @@ import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.AwanUserAvatar
+import com.awan.app.core.designsystem.rememberHapticClick
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.feature.profile.impl.R as ProfileR
 import com.awan.feature.profile.impl.helpers.ProfileHelper
@@ -47,6 +48,8 @@ fun ProfileHeaderCard(
     onEditClick: () -> Unit,
     onPictureClick: () -> Unit = {},
 ) {
+    val hapticPictureClick = rememberHapticClick(onPictureClick)
+    val hapticEditClick = rememberHapticClick(onEditClick)
     AwanCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(20.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -59,7 +62,7 @@ fun ProfileHeaderCard(
                         enabled = profile.profilePictureUrl != null,
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = onPictureClick,
+                        onClick = hapticPictureClick,
                     ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -101,7 +104,7 @@ fun ProfileHeaderCard(
                 Spacer(modifier = Modifier.height(4.dp))
             }
             IconButton(
-                onClick = onEditClick,
+                onClick = hapticEditClick,
                 modifier = Modifier.clip(CircleShape).background(AwanTheme.colors.sky.copy(alpha = 0.1f)),
             ) {
                 Icon(

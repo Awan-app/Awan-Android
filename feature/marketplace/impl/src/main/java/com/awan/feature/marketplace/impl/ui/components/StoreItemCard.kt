@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.awan.app.core.designsystem.AwanRemoteImage
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.rememberHapticClick
 import com.awan.app.core.model.StoreItem
 import com.awan.feature.marketplace.impl.R
 
@@ -33,13 +34,14 @@ fun StoreItemCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val hapticClick = rememberHapticClick(onClick)
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(AwanTheme.colors.surface)
             .border(1.dp, AwanTheme.colors.line, RoundedCornerShape(24.dp))
-            .clickable(onClick = onClick)
+            .clickable(onClick = hapticClick)
             .padding(12.dp)
     ) {
         // Slot Badge at top left

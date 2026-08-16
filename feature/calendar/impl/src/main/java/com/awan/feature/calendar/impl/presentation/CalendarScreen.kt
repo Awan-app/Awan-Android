@@ -89,6 +89,7 @@ import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.SoapBubbleShaderLayer
 import com.awan.app.core.designsystem.SoapBubbleStyle
 import com.awan.app.core.designsystem.awanButtonHaptic
+import com.awan.app.core.designsystem.rememberHapticClick
 import com.awan.feature.calendar.impl.R
 import com.composables.icons.lucide.Info
 import kotlinx.coroutines.delay
@@ -650,6 +651,7 @@ private fun DayCell(
 
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val hapticClick = rememberHapticClick(onClick = { onSelectDate(dayState.date) })
 
     val scaleTarget = if (!isReducedMotion && isPressed) 0.92f else 1.0f
     val scale by animateFloatAsState(
@@ -702,7 +704,7 @@ private fun DayCell(
                 interactionSource = interactionSource,
                 indication = null,
                 role = Role.Button,
-                onClick = { onSelectDate(dayState.date) }
+                onClick = hapticClick
             )
             .testTag("calendar_day_${dayState.date}")
             .padding(vertical = 2.dp),
