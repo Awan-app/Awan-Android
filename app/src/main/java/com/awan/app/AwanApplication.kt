@@ -42,24 +42,6 @@ class AwanApplication : Application(), Configuration.Provider, SingletonImageLoa
             .components {
                 add(OkHttpNetworkFetcherFactory(callFactory = { okHttpClient }))
             }
-            .listener(
-                onStart = { request ->
-                    Log.d("AwanRemoteImage", "ImageLoader: START fetching image from ${request.data}")
-                },
-                onSuccess = { request, result ->
-                    Log.d(
-                        "AwanRemoteImage",
-                        "ImageLoader: SUCCESS loaded image from ${request.data} (source=${result.dataSource})"
-                    )
-                },
-                onError = { request, result ->
-                    Log.e(
-                        "AwanRemoteImage",
-                        "ImageLoader: ERROR loading image from ${request.data}: ${result.throwable.message}",
-                        result.throwable
-                    )
-                }
-            )
             .build()
     }
 }
