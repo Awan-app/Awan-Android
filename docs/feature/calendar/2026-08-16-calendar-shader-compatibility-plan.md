@@ -23,7 +23,11 @@ Fix an issue where the animated "threads" shader inside `DeadlineAirflowBanner` 
 ## Solution
 
 1. **ShaderBrush Rendering:** Transitioned `AirflowShaderTiramisu` to use `ShaderBrush(shader)` drawn directly on Compose `Canvas` via `drawRect(brush = brush)`, identical to the proven AGSL pattern in `:core:design-system:AwanSoapBubble.kt`.
-2. **State & Memory Optimization:** 
+2. **Thread Size & Intensity Harmonization:**
+   - Replaced broad normalized gaussian exponents with exact dp-derived stroke half-widths (1.0dp to 3.6dp) and individual thread alphas (0.22 to 0.38) matching `AirflowCanvasFallback`.
+   - Unified wave curve equations, base Y levels, and phase offsets between AGSL and Compose Canvas.
+   - Added subtle 0.07 background ambient gradient matching `bgGradientBrush`.
+3. **State & Memory Optimization:** 
    - Cached `ShaderBrush` with `remember(shader)`.
    - Used `mutableFloatStateOf` for `isReducedMotion` fallback to prevent primitive boxing.
    - Removed unused `RenderEffect`, `asComposeRenderEffect`, `Offset`, and `graphicsLayer` imports.
@@ -31,6 +35,7 @@ Fix an issue where the animated "threads" shader inside `DeadlineAirflowBanner` 
 
 ## Implementation notes (what actually differed)
 
+- **Harmonization:** AGSL thread stroke sizes were aligned 1:1 with `AirflowCanvasFallback` (3.6dp, 1.0dp, 2.2dp, 1.2dp, 3.0dp, 2.0dp, 1.4dp with alphas 0.38, 0.30, 0.28, 0.26, 0.22, 0.25, 0.28) and the overpowering atmospheric glow and crest highlights were removed, ensuring visually identical elegance across Android 12 and Android 13+.
 - **Verification:**
   - `./gradlew :feature:calendar:impl:testDebugUnitTest :core:design-system:testDebugUnitTest` (All tests PASSED).
   - `./gradlew assembleDebug` (Build SUCCESSFUL across all modules).
