@@ -15,6 +15,9 @@ interface ZoneDao {
     @Upsert
     suspend fun upsertZones(zones: List<ZoneEntity>)
 
+    @Query("SELECT * FROM zones")
+    fun observeAllZones(): Flow<List<ZoneEntity>>
+
     @Query("SELECT * FROM zones WHERE id = :zoneId")
     fun observeZone(zoneId: String): Flow<ZoneEntity?>
 

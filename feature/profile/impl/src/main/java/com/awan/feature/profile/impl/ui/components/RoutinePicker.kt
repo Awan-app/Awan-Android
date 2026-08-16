@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.style.Style
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,12 +29,58 @@ fun RoutinePicker(
     templates: List<WeeklyTemplate>,
     selectedTemplateId: String?,
     onTemplateSelected: (String) -> Unit,
-    onCreateRoutineClick: () -> Unit
+    onCreateRoutineClick: (String?, String?) -> Unit,
+    selectedDate: String? = null,
+    currentOverrideName: String? = null,
 ) {
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(vertical = 10.dp)
+        contentPadding = PaddingValues(vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // 1. Current Override Chip (if active)
+        if (currentOverrideName != null) {
+            item {
+                val routineColor = AwanTheme.colors.sky
+                val colors = AwanTheme.colors
+                val chipBg = routineColor.copy(alpha = 0.12f).compositeOver(colors.surface)
+
+                AwanButton(
+                    onClick = { /* Already selected */ },
+                    variant = AwanButtonVariant.Chip,
+                    style = Style {
+                        background(chipBg)
+                        border(1.dp, routineColor)
+                    },
+                    modifier = Modifier.wrapContentWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(horizontal = 2.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.CalendarToday,
+                            contentDescription = null,
+                            tint = routineColor,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        AwanText(
+                            text = currentOverrideName.ifBlank { stringResource(R.string.profile_daily_zones_custom_schedule) },
+                            style = AwanTheme.styles.captionText.copy(
+                                color = routineColor,
+                                textStyle = AwanTheme.styles.captionText.textStyle.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                )
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        // 2. Weekly Templates Chips
         items(templates) { template ->
             val isSelected = template.id == selectedTemplateId
             val routineColor = template.zones.firstOrNull()?.color?.toColor() ?: AwanTheme.colors.sky
@@ -76,7 +123,7 @@ fun RoutinePicker(
 
         item {
             AwanButton(
-                onClick = onCreateRoutineClick,
+                onClick = { onCreateRoutineClick(null, selectedDate) },
                 variant = AwanButtonVariant.Chip,
                 modifier = Modifier.wrapContentWidth()
             ) {

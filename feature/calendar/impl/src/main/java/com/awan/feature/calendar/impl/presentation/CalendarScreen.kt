@@ -663,6 +663,7 @@ private fun DayCell(
 
     val streakDayString = stringResource(R.string.calendar_streak_day)
     val hasDeadlineString = stringResource(R.string.calendar_has_deadline)
+    val hasRoutineString = stringResource(R.string.calendar_has_routine)
     val dateDescription = remember(dayState, streakDayString, hasDeadlineString) {
         buildString {
             append(dayState.date.dayOfMonth)
@@ -673,6 +674,10 @@ private fun DayCell(
             if (dayState.hasDeadline) {
                 append(", ")
                 append(hasDeadlineString)
+            }
+            if (dayState.hasRoutine) {
+                append(", ")
+                append(hasRoutineString)
             }
         }
     }
@@ -878,6 +883,28 @@ private fun DayCell(
                         dateDescription = dateDescription,
                     )
                 }
+            }
+        }
+        Row(
+            modifier = Modifier.height(7.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (dayState.hasDeadline) {
+                Box(
+                    modifier = Modifier
+                        .size(5.dp)
+                        .clip(CircleShape)
+                        .background(AwanTheme.colors.zoneCoral),
+                )
+            }
+            if (dayState.hasRoutine) {
+                Box(
+                    modifier = Modifier
+                        .size(5.dp)
+                        .clip(CircleShape)
+                        .background(AwanTheme.colors.sky),
+                )
             }
         }
 

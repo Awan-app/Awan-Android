@@ -183,6 +183,9 @@ private class FakeZoneDao : ZoneDao {
     override fun observeZonesForOverride(overrideId: String): Flow<List<ZoneEntity>> = flowOf(emptyList())
     override fun observeEffectiveZonesForDate(date: String, dayOfWeek: String): Flow<List<ZoneEntity>> =
         flowOf(emptyList())
+
+    override fun observeAllZones(): Flow<List<ZoneEntity>> = flowOf(emptyList())
+
     override suspend fun deleteZone(zoneId: String) {}
     override suspend fun deleteZonesForTemplate(templateId: String) {}
     override suspend fun deleteZonesForOverride(overrideId: String) {}

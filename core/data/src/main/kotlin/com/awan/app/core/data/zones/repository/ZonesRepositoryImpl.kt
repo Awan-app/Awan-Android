@@ -163,10 +163,12 @@ class ZonesRepositoryImpl @Inject constructor(
     override suspend fun createOverride(
         date: String,
         zones: List<DailyZone>,
+        name: String?,
     ): Result<TemplateOverride> = withContext(ioDispatcher) {
         checkOnline()?.let { return@withContext it }
         zonesRemoteDataSource.createOverride(
             CreateOverrideRequest(
+                name = name,
                 dateOfDay = date,
                 zones = zones.map { it.toDto() }
             )

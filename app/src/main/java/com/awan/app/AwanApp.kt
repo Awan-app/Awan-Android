@@ -90,20 +90,6 @@ import com.awan.feature.splash.impl.ui.SplashDestination
 import com.awan.feature.taskdetails.api.TaskDetailsRoute
 import com.awan.feature.taskdetails.impl.navigation.taskDetailsEntry
 
-/**
- * Decorates every sub-stack, not just the visible one.
- *
- * `NavDisplay`'s own default is a `SaveableStateHolder` and nothing else, which leaves
- * `LocalViewModelStoreOwner` pointing at the Activity: every screen's ViewModel then outlives its
- * entry, so popping a destination and navigating back to it hands over the previous visit's state
- * — old results, dialogs still open, `LaunchedEffect` loads skipped because the flag says they ran.
- * [rememberViewModelStoreNavEntryDecorator] scopes the store to the entry instead, and clears it
- * when the entry is popped.
- *
- * Each stack gets its own decorators and all of them are decorated on every recomposition, so
- * switching tabs — which swaps which stack is displayed, not what's in the others — leaves the
- * background tabs' ViewModels alive.
- */
 @Composable
 private fun NavigationState.rememberDecoratedEntries(
     entryProvider: (Route) -> NavEntry<Route>,
@@ -147,13 +133,6 @@ fun AwanApp(
 
     ObserveAsEvents(deepLinkEvents) { pendingDeepLink = it }
 
-    /**
-     * Held until Home has registered its opener, then acted on once and dropped.
-     *
-     * Deliberately not keyed on the current tab. It was, and since the link stayed set until Home
-     * cleared it, every tab change re-ran this and navigated straight back to Home — the tapped
-     * screen flashed and bounced, and no other screen could be reached at all.
-     */
     androidx.compose.runtime.LaunchedEffect(pendingDeepLink, onOpenHomeSession) {
         val link = pendingDeepLink ?: return@LaunchedEffect
         val openSession = onOpenHomeSession ?: return@LaunchedEffect
@@ -179,8 +158,6 @@ fun AwanApp(
         }
     }
 
-    // An expired token has to bounce the user out from wherever they are, so this stays at the
-    // shell rather than on any one screen.
     val sessionExpiredMessage = stringResource(CommonR.string.error_unauthorized)
     ObserveAsEvents(sessionExpiredEvents) {
         android.widget.Toast.makeText(
@@ -259,102 +236,101 @@ fun AwanApp(
                 }
             }
 
-        val entryProvider = entryProvider {
-            splashEntry(
-                onNavigateToNext = { destination ->
-                    when (destination) {
-                        SplashDestination.Auth -> navigator.replaceAll(LoginRoute)
-                        SplashDestination.Onboarding -> navigator.replaceAll(OnboardingRoute)
-                        SplashDestination.Home -> navigator.replaceAll(HomeRoute())
-                        is SplashDestination.ResumeGoalScheduling -> {
-                            navigator.replaceAll(HomeRoute())
-                            navigator.navigate(AiTaskProposalsRoute(goalId = destination.goalId))
+            val entryProvider = entryProvider {
+                splashEntry(
+                    onNavigateToNext = { destination ->
+                        when (destination) {
+                            SplashDestination.Auth -> navigator.replaceAll(LoginRoute)
+                            SplashDestination.Onboarding -> navigator.replaceAll(OnboardingRoute)
+                            SplashDestination.Home -> navigator.replaceAll(HomeRoute())
+                            is SplashDestination.ResumeGoalScheduling -> {
+                                navigator.replaceAll(HomeRoute())
+                                navigator.navigate(AiTaskProposalsRoute(goalId = destination.goalId))
+                            }
+                            SplashDestination.Loading -> { /* Keep showing splash */ }
                         }
-                        SplashDestination.Loading -> { /* Keep showing splash */ }
                     }
-                }
-            )
-            authEntry(
-                onNavigateToOtp = { email -> navigator.navigate(OtpRoute(email)) },
-                onNavigateToHome = { navigator.replaceAll(HomeRoute()) },
-                onNavigateToOnboarding = { navigator.replaceAll(OnboardingRoute) },
-                onPopBackStack = { navigator.goBack() }
-            )
-            onboardingEntry(
-                onComplete = { navigator.replaceAll(HomeRoute()) },
-                onExit = { navigator.replaceAll(LoginRoute) }
-            )
-            marketplaceEntry(
-                onNavigateToHome = { navigator.navigate(HomeRoute()) }
-            )
-            homeEntry(
-                onLogout = { navigator.replaceAll(LoginRoute) },
-                onNavigateToCalendar = { navigator.navigate(CalendarRoute()) },
-                onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
-                onNavigateToAddTask = { zoneId, date ->
-                    addTaskZoneId = zoneId
-                    addTaskDate = date?.toString()
-                    showAddTask = true
-                },
-                onDateChanged = { date ->
-                    currentHomeDate = date.toString()
-                },
-                onRegisterOpenSession = { callback -> onOpenHomeSession = callback },
-                onNavigateToTaskDetails = { taskId -> navigator.navigate(TaskDetailsRoute(taskId)) },
-            )
+                )
+                authEntry(
+                    onNavigateToOtp = { email -> navigator.navigate(OtpRoute(email)) },
+                    onNavigateToHome = { navigator.replaceAll(HomeRoute()) },
+                    onNavigateToOnboarding = { navigator.replaceAll(OnboardingRoute) },
+                    onPopBackStack = { navigator.goBack() }
+                )
+                onboardingEntry(
+                    onComplete = { navigator.replaceAll(HomeRoute()) },
+                    onExit = { navigator.replaceAll(LoginRoute) }
+                )
+                marketplaceEntry(
+                    onNavigateToHome = { navigator.navigate(HomeRoute()) }
+                )
+                homeEntry(
+                    onLogout = { navigator.replaceAll(LoginRoute) },
+                    onNavigateToCalendar = { navigator.navigate(CalendarRoute()) },
+                    onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
+                    onNavigateToAddTask = { zoneId, date ->
+                        addTaskZoneId = zoneId
+                        addTaskDate = date?.toString()
+                        showAddTask = true
+                    },
+                    onDateChanged = { date ->
+                        currentHomeDate = date.toString()
+                    },
+                    onRegisterOpenSession = { callback -> onOpenHomeSession = callback },
+                    onNavigateToTaskDetails = { taskId -> navigator.navigate(TaskDetailsRoute(taskId)) },
+                )
+                calendarEntry(
+                    onDateSelected = { date ->
+                        onSelectHomeDate?.invoke(date)
+                        navigator.goBack()
+                    },
+                    onBack = { navigator.goBack() },
+                )
+                chatEntry()
+                goalsEntry(
+                    onNavigateToGoalDetails = { id -> navigator.navigate(GoalDetailsRoute(id)) },
+                    onNavigateToInbox = { navigator.navigate(InboxRoute) },
+                    onBack = { navigator.goBack() },
+                )
+                aiTasksEntry(onBack = { navigator.goBack() })
+                inventoryEntry(onBack = { navigator.goBack() })
+                profileEntry(
+                    onNavigateToDailyZones = { navigator.navigate(DailyZonesRoute) },
+                    onNavigateToEditRoutine = { templateId, date ->
+                        navigator.navigate(EditRoutineRoute(templateId = templateId, date = date))
+                    },
+                    onLogout = { navigator.replaceAll(LoginRoute) },
+                    onBack = { navigator.goBack() },
+                    onNavigateToInventory = { navigator.navigate(InventoryRoute) },
+                    onNavigateToMcpSettings = { navigator.navigate(McpSettingsRoute) },
+                    onNavigateToMcpInfo = { navigator.navigate(McpInfoRoute) },
+                    onNavigateToNotificationSettings = { navigator.navigate(NotificationSettingsRoute) },
+                )
+                goalPreviewEntry(
+                    onBack = { navigator.goBack() },
+                    onNavigateToGoals = { navigator.goBack() },
+                    onNavigateToGoalSchedule = { goalId ->
+                        navigator.navigate(AiTaskProposalsRoute(goalId = goalId))
+                    },
+                )
+                taskDetailsEntry(
+                    onBack = { navigator.goBack() },
+                )
+            }
 
-            calendarEntry(
-                onDateSelected = { date ->
-                    onSelectHomeDate?.invoke(date)
-                    navigator.goBack()
-                },
+            BackHandler(
+                enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack
+            ) {
+                navigator.goBack()
+            }
+
+            NavDisplay(
+                entries = appState.navigationState.rememberDecoratedEntries(entryProvider),
                 onBack = { navigator.goBack() },
-            )
-            chatEntry()
-            goalsEntry(
-                onNavigateToGoalDetails = { id -> navigator.navigate(com.awan.feature.goals.api.GoalDetailsRoute(id)) },
-                onNavigateToInbox = { navigator.navigate(com.awan.feature.goals.api.InboxRoute) },
-                onBack = { navigator.goBack() },
-            )
-            aiTasksEntry(onBack = { navigator.goBack() })
-            inventoryEntry(onBack = { navigator.goBack() })
-            profileEntry(
-                onNavigateToDailyZones = { navigator.navigate(DailyZonesRoute) },
-                onNavigateToEditRoutine = { templateId -> navigator.navigate(EditRoutineRoute(templateId)) },
-                onLogout = { navigator.replaceAll(LoginRoute) },
-                onBack = { navigator.goBack()},
-                onNavigateToInventory = { navigator.navigate(InventoryRoute) },
-                onNavigateToMcpSettings = { navigator.navigate(McpSettingsRoute) },
-                onNavigateToMcpInfo = { navigator.navigate(McpInfoRoute) },
-                onNavigateToNotificationSettings = { navigator.navigate(NotificationSettingsRoute) },
-            )
-            goalPreviewEntry(
-                onBack = { navigator.goBack() },
-                onNavigateToGoals = { navigator.goBack() },
-                onNavigateToGoalSchedule = { goalId ->
-                    navigator.navigate(AiTaskProposalsRoute(goalId = goalId))
-                },
-            )
-            taskDetailsEntry(
-                onBack = { navigator.goBack() },
+                modifier = Modifier.weight(1f)
             )
         }
 
-        BackHandler(
-            enabled = appState.navigationState.canGoBackTopLevel && !appState.navigationState.canGoBackSubStack
-        ) {
-            navigator.goBack()
-        }
-
-        NavDisplay(
-            entries = appState.navigationState.rememberDecoratedEntries(entryProvider),
-            onBack = { navigator.goBack() },
-            modifier = Modifier.weight(1f)
-        )
-    }
-
-
-        val currentRoute = appState.navigationState.currentKey
         val currentTopLevelKey = appState.navigationState.currentTopLevelKey
         val isTopLevel = appState.topLevelDestinations.any { dest -> dest.route != null && dest.route::class == currentRoute::class }
 
@@ -399,8 +375,6 @@ fun AwanApp(
             )
         }
 
-        // Last child of the root Box: above every screen and the bottom bar, and in the same
-        // coordinate space as the anchors it animates between — which a Dialog would not be.
         RewardOverlayHost(rewardEvents = rewardEvents)
 
         com.awan.app.core.designsystem.AwanTopToastHost()

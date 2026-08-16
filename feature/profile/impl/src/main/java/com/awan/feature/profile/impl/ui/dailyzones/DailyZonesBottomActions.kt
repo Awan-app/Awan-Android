@@ -18,15 +18,17 @@ import com.awan.feature.profile.impl.R
 @Composable
 fun DailyZonesBottomActions(
     hasTemplate: Boolean,
+    hasOverride: Boolean = false,
     isSaving: Boolean,
     onAddZoneClick: () -> Unit,
-    onCreateRoutineClick: () -> Unit,
+    onCreateRoutineClick: (String?, String?) -> Unit,
+    selectedDate: String? = null,
 ) {
     Column(
         modifier = Modifier.padding(bottom = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        if (hasTemplate) {
+        if (hasTemplate || hasOverride) {
             AwanButton(
                 onClick = onAddZoneClick,
                 modifier = Modifier.fillMaxWidth(),
@@ -37,7 +39,7 @@ fun DailyZonesBottomActions(
             }
         } else {
             AwanButton(
-                onClick = onCreateRoutineClick,
+                onClick = { onCreateRoutineClick(null, selectedDate) },
                 modifier = Modifier.fillMaxWidth(),
                 icon = Icons.Default.Schedule
             ) {

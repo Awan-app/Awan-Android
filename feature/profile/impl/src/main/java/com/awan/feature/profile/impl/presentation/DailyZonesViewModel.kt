@@ -1,4 +1,3 @@
-// Claude
 package com.awan.feature.profile.impl.presentation
 
 import androidx.lifecycle.ViewModel
@@ -9,7 +8,9 @@ import com.awan.app.core.domain.category.usecase.CreateCategoryUseCase
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
+import com.awan.app.core.domain.zones.usecase.GetOverridesUseCase
 import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplatesUseCase
+import com.awan.app.core.domain.zones.usecase.UpdateOverrideZonesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
 import com.awan.feature.profile.impl.R
 import com.awan.feature.profile.impl.helpers.DailyZonesHelper
@@ -27,11 +28,18 @@ import javax.inject.Inject
 @HiltViewModel
 class DailyZonesViewModel @Inject constructor(
     private val getWeeklyTemplatesUseCase: GetWeeklyTemplatesUseCase,
+    private val getOverridesUseCase: GetOverridesUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val createCategoryUseCase: CreateCategoryUseCase,
-    private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase
+    private val updateTemplateZonesUseCase: UpdateTemplateZonesUseCase,
+    private val updateOverrideZonesUseCase: UpdateOverrideZonesUseCase
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(DailyZonesState(selectedDay = DailyZonesHelper.getCurrentDay(LocalDate.now())))
+    private val _uiState = MutableStateFlow(
+        DailyZonesState(
+            selectedDay = DailyZonesHelper.getCurrentDay(LocalDate.now()),
+            selectedDate = LocalDate.now()
+        )
+    )
     val uiState: StateFlow<DailyZonesState> = _uiState.asStateFlow()
 
     fun onAction(action: DailyZonesAction) {
@@ -52,29 +60,33 @@ class DailyZonesViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             val templatesDeferred = async { getWeeklyTemplatesUseCase() }
+            val overridesDeferred = async { getOverridesUseCase() }
             val categoriesDeferred = async { getCategoriesUseCase() }
 
             val templatesResult = templatesDeferred.await()
+            val overridesResult = overridesDeferred.await()
             val categoriesResult = categoriesDeferred.await()
-            if (templatesResult is Result.Success && categoriesResult is Result.Success) {
+
+            if (templatesResult is Result.Success && 
+                overridesResult is Result.Success && 
+                categoriesResult is Result.Success) {
+                
                 val templates = templatesResult.data
+                val overrides = overridesResult.data
                 val categories = categoriesResult.data
 
                 _uiState.update { state ->
-                    val defaultTemplate = templates.find { it.name.equals("Default", ignoreCase = true) }
-                        ?: templates.find { it.name.equals("My Week", ignoreCase = true) }
-                        ?: templates.firstOrNull()
-
                     state.copy(
                         isLoading = false,
                         templates = templates,
-                        availableCategories = categories,
-                        selectedTemplateId = state.selectedTemplateId ?: defaultTemplate?.id
+                        overrides = overrides,
+                        availableCategories = categories
                     )
                 }
                 updateSelectedDayData()
             } else {
                 val error = (templatesResult as? Result.Error)?.error
+                    ?: (overridesResult as? Result.Error)?.error
                     ?: (categoriesResult as? Result.Error)?.error
 
                 _uiState.update { it.copy(
@@ -86,7 +98,14 @@ class DailyZonesViewModel @Inject constructor(
     }
 
     private fun selectDay(day: DayOfWeek) {
-        _uiState.update { it.copy(selectedDay = day, selectedTemplateId = null) }
+        val today = LocalDate.now()
+        val currentDay = DailyZonesHelper.getCurrentDay(today)
+        
+        // Calculate the date for the selected day of week relative to today
+        val diff = (day.ordinal - currentDay.ordinal).let { if (it < 0) it + 7 else it }
+        val date = today.plusDays(diff.toLong())
+
+        _uiState.update { it.copy(selectedDay = day, selectedDate = date, selectedTemplateId = null) }
         updateSelectedDayData()
     }
 
@@ -97,7 +116,22 @@ class DailyZonesViewModel @Inject constructor(
 
     private fun updateSelectedDayData() {
         val state = _uiState.value
+        val selectedDateStr = state.selectedDate?.toString()
 
+        // 1. Check for override for this specific date
+        val override = state.overrides.find { it.dateOfDay == selectedDateStr }
+        
+        if (override != null) {
+            val zones = override.zones.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
+            _uiState.update { it.copy(
+                selectedDayZones = zones,
+                currentTemplate = null,
+                currentOverride = override
+            ) }
+            return
+        }
+
+        // 2. Fallback to template (either explicitly selected or for the day of week)
         val template = state.templates.find { it.id == state.selectedTemplateId }
             ?: state.templates.find { it.daysOfWeek.contains(state.selectedDay) }
 
@@ -106,7 +140,8 @@ class DailyZonesViewModel @Inject constructor(
 
         _uiState.update { it.copy(
             selectedDayZones = zones,
-            currentTemplate = template
+            currentTemplate = template,
+            currentOverride = null
         ) }
     }
 
@@ -151,30 +186,45 @@ class DailyZonesViewModel @Inject constructor(
         }
         val state = _uiState.value
         val templateId = state.currentTemplate?.id
+        val overrideId = state.currentOverride?.id
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
 
-            val result = if (templateId != null) {
-                updateTemplateZonesUseCase(templateId, zones)
-            } else {
-                _uiState.update { it.copy(isSaving = false, error = UiText.StringResource(R.string.profile_daily_zones_error_generic)) }
-                return@launch
+            val result = when {
+                templateId != null -> updateTemplateZonesUseCase(templateId, zones)
+                overrideId != null -> updateOverrideZonesUseCase(overrideId, zones)
+                else -> {
+                    _uiState.update { it.copy(isSaving = false, error = UiText.StringResource(R.string.profile_daily_zones_error_generic)) }
+                    return@launch
+                }
             }
 
             when (result) {
                 is Result.Success -> {
                     val updatedZones = result.data.sortedBy { DailyZonesHelper.parseTimeToMinutes(it.startTime) ?: 0 }
                     _uiState.update { state ->
-                        val updatedTemplates = state.templates.map { 
-                            if (it.id == templateId) it.copy(zones = result.data) else it
+                        if (templateId != null) {
+                            val updatedTemplates = state.templates.map { 
+                                if (it.id == templateId) it.copy(zones = result.data) else it
+                            }
+                            state.copy(
+                                isSaving = false,
+                                selectedDayZones = updatedZones,
+                                templates = updatedTemplates,
+                                currentTemplate = updatedTemplates.find { it.id == templateId }
+                            )
+                        } else {
+                            val updatedOverrides = state.overrides.map {
+                                if (it.id == overrideId) it.copy(zones = result.data) else it
+                            }
+                            state.copy(
+                                isSaving = false,
+                                selectedDayZones = updatedZones,
+                                overrides = updatedOverrides,
+                                currentOverride = updatedOverrides.find { it.id == overrideId }
+                            )
                         }
-                        state.copy(
-                            isSaving = false,
-                            selectedDayZones = updatedZones,
-                            templates = updatedTemplates,
-                            currentTemplate = updatedTemplates.find { it.id == templateId }
-                        )
                     }
                 }
                 is Result.Error -> _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
