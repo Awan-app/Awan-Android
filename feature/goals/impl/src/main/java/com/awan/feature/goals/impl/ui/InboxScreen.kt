@@ -21,6 +21,7 @@ fun InboxScreen(
     events: kotlinx.coroutines.flow.Flow<InboxEvent>,
     onAction: (InboxAction) -> Unit,
     onNavigateBack: () -> Unit,
+    onNavigateToTaskDetails: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val colors = AwanTheme.colors
@@ -96,7 +97,8 @@ fun InboxScreen(
                                 InboxTaskCard(
                                     task = task,
                                     isExpanded = state.expandedTaskId == task.id,
-                                    onExpandToggle = { onAction(InboxAction.TaskExpandToggled(task.id)) }
+                                    onExpandToggle = { onAction(InboxAction.TaskExpandToggled(task.id)) },
+                                    onTaskClick = { onNavigateToTaskDetails(task.id) }
                                 )
                             }
                             item { Spacer(modifier = Modifier.height(24.dp)) }

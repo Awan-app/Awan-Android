@@ -30,13 +30,14 @@ internal fun InboxTaskCard(
     task: InboxTaskUiModel,
     isExpanded: Boolean,
     onExpandToggle: () -> Unit,
+    onTaskClick: () -> Unit,
 ) {
     val colors = AwanTheme.colors
     val spacing = AwanTheme.spacing
 
     AwanCard(
         modifier = Modifier.fillMaxWidth(),
-        onClick = onExpandToggle,
+        onClick = onTaskClick,
         contentPadding = PaddingValues(0.dp) // Manual padding for clickable behavior
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -74,13 +75,20 @@ internal fun InboxTaskCard(
                 Spacer(modifier = Modifier.width(spacing.sm))
                 
                 val rotation by animateFloatAsState(if (isExpanded) 180f else 0f, label = "expand_icon_rotation")
+                val expandDescription = stringResource(
+                    if (isExpanded) R.string.inbox_collapse_sessions_content_description
+                    else R.string.inbox_expand_sessions_content_description
+                )
                 Box(
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onExpandToggle),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Lucide.ChevronDown,
-                        contentDescription = null,
+                        contentDescription = expandDescription,
                         tint = colors.textSecondary,
                         modifier = Modifier.rotate(rotation)
                     )
@@ -139,7 +147,7 @@ internal fun InboxSessionRow(session: InboxSessionUiModel) {
                 style = AwanTheme.typography.button.copy(fontSize = 14.sp, color = colors.textPrimary)
             )
             AwanText(
-                text = "${session.startTime} - ${session.endTime}",
+                text = stringResource(R.string.inbox_session_time_range, session.startTime, session.endTime),
                 style = AwanTheme.typography.caption.copy(fontSize = 12.sp, color = colors.textSecondary)
             )
         }

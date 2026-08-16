@@ -312,8 +312,9 @@ fun AwanApp(
             )
             chatEntry()
             goalsEntry(
-                onNavigateToGoalDetails = { id -> navigator.navigate(com.awan.feature.goals.api.GoalDetailsRoute(id)) },
-                onNavigateToInbox = { navigator.navigate(com.awan.feature.goals.api.InboxRoute) },
+                onNavigateToGoalDetails = { id -> navigator.navigate(GoalDetailsRoute(id)) },
+                onNavigateToInbox = { navigator.navigate(InboxRoute) },
+                onNavigateToTaskDetails = { taskId -> navigator.navigate(TaskDetailsRoute(taskId)) },
                 onBack = { navigator.goBack() },
             )
             aiTasksEntry(onBack = { navigator.goBack() })
