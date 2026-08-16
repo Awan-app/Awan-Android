@@ -58,6 +58,9 @@ class EditRoutineViewModel @Inject constructor(
     private val _events = Channel<EditRoutineEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
+    private var cachedTemplates: List<com.awan.app.core.domain.zones.model.WeeklyTemplate> = emptyList()
+    private var cachedOverrides: List<com.awan.app.core.domain.zones.model.TemplateOverride> = emptyList()
+
     fun onAction(action: EditRoutineAction) {
         when (action) {
             is EditRoutineAction.LoadTemplate -> loadTemplate(action.templateId, action.overrideId, action.date)
@@ -71,21 +74,18 @@ class EditRoutineViewModel @Inject constructor(
             is EditRoutineAction.ToggleTodayOnly -> {
                 val state = _uiState.value
                 if (action.isTodayOnly) {
-                    // Get the day of the week for the currently viewed date
                     val currentDay = DailyZonesHelper.getCurrentDay(LocalDate.parse(state.date ?: LocalDate.now().toString()))
-                    
-                    // Check if this day has an existing template to override
                     if (state.daysWithTemplates.contains(currentDay)) {
+                        val newZones = resolveZonesForDate(state.date ?: LocalDate.now().toString())
                         _uiState.update { it.copy(
                             isTodayOnly = true,
                             selectedDays = setOf(currentDay),
                             dates = setOf(state.date ?: LocalDate.now().toString()),
+                            zones = newZones,
                             validationError = null
                         ) }
                     } else {
-                        _uiState.update { it.copy(
-                            validationError = UiText.StringResource(R.string.profile_daily_zones_error_no_base_routine)
-                        ) }
+                        _uiState.update { it.copy(validationError = UiText.StringResource(R.string.profile_daily_zones_error_no_base_routine)) }
                     }
                 } else {
                     _uiState.update { it.copy(isTodayOnly = false, validationError = null) }
@@ -115,9 +115,11 @@ class EditRoutineViewModel @Inject constructor(
             )
             
             if (state.isTodayOnly) {
+                val newZones = resolveZonesForDate(date)
                 newState = newState.copy(
                     selectedDays = setOf(dayOfWeek),
-                    dates = setOf(date)
+                    dates = setOf(date),
+                    zones = newZones
                 )
             }
             newState
@@ -147,6 +149,9 @@ class EditRoutineViewModel @Inject constructor(
             val allOverrides = (overridesResult as? Result.Success)?.data ?: emptyList()
             val categories = (categoriesResult as? Result.Success)?.data ?: emptyList()
             
+            cachedTemplates = allTemplates
+            cachedOverrides = allOverrides
+
             val dayColorsMapping = mutableMapOf<DayOfWeek, String>()
             allTemplates.filter { it.zones.isNotEmpty() }.forEach { template ->
                 val color = template.zones.first().color
@@ -314,7 +319,10 @@ class EditRoutineViewModel @Inject constructor(
                     state.dates + targetDate
                 }
                 val newDays = newDates.map { DailyZonesHelper.getCurrentDay(LocalDate.parse(it)) }.toSet()
-                state.copy(date = targetDate, selectedDays = newDays, dates = newDates, validationError = null)
+                
+                val newZones = resolveZonesForDate(targetDate)
+                
+                state.copy(date = targetDate, selectedDays = newDays, dates = newDates, zones = newZones, validationError = null)
             } else {
                 if (state.assignedDays.contains(day)) return@update state
                 
@@ -530,7 +538,7 @@ class EditRoutineViewModel @Inject constructor(
             when (result) {
                 is Result.Success -> {
                     _uiState.update { it.copy(isSaving = false) }
-                    _events.send(EditRoutineEvent.DeleteSuccess)
+                    _events.send(EditRoutineEvent.SaveSuccess)
                 }
                 is Result.Error -> {
                     _uiState.update { it.copy(isSaving = false, error = ProfileErrorMapper.mapToUiText(result.error)) }
@@ -538,5 +546,15 @@ class EditRoutineViewModel @Inject constructor(
                 Result.Loading -> Unit
             }
         }
+    }
+
+    private fun resolveZonesForDate(date: String): List<com.awan.app.core.domain.zones.model.DailyZone> {
+        val parsedDate = runCatching { LocalDate.parse(date) }.getOrNull() ?: return emptyList()
+        val dayOfWeek = DailyZonesHelper.getCurrentDay(parsedDate)
+        val override = DailyZonesHelper.findOverrideForDate(cachedOverrides, date)
+        if (override != null) return override.zones
+        
+        val template = cachedTemplates.find { it.daysOfWeek.contains(dayOfWeek) }
+        return template?.zones ?: emptyList()
     }
 }
