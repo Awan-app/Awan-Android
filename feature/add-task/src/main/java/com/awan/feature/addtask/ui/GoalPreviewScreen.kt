@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -33,6 +34,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.awan.app.core.designsystem.AwanAiAura
+import com.awan.app.core.designsystem.AwanBadge
+import com.awan.app.core.designsystem.AwanBadgeTone
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
@@ -49,7 +52,8 @@ import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskMode
 import com.awan.feature.addtask.presentation.AddTaskState
 import com.awan.feature.addtask.presentation.GoalStep
-import com.awan.feature.addtask.ui.components.GoalPreviewProposalCard
+import com.awan.feature.addtask.ui.components.durationLabel
+import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.X
 import java.time.LocalDate
@@ -67,8 +71,6 @@ fun GoalPreviewScreen(
     micAmplitude: () -> Float,
     speechError: String?,
     modifier: Modifier = Modifier,
-    onUpdateProposedTask: (Int, ProposedTask) -> Unit = { _, _ -> },
-    onRemoveProposedTask: (Int) -> Unit = {},
     isPermissionError: Boolean = false,
 ) {
     val focusManager = LocalFocusManager.current
@@ -82,15 +84,16 @@ fun GoalPreviewScreen(
             .imePadding(),
     ) {
         // ── Top bar ──────────────────────────────────────────────────────────
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = previewHorizontalPadding, vertical = AwanTheme.spacing.xs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             AwanIconButton(
                 onClick = onDismiss,
                 contentDescription = stringResource(R.string.add_task_goal_preview_close),
-                modifier = Modifier.align(Alignment.CenterStart),
             ) {
                 Icon(
                     imageVector = Lucide.X,
@@ -103,8 +106,9 @@ fun GoalPreviewScreen(
             AwanText(
                 text = stringResource(R.string.add_task_goal_preview_title),
                 style = AwanTheme.styles.titleText,
-                modifier = Modifier.align(Alignment.Center),
             )
+
+            Spacer(modifier = Modifier.size(38.dp))
         }
 
         // ── Scrollable content ───────────────────────────────────────────────
@@ -123,30 +127,18 @@ fun GoalPreviewScreen(
                 itemsIndexed(replyBlocks, key = { index, _ -> index }) { _, block ->
                     when (block) {
                         is GoalDecompositionBlock.Text -> PreviewAssistantTextCard(text = block.text)
-                        is GoalDecompositionBlock.Proposal -> GoalPreviewProposalCard(
-                            proposal = block.proposal,
-                            onUpdateTask = onUpdateProposedTask,
-                            onRemoveTask = onRemoveProposedTask,
-                        )
+                        is GoalDecompositionBlock.Proposal -> PreviewProposalCard(proposal = block.proposal)
                         is GoalDecompositionBlock.Question -> Unit // ignored per spec
                     }
                 }
                 if (!hasProposalBlock && goalStep is GoalStep.Preview) {
                     item {
-                        GoalPreviewProposalCard(
-                            proposal = goalStep.proposal,
-                            onUpdateTask = onUpdateProposedTask,
-                            onRemoveTask = onRemoveProposedTask,
-                        )
+                        PreviewProposalCard(proposal = goalStep.proposal)
                     }
                 }
             } else if (goalStep is GoalStep.Preview) {
                 item {
-                    GoalPreviewProposalCard(
-                        proposal = goalStep.proposal,
-                        onUpdateTask = onUpdateProposedTask,
-                        onRemoveTask = onRemoveProposedTask,
-                    )
+                    PreviewProposalCard(proposal = goalStep.proposal)
                 }
             }
 
@@ -247,47 +239,26 @@ fun GoalPreviewScreen(
             val isPreview = state.goalStep is GoalStep.Preview
             val hasInput = state.input.isNotBlank()
 
-            val (buttonLabel, buttonAction, buttonEnabled, buttonVariant) = when {
-                isPreview && hasInput -> {
-                    Quad(
-                        stringResource(R.string.add_task_goal_preview_revision_submit),
-                        onRevisionSubmit,
-                        state.canSubmit,
-                        AwanButtonVariant.Primary,
-                    )
-                }
-                isPreview -> {
-                    Quad(
-                        stringResource(R.string.add_task_goal_preview_approve_plan),
-                        onAccept,
-                        state.canAcceptGoal,
-                        AwanButtonVariant.Primary,
-                    )
-                }
-                else -> {
-                    Quad(
-                        stringResource(R.string.add_task_goal_writing_continue),
-                        onRevisionSubmit,
-                        state.canSubmit,
-                        AwanButtonVariant.Primary,
-                    )
-                }
+            val buttonText = when {
+                hasInput -> stringResource(R.string.add_task_goal_preview_revision_submit)
+                isPreview -> stringResource(R.string.add_task_goal_preview_accept)
+                else -> stringResource(R.string.add_task_goal_writing_continue)
             }
 
+            val buttonOnClick = if (hasInput || !isPreview) onRevisionSubmit else onAccept
+            val buttonEnabled = if (hasInput || !isPreview) state.canSubmit else state.canAcceptGoal
+
             AwanButton(
-                onClick = buttonAction,
+                onClick = buttonOnClick,
                 enabled = buttonEnabled,
                 isLoading = state.isSubmitting,
-                variant = buttonVariant,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                AwanText(buttonLabel)
+                AwanText(buttonText)
             }
         }
     }
 }
-
-private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
 // ── Private composable helpers ────────────────────────────────────────────────
 
@@ -301,6 +272,100 @@ private fun PreviewAssistantTextCard(text: String) {
             text = text,
             style = AwanTheme.typography.body.copy(color = AwanTheme.colors.textSecondary),
         )
+    }
+}
+
+@Composable
+private fun PreviewProposalCard(proposal: GoalProposal) {
+    Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
+        AwanCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+                AwanText(
+                    text = proposal.title,
+                    style = AwanTheme.typography.title.copy(color = AwanTheme.colors.textPrimary),
+                )
+
+                proposal.description?.takeIf { it.isNotBlank() }?.let { desc ->
+                    AwanText(
+                        text = desc,
+                        style = AwanTheme.typography.body.copy(color = AwanTheme.colors.textSecondary),
+                    )
+                }
+
+                proposal.targetDate?.takeIf { it.isNotBlank() }?.let { dateStr ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs),
+                    ) {
+                        Icon(
+                            imageVector = Lucide.Calendar,
+                            contentDescription = null,
+                            tint = AwanTheme.colors.sky,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        AwanText(
+                            text = stringResource(R.string.add_task_goal_preview_target_date, dateStr),
+                            style = AwanTheme.styles.metaText,
+                        )
+                    }
+                }
+            }
+        }
+
+        if (proposal.tasks.isNotEmpty()) {
+            AwanText(
+                text = stringResource(R.string.add_task_goal_preview_tasks_header, proposal.tasks.size),
+                style = AwanTheme.typography.body.copy(
+                    color = AwanTheme.colors.textPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                modifier = Modifier.padding(top = AwanTheme.spacing.xxs),
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+                proposal.tasks.forEachIndexed { index, task ->
+                    PreviewTaskProposalCard(index = index + 1, task = task)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PreviewTaskProposalCard(index: Int, task: ProposedTask) {
+    AwanCard(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                AwanText(
+                    text = stringResource(R.string.add_task_goal_preview_task_item_title, index, task.title),
+                    style = AwanTheme.styles.headingText,
+                    modifier = Modifier.weight(1f),
+                )
+                task.estimatedPoints?.takeIf { it > 0 }?.let { pts ->
+                    AwanBadge(
+                        text = stringResource(R.string.add_task_goal_preview_points, pts),
+                        tone = AwanBadgeTone.Sky,
+                    )
+                }
+            }
+
+            task.estimatedDuration?.let { dur ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
+                ) {
+                    AwanBadge(
+                        text = durationLabel(dur),
+                        tone = AwanBadgeTone.Violet,
+                    )
+                }
+            }
+        }
     }
 }
 
