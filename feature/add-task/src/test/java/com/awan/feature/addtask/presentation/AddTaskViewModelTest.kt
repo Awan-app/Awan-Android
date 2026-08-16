@@ -253,6 +253,8 @@ class AddTaskViewModelTest {
     private lateinit var categoryRepository: FakeCategoryRepository
     private lateinit var userDataRepository: FakeUserDataRepository
 
+    private val createdViewModels = mutableListOf<AddTaskViewModel>()
+
     private fun viewModel(): AddTaskViewModel = AddTaskViewModel(
         ParseTaskInputUseCase(clock),
         ApplyTaskAttributeUseCase(clock),
@@ -264,7 +266,7 @@ class AddTaskViewModelTest {
         GetUserDataUseCase(userDataRepository),
         SetMicPermissionRequestedUseCase(userDataRepository),
         clock,
-    )
+    ).also { createdViewModels.add(it) }
 
     /** The sentences asserted here are English, and the parser follows the ambient locale. */
     private val hostLocale: Locale = Locale.getDefault()
@@ -282,6 +284,8 @@ class AddTaskViewModelTest {
 
     @After
     fun tearDown() {
+        createdViewModels.forEach { it.cancelAllJobsForTesting() }
+        createdViewModels.clear()
         Dispatchers.resetMain()
         Locale.setDefault(hostLocale)
     }
@@ -454,6 +458,7 @@ class AddTaskViewModelTest {
 
         assertFalse(viewModel.state.value.showDiscardConfirm)
         assertEquals(AddTaskEvent.TaskCreated("Buy groceries"), viewModel.events.first())
+        advanceUntilIdle()
     }
 
     @Test
@@ -766,6 +771,7 @@ class AddTaskViewModelTest {
                 ),
                 viewModel.events.first(),
             )
+            advanceUntilIdle()
         }
 
     @Test
@@ -778,6 +784,7 @@ class AddTaskViewModelTest {
 
         val event = viewModel.events.first() as AddTaskEvent.AiRequested
         assertNull(event.note)
+        advanceUntilIdle()
     }
 
     @Test
@@ -793,6 +800,7 @@ class AddTaskViewModelTest {
 
         val event = viewModel.events.first() as AddTaskEvent.AiRequested
         assertEquals("content://images/1", event.imageUri)
+        advanceUntilIdle()
     }
 
     @Test
@@ -830,6 +838,7 @@ class AddTaskViewModelTest {
 
         assertFalse(viewModel.state.value.showDiscardConfirm)
         assertEquals(AddTaskEvent.Dismissed, viewModel.events.first())
+        advanceUntilIdle()
     }
 
     @Test
@@ -896,6 +905,7 @@ class AddTaskViewModelTest {
 
         assertTrue(taskRepository.calls.none { it == "delete" })
         assertNotNull(viewModel.events.first())
+        advanceUntilIdle()
     }
 
     // ── AI Goal Creation Flow ────────────────────────────────────────────────
@@ -1285,7 +1295,7 @@ class AddTaskViewModelTest {
                 GetUserDataUseCase(userDataRepository),
                 SetMicPermissionRequestedUseCase(userDataRepository),
                 clock,
-            )
+            ).also { createdViewModels.add(it) }
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
             customViewModel.onAction(AddTaskAction.InputChanged("Goal"))
@@ -1301,6 +1311,7 @@ class AddTaskViewModelTest {
             confirmGate.complete(Result.Success(createdGoal))
 
             assertEquals(AddTaskEvent.GoalCreated("Goal Title"), customViewModel.events.first())
+            advanceUntilIdle()
         }
 
     @Test
@@ -1376,7 +1387,7 @@ class AddTaskViewModelTest {
                 GetUserDataUseCase(userDataRepository),
                 SetMicPermissionRequestedUseCase(userDataRepository),
                 clock,
-            )
+            ).also { createdViewModels.add(it) }
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
             customViewModel.onAction(AddTaskAction.InputChanged("In-flight Goal"))
@@ -1407,6 +1418,7 @@ class AddTaskViewModelTest {
             assertEquals(GoalStep.Initial, finalState.goalStep)
             assertNull(finalState.goalSessionId)
             assertEquals(AddTaskEvent.Dismissed, customViewModel.events.first())
+            advanceUntilIdle()
         }
 
     @Test
@@ -1470,7 +1482,7 @@ class AddTaskViewModelTest {
                 GetUserDataUseCase(userDataRepository),
                 SetMicPermissionRequestedUseCase(userDataRepository),
                 clock,
-            )
+            ).also { createdViewModels.add(it) }
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
             customViewModel.onAction(AddTaskAction.InputChanged("My Goal"))
@@ -1581,7 +1593,7 @@ class AddTaskViewModelTest {
                 GetUserDataUseCase(userDataRepository),
                 SetMicPermissionRequestedUseCase(userDataRepository),
                 clock,
-            )
+            ).also { createdViewModels.add(it) }
 
             customViewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
             customViewModel.onAction(AddTaskAction.InputChanged("Captured input"))

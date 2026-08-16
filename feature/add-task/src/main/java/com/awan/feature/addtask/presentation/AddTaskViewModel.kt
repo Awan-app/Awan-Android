@@ -21,6 +21,7 @@ import com.awan.feature.addtask.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,10 +52,18 @@ class AddTaskViewModel @Inject constructor(
     private val _state = MutableStateFlow(AddTaskState(today = LocalDate.now(clock)))
     val state: StateFlow<AddTaskState> = _state.asStateFlow()
 
-    private val _events = MutableSharedFlow<AddTaskEvent>(extraBufferCapacity = 1)
+    private val _events = MutableSharedFlow<AddTaskEvent>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
     val events: SharedFlow<AddTaskEvent> = _events.asSharedFlow()
 
     private var activeGoalJob: Job? = null
+    private var celebrationJob: Job? = null
+    private var categoriesJob: Job? = null
+    private var userDataJob: Job? = null
+    private var createJob: Job? = null
+    private var initializeJob: Job? = null
 
     init {
         loadCategories()
@@ -108,7 +117,8 @@ class AddTaskViewModel @Inject constructor(
             ) 
         }
         
-        viewModelScope.launch {
+        initializeJob?.cancel()
+        initializeJob = viewModelScope.launch {
             if (date != null) {
                 // Pre-select the date in the parser
                 applyAttribute(TaskAttribute.On(date))
@@ -128,7 +138,8 @@ class AddTaskViewModel @Inject constructor(
     }
 
     private fun observeUserData() {
-        viewModelScope.launch {
+        userDataJob?.cancel()
+        userDataJob = viewModelScope.launch {
             getUserDataUseCase().collect { userData ->
                 _state.update { it.copy(hasRequestedMicPermission = userData.micPermissionRequested) }
             }
@@ -281,8 +292,9 @@ class AddTaskViewModel @Inject constructor(
      * an error the user sees: the chip stays unresolved and the task is created without a category.
      */
     private fun loadCategories() {
+        categoriesJob?.cancel()
         _state.update { it.copy(isResolvingCategory = true) }
-        viewModelScope.launch {
+        categoriesJob = viewModelScope.launch {
             val categories = when (val result = getCategories()) {
                 is Result.Success -> result.data
                 else -> emptyList()
@@ -439,7 +451,8 @@ class AddTaskViewModel @Inject constructor(
 
     private fun createDirectly() {
         val current = _state.value
-        viewModelScope.launch {
+        createJob?.cancel()
+        createJob = viewModelScope.launch {
             _state.update { it.copy(isSubmitting = true, errorMessage = null) }
             when (createTask(current.toDraft())) {
                 is Result.Success -> confirm(current.plannedConfirmation())
@@ -461,7 +474,8 @@ class AddTaskViewModel @Inject constructor(
         _state.update {
             it.copy(isSubmitting = false, isCelebrating = true, confirmation = confirmation)
         }
-        viewModelScope.launch {
+        celebrationJob?.cancel()
+        celebrationJob = viewModelScope.launch {
             delay(CELEBRATE_MILLIS)
             _state.update { it.copy(isCelebrating = false) }
         }
@@ -503,8 +517,36 @@ class AddTaskViewModel @Inject constructor(
     private fun close(event: AddTaskEvent) {
         activeGoalJob?.cancel()
         activeGoalJob = null
-        _state.value = AddTaskState(today = LocalDate.now(clock))
-        loadCategories()
-        viewModelScope.launch { _events.emit(event) }
+        celebrationJob?.cancel()
+        celebrationJob = null
+        createJob?.cancel()
+        createJob = null
+        initializeJob?.cancel()
+        initializeJob = null
+        
+        // Reset state but preserve the long-lived data already fetched
+        _state.update { 
+            AddTaskState(
+                today = LocalDate.now(clock),
+                availableCategories = it.availableCategories,
+                hasRequestedMicPermission = it.hasRequestedMicPermission
+            )
+        }
+        _events.tryEmit(event)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        activeGoalJob?.cancel()
+        celebrationJob?.cancel()
+        categoriesJob?.cancel()
+        userDataJob?.cancel()
+        createJob?.cancel()
+        initializeJob?.cancel()
+    }
+    
+    /** Public for testing to ensure no leaking coroutines in runTest. */
+    internal fun cancelAllJobsForTesting() {
+        onCleared()
     }
 }
