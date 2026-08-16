@@ -54,4 +54,18 @@ class CalendarDateMapperTest {
         val goalNew = CalendarGoal("3", "New", LocalDate.of(2026, 7, 30), LocalDate.of(2026, 7, 20))
         assertEquals(1.0f, CalendarDateMapper.calculateDeadlineProgress(goalNew, today), 0.01f)
     }
+
+    @Test
+    fun calculatesDeadlineProgressWhenCreatedAtIsOnOrEqualToOrAfterTargetDate() {
+        val today = LocalDate.of(2026, 7, 20)
+
+        // createdAt equals targetDate (0 days runway) -> 0.0f
+        val goalSameDay = CalendarGoal("4", "SameDay", LocalDate.of(2026, 7, 25), LocalDate.of(2026, 7, 25))
+        assertEquals(0.0f, CalendarDateMapper.calculateDeadlineProgress(goalSameDay, today), 0.01f)
+
+        // createdAt after targetDate (invalid/inconsistent dates) -> 0.0f
+        val goalInconsistent = CalendarGoal("5", "Inconsistent", LocalDate.of(2026, 7, 20), LocalDate.of(2026, 7, 25))
+        assertEquals(0.0f, CalendarDateMapper.calculateDeadlineProgress(goalInconsistent, today), 0.01f)
+    }
 }
+

@@ -20,7 +20,10 @@ object CalendarDateMapper {
 
     fun calculateDeadlineProgress(goal: CalendarGoal, today: LocalDate): Float {
         val start = goal.createdAt ?: goal.targetDate.minusDays(30)
-        val fullDuration = ChronoUnit.DAYS.between(start, goal.targetDate).coerceAtLeast(1L)
+        if (!start.isBefore(goal.targetDate)) {
+            return 0f
+        }
+        val fullDuration = ChronoUnit.DAYS.between(start, goal.targetDate)
         val timeLeft = ChronoUnit.DAYS.between(today, goal.targetDate).coerceAtLeast(0L)
         return (timeLeft.toFloat() / fullDuration.toFloat()).coerceIn(0f, 1f)
     }
@@ -54,6 +57,8 @@ object CalendarDateMapper {
 
         return (0 until count).map { index ->
             val date = start.plusDays(index.toLong())
+            // Goals passed in are filtered for active deadlines with valid target dates.
+            // A day has a deadline if there is at least one active goal whose targetDate matches and is not in the past.
             val dayGoals = goalsByDate[date].orEmpty()
             val hasDeadline = dayGoals.isNotEmpty() && !date.isBefore(today)
             val progress = if (hasDeadline) {
@@ -61,6 +66,7 @@ object CalendarDateMapper {
             } else {
                 null
             }
+
 
             DayState(
                 date = date,
