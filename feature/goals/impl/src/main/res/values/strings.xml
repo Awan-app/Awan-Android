@@ -86,4 +86,7 @@
     <string name="goals_dialog_delete_task_body">Are you sure you want to delete this task?</string>
     <string name="goals_dialog_delete_confirm">Delete</string>
     <string name="goals_dialog_delete_cancel">Cancel</string>
+    <string name="inbox_expand_sessions_content_description">Expand sessions</string>
+    <string name="inbox_collapse_sessions_content_description">Collapse sessions</string>
+    <string name="inbox_session_time_range">%1$s - %2$s</string>
 </resources>

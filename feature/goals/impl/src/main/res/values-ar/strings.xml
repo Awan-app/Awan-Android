@@ -86,4 +86,7 @@
     <string name="goals_dialog_delete_task_body">هل أنت متأكد من حذف هذه المهمة؟</string>
     <string name="goals_dialog_delete_confirm">حذف</string>
     <string name="goals_dialog_delete_cancel">إلغاء</string>
+    <string name="inbox_expand_sessions_content_description">توسيع الجلسات</string>
+    <string name="inbox_collapse_sessions_content_description">طي الجلسات</string>
+    <string name="inbox_session_time_range">%1$s - %2$s</string>
 </resources>

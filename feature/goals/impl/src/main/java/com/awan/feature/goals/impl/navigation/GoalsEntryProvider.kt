@@ -38,6 +38,7 @@ import com.awan.feature.goals.api.InboxRoute
 fun EntryProviderScope<Route>.goalsEntry(
     onNavigateToGoalDetails: (String) -> Unit = {},
     onNavigateToInbox: () -> Unit = {},
+    onNavigateToTaskDetails: (String) -> Unit = {},
     onBack: () -> Unit = {},
 ) {
     entry<GoalsRoute> {
@@ -48,7 +49,10 @@ fun EntryProviderScope<Route>.goalsEntry(
     }
 
     entry<InboxRoute> {
-        InboxRouteScreen(onBack = onBack)
+        InboxRouteScreen(
+            onBack = onBack,
+            onNavigateToTaskDetails = onNavigateToTaskDetails,
+        )
     }
 
     entry<GoalDetailsRoute> { route ->
@@ -62,6 +66,7 @@ fun EntryProviderScope<Route>.goalsEntry(
 @Composable
 fun InboxRouteScreen(
     onBack: () -> Unit,
+    onNavigateToTaskDetails: (String) -> Unit = {},
     viewModel: InboxViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -70,7 +75,8 @@ fun InboxRouteScreen(
         state = state,
         events = viewModel.events,
         onAction = viewModel::onAction,
-        onNavigateBack = onBack
+        onNavigateBack = onBack,
+        onNavigateToTaskDetails = onNavigateToTaskDetails,
     )
 }
 
