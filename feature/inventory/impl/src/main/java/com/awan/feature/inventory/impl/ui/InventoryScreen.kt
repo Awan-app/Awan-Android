@@ -633,7 +633,7 @@ private fun CustomizationArt(
             .then(gradientModifier),
         contentAlignment = Alignment.Center,
     ) {
-        if (imageUrl == null) {
+        if (imageUrl.isNullOrBlank()) {
             Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = accent)
         } else {
             AwanRemoteImage(

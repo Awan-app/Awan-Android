@@ -22,8 +22,8 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.compose.icons.lucide.cmp)
     implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.coil.compose)
-    implementation(libs.coil.network.okhttp)
+    api(libs.coil.compose)
+    api(libs.coil.network.okhttp)
     implementation(libs.lottie.compose)
 
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
