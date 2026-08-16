@@ -65,11 +65,11 @@ Built. Repositories return `Flow` from DAOs and the UI observes that; the networ
 - **Gate writes on `NetworkConnectivityMonitor.isCurrentlyOnline()`** and return `AppError.Network` when offline, instead of letting the call fail deep in the stack.
 - Freshness is per-row: entities carry `expiryTime`, filled from `SyncTtl` (schedule 15 min, goals 30 min, profile/categories/templates 1 h). Background refresh runs through `SyncWorker` (WorkManager) driven by `OfflineSyncCoordinator`.
 
-### Room migrations — silent data loss if skipped
+### Room database strategy — destructive migration fallback
 
-`AwanDatabase` is at **version 4**, with real migrations and schemas exported to `core/database/schemas/`.
+`AwanDatabase` relies on Room's destructive fallback strategy (`fallbackToDestructiveMigration(dropAllTables = true)` and `fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)`) rather than manual `Migration` objects.
 
-Any entity change needs a `Migration` **and** a version bump. `fallbackToDestructiveMigration(dropAllTables = true)` is still enabled as a backstop, so a missing or wrong migration **wipes the user's database instead of failing loudly** — it will look fine on a clean install and destroy data on upgrade. Migrations have needed follow-up fixes before; add the column to both the entity and the migration SQL, and check the exported schema JSON.
+When any entity schema changes, simply bump the `version` number in `@Database(...)` in `AwanDatabase.kt`. When an updated build runs on a device with an older (or newer) schema version, Room will automatically drop and recreate the tables.
 
 ### Still to build
 

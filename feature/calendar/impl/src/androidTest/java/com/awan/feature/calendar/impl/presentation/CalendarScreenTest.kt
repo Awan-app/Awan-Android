@@ -328,11 +328,11 @@ class CalendarScreenTest {
     }
 
     /**
-     * Streak day (not today, no deadline) — static fire host and the
-     * fire-surface number circle are both shown bound to the streak day; no today-primary or shader.
+     * Streak day on previous days (not today, no deadline) — fire badge is shown
+     * bound to the streak day; no today-primary, full fire host, or shader.
      */
     @Test
-    fun dayCell_streak_showsFireHostAndNumberCircle() {
+    fun dayCell_previousStreakDay_showsStreakBadgeAndNumber() {
         val today = LocalDate.of(2026, 8, 13)
         val yesterdayStreak = today.minusDays(1)
         composeRule.setContent {
@@ -358,19 +358,28 @@ class CalendarScreenTest {
         useUnmergedTree = true,
         ).assertIsDisplayed()
 
-        // Fire host and number circle bound to streak cell
+        // Fire badge bound to previous streak cell
         composeRule.onNode(
-            hasTestTag("calendar_day_${yesterdayStreak}_streak_fire") and
-            hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak")),
-        useUnmergedTree = true,
-        ).assertIsDisplayed()
-        composeRule.onNode(
-            hasTestTag("calendar_day_${yesterdayStreak}_streak_number") and
+            hasTestTag("calendar_day_${yesterdayStreak}_streak_badge") and
             hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak")),
         useUnmergedTree = true,
         ).assertIsDisplayed()
 
-        // Unexpected decorations absent on streak cell
+        // Full fire host and number circle absent on previous streak cell
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${yesterdayStreak}_streak_fire") and
+                hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak")),
+            useUnmergedTree = true,
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${yesterdayStreak}_streak_number") and
+                hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak")),
+            useUnmergedTree = true,
+            ).fetchSemanticsNodes().isEmpty()
+        )
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${yesterdayStreak}_today_primary") and
@@ -381,13 +390,6 @@ class CalendarScreenTest {
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${yesterdayStreak}_deadline_shader") and
-                hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak")),
-            useUnmergedTree = true,
-            ).fetchSemanticsNodes().isEmpty()
-        )
-        assertTrue(
-            composeRule.onAllNodes(
-                hasTestTag("calendar_day_${yesterdayStreak}_streak_badge") and
                 hasAnyAncestor(hasTestTag("calendar_day_$yesterdayStreak")),
             useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
@@ -530,11 +532,11 @@ class CalendarScreenTest {
     }
 
     /**
-     * Today + streak (no deadline) — primary-tinted fire host and anchored
-     * number circle are present bound to today; no deadline shader or fire badge.
+     * Today + streak (no deadline) — primary blue circle, number, and fire badge
+     * are present bound to today; no deadline shader or full fire host.
      */
     @Test
-    fun dayCell_todayWithStreak_showsTintedFireHostAndAnchoredNumberCircle() {
+    fun dayCell_todayWithStreak_showsPrimaryCircleAndFireBadge() {
         val today = LocalDate.of(2026, 8, 13)
         composeRule.setContent {
             AwanTheme {
@@ -559,14 +561,14 @@ class CalendarScreenTest {
         useUnmergedTree = true,
         ).assertIsDisplayed()
 
-        // Fire host and number circle bound to today cell
+        // Primary circle and fire badge bound to today cell
         composeRule.onNode(
-            hasTestTag("calendar_day_${today}_streak_fire") and
+            hasTestTag("calendar_day_${today}_today_primary") and
             hasAnyAncestor(hasTestTag("calendar_day_$today")),
         useUnmergedTree = true,
         ).assertIsDisplayed()
         composeRule.onNode(
-            hasTestTag("calendar_day_${today}_streak_number") and
+            hasTestTag("calendar_day_${today}_streak_badge") and
             hasAnyAncestor(hasTestTag("calendar_day_$today")),
         useUnmergedTree = true,
         ).assertIsDisplayed()
@@ -574,7 +576,14 @@ class CalendarScreenTest {
         // Unexpected decorations absent on today cell
         assertTrue(
             composeRule.onAllNodes(
-                hasTestTag("calendar_day_${today}_today_primary") and
+                hasTestTag("calendar_day_${today}_streak_fire") and
+                hasAnyAncestor(hasTestTag("calendar_day_$today")),
+            useUnmergedTree = true,
+            ).fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodes(
+                hasTestTag("calendar_day_${today}_streak_number") and
                 hasAnyAncestor(hasTestTag("calendar_day_$today")),
             useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
@@ -586,21 +595,14 @@ class CalendarScreenTest {
             useUnmergedTree = true,
             ).fetchSemanticsNodes().isEmpty()
         )
-        assertTrue(
-            composeRule.onAllNodes(
-                hasTestTag("calendar_day_${today}_streak_badge") and
-                hasAnyAncestor(hasTestTag("calendar_day_$today")),
-            useUnmergedTree = true,
-            ).fetchSemanticsNodes().isEmpty()
-        )
     }
 
     /**
-     * Today + streak + deadline — primary circle, circular shader host, number,
+     * Today + streak + deadline — primary blue circle, circular shader host, number,
      * AND top-right fire badge are all present bound to today.
      */
     @Test
-    fun dayCell_todayWithStreakAndDeadline_showsAllFourElements() {
+    fun dayCell_todayWithStreakAndDeadline_showsPrimaryCircleShaderAndFireBadge() {
         val today = LocalDate.of(2026, 8, 13)
         composeRule.setContent {
             AwanTheme {
@@ -643,7 +645,7 @@ class CalendarScreenTest {
         useUnmergedTree = true,
         ).assertIsDisplayed()
 
-        // Full fire host and number circle absent (badge replaces them)
+        // Full fire host and number circle absent
         assertTrue(
             composeRule.onAllNodes(
                 hasTestTag("calendar_day_${today}_streak_fire") and

@@ -30,5 +30,15 @@
     <string name="calendar_weekday_thu">Th</string>
     <string name="calendar_weekday_fri">Fr</string>
     <string name="calendar_weekday_sat">Sa</string>
+    <string name="calendar_deadline_info_button">About deadline colors</string>
+    <string name="calendar_deadline_sheet_title">How deadline colors work</string>
+    <string name="calendar_deadline_sheet_subtitle">As time moves forward, the gentle glow around your goal shifts to keep you aware without adding stress.</string>
+    <string name="calendar_deadline_sheet_close">Close</string>
+    <string name="calendar_deadline_phase_green_title">Plenty of time</string>
+    <string name="calendar_deadline_phase_green_desc">You just started or have lots of open sky ahead. Enjoy the smooth flow.</string>
+    <string name="calendar_deadline_phase_amber_title">Halfway there</string>
+    <string name="calendar_deadline_phase_amber_desc">You\'re in the middle of your journey. Steady steps keep momentum alive.</string>
+    <string name="calendar_deadline_phase_red_title">Approaching deadline</string>
+    <string name="calendar_deadline_phase_red_desc">The finish line is near. A focused session will help you bring it home.</string>
 </resources>
 

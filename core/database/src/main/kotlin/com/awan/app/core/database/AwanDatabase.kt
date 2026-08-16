@@ -57,7 +57,7 @@ import com.awan.app.core.database.model.ZoneEntity
         McpTokenEntity::class,
     ],
     version = 1,
-    exportSchema = true,
+    exportSchema = false,
 )
 abstract class AwanDatabase : RoomDatabase() {
 

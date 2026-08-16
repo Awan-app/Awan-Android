@@ -44,13 +44,16 @@ class CalendarViewModel @Inject constructor(
                 val updatedStreak = progress.streak.coerceAtLeast(0)
                 val updatedMaxStreak = progress.maxStreak.coerceAtLeast(0)
                 _state.update { current ->
-                    val streakDates = CalendarDateMapper.calculateStreakDates(updatedStreak, current.today)
+                    // Build an optimistic estimate from the streak count. Today is only included
+                    // if we already know it's active; otherwise loadTodayActivity will confirm it.
+                    val estimatedDates = CalendarDateMapper.calculateStreakDates(updatedStreak, current.today)
+                    val streakDates = if (current.isTodayActive) estimatedDates else estimatedDates - current.today
                     val monthDays = CalendarDateMapper.buildMonthDays(
                         yearMonth = current.currentYearMonth,
                         today = current.today,
                         selectedDate = current.selectedDate,
                         streakDates = streakDates,
-                        goalDates = current.upcomingGoals.map { it.targetDate }.toSet(),
+                        goals = current.upcomingGoals,
                     )
                     current.copy(
                         streak = updatedStreak,
@@ -99,13 +102,13 @@ class CalendarViewModel @Inject constructor(
             val active = result is Result.Success && result.data.contains(today)
             _state.update { current ->
                 if (current.today != today || todayActivityGeneration != generation) current else {
-                    val updatedStreakDates = if (active) current.streakDates + today else current.streakDates
+                    val updatedStreakDates = if (active) current.streakDates + today else current.streakDates - today
                     val updatedMonthDays = CalendarDateMapper.buildMonthDays(
                         yearMonth = current.currentYearMonth,
                         today = current.today,
                         selectedDate = current.selectedDate,
                         streakDates = updatedStreakDates,
-                        goalDates = current.upcomingGoals.map { it.targetDate }.toSet(),
+                        goals = current.upcomingGoals,
                     )
                     current.copy(
                         isTodayActive = active,
@@ -131,7 +134,7 @@ class CalendarViewModel @Inject constructor(
                     today = current.today,
                     selectedDate = date,
                     streakDates = current.streakDates,
-                    goalDates = current.upcomingGoals.map { it.targetDate }.toSet(),
+                    goals = current.upcomingGoals,
                 ),
             )
         }
@@ -166,17 +169,19 @@ class CalendarViewModel @Inject constructor(
             val goals = CalendarDateMapper.filterAndSortUpcomingGoals(snapshot.goals, today)
 
             val initialStreak = if (current.streak > 0) current.streak else snapshot.user.streak.coerceAtLeast(0)
-            val streakDates = if (dayChanged) {
+            val isTodayActive = if (dayChanged) false else current.isTodayActive
+            val estimatedDates = if (dayChanged) {
                 CalendarDateMapper.calculateStreakDates(initialStreak, today)
             } else {
                 current.streakDates.ifEmpty {
                     CalendarDateMapper.calculateStreakDates(initialStreak, today)
                 }
             }
-
+            // Never mark today as a streak day from the estimate alone — only loadTodayActivity
+            // confirms today's activity. Strip today if we don't yet know it's active.
+            val streakDates = if (isTodayActive) estimatedDates else estimatedDates - today
             val preservedStreak = initialStreak
             val preservedMaxStreak = current.maxStreak
-            val isTodayActive = if (dayChanged) false else current.isTodayActive
             val headerState = CalendarStreakHeaderState.from(
                 streak = preservedStreak,
                 maxStreak = preservedMaxStreak,
@@ -196,7 +201,7 @@ class CalendarViewModel @Inject constructor(
                 currentYearMonth = month,
                 streakDates = streakDates,
                 upcomingGoals = goals,
-                monthDays = CalendarDateMapper.buildMonthDays(month, today, selected, streakDates, goals.map { it.targetDate }.toSet()),
+                monthDays = CalendarDateMapper.buildMonthDays(month, today, selected, streakDates, goals),
             )
         }
 
@@ -208,7 +213,7 @@ class CalendarViewModel @Inject constructor(
     private fun changeMonth(delta: Long) {
         _state.update { state ->
             val month = state.currentYearMonth.plusMonths(delta)
-            state.copy(currentYearMonth = month, monthDays = CalendarDateMapper.buildMonthDays(month, state.today, state.selectedDate, state.streakDates, state.upcomingGoals.map { it.targetDate }.toSet()))
+            state.copy(currentYearMonth = month, monthDays = CalendarDateMapper.buildMonthDays(month, state.today, state.selectedDate, state.streakDates, state.upcomingGoals))
         }
         loadActivityDates(_state.value.currentYearMonth)
     }
@@ -237,7 +242,7 @@ class CalendarViewModel @Inject constructor(
                     today = state.today,
                     selectedDate = state.selectedDate,
                     streakDates = result.data,
-                    goalDates = state.upcomingGoals.map { it.targetDate }.toSet(),
+                    goals = state.upcomingGoals,
                 ),
             )
         }
@@ -261,7 +266,7 @@ class CalendarViewModel @Inject constructor(
                 currentYearMonth = month,
                 streakDates = emptySet(),
                 upcomingGoals = emptyList(),
-                monthDays = CalendarDateMapper.buildMonthDays(month, today, today, emptySet(), emptySet()),
+                monthDays = CalendarDateMapper.buildMonthDays(month, today, today, emptySet(), emptyList<CalendarGoal>()),
             )
         }
     }

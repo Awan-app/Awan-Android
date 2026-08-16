@@ -45,6 +45,7 @@ data class CalendarGoal(
     val id: String,
     val title: String,
     val targetDate: LocalDate,
+    val createdAt: LocalDate? = null,
 )
 
 data class DayState(
@@ -54,6 +55,7 @@ data class DayState(
     val isSelected: Boolean,
     val isStreakDay: Boolean,
     val hasDeadline: Boolean,
+    val deadlineProgress: Float? = null,
 )
 
 sealed interface CalendarAction {

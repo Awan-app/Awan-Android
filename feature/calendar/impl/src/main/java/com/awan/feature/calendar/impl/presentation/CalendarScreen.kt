@@ -3,8 +3,13 @@ package com.awan.feature.calendar.impl.presentation
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -15,6 +20,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,10 +30,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -68,6 +76,7 @@ import com.composables.icons.lucide.ArrowRight
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.TriangleAlert
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
@@ -75,8 +84,11 @@ import com.awan.app.core.designsystem.AwanSurface
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextStyle
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.SoapBubbleShaderLayer
+import com.awan.app.core.designsystem.SoapBubbleStyle
 import com.awan.app.core.designsystem.awanButtonHaptic
 import com.awan.feature.calendar.impl.R
+import com.composables.icons.lucide.Info
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -178,6 +190,7 @@ fun CalendarScreen(
 ) {
     val isReducedMotion = rememberIsReducedMotion()
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    var showDeadlineInfoSheet by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -205,7 +218,11 @@ fun CalendarScreen(
                     modifier = Modifier.testTag("calendar_title"),
                 )
             }
-            StreakHeaderCard(state = state.streakHeaderState, streak = state.streak)
+            StreakHeaderCard(
+                state = state.streakHeaderState,
+                streak = state.streak,
+                isReducedMotion = isReducedMotion,
+            )
 
             MonthHeader(
                 yearMonth = state.currentYearMonth,
@@ -223,10 +240,28 @@ fun CalendarScreen(
 
             Spacer(modifier = Modifier.height(AwanTheme.spacing.xs))
 
-            AwanText(
-                text = stringResource(R.string.calendar_upcoming_deadlines),
-                style = AwanTheme.styles.headingText,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AwanText(
+                    text = stringResource(R.string.calendar_upcoming_deadlines),
+                    style = AwanTheme.styles.headingText,
+                )
+                CalendarIconButton(
+                    onClick = { showDeadlineInfoSheet = true },
+                    contentDescription = stringResource(R.string.calendar_deadline_info_button),
+                    testTag = "calendar_deadline_info_button",
+                ) {
+                    Icon(
+                        imageVector = Lucide.Info,
+                        contentDescription = null,
+                        tint = AwanTheme.colors.textSecondary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
 
             if (state.isLoading) {
                 Box(
@@ -275,12 +310,18 @@ fun CalendarScreen(
             }
             Spacer(modifier = Modifier.height(100.dp))
         }
+
+    if (showDeadlineInfoSheet) {
+        DeadlineInfoBottomSheet(
+            onDismiss = { showDeadlineInfoSheet = false },
+            isReducedMotion = isReducedMotion,
+        )
+    }
 }
 
 private data class CalendarStreakHeaderVisual(
-    val faceColor: Color,
-    val rimColor: Color,
     val circleColor: Color,
+    val iconTint: Color,
     val titleText: String,
     val subtitleText: String,
 )
@@ -289,37 +330,77 @@ private data class CalendarStreakHeaderVisual(
 private fun StreakHeaderCard(
     state: CalendarStreakHeaderState,
     streak: Int,
+    isReducedMotion: Boolean = rememberIsReducedMotion(),
 ) {
     val colors = AwanTheme.colors
     val variantTag = "streak_header_${state.name.lowercase()}"
+    val isDark = isSystemInDarkTheme()
+
     val visual = when (state) {
         CalendarStreakHeaderState.Start -> CalendarStreakHeaderVisual(
-            faceColor = colors.sky.copy(alpha = 0.12f),
-            rimColor = colors.sky.copy(alpha = 0.35f),
-            circleColor = colors.sky.copy(alpha = 0.20f),
+            circleColor = colors.sky.copy(alpha = 0.16f),
+            iconTint = if (isDark) colors.sky else colors.skyPressed,
             titleText = stringResource(R.string.calendar_streak_start_title),
             subtitleText = stringResource(R.string.calendar_streak_start_subtitle),
         )
         CalendarStreakHeaderState.Restart -> CalendarStreakHeaderVisual(
-            faceColor = colors.zoneCoral.copy(alpha = 0.12f),
-            rimColor = colors.zoneCoral.copy(alpha = 0.35f),
-            circleColor = colors.zoneCoral.copy(alpha = 0.20f),
+            circleColor = colors.zoneCoral.copy(alpha = 0.16f),
+            iconTint = if (isDark) colors.zoneCoral else colors.zoneCoralPressed,
             titleText = stringResource(R.string.calendar_streak_restart_title),
             subtitleText = stringResource(R.string.calendar_streak_restart_subtitle),
         )
         CalendarStreakHeaderState.Protect -> CalendarStreakHeaderVisual(
-            faceColor = colors.zoneTangerine.copy(alpha = 0.14f),
-            rimColor = colors.zoneTangerine.copy(alpha = 0.45f),
-            circleColor = colors.zoneTangerine.copy(alpha = 0.25f),
+            circleColor = colors.zoneTangerine.copy(alpha = 0.20f),
+            iconTint = if (isDark) colors.zoneTangerine else colors.zoneTangerinePressed,
             titleText = stringResource(R.string.calendar_streak_protect_title, streak),
             subtitleText = stringResource(R.string.calendar_streak_protect_subtitle),
         )
         CalendarStreakHeaderState.Celebrate -> CalendarStreakHeaderVisual(
-            faceColor = colors.zoneSun.copy(alpha = 0.16f),
-            rimColor = colors.zoneSun.copy(alpha = 0.50f),
-            circleColor = colors.zoneCoral.copy(alpha = 0.30f),
+            circleColor = colors.zoneSun.copy(alpha = 0.25f),
+            iconTint = colors.streakIcon,
             titleText = stringResource(R.string.calendar_streak_celebrate_title, streak),
             subtitleText = stringResource(R.string.calendar_streak_celebrate_subtitle),
+        )
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "streakCircleTransition")
+    val outerScale by if (isReducedMotion) {
+        remember { mutableStateOf(1f) }
+    } else {
+        infiniteTransition.animateFloat(
+            initialValue = 0.94f,
+            targetValue = 1.08f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "streakOuterScale",
+        )
+    }
+    val outerAlpha by if (isReducedMotion) {
+        remember { mutableStateOf(1f) }
+    } else {
+        infiniteTransition.animateFloat(
+            initialValue = 0.55f,
+            targetValue = 0.95f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "streakOuterAlpha",
+        )
+    }
+    val innerScale by if (isReducedMotion) {
+        remember { mutableStateOf(1f) }
+    } else {
+        infiniteTransition.animateFloat(
+            initialValue = 0.98f,
+            targetValue = 1.04f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "streakInnerScale",
         )
     }
 
@@ -327,90 +408,91 @@ private fun StreakHeaderCard(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("streak_summary_card"),
-        background = visual.faceColor,
-        customRimColor = visual.rimColor,
-        contentPadding = PaddingValues(AwanTheme.spacing.xs),
+        background = colors.surface,
+        customRimColor = colors.line,
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 18.dp),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(variantTag),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start,
         ) {
-            val outerSize = if (state == CalendarStreakHeaderState.Restart) 44.dp else 48.dp
-            val innerSize = if (state == CalendarStreakHeaderState.Restart) 32.dp else 36.dp
-
-            Box(
-                modifier = Modifier
-                    .size(outerSize)
-                    .clip(CircleShape)
-                    .then(
-                        if (state == CalendarStreakHeaderState.Protect) {
-                            Modifier
-                                .background(visual.circleColor.copy(alpha = 0.15f))
-                                .border(2.dp, colors.zoneTangerine.copy(alpha = 0.6f), CircleShape)
-                        } else {
-                            Modifier.background(visual.circleColor)
-                        }
-                    ),
-                contentAlignment = Alignment.Center,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start,
             ) {
+                val outerSize = 56.dp
+                val innerSize = 42.dp
+
                 Box(
-                    modifier = Modifier
-                        .size(innerSize)
-                        .clip(CircleShape)
-                        .background(visual.circleColor.copy(alpha = 0.5f)),
+                    modifier = Modifier.size(outerSize),
                     contentAlignment = Alignment.Center,
                 ) {
-                    when (state) {
-                        CalendarStreakHeaderState.Start -> Icon(
-                            painter = painterResource(id = R.drawable.ic_flame_filled),
-                            contentDescription = null,
-                            tint = colors.sky,
-                            modifier = Modifier.testTag("streak_header_start_icon"),
-                        )
-                        CalendarStreakHeaderState.Restart -> Icon(
-                            painter = painterResource(id = R.drawable.ic_flame_filled),
-                            contentDescription = null,
-                            tint = colors.zoneCoral,
-                            modifier = Modifier.testTag("streak_header_restart_icon"),
-                        )
-                        CalendarStreakHeaderState.Protect -> Icon(
-                            painter = painterResource(id = R.drawable.ic_flame_filled),
-                            contentDescription = null,
-                            tint = colors.zoneTangerine,
-                            modifier = Modifier.testTag("streak_header_protect_icon"),
-                        )
-                        CalendarStreakHeaderState.Celebrate -> Box(
-                            modifier = Modifier
-                                .size(26.dp)
-                                .clip(CircleShape)
-                                .background(colors.zoneSun.copy(alpha = 0.4f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_flame_filled),
-                                contentDescription = null,
-                                tint = colors.zoneSun,
-                                modifier = Modifier.testTag("streak_header_celebrate_icon"),
+                    // Outer animated pulsing circle
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                scaleX = outerScale
+                                scaleY = outerScale
+                                alpha = outerAlpha
+                            }
+                            .clip(CircleShape)
+                            .then(
+                                if (state == CalendarStreakHeaderState.Protect) {
+                                    Modifier
+                                        .background(visual.circleColor.copy(alpha = 0.25f))
+                                        .border(2.dp, colors.zoneTangerine.copy(alpha = 0.7f), CircleShape)
+                                } else {
+                                    Modifier.background(visual.circleColor)
+                                }
+                            ),
+                    )
+
+                    // Inner background circle with subtle breathing scale
+                    Box(
+                        modifier = Modifier
+                            .size(innerSize)
+                            .graphicsLayer {
+                                scaleX = innerScale
+                                scaleY = innerScale
+                            }
+                            .clip(CircleShape)
+                            .background(visual.circleColor.copy(alpha = 0.65f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        val iconModifier = Modifier
+                            .size(28.dp)
+                            .testTag(
+                                when (state) {
+                                    CalendarStreakHeaderState.Start -> "streak_header_start_icon"
+                                    CalendarStreakHeaderState.Restart -> "streak_header_restart_icon"
+                                    CalendarStreakHeaderState.Protect -> "streak_header_protect_icon"
+                                    CalendarStreakHeaderState.Celebrate -> "streak_header_celebrate_icon"
+                                }
                             )
-                        }
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_flame_filled),
+                            contentDescription = null,
+                            tint = visual.iconTint,
+                            modifier = iconModifier,
+                        )
                     }
                 }
-            }
-            Spacer(modifier = Modifier.width(AwanTheme.spacing.md))
-            Column(modifier = Modifier.weight(1f)) {
+                Spacer(modifier = Modifier.width(AwanTheme.spacing.md))
                 AwanText(
                     text = visual.titleText,
                     style = AwanTheme.styles.titleText,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                AwanText(
-                    text = visual.subtitleText,
-                    style = AwanTheme.styles.captionText,
+                    modifier = Modifier.weight(1f),
                 )
             }
+            Spacer(modifier = Modifier.height(AwanTheme.spacing.sm))
+            AwanText(
+                text = visual.subtitleText,
+                style = AwanTheme.styles.bodySecondaryText,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
@@ -542,19 +624,25 @@ private fun WeekRow(
 // Lottie/shader asset is available.  Size and shape are kept stable so callers
 // are not affected.  Currently renders nothing (fully transparent).
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Soap bubble shader layer for calendar deadline days.
+// ---------------------------------------------------------------------------
 @Composable
 private fun DeadlineShaderHost(
     size: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
+    baseColor: Color = SoapBubbleStyle.DEFAULT_BASE_COLOR,
+    isReducedMotion: Boolean = false,
     testTag: String = "calendar_day_deadline_shader",
 ) {
-    Box(
+    SoapBubbleShaderLayer(
         modifier = modifier
             .size(size)
-            .clip(CircleShape)
-            // Intentionally transparent — swap for shader draw here later.
-            .background(Color.Transparent)
             .testTag(testTag),
+        baseColor = baseColor,
+        strength = 1.0f,
+        cycleDurationMillis = 12_000,
+        isReducedMotion = isReducedMotion,
     )
 }
 
@@ -568,11 +656,16 @@ private fun FireBadge(
     modifier: Modifier = Modifier,
     testTag: String = "calendar_day_streak_badge",
 ) {
+    val colors = AwanTheme.colors
     Box(
         modifier = modifier
+            .offset(x = 4.dp, y = (-4).dp)
+            .clip(CircleShape)
+            .background(colors.background)
+            .padding(1.5.dp)
             .size(16.dp)
             .clip(CircleShape)
-            .background(tint.copy(alpha = 0.18f))
+            .background(tint.copy(alpha = 0.20f))
             .testTag(testTag),
         contentAlignment = Alignment.Center,
     ) {
@@ -613,18 +706,8 @@ private fun DayCell(
     // Tuning constants — local to this composable so they can be adjusted
     // independently without touching callers.
     // -----------------------------------------------------------------------
-    /** Diameter of the primary "today" circle. */
+    /** Diameter of the primary "today" and standard day circle. */
     val dayCellCircleSize = 36.dp
-    /** Size of the fire host icon for streak days so the flame is visible around the number circle. */
-    val fireHostSize = 48.dp
-    /** Diameter of the anchored number circle inside the fire host (streak days). */
-    val fireNumberCircleSize = 36.dp
-    /**
-     * Normalized anchor within the fire-host bounding box (0=left/top, 1=right/bottom).
-     * Adjust these two values to reposition the number circle when the Lottie asset lands.
-     */
-    val fireNumberAnchorX = 0.5f
-    val fireNumberAnchorY = 0.65f
 
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -653,6 +736,10 @@ private fun DayCell(
                 append(hasDeadlineString)
             }
         }
+    }
+
+    val deadlineColor = remember(dayState.deadlineProgress) {
+        SoapBubbleStyle.colorForTimeRemaining(dayState.deadlineProgress ?: 0.5f)
     }
 
     val dateTag = dayState.date
@@ -686,15 +773,15 @@ private fun DayCell(
 
         when {
             // ------------------------------------------------------------------
-            // today + streak + deadline
-            // Primary circle + transparent shader host + number + fire badge
+            // today + streak (with or without deadline)
+            // Primary blue circle + number + fire badge (+ optional shader)
             // ------------------------------------------------------------------
-            dayState.isToday && dayState.isStreakDay && dayState.hasDeadline -> {
+            dayState.isToday && dayState.isStreakDay -> {
                 Box(
                     modifier = Modifier.size(dayCellCircleSize),
                     contentAlignment = Alignment.Center,
                 ) {
-                    // Primary circle
+                    // Primary blue circle
                     Box(
                         modifier = Modifier
                             .size(dayCellCircleSize)
@@ -702,64 +789,28 @@ private fun DayCell(
                             .background(colors.sky)
                             .testTag(todayPrimaryTag),
                     )
-                    // Shader host (transparent seam)
-                    DeadlineShaderHost(size = dayCellCircleSize, testTag = deadlineShaderTag)
-                    // Day number
+                    // Deadline shader host if today has deadline
+                    if (dayState.hasDeadline) {
+                        DeadlineShaderHost(
+                            size = dayCellCircleSize,
+                            baseColor = deadlineColor,
+                            isReducedMotion = isReducedMotion,
+                            testTag = deadlineShaderTag,
+                        )
+                    }
+                    // Day number on top
                     DayNumberText(
                         dayNumber = dayNumber,
                         textColor = colors.onSky,
                         numberTag = numberTag,
                         dateDescription = dateDescription,
                     )
-                    // Independent fire badge at top-right above shader layer
+                    // Fire badge at top-right
                     FireBadge(
                         tint = colors.streakIcon,
                         testTag = streakBadgeTag,
                         modifier = Modifier.align(Alignment.TopEnd),
                     )
-                }
-            }
-
-            // ------------------------------------------------------------------
-            // today + streak (no deadline)
-            // Primary-tinted fire host + anchored fire-surface number circle
-            // ------------------------------------------------------------------
-            dayState.isToday && dayState.isStreakDay -> {
-                Box(
-                    modifier = Modifier.size(fireHostSize),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    // Fire host tinted with primary color (placeholder for Lottie)
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_flame_filled),
-                        contentDescription = null,
-                        tint = colors.sky,
-                        modifier = Modifier
-                            .size(fireHostSize)
-                            .testTag(streakFireTag),
-                    )
-                    // Anchored fire-surface number circle — position is tunable via anchor constants
-                    Box(
-                        modifier = Modifier
-                            .size(fireNumberCircleSize)
-                            .align(
-                                BiasAlignment(
-                                    horizontalBias = fireNumberAnchorX * 2f - 1f,
-                                    verticalBias = fireNumberAnchorY * 2f - 1f,
-                                )
-                            )
-                            .clip(CircleShape)
-                            .background(colors.streakSurface)
-                            .testTag(streakNumberTag),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        DayNumberText(
-                            dayNumber = dayNumber,
-                            textColor = colors.streakIcon,
-                            numberTag = numberTag,
-                            dateDescription = dateDescription,
-                        )
-                    }
                 }
             }
 
@@ -780,8 +831,13 @@ private fun DayCell(
                             .background(colors.sky)
                             .testTag(todayPrimaryTag),
                     )
-                    // Shader host (transparent seam)
-                    DeadlineShaderHost(size = dayCellCircleSize, testTag = deadlineShaderTag)
+                    // Shader host
+                    DeadlineShaderHost(
+                        size = dayCellCircleSize,
+                        baseColor = deadlineColor,
+                        isReducedMotion = isReducedMotion,
+                        testTag = deadlineShaderTag,
+                    )
                     // Day number on top
                     DayNumberText(
                         dayNumber = dayNumber,
@@ -815,60 +871,50 @@ private fun DayCell(
             }
 
             // ------------------------------------------------------------------
-            // streak day (not today, may or may not have deadline)
-            // Static fire host + anchored fire-surface number circle
+            // streak day on previous days (not today, with or without deadline)
+            // Fire icon badge only on previous days + number (+ optional shader)
             // ------------------------------------------------------------------
             dayState.isStreakDay -> {
                 Box(
-                    modifier = Modifier.size(fireHostSize),
+                    modifier = Modifier.size(dayCellCircleSize),
                     contentAlignment = Alignment.Center,
                 ) {
-                    // Static fire placeholder (Lottie will replace only this host later)
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_flame_filled),
-                        contentDescription = null,
-                        tint = colors.zoneSun,
-                        modifier = Modifier
-                            .size(fireHostSize)
-                            .testTag(streakFireTag),
-                    )
-                    // Anchored fire-surface number circle
-                    Box(
-                        modifier = Modifier
-                            .size(fireNumberCircleSize)
-                            .align(
-                                BiasAlignment(
-                                    horizontalBias = fireNumberAnchorX * 2f - 1f,
-                                    verticalBias = fireNumberAnchorY * 2f - 1f,
-                                )
-                            )
-                            .clip(CircleShape)
-                            .background(colors.streakSurface)
-                            .testTag(streakNumberTag),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        DayNumberText(
-                            dayNumber = dayNumber,
-                            textColor = colors.streakIcon,
-                            numberTag = numberTag,
-                            dateDescription = dateDescription,
+                    if (dayState.hasDeadline) {
+                        DeadlineShaderHost(
+                            size = dayCellCircleSize,
+                            baseColor = deadlineColor,
+                            isReducedMotion = isReducedMotion,
+                            testTag = deadlineShaderTag,
                         )
                     }
+                    DayNumberText(
+                        dayNumber = dayNumber,
+                        textColor = standardTextColor,
+                        numberTag = numberTag,
+                        dateDescription = dateDescription,
+                    )
+                    FireBadge(
+                        tint = colors.streakIcon,
+                        testTag = streakBadgeTag,
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    )
                 }
             }
 
             // ------------------------------------------------------------------
-            // future/today deadline (non-streak, non-today) or plain past missed
-            // Deadline: transparent 36.dp shader host beneath number
-            // Plain/missed: number only
+            // future/past deadline (non-streak, non-today)
             // ------------------------------------------------------------------
             dayState.hasDeadline -> {
                 Box(
                     modifier = Modifier.size(dayCellCircleSize),
                     contentAlignment = Alignment.Center,
                 ) {
-                    // Transparent shader host — seam for future shader replacement
-                    DeadlineShaderHost(size = dayCellCircleSize, testTag = deadlineShaderTag)
+                    DeadlineShaderHost(
+                        size = dayCellCircleSize,
+                        baseColor = deadlineColor,
+                        isReducedMotion = isReducedMotion,
+                        testTag = deadlineShaderTag,
+                    )
                     DayNumberText(
                         dayNumber = dayNumber,
                         textColor = standardTextColor,

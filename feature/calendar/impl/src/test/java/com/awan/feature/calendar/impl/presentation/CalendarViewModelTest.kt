@@ -345,10 +345,13 @@ class CalendarViewModelTest {
             fakeGamificationRepository.progressFlow.value = GamificationProgress(points = 100, streak = 4, maxStreak = 10)
             advanceUntilIdle()
 
-            val expectedStreakDates = CalendarDateMapper.calculateStreakDates(4, today)
+            // Today has no activity (fake returns emptySet), so today must be excluded from streakDates.
+            // calculateStreakDates includes today in the initial estimate but loadTodayActivity corrects it.
+            val expectedStreakDates = CalendarDateMapper.calculateStreakDates(4, today) - today
             val state = viewModel.state.value
             assertEquals(4, state.streak)
             assertEquals(expectedStreakDates, state.streakDates)
+            assertFalse("Today must not be a streak day when today has no activity", state.streakDates.contains(today))
             for (date in expectedStreakDates) {
                 val dayState = state.monthDays.firstOrNull { it.date == date }
                 if (dayState != null) {
@@ -378,11 +381,13 @@ class CalendarViewModelTest {
             fakeCalendarRepository.emitSnapshot(CalendarSnapshot(user = user, goals = emptyList()))
             advanceUntilIdle()
 
-            val expectedStreakDates = CalendarDateMapper.calculateStreakDates(5, today)
+            // Today has no activity (fake returns emptySet), so today must be excluded from streakDates.
+            val expectedStreakDates = CalendarDateMapper.calculateStreakDates(5, today) - today
             val state = viewModel.state.value
             assertEquals(5, state.streak)
             assertEquals(CalendarStreakHeaderState.from(5, state.maxStreak, state.isTodayActive), state.streakHeaderState)
             assertEquals(expectedStreakDates, state.streakDates)
+            assertFalse("Today must not be a streak day when today has no activity", state.streakDates.contains(today))
             for (date in expectedStreakDates) {
                 val dayState = state.monthDays.firstOrNull { it.date == date }
                 if (dayState != null) {
