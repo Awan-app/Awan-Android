@@ -113,7 +113,7 @@ private class FakeGoalRemoteDataSource(
     override suspend fun getGoals(): Result<List<GoalInfoResponse>> = goalsResult
     override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest) = error("not used")
     override suspend fun getInboxGoal() = error("not used")
-    override suspend fun getGoal(goalId: String, expand: Boolean) = error("not used")
+    override suspend fun getGoal(goalId: String): Result<GoalInfoResponse> = error("not used")
     override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest) = error("not used")
     override suspend fun deleteGoal(goalId: String) = error("not used")
     override suspend fun continueDecomposition(request: GoalDecomposeRequest) = error("not used")

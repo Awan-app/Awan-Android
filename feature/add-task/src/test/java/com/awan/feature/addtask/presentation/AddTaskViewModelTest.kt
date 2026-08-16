@@ -143,6 +143,16 @@ class AddTaskViewModelTest {
 
         override fun observeGoals(): Flow<List<Goal>> = flowOf(emptyList())
 
+        override fun observeGoal(goalId: String): Flow<Goal?> = flowOf(null)
+
+        override suspend fun updateGoal(
+            goalId: String,
+            title: String?,
+            description: String?,
+            status: String?,
+            targetDate: String?,
+        ): Result<Goal> = error("not used")
+
         override suspend fun getGoals(): Result<List<Goal>> = Result.Success(emptyList())
 
         override suspend fun continueDecomposition(
@@ -1442,7 +1452,7 @@ class AddTaskViewModelTest {
             assertEquals(AddTaskMode.TASK, finalState.mode)
             assertEquals(GoalStep.Initial, finalState.goalStep)
             assertNull(finalState.goalSessionId)
-            assertEquals(AddTaskEvent.Dismissed, events.first())
+            assertEquals(AddTaskEvent.Dismissed, customViewModel.events.first())
             advanceUntilIdle()
         }
 

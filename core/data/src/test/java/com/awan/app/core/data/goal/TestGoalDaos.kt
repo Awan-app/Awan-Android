@@ -26,9 +26,7 @@ internal open class TestTaskDao : TaskDao {
     override suspend fun upsertTask(task: TaskEntity) { tasks += task }
     override suspend fun upsertTasks(tasks: List<TaskEntity>) { this.tasks += tasks }
     override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(tasks.filter { it.goalId == goalId })
-    override fun observeInboxTasks(): Flow<List<TaskEntity>> = flowOf(tasks.filter { it.goalId == null })
-    override fun observeAllTasks(): Flow<List<TaskEntity>> = flowOf(tasks)
-    override suspend fun getAllTasks(): List<TaskEntity> = tasks
+    override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = tasks.filter { it.goalId == goalId }
     override fun observeTask(taskId: String): Flow<TaskEntity?> = flowOf(tasks.firstOrNull { it.id == taskId })
     override suspend fun getTask(taskId: String): TaskEntity? = tasks.firstOrNull { it.id == taskId }
     override suspend fun deleteTask(taskId: String) { tasks.removeIf { it.id == taskId } }
@@ -36,6 +34,7 @@ internal open class TestTaskDao : TaskDao {
     override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) { this.dependencies += dependencies }
     override suspend fun deleteDependency(dependency: TaskDependencyEntity) { this.dependencies.remove(dependency) }
     override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(dependencies.filter { it.taskId == taskId }.map { it.dependsOnTaskId })
+    override suspend fun getDependsOnIds(taskId: String): List<String> = dependencies.filter { it.taskId == taskId }.map { it.dependsOnTaskId }
     override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(dependencies.filter { it.dependsOnTaskId == taskId }.map { it.taskId })
     override suspend fun deleteAllDependenciesForTask(taskId: String) { dependencies.removeIf { it.taskId == taskId || it.dependsOnTaskId == taskId } }
     override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {

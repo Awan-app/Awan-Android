@@ -24,6 +24,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -209,6 +210,15 @@ class SplashViewModelTest {
     private class FakeGoalRepository : GoalRepository {
         var pendingGoalIdResult: Result<String?> = Result.Success(null)
 
+        override fun observeGoals(): Flow<List<Goal>> = flowOf(emptyList())
+        override fun observeGoal(goalId: String): Flow<Goal?> = flowOf(null)
+        override suspend fun updateGoal(
+            goalId: String,
+            title: String?,
+            description: String?,
+            status: String?,
+            targetDate: String?,
+        ): Result<Goal> = error("Not implemented")
         override suspend fun getGoals(): Result<List<Goal>> = error("Not implemented")
         override suspend fun createGoal(title: String, description: String?, targetDate: String?, tasks: List<ProposedTask>): Result<Goal> = error("Not implemented")
         override suspend fun getInboxGoal(): Result<Goal> = error("Not implemented")

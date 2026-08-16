@@ -81,7 +81,7 @@ class GoalRepositoryTest {
         }
 
         override suspend fun getInboxGoal(): Result<GoalInfoResponse> = error("Not implemented")
-        override suspend fun getGoal(goalId: String, expand: Boolean): Result<GoalInfoResponse> = error("Not implemented")
+        override suspend fun getGoal(goalId: String): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest): Result<GoalInfoResponse> = error("Not implemented")
         override suspend fun deleteGoal(goalId: String): Result<Unit> = error("Not implemented")
         override suspend fun continueDecomposition(request: com.awan.app.core.network.dto.GoalDecomposeRequest): Result<com.awan.app.core.network.dto.GoalDecomposeResponse> = error("Not implemented")
@@ -197,20 +197,11 @@ class GoalRepositoryTest {
         val repository = GoalRepositoryImpl(
             remoteDataSource = FakeGoalRemoteDataSource(),
             goalDao = dao,
-            taskDao = FakeTaskDao(),
-            categoryDao = FakeCategoryDao(),
             connectivityMonitor = onlineMonitor,
-<<<<<<< HEAD
-            ioDispatcher = testDispatcher,
-=======
-            categoryDao = TestCategoryDao(),
-            taskDao = TestTaskDao(),
-<<<<<<< HEAD
->>>>>>> 99c21bd6 (AWAN-83: use goal task bulk endpoint)
-=======
+            categoryDao = FakeCategoryDao(),
+            taskDao = FakeTaskDao(),
             scheduleDraftDao = TestScheduleDraftDao(),
-            sessionDao = TestSessionDao()
->>>>>>> f20bbd00 (AWAN-83: reuse ai-tasks screen for goal schedule review, persist drafts, and resilient confirm parsing)
+            sessionDao = TestSessionDao(),
         )
 
         val result = repository.getGoals()
@@ -232,20 +223,11 @@ class GoalRepositoryTest {
         val repository = GoalRepositoryImpl(
             remoteDataSource = FakeGoalRemoteDataSource(),
             goalDao = FakeGoalDao(stored = emptyList()),
-            taskDao = FakeTaskDao(),
-            categoryDao = FakeCategoryDao(),
             connectivityMonitor = onlineMonitor,
-<<<<<<< HEAD
-            ioDispatcher = testDispatcher,
-=======
-            categoryDao = TestCategoryDao(),
-            taskDao = TestTaskDao(),
-<<<<<<< HEAD
->>>>>>> 99c21bd6 (AWAN-83: use goal task bulk endpoint)
-=======
+            categoryDao = FakeCategoryDao(),
+            taskDao = FakeTaskDao(),
             scheduleDraftDao = TestScheduleDraftDao(),
-            sessionDao = TestSessionDao()
->>>>>>> f20bbd00 (AWAN-83: reuse ai-tasks screen for goal schedule review, persist drafts, and resilient confirm parsing)
+            sessionDao = TestSessionDao(),
         )
 
 

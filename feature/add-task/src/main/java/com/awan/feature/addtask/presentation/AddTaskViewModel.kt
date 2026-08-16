@@ -59,6 +59,7 @@ class AddTaskViewModel @Inject constructor(
     val state: StateFlow<AddTaskState> = _state.asStateFlow()
 
     private val _events = MutableSharedFlow<AddTaskEvent>(
+        replay = 1,
         extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
@@ -68,13 +69,14 @@ class AddTaskViewModel @Inject constructor(
     private var celebrationJob: Job? = null
     private var categoriesJob: Job? = null
     private var userDataJob: Job? = null
+    private var persistStateJob: Job? = null
     private var createJob: Job? = null
     private var initializeJob: Job? = null
 
     init {
         loadCategories()
         observeUserData()
-        viewModelScope.launch {
+        persistStateJob = viewModelScope.launch {
             _state.collect { state ->
                 persistState(state)
             }
@@ -729,6 +731,7 @@ class AddTaskViewModel @Inject constructor(
         celebrationJob?.cancel()
         categoriesJob?.cancel()
         userDataJob?.cancel()
+        persistStateJob?.cancel()
         createJob?.cancel()
         initializeJob?.cancel()
     }

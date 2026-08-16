@@ -23,6 +23,9 @@ import com.awan.app.core.model.TaskWithSessionsDraft
 import com.awan.feature.aitasks.impl.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -115,6 +118,15 @@ class AiTasksViewModelTest {
         var clearCallCount = 0
         var lastConfirmedSessions: List<com.awan.app.core.model.ProposedGoalSession> = emptyList()
 
+        override fun observeGoals(): Flow<List<com.awan.app.core.model.Goal>> = flowOf(emptyList())
+        override fun observeGoal(goalId: String): Flow<com.awan.app.core.model.Goal?> = flowOf(null)
+        override suspend fun updateGoal(
+            goalId: String,
+            title: String?,
+            description: String?,
+            status: String?,
+            targetDate: String?,
+        ): Result<com.awan.app.core.model.Goal> = error("not used")
         override suspend fun getGoals(): Result<List<com.awan.app.core.model.Goal>> = error("not used")
         override suspend fun continueDecomposition(sessionId: String?, message: String): Result<com.awan.app.core.model.GoalDecompositionReply> = error("not used")
         override suspend fun confirmDecomposition(sessionId: String): Result<com.awan.app.core.model.Goal> = error("not used")
