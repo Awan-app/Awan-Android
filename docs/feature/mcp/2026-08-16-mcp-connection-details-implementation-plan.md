@@ -35,3 +35,14 @@ Refactor the MCP integration across all layers to match the new backend contract
 ## Verification Plan
 - `./gradlew testDebugUnitTest`
 - `./gradlew assembleDebug`
+
+## Implementation notes (what actually differed)
+- **Build/Test/Verification**:
+  - `./gradlew testDebugUnitTest`: Passed all 790 tasks across all modules (`:core:network`, `:core:database`, `:core:domain`, `:core:data`, `:feature:profile`, `:app`).
+  - `./gradlew assembleDebug`: Passed successfully with debug APK assembled.
+- **Runtime/Architecture Traps & Notes**:
+  - `McpInfoScreen.kt` was completely removed in favor of the unified `McpSettingsScreen.kt` (Option 1). `McpInfoRouteScreen.kt` and `ProfileEntryProvider.kt` were updated to route cleanly to `McpSettingsRouteScreen`.
+  - Obsolete `CreatedTokenModal.kt` and token tests were removed cleanly without residual references.
+  - All token entities, DAOs, DTOs, and Use Cases were removed.
+- **Deviations from initial plan**:
+  - None; implemented exactly according to Option 1 single-screen layout and new contract specifications.

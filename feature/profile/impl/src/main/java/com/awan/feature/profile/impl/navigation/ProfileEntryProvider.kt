@@ -46,7 +46,6 @@ fun EntryProviderScope<Route>.profileEntry(
 
     entry<McpSettingsRoute> {
         McpSettingsRouteScreen(
-            onNavigateToInfo = onNavigateToMcpInfo,
             onBack = onBack
         )
     }
