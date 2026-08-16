@@ -138,9 +138,10 @@ class AddTaskViewModel @Inject constructor(
     }
 
     private fun initialize(goalId: String?, zoneId: String?, date: LocalDate?) {
+        val today = LocalDate.now(clock)
         _state.update { 
             AddTaskState(
-                today = LocalDate.now(clock),
+                today = today,
                 goalId = goalId,
                 zoneId = zoneId,
                 pendingDate = date,
@@ -150,18 +151,18 @@ class AddTaskViewModel @Inject constructor(
         
         initializeJob?.cancel()
         initializeJob = viewModelScope.launch {
-            if (date != null) {
-                // Pre-select the date in the parser
+            if (date != null && date != today) {
+                // Pre-select the date in the parser only when it is not today
                 applyAttribute(TaskAttribute.On(date))
-                
-                if (zoneId != null) {
-                    // Try to find the zone to pre-select category
-                    val zonesResult = getZonesForDate(date)
-                    if (zonesResult is Result.Success) {
-                        val zone = zonesResult.data.find { it.id == zoneId }
-                        zone?.category?.let { category ->
-                            applyAttribute(TaskAttribute.In(category.name))
-                        }
+            }
+            if (zoneId != null) {
+                // Try to find the zone to pre-select category
+                val targetDate = date ?: today
+                val zonesResult = getZonesForDate(targetDate)
+                if (zonesResult is Result.Success) {
+                    val zone = zonesResult.data.find { it.id == zoneId }
+                    zone?.category?.let { category ->
+                        applyAttribute(TaskAttribute.In(category.name))
                     }
                 }
             }
@@ -717,7 +718,7 @@ class AddTaskViewModel @Inject constructor(
                 hasRequestedMicPermission = it.hasRequestedMicPermission
             )
         }
-        viewModelScope.launch { _events.send(event) }
+        _events.trySend(event)
     }
 
     override fun onCleared() {
