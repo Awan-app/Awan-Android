@@ -382,7 +382,7 @@ fun AwanApp(
                     val dest = appState.topLevelDestinations.find { it.name == item.id }
                     if (dest?.isFab == true) {
                         addTaskZoneId = null
-                        addTaskDate = if (currentRoute is HomeRoute) currentHomeDate else null
+                        addTaskDate = null
                         showAddTask = true
                     } else {
                         dest?.route?.let { route ->
@@ -392,7 +392,7 @@ fun AwanApp(
                 },
                 onFabClick = {
                     addTaskZoneId = null
-                    addTaskDate = if (currentRoute is HomeRoute) currentHomeDate else null
+                    addTaskDate = null
                     showAddTask = true
                 },
                 anchoredItemId = TopLevelDestination.PROFILE.name,

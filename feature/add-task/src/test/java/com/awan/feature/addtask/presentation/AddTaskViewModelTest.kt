@@ -1841,4 +1841,71 @@ class AddTaskViewModelTest {
         assertEquals(50, preview.proposal.tasks[1].estimatedDuration)
         assertTrue(state.canAcceptGoal)
     }
+
+    @Test
+    fun `initialize with today date leaves input clean and not dirty`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+        val today = LocalDate.now(clock)
+
+        viewModel.onAction(AddTaskAction.Initialize(goalId = null, zoneId = null, date = today))
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals("", state.input)
+        assertFalse(state.isDirty)
+    }
+
+    @Test
+    fun `initialize with future date pre-selects date in input`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+        val futureDate = LocalDate.now(clock).plusDays(1)
+
+        viewModel.onAction(AddTaskAction.Initialize(goalId = null, zoneId = null, date = futureDate))
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertTrue(state.input.isNotBlank())
+        assertEquals(futureDate, state.parsed.startAt?.toLocalDate())
+        assertTrue(state.isDirty)
+    }
+
+    @Test
+    fun `initialize with zone on today pre-selects category without date string`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+        val today = LocalDate.now(clock)
+
+        viewModel.onAction(AddTaskAction.Initialize(goalId = null, zoneId = "zone-play", date = today))
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals("@Play", state.input)
+        assertEquals("Play", state.resolvedCategory?.name)
+    }
+
+    @Test
+    fun `dismiss event is delivered once and not replayed to new collectors`() = runTest(testDispatcher) {
+        val viewModel = viewModel()
+
+        val collector1Events = mutableListOf<AddTaskEvent>()
+        val job1 = backgroundScope.launch {
+            viewModel.events.collect { collector1Events.add(it) }
+        }
+
+        viewModel.onAction(AddTaskAction.Dismiss)
+        advanceUntilIdle()
+
+        assertEquals(listOf(AddTaskEvent.Dismissed), collector1Events)
+        job1.cancel()
+
+        // New collector collecting after dismissal
+        val collector2Events = mutableListOf<AddTaskEvent>()
+        val job2 = backgroundScope.launch {
+            viewModel.events.collect { collector2Events.add(it) }
+        }
+        advanceUntilIdle()
+
+        assertTrue(collector2Events.isEmpty())
+        job2.cancel()
+    }
 }
+

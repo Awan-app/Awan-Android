@@ -24,14 +24,13 @@ import com.awan.feature.addtask.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
@@ -58,12 +57,8 @@ class AddTaskViewModel @Inject constructor(
     )
     val state: StateFlow<AddTaskState> = _state.asStateFlow()
 
-    private val _events = MutableSharedFlow<AddTaskEvent>(
-        replay = 1,
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-    val events: SharedFlow<AddTaskEvent> = _events.asSharedFlow()
+    private val _events = Channel<AddTaskEvent>(Channel.BUFFERED)
+    val events: Flow<AddTaskEvent> = _events.receiveAsFlow()
 
     private var activeGoalJob: Job? = null
     private var celebrationJob: Job? = null
@@ -143,9 +138,10 @@ class AddTaskViewModel @Inject constructor(
     }
 
     private fun initialize(goalId: String?, zoneId: String?, date: LocalDate?) {
+        val today = LocalDate.now(clock)
         _state.update { 
             AddTaskState(
-                today = LocalDate.now(clock),
+                today = today,
                 goalId = goalId,
                 zoneId = zoneId,
                 pendingDate = date,
@@ -155,18 +151,18 @@ class AddTaskViewModel @Inject constructor(
         
         initializeJob?.cancel()
         initializeJob = viewModelScope.launch {
-            if (date != null) {
-                // Pre-select the date in the parser
+            if (date != null && date != today) {
+                // Pre-select the date in the parser only when it is not today
                 applyAttribute(TaskAttribute.On(date))
-                
-                if (zoneId != null) {
-                    // Try to find the zone to pre-select category
-                    val zonesResult = getZonesForDate(date)
-                    if (zonesResult is Result.Success) {
-                        val zone = zonesResult.data.find { it.id == zoneId }
-                        zone?.category?.let { category ->
-                            applyAttribute(TaskAttribute.In(category.name))
-                        }
+            }
+            if (zoneId != null) {
+                // Try to find the zone to pre-select category
+                val targetDate = date ?: today
+                val zonesResult = getZonesForDate(targetDate)
+                if (zonesResult is Result.Success) {
+                    val zone = zonesResult.data.find { it.id == zoneId }
+                    zone?.category?.let { category ->
+                        applyAttribute(TaskAttribute.In(category.name))
                     }
                 }
             }
@@ -722,7 +718,7 @@ class AddTaskViewModel @Inject constructor(
                 hasRequestedMicPermission = it.hasRequestedMicPermission
             )
         }
-        _events.tryEmit(event)
+        _events.trySend(event)
     }
 
     override fun onCleared() {

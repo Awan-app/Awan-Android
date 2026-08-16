@@ -150,20 +150,13 @@ fun GoalDetailsScreen(
                 addTaskViewModel.onAction(AddTaskAction.Initialize(goalId = state.goal.id))
             }
 
-            ObserveAsEvents(addTaskViewModel.events) { event ->
-                when (event) {
-                    is AddTaskEvent.TaskCreated -> {
-                        onAction(GoalDetailsAction.AddTaskDismissed)
-                        onAction(GoalDetailsAction.Retry)
-                    }
-                    AddTaskEvent.Dismissed -> onAction(GoalDetailsAction.AddTaskDismissed)
-                    else -> {}
-                }
-            }
-
             AddTaskSheet(
                 onDismiss = { onAction(GoalDetailsAction.AddTaskDismissed) },
-                viewModel = addTaskViewModel
+                onTaskCreated = {
+                    onAction(GoalDetailsAction.AddTaskDismissed)
+                    onAction(GoalDetailsAction.Retry)
+                },
+                viewModel = addTaskViewModel,
             )
         }
     }
