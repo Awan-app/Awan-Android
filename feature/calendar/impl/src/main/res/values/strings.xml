@@ -7,8 +7,14 @@
     <string name="calendar_upcoming_deadlines">Upcoming Deadlines</string>
     <string name="calendar_retry">Retry</string>
     <string name="calendar_no_deadlines">No upcoming deadlines scheduled.</string>
-    <string name="calendar_streak_title">%d Day Streak</string>
-    <string name="calendar_streak_subtitle">Consecutive active days ending today</string>
+    <string name="calendar_streak_start_title">Start your streak</string>
+    <string name="calendar_streak_start_subtitle">Complete a task today to light your fire.</string>
+    <string name="calendar_streak_restart_title">Ready to start again?</string>
+    <string name="calendar_streak_restart_subtitle">Your last streak ended. Complete a task today to begin a new one.</string>
+    <string name="calendar_streak_protect_title">%1$d-day streak at risk</string>
+    <string name="calendar_streak_protect_subtitle">Complete a task today to keep your fire burning.</string>
+    <string name="calendar_streak_celebrate_title">%1$d-day streak! You\'re on fire</string>
+    <string name="calendar_streak_celebrate_subtitle">You completed today\'s task. Keep it going tomorrow.</string>
     <string name="calendar_target_date">Target: %s</string>
     <string name="calendar_badge_today">Today</string>
     <string name="calendar_badge_tomorrow">Tomorrow</string>
@@ -24,5 +30,15 @@
     <string name="calendar_weekday_thu">Th</string>
     <string name="calendar_weekday_fri">Fr</string>
     <string name="calendar_weekday_sat">Sa</string>
+    <string name="calendar_deadline_info_button">About deadline colors</string>
+    <string name="calendar_deadline_sheet_title">How deadline colors work</string>
+    <string name="calendar_deadline_sheet_subtitle">As time moves forward, the gentle glow around your goal shifts to keep you aware without adding stress.</string>
+    <string name="calendar_deadline_sheet_close">Close</string>
+    <string name="calendar_deadline_phase_green_title">Plenty of time</string>
+    <string name="calendar_deadline_phase_green_desc">You just started or have lots of open sky ahead. Enjoy the smooth flow.</string>
+    <string name="calendar_deadline_phase_amber_title">Halfway there</string>
+    <string name="calendar_deadline_phase_amber_desc">You\'re in the middle of your journey. Steady steps keep momentum alive.</string>
+    <string name="calendar_deadline_phase_red_title">Approaching deadline</string>
+    <string name="calendar_deadline_phase_red_desc">The finish line is near. A focused session will help you bring it home.</string>
 </resources>
 

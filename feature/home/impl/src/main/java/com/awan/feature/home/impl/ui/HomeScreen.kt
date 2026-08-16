@@ -61,6 +61,7 @@ fun HomeScreen(
     onNavigateToAddTask: (zoneId: String?, date: LocalDate?) -> Unit = { _, _ -> },
     onDateChanged: (LocalDate) -> Unit = {},
     onRegisterOpenSession: ((String) -> Unit) -> Unit = {},
+    onNavigateToTaskDetails: (String) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
 
@@ -239,6 +240,10 @@ fun HomeScreen(
                 onDeleteClick = viewModel::requestDeleteSession,
                 onConfirmDelete = viewModel::confirmDeleteAction,
                 onCancelDelete = viewModel::dismissDeleteConfirmDialog,
+                onNavigateToTaskDetails = { taskId ->
+                    viewModel.dismissSessionDetail()
+                    onNavigateToTaskDetails(taskId)
+                },
             )
         }
 

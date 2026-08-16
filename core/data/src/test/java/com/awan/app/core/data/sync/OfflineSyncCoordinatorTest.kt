@@ -58,6 +58,10 @@ import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.TaskUpdateRequest
+import com.awan.app.core.network.dto.task.TaskMoveRequest
+import com.awan.app.core.network.dto.task.TaskDependencyRequest
+import com.awan.app.core.network.dto.task.AddTaskSessionsRequest
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
@@ -99,13 +103,19 @@ private class FakeTaskRemoteDataSource(
     override suspend fun getTasksByRange(startDate: String, endDate: String) = rangeResult
     override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = Result.Success(emptyList())
     override suspend fun scheduleTask(request: ScheduleTaskRequest) = error("not used")
-    override suspend fun updateTask(
-        taskId: String,
-        request: com.awan.app.core.network.dto.task.TaskUpdateRequest
-    ): Result<TaskInfoResponse> = error("not used")
+    override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = Result.Success(Unit)
     override suspend fun completeTask(taskId: String): Result<com.awan.app.core.network.dto.task.TaskCompletionResponse> = error("not used")
-    override suspend fun deleteTask(taskId: String) = error("not used")
+    override suspend fun getTask(taskId: String): Result<TaskInfoResponse> = error("not used")
+    override suspend fun updateTask(taskId: String, request: TaskUpdateRequest): Result<TaskInfoResponse> = error("not used")
+    override suspend fun moveTask(taskId: String, request: TaskMoveRequest): Result<TaskInfoResponse> = error("not used")
+    override suspend fun addDependency(taskId: String, request: TaskDependencyRequest): Result<Unit> = error("not used")
+    override suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit> = error("not used")
+    override suspend fun getTaskDependencies(taskId: String): Result<List<TaskInfoResponse>> = Result.Success(emptyList())
+    override suspend fun getTaskDependents(taskId: String): Result<List<TaskInfoResponse>> = Result.Success(emptyList())
+    override suspend fun getTaskSessions(taskId: String, status: String?): Result<List<SessionDto>> = Result.Success(emptyList())
+    override suspend fun addTaskSessions(taskId: String, request: AddTaskSessionsRequest): Result<List<SessionDto>> = Result.Success(emptyList())
 }
+
 
 private class FakeGoalRemoteDataSource(
     private val goalsResult: Result<List<GoalInfoResponse>> = Result.Success(emptyList()),
@@ -141,7 +151,7 @@ private class FakeStoreRemoteDataSource : StoreRemoteDataSource {
     override suspend fun buyItem(itemId: String): Result<Unit> = Result.Success(Unit)
     override suspend fun getEquippedItems(): Result<List<EquippedItemDto>> = Result.Success(emptyList())
     override suspend fun equipItem(itemId: String): Result<Unit> = Result.Success(Unit)
-    override suspend fun unequipItem(itemId: String): Result<Unit> = Result.Success(Unit)
+    override suspend fun unequipItem(type: String): Result<Unit> = Result.Success(Unit)
 }
 
 private class FakeProfileRemoteDataSource : ProfileRemoteDataSource {

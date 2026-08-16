@@ -63,8 +63,8 @@ import com.awan.app.core.database.model.ZoneEntity
         ScheduleDraftSessionEntity::class,
         ScheduleDraftUnscheduledTaskEntity::class,
     ],
-    version = 2,
-    exportSchema = true,
+    version = 1,
+    exportSchema = false,
 )
 abstract class AwanDatabase : RoomDatabase() {
 

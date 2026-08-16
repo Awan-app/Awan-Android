@@ -135,11 +135,15 @@ class MarketplaceViewModel @Inject constructor(
     }
 
     private fun unequipItem(type: StoreItemType) {
+        if (state.value.isEquipping) return
+        
+        _uiState.update { it.copy(isEquipping = true) }
         viewModelScope.launch {
             val result = unequipItemUseCase(type)
             if (result is Result.Error) {
                 _uiState.update { it.copy(error = R.string.marketplace_error_unequipping) }
             }
+            _uiState.update { it.copy(isEquipping = false) }
         }
     }
 }

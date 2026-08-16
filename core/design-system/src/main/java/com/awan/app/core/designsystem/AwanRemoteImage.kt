@@ -1,6 +1,7 @@
 package com.awan.app.core.designsystem
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -17,11 +18,16 @@ fun AwanRemoteImage(
 ) {
     if (url.isNullOrBlank()) return
 
-    AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
+    val context = LocalContext.current
+    val imageRequest = remember(url) {
+        ImageRequest.Builder(context)
             .data(url)
             .crossfade(true)
-            .build(),
+            .build()
+    }
+
+    AsyncImage(
+        model = imageRequest,
         contentDescription = contentDescription,
         contentScale = contentScale,
         modifier = modifier

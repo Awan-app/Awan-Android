@@ -43,6 +43,7 @@ object DatabaseModule {
     )
         .addMigrations(com.awan.app.core.database.MIGRATION_1_2)
         .fallbackToDestructiveMigration(dropAllTables = true)
+        .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
         .build()
 
     @Provides

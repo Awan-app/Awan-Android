@@ -44,8 +44,8 @@ class StoreRemoteDataSourceImpl @Inject constructor(
             storeApiService.equipItem(itemId)
         }
 
-    override suspend fun unequipItem(itemId: String): Result<Unit> =
+    override suspend fun unequipItem(type: String): Result<Unit> =
         safeApiCall(dispatcher = ioDispatcher, json = json) {
-            storeApiService.unequipItem(itemId)
+            storeApiService.unequipItem(type)
         }
 }

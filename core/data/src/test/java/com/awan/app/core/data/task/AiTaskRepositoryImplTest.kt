@@ -21,6 +21,10 @@ import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskUpdateRequest
+import com.awan.app.core.network.dto.task.TaskMoveRequest
+import com.awan.app.core.network.dto.task.TaskDependencyRequest
+import com.awan.app.core.network.dto.task.AddTaskSessionsRequest
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -86,17 +90,31 @@ class AiTaskRepositoryImplTest {
         override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> =
             error("not used")
 
-        override suspend fun deleteTask(taskId: String): Result<Unit> = error("not used")
+        override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = error("not used")
 
         override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = error("not used")
 
-        override suspend fun updateTask(
-            taskId: String,
-            request: com.awan.app.core.network.dto.task.TaskUpdateRequest
-        ): Result<TaskInfoResponse> = error("not used")
+        override suspend fun getTask(taskId: String): Result<TaskInfoResponse> = error("not used")
+
+        override suspend fun updateTask(taskId: String, request: TaskUpdateRequest): Result<TaskInfoResponse> = error("not used")
+
+        override suspend fun moveTask(taskId: String, request: TaskMoveRequest): Result<TaskInfoResponse> = error("not used")
+
+        override suspend fun addDependency(taskId: String, request: TaskDependencyRequest): Result<Unit> = error("not used")
+
+        override suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit> = error("not used")
+
+        override suspend fun getTaskDependencies(taskId: String): Result<List<TaskInfoResponse>> = Result.Success(emptyList())
+
+        override suspend fun getTaskDependents(taskId: String): Result<List<TaskInfoResponse>> = Result.Success(emptyList())
+
+        override suspend fun getTaskSessions(taskId: String, status: String?): Result<List<SessionDto>> = Result.Success(emptyList())
+
+        override suspend fun addTaskSessions(taskId: String, request: AddTaskSessionsRequest): Result<List<SessionDto>> = Result.Success(emptyList())
 
         override suspend fun completeTask(taskId: String): Result<com.awan.app.core.network.dto.task.TaskCompletionResponse> = error("not used")
     }
+
 
     private val fakeTaskDao = object : TaskDao {
         override suspend fun upsertTask(task: TaskEntity) {}

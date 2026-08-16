@@ -2,13 +2,9 @@ package com.awan.feature.marketplace.impl.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -20,6 +16,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.composables.icons.lucide.Coins
+import com.composables.icons.lucide.Lucide
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.formatAbbreviatedPoints
@@ -28,7 +26,6 @@ import com.awan.feature.marketplace.impl.R
 @Composable
 fun MarketplacePointsCard(
     points: Int,
-    onAddClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -58,7 +55,7 @@ fun MarketplacePointsCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Star,
+                        imageVector = Lucide.Coins,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
@@ -90,21 +87,6 @@ fun MarketplacePointsCard(
                         )
                     )
                 }
-            }
-
-            Surface(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clickable(onClick = onAddClick),
-                color = AwanTheme.colors.pointsIcon.copy(alpha = 0.1f),
-                shape = CircleShape
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    tint = AwanTheme.colors.pointsIcon,
-                    modifier = Modifier.padding(6.dp)
-                )
             }
         }
     }

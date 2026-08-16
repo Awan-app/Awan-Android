@@ -33,6 +33,10 @@ import com.awan.app.core.network.dto.task.TaskCompletionResponse
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskUpdateRequest
+import com.awan.app.core.network.dto.task.TaskMoveRequest
+import com.awan.app.core.network.dto.task.TaskDependencyRequest
+import com.awan.app.core.network.dto.task.AddTaskSessionsRequest
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -53,11 +57,12 @@ import java.time.LocalDateTime
 private class FakeTaskDao : TaskDao {
     val upsertedTasks = mutableListOf<TaskEntity>()
     val deletedTaskIds = mutableListOf<String>()
+    val tasksByGoal = mutableMapOf<String, List<TaskEntity>>()
 
     override suspend fun upsertTask(task: TaskEntity) { upsertedTasks += task }
     override suspend fun upsertTasks(tasks: List<TaskEntity>) { upsertedTasks += tasks }
     override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = emptyList()
+    override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = tasksByGoal[goalId] ?: emptyList()
     override fun observeTask(taskId: String): Flow<TaskEntity?> = MutableStateFlow(null)
     override suspend fun getTask(taskId: String): TaskEntity? = null
     override suspend fun deleteTask(taskId: String) { deletedTaskIds += taskId }
@@ -263,17 +268,22 @@ class TaskRepositoryImplTest {
                 )
             )
 
-        override suspend fun deleteTask(taskId: String): Result<Unit> {
+        override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> {
             deletedTaskId = taskId
             return Result.Success(Unit)
         }
 
+        var lastUpdateRequest: TaskUpdateRequest? = null
+        var lastMoveRequest: TaskMoveRequest? = null
+        var lastAddSessionsRequest: AddTaskSessionsRequest? = null
+
         override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = Result.Success(emptyList())
 
-        override suspend fun updateTask(
-            taskId: String,
-            request: com.awan.app.core.network.dto.task.TaskUpdateRequest
-        ): Result<TaskInfoResponse> {
+        override suspend fun getTask(taskId: String): Result<TaskInfoResponse> =
+            Result.Success(TaskInfoResponse(id = taskId, title = "Task $taskId"))
+
+        override suspend fun updateTask(taskId: String, request: TaskUpdateRequest): Result<TaskInfoResponse> {
+            lastUpdateRequest = request
             return Result.Success(
                 TaskInfoResponse(
                     id = taskId,
@@ -282,7 +292,37 @@ class TaskRepositoryImplTest {
                 )
             )
         }
+
+        override suspend fun moveTask(taskId: String, request: TaskMoveRequest): Result<TaskInfoResponse> {
+            lastMoveRequest = request
+            return Result.Success(TaskInfoResponse(id = taskId, title = "Moved", goalId = request.goalId))
+        }
+
+        override suspend fun addDependency(taskId: String, request: TaskDependencyRequest): Result<Unit> =
+            Result.Success(Unit)
+
+        override suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit> =
+            Result.Success(Unit)
+
+        override suspend fun getTaskDependencies(taskId: String): Result<List<TaskInfoResponse>> =
+            Result.Success(emptyList())
+
+        override suspend fun getTaskDependents(taskId: String): Result<List<TaskInfoResponse>> =
+            Result.Success(emptyList())
+
+        override suspend fun getTaskSessions(taskId: String, status: String?): Result<List<SessionDto>> =
+            Result.Success(emptyList())
+
+        override suspend fun addTaskSessions(taskId: String, request: AddTaskSessionsRequest): Result<List<SessionDto>> {
+            lastAddSessionsRequest = request
+            return Result.Success(
+                request.sessions.mapIndexed { index, s ->
+                    SessionDto(id = "s-added-$index", start = s.start, end = s.end, zoneId = s.zoneId, status = "SCHEDULED")
+                }
+            )
+        }
     }
+
 
 private class FakeGoalDao : com.awan.app.core.database.dao.GoalDao {
     override suspend fun upsertGoal(goal: com.awan.app.core.database.model.GoalEntity) {}
@@ -426,4 +466,97 @@ private class FakeGoalDao : com.awan.app.core.database.dao.GoalDao {
         assertTrue(result is Result.Error)
         assertTrue((result as Result.Error).error is com.awan.app.core.common.error.AppError.Network)
     }
+
+    @Test
+    fun `updateTask sends status to remote and upserts updated task to Room`() = runTest(testDispatcher) {
+        val fakeTaskDao = FakeTaskDao()
+        val remote = FakeRemoteDataSource()
+        val repository = buildRepository(remote = remote, taskDao = fakeTaskDao)
+
+        val result = repository.updateTask(
+            taskId = "task-1",
+            title = "Updated Title",
+            status = "COMPLETED",
+        )
+
+        assertEquals("COMPLETED", remote.lastUpdateRequest?.status)
+        assertEquals("Updated Title", remote.lastUpdateRequest?.title)
+        assertEquals(1, fakeTaskDao.upsertedTasks.size)
+        assertEquals("task-1", fakeTaskDao.upsertedTasks.first().id)
+        assertEquals("COMPLETED", fakeTaskDao.upsertedTasks.first().status)
+        assertTrue(result is Result.Success)
+    }
+
+    @Test
+    fun `moveTask persists updated task entity to Room`() = runTest(testDispatcher) {
+        val fakeTaskDao = FakeTaskDao()
+        val remote = FakeRemoteDataSource()
+        val repository = buildRepository(remote = remote, taskDao = fakeTaskDao)
+
+        val result = repository.moveTask("task-1", "goal-2")
+
+        assertEquals("goal-2", remote.lastMoveRequest?.goalId)
+        assertEquals(1, fakeTaskDao.upsertedTasks.size)
+        assertEquals("goal-2", fakeTaskDao.upsertedTasks.first().goalId)
+        assertTrue(result is Result.Success)
+    }
+
+    @Test
+    fun `addTaskSessions persists returned session entities to Room`() = runTest(testDispatcher) {
+        val fakeSessionDao = FakeSessionDao()
+        val remote = FakeRemoteDataSource()
+        val repository = buildRepository(remote = remote, sessionDao = fakeSessionDao)
+
+        val start = LocalDateTime.of(2026, 8, 16, 10, 0)
+        val result = repository.addTaskSessions(
+            taskId = "task-1",
+            sessions = listOf(SessionDraft(start = start, end = start.plusMinutes(45), zoneId = "zone-1")),
+        )
+
+        assertEquals(1, remote.lastAddSessionsRequest?.sessions?.size)
+        assertEquals(1, fakeSessionDao.upserted.size)
+        assertEquals("s-added-0", fakeSessionDao.upserted.first().id)
+        assertEquals("task-1", fakeSessionDao.upserted.first().taskId)
+        assertTrue(result is Result.Success)
+    }
+
+    @Test
+    fun `getTasksByGoal returns tasks from Room DAO`() = runTest(testDispatcher) {
+        val fakeTaskDao = FakeTaskDao()
+        val repository = buildRepository(taskDao = fakeTaskDao)
+
+        fakeTaskDao.tasksByGoal["goal-1"] = listOf(
+            TaskEntity(
+                id = "task-1",
+                title = "Task 1",
+                description = null,
+                estimatedDuration = 30,
+                status = "SCHEDULED",
+                mandatory = false,
+                estimatedPoints = 5,
+                allowTaskSplitting = false,
+                goalId = "goal-1",
+            ),
+            TaskEntity(
+                id = "task-2",
+                title = "Task 2",
+                description = null,
+                estimatedDuration = 45,
+                status = "SCHEDULED",
+                mandatory = true,
+                estimatedPoints = 10,
+                allowTaskSplitting = false,
+                goalId = "goal-1",
+            ),
+        )
+
+        val result = repository.getTasksByGoal("goal-1")
+
+        assertTrue(result is Result.Success)
+        val tasks = (result as Result.Success).data
+        assertEquals(2, tasks.size)
+        assertEquals("task-1", tasks[0].id)
+        assertEquals("task-2", tasks[1].id)
+    }
 }
+

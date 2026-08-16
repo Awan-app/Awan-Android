@@ -12,5 +12,5 @@ interface StoreRemoteDataSource {
     suspend fun buyItem(itemId: String): Result<Unit>
     suspend fun getEquippedItems(): Result<List<EquippedItemDto>>
     suspend fun equipItem(itemId: String): Result<Unit>
-    suspend fun unequipItem(itemId: String): Result<Unit>
+    suspend fun unequipItem(type: String): Result<Unit>
 }

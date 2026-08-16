@@ -11,6 +11,7 @@ import com.awan.app.core.network.dto.store.EquippedItemDto
 import com.awan.app.core.network.dto.store.OwnedItemDto
 import com.awan.app.core.network.dto.store.StoreItemDto
 import com.awan.app.core.network.dto.store.StoreItemTypeDto
+import com.awan.app.core.network.util.UrlResolver
 
 fun StoreItemTypeDto.asExternalModel(): StoreItemType = when (this) {
     StoreItemTypeDto.FRAME -> StoreItemType.FRAME
@@ -40,7 +41,7 @@ fun StoreItemDto.asExternalModel(): StoreItem? {
         id = id,
         name = name ?: "",
         description = description ?: "",
-        image = image ?: "",
+        image = UrlResolver.resolve(image) ?: "",
         info = info,
         price = price,
         version = version ?: "",

@@ -24,6 +24,8 @@
     <string name="marketplace_confirm_buy_body">هل أنت متأكد من شراء %1$s بـ %2$d نقطة؟</string>
     <string name="marketplace_confirm_equip_title">تجهيز العنصر</string>
     <string name="marketplace_confirm_equip_body">هل تريد تجهيز %1$s؟</string>
+    <string name="marketplace_confirm_unequip_title">إلغاء تجهيز العنصر</string>
+    <string name="marketplace_confirm_unequip_body">هل أنت متأكد من إلغاء تجهيز %1$s؟</string>
     <string name="marketplace_action_confirm">تأكيد</string>
     <string name="marketplace_action_cancel">إلغاء</string>
     <string name="marketplace_points_suffix">نقطة</string>

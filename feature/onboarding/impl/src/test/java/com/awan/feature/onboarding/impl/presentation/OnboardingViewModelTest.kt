@@ -356,6 +356,24 @@ class OnboardingViewModelTest {
     }
 
     @Test
+    fun `skipping Name step defaults firstName to Friend`() = runTest(testDispatcher) {
+        viewModel.onAction(OnboardingAction.Next) // Welcome -> Name
+        assertEquals(OnboardingStep.Name, viewModel.state.value.step)
+        viewModel.onAction(OnboardingAction.Skip)
+        assertEquals(com.awan.app.core.model.ProfileConstants.DEFAULT_FIRST_NAME_FRIEND, viewModel.state.value.firstName)
+        assertEquals(OnboardingStep.DayBounds, viewModel.state.value.step)
+    }
+
+    @Test
+    fun `skipping setup from Welcome submits Friend and not entered`() = runTest(testDispatcher) {
+        viewModel.onAction(OnboardingAction.SkipSetup)
+        advanceUntilIdle()
+
+        assertEquals("Friend", repository.lastCompletedData?.profile?.firstName)
+        assertEquals("not entered", repository.lastCompletedData?.profile?.lastName)
+    }
+
+    @Test
     fun `skipping from Welcome completes onboarding with all defaults`() = runTest(testDispatcher) {
         val events = mutableListOf<OnboardingEvent>()
         backgroundScope.launch(testDispatcher) {
