@@ -17,6 +17,7 @@ import com.awan.app.core.datastore.auth.AuthTokenProvider
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.domain.profile.model.Profile
 import com.awan.app.core.domain.profile.repository.ProfileRepository
+import com.awan.app.core.model.toApiLastName
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import com.awan.app.core.network.dto.profile.UpdateBirthDateRequest
@@ -82,7 +83,7 @@ class ProfileRepositoryImpl @Inject constructor(
             existing.copy(
                 email = newProfile.email ?: existing.email,
                 firstName = newProfile.firstName ?: existing.firstName,
-                lastName = newProfile.lastName ?: existing.lastName,
+                lastName = if (newProfile.email != null) newProfile.lastName else (newProfile.lastName ?: existing.lastName),
                 birthDate = newProfile.birthDate ?: existing.birthDate,
                 points = newProfile.points ?: existing.points,
                 streak = newProfile.streak ?: existing.streak,
@@ -144,8 +145,9 @@ class ProfileRepositoryImpl @Inject constructor(
         if (!connectivityMonitor.isCurrentlyOnline()) {
             return Result.Error(AppError.Network)
         }
+        val apiLastName = lastName.toApiLastName()
         return profileRemoteDataSource.updateProfileName(
-            UpdateNameRequest(firstName = firstName, lastName = lastName),
+            UpdateNameRequest(firstName = firstName.trim(), lastName = apiLastName),
         ).map { it.toDomain() }.suspendOnSuccess { updateLocalCache(it) }
     }
 
@@ -218,10 +220,11 @@ class ProfileRepositoryImpl @Inject constructor(
         if (!connectivityMonitor.isCurrentlyOnline()) {
             return Result.Error(AppError.Network)
         }
+        val apiLastName = lastName?.toApiLastName()
         return profileRemoteDataSource.updateProfilePartial(
             UpdateProfilePartialRequest(
-                firstName = firstName,
-                lastName = lastName,
+                firstName = firstName?.trim(),
+                lastName = apiLastName,
                 timezone = timezone,
                 preferredSessionDuration = preferredSessionDuration,
                 bufferBetweenSessions = bufferBetweenSessions,

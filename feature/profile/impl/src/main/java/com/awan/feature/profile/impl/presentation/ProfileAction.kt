@@ -9,8 +9,9 @@ sealed interface ProfileAction {
     data class UpdateSleepSchedule(val wakeupTime: String, val sleepTime: String) : ProfileAction
     data class UpdateSessionDuration(val duration: Int) : ProfileAction
     data class UpdateTimezone(val timezone: String) : ProfileAction
-    data class UpdatePersonalInfo(val firstName: String, val lastName: String, val birthDate: String) : ProfileAction
+    data class UpdatePersonalInfo(val firstName: String, val lastName: String) : ProfileAction
     data class UpdateProfilePicture(val uri: String) : ProfileAction
     data object DeleteProfilePicture : ProfileAction
+    data object DismissEditSheet : ProfileAction
     data object Logout : ProfileAction
 }

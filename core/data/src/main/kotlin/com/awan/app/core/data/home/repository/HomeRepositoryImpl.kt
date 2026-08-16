@@ -40,6 +40,8 @@ import com.awan.app.core.model.SessionTaskDetail
 import com.awan.app.core.model.TaskDetailInfo
 import com.awan.app.core.model.TaskStatus
 
+import com.awan.app.core.model.sanitizeLastName
+
 @Singleton
 class HomeRepositoryImpl @Inject constructor(
     private val remoteDataSource: HomeRemoteDataSource,
@@ -56,7 +58,7 @@ class HomeRepositoryImpl @Inject constructor(
             if (result is Result.Success) {
                 val dto = result.data
                 val firstName = dto.firstName ?: "User"
-                val lastName = dto.lastName ?: ""
+                val lastName = dto.lastName.sanitizeLastName() ?: ""
                 val points = dto.points ?: 0
                 val streak = dto.streak ?: 0
                 local.upsertUser(
@@ -82,7 +84,7 @@ class HomeRepositoryImpl @Inject constructor(
                 UserProfileInfo(
                     id = cachedUser.id,
                     firstName = cachedUser.firstName ?: "User",
-                    lastName = cachedUser.lastName ?: "",
+                    lastName = cachedUser.lastName.sanitizeLastName() ?: "",
                     points = cachedUser.points,
                     streak = cachedUser.streak,
                 )

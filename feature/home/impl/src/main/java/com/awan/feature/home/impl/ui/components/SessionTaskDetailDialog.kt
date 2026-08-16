@@ -82,6 +82,7 @@ fun SessionTaskDetailDialog(
     onDeleteClick: () -> Unit = {},
     onConfirmDelete: () -> Unit = {},
     onCancelDelete: () -> Unit = {},
+    onNavigateToTaskDetails: (String) -> Unit = {},
 ) {
     val coroutineScope = rememberCoroutineScope()
     var isExplicitDismissing by remember { mutableStateOf(false) }
@@ -261,6 +262,7 @@ fun SessionTaskDetailDialog(
                             onDurationChange = onDurationChange,
                             onDeleteClick = onDeleteClick,
                             onConfirmClose = onSaveChanges,
+                            onNavigateToTaskDetails = onNavigateToTaskDetails,
                         )
                     } else {
                         Spacer(modifier = Modifier.height(1.dp))

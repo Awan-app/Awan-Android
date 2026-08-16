@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -111,6 +112,7 @@ internal fun UnifiedSessionTaskContent(
     onDateChange: (LocalDate) -> Unit = {},
     onDeleteClick: (() -> Unit)? = null,
     onConfirmClose: () -> Unit = {},
+    onNavigateToTaskDetails: ((String) -> Unit)? = null,
 ) {
     var activePickerTarget by remember { mutableStateOf<DialogPickerTarget?>(null) }
 
@@ -137,6 +139,7 @@ internal fun UnifiedSessionTaskContent(
                     onOpenPicker = { activePickerTarget = it },
                     onDeleteClick = onDeleteClick,
                     onConfirmClose = onConfirmClose,
+                    onNavigateToTaskDetails = onNavigateToTaskDetails,
                 )
             }
             DialogPickerTarget.DATE -> {
@@ -192,6 +195,7 @@ private fun MainSessionTaskDetailView(
     onOpenPicker: (DialogPickerTarget) -> Unit,
     onDeleteClick: (() -> Unit)?,
     onConfirmClose: () -> Unit = {},
+    onNavigateToTaskDetails: ((String) -> Unit)? = null,
 ) {
     val isCompleted = detail.session.status == SessionStatus.COMPLETED ||
         detail.task.status == TaskStatus.COMPLETED
@@ -296,16 +300,41 @@ private fun MainSessionTaskDetailView(
                 .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Task Title
-            AwanText(
-                text = detail.task.title,
-                style = AwanTheme.typography.heading.copy(
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AwanTheme.colors.textPrimary,
-                    lineHeight = 26.sp,
-                ),
-            )
+            // Task Title (Clickable link to Task Details)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .then(
+                        if (onNavigateToTaskDetails != null) {
+                            Modifier.clickable { onNavigateToTaskDetails(detail.task.id) }
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                AwanText(
+                    text = detail.task.title,
+                    style = AwanTheme.typography.heading.copy(
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AwanTheme.colors.textPrimary,
+                        lineHeight = 26.sp,
+                    ),
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (onNavigateToTaskDetails != null) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                        contentDescription = stringResource(R.string.home_task_details_title),
+                        tint = AwanTheme.colors.sky,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
 
             // Task Description (if present)
             detail.task.description?.takeIf { it.isNotBlank() }?.let { desc ->

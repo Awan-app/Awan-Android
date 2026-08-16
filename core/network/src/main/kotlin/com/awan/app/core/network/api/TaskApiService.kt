@@ -102,4 +102,57 @@ interface TaskApiService {
         @Path("taskId") taskId: String,
         @Query("cascade") cascade: Boolean = false,
     )
+
+    // ── Task Details: Move ────────────────────────────────────────────────────
+
+    /** Transfers a task from its current goal to [goalId]. Dependency links must be removed first. */
+    @retrofit2.http.PATCH("v1/tasks/{taskId}/move")
+    suspend fun moveTask(
+        @Path("taskId") taskId: String,
+        @Body request: com.awan.app.core.network.dto.task.TaskMoveRequest,
+    ): TaskInfoResponse
+
+    // ── Task Details: Dependencies ────────────────────────────────────────────
+
+    /** Creates a prerequisite: [taskId] depends on [dependsOnTaskId]. */
+    @POST("v1/tasks/{taskId}/dependencies")
+    suspend fun addDependency(
+        @Path("taskId") taskId: String,
+        @Body request: com.awan.app.core.network.dto.task.TaskDependencyRequest,
+    )
+
+    /** Removes the dependency link between [taskId] and [dependsOnTaskId]. */
+    @DELETE("v1/tasks/{taskId}/dependencies/{dependsOnTaskId}")
+    suspend fun removeDependency(
+        @Path("taskId") taskId: String,
+        @Path("dependsOnTaskId") dependsOnTaskId: String,
+    )
+
+    /** Returns all tasks that [taskId] directly depends on (prerequisites). */
+    @GET("v1/tasks/{taskId}/dependencies")
+    suspend fun getTaskDependencies(
+        @Path("taskId") taskId: String,
+    ): List<TaskInfoResponse>
+
+    /** Returns all tasks that depend on [taskId] (downstream successors). */
+    @GET("v1/tasks/{taskId}/dependents")
+    suspend fun getTaskDependents(
+        @Path("taskId") taskId: String,
+    ): List<TaskInfoResponse>
+
+    // ── Task Details: Sessions ────────────────────────────────────────────────
+
+    /** Lists sessions booked for [taskId], optionally filtered by [status]. */
+    @GET("v1/tasks/{taskId}/sessions")
+    suspend fun getTaskSessions(
+        @Path("taskId") taskId: String,
+        @Query("status") status: String? = null,
+    ): List<com.awan.app.core.network.dto.session.SessionDto>
+
+    /** Adds new calendar sessions to an already-existing task. */
+    @POST("v1/tasks/{taskId}/sessions")
+    suspend fun addTaskSessions(
+        @Path("taskId") taskId: String,
+        @Body request: com.awan.app.core.network.dto.task.AddTaskSessionsRequest,
+    ): List<com.awan.app.core.network.dto.session.SessionDto>
 }

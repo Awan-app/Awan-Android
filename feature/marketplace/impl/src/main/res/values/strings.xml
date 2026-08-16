@@ -24,6 +24,8 @@
     <string name="marketplace_confirm_buy_body">Are you sure you want to buy %1$s for %2$d points?</string>
     <string name="marketplace_confirm_equip_title">Equip Item</string>
     <string name="marketplace_confirm_equip_body">Do you want to equip %1$s?</string>
+    <string name="marketplace_confirm_unequip_title">Unequip Item</string>
+    <string name="marketplace_confirm_unequip_body">Are you sure you want to unequip %1$s?</string>
     <string name="marketplace_action_confirm">Confirm</string>
     <string name="marketplace_action_cancel">Cancel</string>
     <string name="marketplace_points_suffix">pts</string>

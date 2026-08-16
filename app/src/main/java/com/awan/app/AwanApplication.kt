@@ -30,6 +30,14 @@ class AwanApplication : Application(), Configuration.Provider, SingletonImageLoa
             .setWorkerFactory(workerFactory)
             .build()
 
+    override fun newImageLoader(context: PlatformContext): ImageLoader {
+        return ImageLoader.Builder(context)
+            .components {
+                add(OkHttpNetworkFetcherFactory(callFactory = okHttpClient))
+            }
+            .build()
+    }
+
     override fun onCreate() {
         super.onCreate()
         // Runs in every process that starts the app, including one woken by WorkManager — which is

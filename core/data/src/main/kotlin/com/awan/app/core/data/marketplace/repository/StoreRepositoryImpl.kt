@@ -180,4 +180,4 @@ class StoreRepositoryImpl @Inject constructor(
     override suspend fun markInventorySeen() = withContext(ioDispatcher) {
         storeDao.markAllOwnedItemsSeen()
     }
-}
+}

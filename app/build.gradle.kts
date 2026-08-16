@@ -64,6 +64,8 @@ dependencies {
     implementation(project(":feature:marketplace:impl"))
     implementation(project(":feature:ai-tasks:api"))
     implementation(project(":feature:ai-tasks:impl"))
+    implementation(project(":feature:task-details:api"))
+    implementation(project(":feature:task-details:impl"))
     implementation(project(":feature:add-task"))
 
     // Core modules
@@ -96,6 +98,12 @@ dependencies {
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.splashscreen)
+
+    // Image Loading
+    implementation(libs.coil.compose)
+    implementation(libs.coil)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.okhttp)
 
     // Navigation 3
     implementation(libs.androidx.navigation3.ui)

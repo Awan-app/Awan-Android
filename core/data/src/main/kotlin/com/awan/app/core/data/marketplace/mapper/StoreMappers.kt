@@ -11,7 +11,6 @@ import com.awan.app.core.model.StoreItemType
 import com.awan.app.core.network.dto.store.EquippedItemDto
 import com.awan.app.core.network.dto.store.OwnedItemDto
 import com.awan.app.core.network.dto.store.StoreItemDto
-import com.awan.app.core.network.dto.store.StoreItemTypeDto
 import com.awan.app.core.network.resolveBackendImageUrl
 
 fun StoreItemTypeDto.asExternalModel(): StoreItemType = when (this) {
@@ -50,7 +49,6 @@ fun StoreItemDto.asExternalModel(): StoreItem? {
     return StoreItem(
         id = id,
         name = name ?: "",
-        description = description ?: "",
         image = resolveBackendImageUrl(image) ?: (image ?: ""),
         info = info,
         price = price,

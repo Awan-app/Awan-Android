@@ -93,7 +93,7 @@ class GoalsViewModelTest {
         override suspend fun proposeTasksFromText(text: String): Result<TaskProposals> = error("not used")
         override suspend fun proposeTasksFromImage(image: ByteArray, mimeType: String, note: String?): Result<TaskProposals> = error("not used")
         override suspend fun scheduleTask(taskId: String): Result<com.awan.app.core.model.TaskSchedule> = error("not used")
-        override suspend fun deleteTask(taskId: String): Result<Unit> = error("not used")
+        override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = error("not used")
         override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = Result.Success(emptyList())
         override suspend fun completeTask(taskId: String): Result<com.awan.app.core.model.Task> = error("not used")
         override suspend fun moveTask(taskId: String, goalId: String?): Result<com.awan.app.core.model.Task> = error("not used")
