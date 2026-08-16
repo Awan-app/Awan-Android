@@ -9,12 +9,17 @@ import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.task.ProposedTaskDto
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
 import com.awan.app.core.network.dto.task.ScheduledSessionResponse
+import com.awan.app.core.network.dto.task.TaskCompletionResponse
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
+import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.task.InboxTasksResponse
+import com.awan.app.core.network.dto.task.TaskMoveRequest
+import com.awan.app.core.network.dto.task.TaskDependencyRequest
+import com.awan.app.core.network.dto.task.AddTaskSessionsRequest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -62,9 +67,25 @@ private open class FakeTaskApiService : TaskApiService {
     override suspend fun scheduleTask(request: ScheduleTaskRequest): TaskScheduleResponse =
         error("not used")
 
+    override suspend fun completeTask(taskId: String): TaskCompletionResponse = error("not used")
+
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Unit = error("not used")
 
     override suspend fun getInboxTasks(): InboxTasksResponse = error("not used")
+
+    override suspend fun moveTask(taskId: String, request: TaskMoveRequest): TaskInfoResponse = error("not used")
+
+    override suspend fun addDependency(taskId: String, request: TaskDependencyRequest): Unit = error("not used")
+
+    override suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Unit = error("not used")
+
+    override suspend fun getTaskDependencies(taskId: String): List<TaskInfoResponse> = error("not used")
+
+    override suspend fun getTaskDependents(taskId: String): List<TaskInfoResponse> = error("not used")
+
+    override suspend fun getTaskSessions(taskId: String, status: String?): List<SessionDto> = error("not used")
+
+    override suspend fun addTaskSessions(taskId: String, request: AddTaskSessionsRequest): List<SessionDto> = error("not used")
 }
 
 private fun dataSource(api: TaskApiService, json: Json, dispatcher: kotlinx.coroutines.CoroutineDispatcher) =

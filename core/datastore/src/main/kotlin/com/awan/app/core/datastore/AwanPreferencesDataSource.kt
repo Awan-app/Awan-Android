@@ -2,8 +2,11 @@ package com.awan.app.core.datastore
 
 import androidx.datastore.core.DataStore
 import com.awan.app.core.datastore.model.UserPreferencesData
+import com.awan.app.core.datastore.proto.DarkThemeConfigProto
 import com.awan.app.core.datastore.proto.UserPreferences
 import com.awan.app.core.datastore.proto.copy
+import com.awan.app.core.model.NotificationPreferences
+import com.awan.app.core.model.DarkThemeConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -27,8 +30,16 @@ class AwanPreferencesDataSource @Inject constructor(
         }
         .map { proto -> proto.toData() }
 
-    override suspend fun setDarkThemeEnabled(enabled: Boolean) {
-        dataStore.updateData { it.copy { darkThemeEnabled = enabled } }
+    override suspend fun setDarkThemeConfig(config: DarkThemeConfig) {
+        dataStore.updateData {
+            it.copy {
+                darkThemeConfig = when (config) {
+                    DarkThemeConfig.FOLLOW_SYSTEM -> DarkThemeConfigProto.DARK_THEME_CONFIG_FOLLOW_SYSTEM
+                    DarkThemeConfig.LIGHT -> DarkThemeConfigProto.DARK_THEME_CONFIG_LIGHT
+                    DarkThemeConfig.DARK -> DarkThemeConfigProto.DARK_THEME_CONFIG_DARK
+                }
+            }
+        }
     }
 
     override suspend fun setDynamicColorEnabled(enabled: Boolean) {
@@ -55,13 +66,72 @@ class AwanPreferencesDataSource @Inject constructor(
         dataStore.updateData { it.copy { micPermissionRequested = requested } }
     }
 
+    override suspend fun setNotificationPreferences(preferences: NotificationPreferences) {
+        dataStore.updateData {
+            it.copy {
+                sessionRemindersDisabled = !preferences.sessionRemindersEnabled
+                sessionLiveActivityDisabled = !preferences.sessionLiveActivityEnabled
+                sessionEndNotificationDisabled = !preferences.sessionEndEnabled
+                sessionFollowUpDisabled = !preferences.sessionFollowUpEnabled
+                streakReminderDisabled = !preferences.streakReminderEnabled
+                dailyBriefDisabled = !preferences.dailyBriefEnabled
+                rewardNotificationsDisabled = !preferences.rewardsEnabled
+                sessionReminderLeadMinutes = preferences.reminderLeadMinutes
+                sessionSnoozeMinutes = preferences.snoozeMinutes
+                sessionFollowUpMinutes = preferences.followUpDelayMinutes
+            }
+        }
+    }
+
     private fun UserPreferences.toData() = UserPreferencesData(
-        darkThemeEnabled = darkThemeEnabled,
+        darkThemeConfig = if (hasDarkThemeConfig()) {
+            when (darkThemeConfig) {
+                DarkThemeConfigProto.DARK_THEME_CONFIG_FOLLOW_SYSTEM -> DarkThemeConfig.FOLLOW_SYSTEM
+                DarkThemeConfigProto.DARK_THEME_CONFIG_LIGHT -> DarkThemeConfig.LIGHT
+                DarkThemeConfigProto.DARK_THEME_CONFIG_DARK -> DarkThemeConfig.DARK
+                else -> DarkThemeConfig.FOLLOW_SYSTEM
+            }
+        } else {
+            // Legacy migration: old users had a boolean 'dark_theme_enabled'.
+            // If they are existing users (onboarding completed), we preserve their choice.
+            // New users (onboarding not completed) default to FOLLOW_SYSTEM.
+            when {
+                darkThemeEnabled -> DarkThemeConfig.DARK
+                onboardingCompleted -> DarkThemeConfig.LIGHT
+                else -> DarkThemeConfig.FOLLOW_SYSTEM
+            }
+        },
         useDynamicColor = useDynamicColor,
         onboardingCompleted = onboardingCompleted,
         defaultZone = defaultZone,
         locale = locale,
         defaultRegion = defaultRegion,
         micPermissionRequested = micPermissionRequested,
+        notificationPreferences = toNotificationPreferences(),
+    )
+
+    /**
+     * The one place the negated proto flags are flipped, and the one place a `0` minute value is
+     * read as "never set" rather than as "fire the reminder exactly when the session starts".
+     */
+    private fun UserPreferences.toNotificationPreferences() = NotificationPreferences(
+        sessionRemindersEnabled = !sessionRemindersDisabled,
+        sessionLiveActivityEnabled = !sessionLiveActivityDisabled,
+        sessionEndEnabled = !sessionEndNotificationDisabled,
+        sessionFollowUpEnabled = !sessionFollowUpDisabled,
+        streakReminderEnabled = !streakReminderDisabled,
+        dailyBriefEnabled = !dailyBriefDisabled,
+        rewardsEnabled = !rewardNotificationsDisabled,
+        reminderLeadMinutes = sessionReminderLeadMinutes
+            .takeIf { it > 0 }
+            ?: NotificationPreferences.DEFAULT_REMINDER_LEAD_MINUTES,
+        // Not `> 0` like the others: NotificationPreferences.SNOOZE_ASK is negative, and reading it
+        // as unset would silently turn "ask me every time" back into a fixed length.
+        snoozeMinutes = sessionSnoozeMinutes
+            .takeIf { it != 0 }
+            ?: NotificationPreferences.DEFAULT_SNOOZE_MINUTES,
+        followUpDelayMinutes = sessionFollowUpMinutes
+            .takeIf { it > 0 }
+            ?: NotificationPreferences.DEFAULT_FOLLOW_UP_MINUTES,
     )
 }

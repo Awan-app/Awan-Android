@@ -67,6 +67,25 @@ internal fun TaskInfoResponse.toTaskModel(): Task = Task(
     goalId = goalId,
     dependsOnTaskIds = dependsOnTaskIds.orEmpty(),
     category = category?.toModel(),
+    completedAt = completedAt,
+)
+
+internal fun com.awan.app.core.database.model.TaskEntity.toTaskModel(
+    dependsOnTaskIds: List<String> = emptyList(),
+    category: com.awan.app.core.model.Category? = null,
+): Task = Task(
+    id = id,
+    title = title,
+    description = description,
+    estimatedDurationMinutes = estimatedDuration,
+    status = status.toTaskStatus(),
+    mandatory = mandatory,
+    estimatedPoints = estimatedPoints,
+    allowTaskSplitting = allowTaskSplitting,
+    goalId = goalId,
+    dependsOnTaskIds = dependsOnTaskIds,
+    category = category,
+    completedAt = completedAt,
 )
 
 internal fun TaskProposalResponse.toModel(): TaskProposals = TaskProposals(
@@ -172,10 +191,21 @@ private fun String.toLocalDateTimeOrNull(): LocalDateTime? =
     runCatching { LocalDateTime.parse(this, ApiDateTime) }.getOrNull()
 
 private fun String?.toTaskStatus(): TaskStatus =
-    runCatching { TaskStatus.valueOf(orEmpty()) }.getOrDefault(TaskStatus.UNKNOWN)
+    runCatching {
+        val raw = orEmpty().trim().uppercase()
+        TaskStatus.valueOf(raw)
+    }.getOrDefault(TaskStatus.SCHEDULED)
 
 private fun String?.toSessionStatus(): SessionStatus =
     runCatching { SessionStatus.valueOf(orEmpty()) }.getOrDefault(SessionStatus.UNKNOWN)
+
+internal fun com.awan.app.core.database.model.TaskEntity.toModel(
+    dependsOnTaskIds: List<String> = emptyList(),
+    category: com.awan.app.core.model.Category? = null,
+): Task = toTaskModel(
+    dependsOnTaskIds = dependsOnTaskIds,
+    category = category,
+)
 
 internal fun TaskInfoResponse.toEntity(
     goalId: String? = this.goalId,
@@ -192,8 +222,19 @@ internal fun TaskInfoResponse.toEntity(
     allowTaskSplitting = allowTaskSplitting ?: false,
     goalId = goalId,
     categoryId = categoryId,
+    completedAt = completedAt,
     expiryTime = expiryTime,
 )
+
+internal fun TaskInfoResponse.toDependencyEntities(): List<com.awan.app.core.database.model.TaskDependencyEntity> {
+    return dependsOnTaskIds?.map { prerequisiteId ->
+        com.awan.app.core.database.model.TaskDependencyEntity(
+            taskId = id,
+            dependsOnTaskId = prerequisiteId
+        )
+    } ?: emptyList()
+}
+
 
 internal fun com.awan.app.core.network.dto.session.SessionDto.toEntity(
     taskId: String,

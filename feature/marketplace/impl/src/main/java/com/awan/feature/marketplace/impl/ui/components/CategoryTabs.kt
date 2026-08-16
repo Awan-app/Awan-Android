@@ -1,8 +1,8 @@
 package com.awan.feature.marketplace.impl.ui.components
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -18,22 +18,21 @@ fun CategoryTabs(
     onCategorySelected: (StoreItemType?) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        AwanChip(
-            label = stringResource(R.string.marketplace_category_all),
-            tone = if (selectedCategory == null) AwanChipTone.Sky else AwanChipTone.Neutral,
-            active = selectedCategory == null,
-            onClick = { onCategorySelected(null) },
-            leading = {}
-        )
+        item {
+            AwanChip(
+                label = stringResource(R.string.marketplace_category_all),
+                tone = if (selectedCategory == null) AwanChipTone.Sky else AwanChipTone.Neutral,
+                active = selectedCategory == null,
+                onClick = { onCategorySelected(null) },
+                leading = {}
+            )
+        }
 
-        StoreItemType.entries.forEach { type ->
+        items(StoreItemType.entries) { type ->
             val label = when(type) {
                 StoreItemType.FRAME -> stringResource(R.string.marketplace_category_frames)
                 StoreItemType.SKIN -> stringResource(R.string.marketplace_category_skins)
@@ -48,7 +47,5 @@ fun CategoryTabs(
                 leading = {}
             )
         }
-        
-        Spacer(modifier = Modifier.width(20.dp))
     }
 }

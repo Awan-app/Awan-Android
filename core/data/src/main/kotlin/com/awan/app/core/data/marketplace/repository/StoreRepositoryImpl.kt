@@ -28,11 +28,14 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+import com.awan.app.core.data.gamification.GamificationEventBus
+
 @Singleton
 class StoreRepositoryImpl @Inject constructor(
     private val remoteDataSource: StoreRemoteDataSource,
     private val storeDao: StoreDao,
     private val profileRepository: ProfileRepository,
+    private val gamificationEventBus: GamificationEventBus,
     private val connectivityMonitor: NetworkConnectivityMonitor,
     @Dispatcher(AwanDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : StoreRepository {
@@ -71,9 +74,16 @@ class StoreRepositoryImpl @Inject constructor(
             // Refresh inventory and profile
             val invResult = refreshInventory()
             if (invResult is Result.Error) return@withContext invResult
-            
+
             val profileResult = profileRepository.getProfile()
-            if (profileResult is Result.Error) return@withContext Result.Error(profileResult.error)
+            when (profileResult) {
+                is Result.Success -> {
+                    val points = profileResult.data.points ?: 0
+                    gamificationEventBus.updatePoints(points)
+                }
+                is Result.Error -> return@withContext Result.Error(profileResult.error)
+                Result.Loading -> return@withContext Result.Error(AppError.Unknown(IllegalStateException("Unexpected loading state during profile sync")))
+            }
         }
         result
     }
@@ -95,19 +105,11 @@ class StoreRepositoryImpl @Inject constructor(
                 return@withContext Result.Error(AppError.Network)
             }
 
-            // Find current equipped item ID for this type
-            val equipped = storeDao.observeEquippedItems().first()
-            val item = equipped.find { it.type == itemType.name }
-
-            if (item != null) {
-                val result = remoteDataSource.unequipItem(item.itemId)
-                if (result is Result.Success) {
-                    storeDao.deleteEquippedItemByType(itemType.name)
-                }
-                result
-            } else {
-                Result.Success(Unit)
+            val result = remoteDataSource.unequipItem(itemType.name)
+            if (result is Result.Success) {
+                storeDao.deleteEquippedItemByType(itemType.name)
             }
+            result
         }
 
     override suspend fun refreshStoreItems(type: StoreItemType?) = withContext(ioDispatcher) {
@@ -139,7 +141,7 @@ class StoreRepositoryImpl @Inject constructor(
                     expiryTime = expiry
                 )
             }
-            storeDao.replaceOwnedItems(entities)
+            storeDao.replaceOwnedItemsPreservingSeen(entities)
 
             // Also ensure store items from inventory are in store_items table
             val storeItems = result.data.mapNotNull { it.item.asExternalModel()?.asEntity(expiry) }
@@ -173,5 +175,9 @@ class StoreRepositoryImpl @Inject constructor(
         } else {
             Result.Error((result as Result.Error).error)
         }
+    }
+
+    override suspend fun markInventorySeen() = withContext(ioDispatcher) {
+        storeDao.markAllOwnedItemsSeen()
     }
 }

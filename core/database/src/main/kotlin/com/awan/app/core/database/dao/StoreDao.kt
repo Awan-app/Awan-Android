@@ -19,6 +19,10 @@ interface StoreDao {
     @Upsert suspend fun upsertOwnedItems(items: List<OwnedItemEntity>)
     @Query("SELECT * FROM owned_items") fun observeOwnedItems(): Flow<List<OwnedItemEntity>>
     @Query("DELETE FROM owned_items") suspend fun deleteAllOwnedItems()
+    @Query("UPDATE owned_items SET isSeen = 1 WHERE isSeen = 0") suspend fun markAllOwnedItemsSeen()
+    @Query("SELECT COUNT(*) FROM owned_items WHERE isSeen = 0") fun observeUnseenOwnedCount(): Flow<Int>
+    @Query("SELECT id FROM owned_items WHERE isSeen = 1") suspend fun getSeenOwnedItemIds(): List<String>
+    @Query("SELECT id FROM owned_items") suspend fun getOwnedItemIds(): List<String>
 
     @Upsert suspend fun upsertEquippedItems(items: List<EquippedItemEntity>)
     @Query("SELECT * FROM equipped_items") fun observeEquippedItems(): Flow<List<EquippedItemEntity>>
@@ -35,6 +39,16 @@ interface StoreDao {
     suspend fun replaceOwnedItems(items: List<OwnedItemEntity>) {
         deleteAllOwnedItems()
         upsertOwnedItems(items)
+    }
+
+    @Transaction
+    suspend fun replaceOwnedItemsPreservingSeen(items: List<OwnedItemEntity>) {
+        val seenIds = getSeenOwnedItemIds().toSet()
+        deleteAllOwnedItems()
+        val preserved = items.map { item ->
+            if (item.id in seenIds) item.copy(isSeen = true) else item
+        }
+        upsertOwnedItems(preserved)
     }
 
     @Transaction

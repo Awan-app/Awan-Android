@@ -2,12 +2,19 @@ package com.awan.app.core.data.task
 
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.database.dao.CategoryDao
+import com.awan.app.core.database.dao.GoalDao
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.dao.TaskDao
+import com.awan.app.core.database.dao.UserDao
 import com.awan.app.core.database.model.CategoryEntity
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.UpcomingSessionRow
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
+import com.awan.app.core.database.model.UserEntity
+import com.awan.app.core.database.model.UserPreferencesEntity
+import com.awan.app.core.database.model.UserWithPreferences
+import com.awan.app.core.data.gamification.GamificationEventBus
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.model.SessionDraft
@@ -22,9 +29,14 @@ import com.awan.app.core.network.dto.task.ScheduleTaskRequest
 import com.awan.app.core.network.dto.task.ScheduledSessionResponse
 import com.awan.app.core.network.dto.task.SessionDraftDto
 import com.awan.app.core.network.dto.session.SessionDto
+import com.awan.app.core.network.dto.task.TaskCompletionResponse
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskUpdateRequest
+import com.awan.app.core.network.dto.task.TaskMoveRequest
+import com.awan.app.core.network.dto.task.TaskDependencyRequest
+import com.awan.app.core.network.dto.task.AddTaskSessionsRequest
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,13 +57,12 @@ import java.time.LocalDateTime
 private class FakeTaskDao : TaskDao {
     val upsertedTasks = mutableListOf<TaskEntity>()
     val deletedTaskIds = mutableListOf<String>()
+    val tasksByGoal = mutableMapOf<String, List<TaskEntity>>()
 
     override suspend fun upsertTask(task: TaskEntity) { upsertedTasks += task }
     override suspend fun upsertTasks(tasks: List<TaskEntity>) { upsertedTasks += tasks }
     override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override fun observeInboxTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override fun observeAllTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override suspend fun getAllTasks(): List<TaskEntity> = emptyList()
+    override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = tasksByGoal[goalId] ?: emptyList()
     override fun observeTask(taskId: String): Flow<TaskEntity?> = MutableStateFlow(null)
     override suspend fun getTask(taskId: String): TaskEntity? = null
     override suspend fun deleteTask(taskId: String) { deletedTaskIds += taskId }
@@ -59,6 +70,7 @@ private class FakeTaskDao : TaskDao {
     override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
     override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
     override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+    override suspend fun getDependsOnIds(taskId: String): List<String> = emptyList()
     override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
     override suspend fun deleteAllDependenciesForTask(taskId: String) {}
     override suspend fun replaceTasksForGoal(
@@ -90,9 +102,25 @@ private class FakeSessionDao : SessionDao {
     override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<SessionEntity>> = flowOf(emptyList())
     override suspend fun getSessionsForDate(date: String): List<SessionEntity> = emptyList()
     override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = emptyList()
+    override fun observeUpcomingSessions(startDate: String, endDate: String): Flow<List<UpcomingSessionRow>> = flowOf(emptyList())
+    override suspend fun getUpcomingSessions(startDate: String, endDate: String): List<UpcomingSessionRow> = emptyList()
     override suspend fun getSession(id: String): SessionEntity? = null
     override suspend fun deleteSessionsForDates(dates: List<String>) {}
     override suspend fun deleteSession(id: String) {}
+}
+
+private class FakeUserDao : UserDao {
+    override suspend fun upsertUser(user: UserEntity) {}
+    override fun observeUser(userId: String): Flow<UserEntity?> = flowOf(null)
+    override suspend fun getUser(userId: String): UserEntity? = null
+    override suspend fun getFirstUser(): UserEntity? = null
+    override suspend fun deleteUser(userId: String) {}
+    override suspend fun upsertPreferences(preferences: UserPreferencesEntity) {}
+    override fun observePreferences(userId: String): Flow<UserPreferencesEntity?> = flowOf(null)
+    override suspend fun getPreferences(userId: String): UserPreferencesEntity? = null
+    override fun observeUserWithPreferences(userId: String): Flow<UserWithPreferences?> = flowOf(null)
+    override suspend fun getUserWithPreferences(userId: String): UserWithPreferences? = null
+    override suspend fun getMinExpiryTime(): Long? = null
 }
 
 // ---------------------------------------------------------------------------
@@ -233,13 +261,68 @@ class TaskRepositoryImplTest {
                 )
             )
 
-        override suspend fun deleteTask(taskId: String): Result<Unit> {
+        override suspend fun completeTask(taskId: String): Result<TaskCompletionResponse> =
+            Result.Success(
+                TaskCompletionResponse(
+                    task = TaskInfoResponse(id = taskId, title = "Completed Task", status = "COMPLETED"),
+                )
+            )
+
+        override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> {
             deletedTaskId = taskId
             return Result.Success(Unit)
         }
 
+        var lastUpdateRequest: TaskUpdateRequest? = null
+        var lastMoveRequest: TaskMoveRequest? = null
+        var lastAddSessionsRequest: AddTaskSessionsRequest? = null
+
         override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = Result.Success(emptyList())
+
+        override suspend fun getTask(taskId: String): Result<TaskInfoResponse> =
+            Result.Success(TaskInfoResponse(id = taskId, title = "Task $taskId"))
+
+        override suspend fun updateTask(taskId: String, request: TaskUpdateRequest): Result<TaskInfoResponse> {
+            lastUpdateRequest = request
+            return Result.Success(
+                TaskInfoResponse(
+                    id = taskId,
+                    title = request.title ?: "Updated",
+                    status = request.status ?: "SCHEDULED",
+                )
+            )
+        }
+
+        override suspend fun moveTask(taskId: String, request: TaskMoveRequest): Result<TaskInfoResponse> {
+            lastMoveRequest = request
+            return Result.Success(TaskInfoResponse(id = taskId, title = "Moved", goalId = request.goalId))
+        }
+
+        override suspend fun addDependency(taskId: String, request: TaskDependencyRequest): Result<Unit> =
+            Result.Success(Unit)
+
+        override suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit> =
+            Result.Success(Unit)
+
+        override suspend fun getTaskDependencies(taskId: String): Result<List<TaskInfoResponse>> =
+            Result.Success(emptyList())
+
+        override suspend fun getTaskDependents(taskId: String): Result<List<TaskInfoResponse>> =
+            Result.Success(emptyList())
+
+        override suspend fun getTaskSessions(taskId: String, status: String?): Result<List<SessionDto>> =
+            Result.Success(emptyList())
+
+        override suspend fun addTaskSessions(taskId: String, request: AddTaskSessionsRequest): Result<List<SessionDto>> {
+            lastAddSessionsRequest = request
+            return Result.Success(
+                request.sessions.mapIndexed { index, s ->
+                    SessionDto(id = "s-added-$index", start = s.start, end = s.end, zoneId = s.zoneId, status = "SCHEDULED")
+                }
+            )
+        }
     }
+
 
 private class FakeGoalDao : com.awan.app.core.database.dao.GoalDao {
     override suspend fun upsertGoal(goal: com.awan.app.core.database.model.GoalEntity) {}
@@ -249,9 +332,7 @@ private class FakeGoalDao : com.awan.app.core.database.dao.GoalDao {
     override fun observeGoalsByStatus(status: String): Flow<List<com.awan.app.core.database.model.GoalEntity>> = flowOf(emptyList())
     override fun observeGoal(goalId: String): Flow<com.awan.app.core.database.model.GoalEntity?> = MutableStateFlow(null)
     override suspend fun getGoal(goalId: String): com.awan.app.core.database.model.GoalEntity? = null
-    override fun observeInboxGoal(): Flow<com.awan.app.core.database.model.GoalEntity?> = MutableStateFlow(null)
     override suspend fun deleteGoal(goalId: String) {}
-    override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
     override suspend fun getMinExpiryTime(): Long? = null
 }
 
@@ -262,7 +343,17 @@ private class FakeGoalDao : com.awan.app.core.database.dao.GoalDao {
         sessionDao: SessionDao = FakeSessionDao(),
         goalDao: com.awan.app.core.database.dao.GoalDao = FakeGoalDao(),
         monitor: NetworkConnectivityMonitor = onlineMonitor,
-    ) = TaskRepositoryImpl(remote, taskDao, categoryDao, sessionDao, goalDao, monitor, testDispatcher)
+        eventBus: GamificationEventBus = GamificationEventBus(FakeUserDao()),
+    ) = TaskRepositoryImpl(
+        remoteDataSource = remote,
+        taskDao = taskDao,
+        categoryDao = categoryDao,
+        sessionDao = sessionDao,
+        goalDao = goalDao,
+        eventBus = eventBus,
+        connectivityMonitor = monitor,
+        ioDispatcher = testDispatcher
+    )
 
     @Test
     fun `createTask maps the draft to a request and the response to a model`() = runTest(testDispatcher) {
@@ -375,4 +466,97 @@ private class FakeGoalDao : com.awan.app.core.database.dao.GoalDao {
         assertTrue(result is Result.Error)
         assertTrue((result as Result.Error).error is com.awan.app.core.common.error.AppError.Network)
     }
+
+    @Test
+    fun `updateTask sends status to remote and upserts updated task to Room`() = runTest(testDispatcher) {
+        val fakeTaskDao = FakeTaskDao()
+        val remote = FakeRemoteDataSource()
+        val repository = buildRepository(remote = remote, taskDao = fakeTaskDao)
+
+        val result = repository.updateTask(
+            taskId = "task-1",
+            title = "Updated Title",
+            status = "COMPLETED",
+        )
+
+        assertEquals("COMPLETED", remote.lastUpdateRequest?.status)
+        assertEquals("Updated Title", remote.lastUpdateRequest?.title)
+        assertEquals(1, fakeTaskDao.upsertedTasks.size)
+        assertEquals("task-1", fakeTaskDao.upsertedTasks.first().id)
+        assertEquals("COMPLETED", fakeTaskDao.upsertedTasks.first().status)
+        assertTrue(result is Result.Success)
+    }
+
+    @Test
+    fun `moveTask persists updated task entity to Room`() = runTest(testDispatcher) {
+        val fakeTaskDao = FakeTaskDao()
+        val remote = FakeRemoteDataSource()
+        val repository = buildRepository(remote = remote, taskDao = fakeTaskDao)
+
+        val result = repository.moveTask("task-1", "goal-2")
+
+        assertEquals("goal-2", remote.lastMoveRequest?.goalId)
+        assertEquals(1, fakeTaskDao.upsertedTasks.size)
+        assertEquals("goal-2", fakeTaskDao.upsertedTasks.first().goalId)
+        assertTrue(result is Result.Success)
+    }
+
+    @Test
+    fun `addTaskSessions persists returned session entities to Room`() = runTest(testDispatcher) {
+        val fakeSessionDao = FakeSessionDao()
+        val remote = FakeRemoteDataSource()
+        val repository = buildRepository(remote = remote, sessionDao = fakeSessionDao)
+
+        val start = LocalDateTime.of(2026, 8, 16, 10, 0)
+        val result = repository.addTaskSessions(
+            taskId = "task-1",
+            sessions = listOf(SessionDraft(start = start, end = start.plusMinutes(45), zoneId = "zone-1")),
+        )
+
+        assertEquals(1, remote.lastAddSessionsRequest?.sessions?.size)
+        assertEquals(1, fakeSessionDao.upserted.size)
+        assertEquals("s-added-0", fakeSessionDao.upserted.first().id)
+        assertEquals("task-1", fakeSessionDao.upserted.first().taskId)
+        assertTrue(result is Result.Success)
+    }
+
+    @Test
+    fun `getTasksByGoal returns tasks from Room DAO`() = runTest(testDispatcher) {
+        val fakeTaskDao = FakeTaskDao()
+        val repository = buildRepository(taskDao = fakeTaskDao)
+
+        fakeTaskDao.tasksByGoal["goal-1"] = listOf(
+            TaskEntity(
+                id = "task-1",
+                title = "Task 1",
+                description = null,
+                estimatedDuration = 30,
+                status = "SCHEDULED",
+                mandatory = false,
+                estimatedPoints = 5,
+                allowTaskSplitting = false,
+                goalId = "goal-1",
+            ),
+            TaskEntity(
+                id = "task-2",
+                title = "Task 2",
+                description = null,
+                estimatedDuration = 45,
+                status = "SCHEDULED",
+                mandatory = true,
+                estimatedPoints = 10,
+                allowTaskSplitting = false,
+                goalId = "goal-1",
+            ),
+        )
+
+        val result = repository.getTasksByGoal("goal-1")
+
+        assertTrue(result is Result.Success)
+        val tasks = (result as Result.Success).data
+        assertEquals(2, tasks.size)
+        assertEquals("task-1", tasks[0].id)
+        assertEquals("task-2", tasks[1].id)
+    }
 }
+

@@ -9,19 +9,21 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.ComponentActivity
+import com.awan.app.core.designsystem.AwanActionSheet
 import com.awan.app.core.designsystem.AwanButtonVariant
-import com.awan.app.core.designsystem.AwanConfirmDialog
+
 import com.awan.app.core.designsystem.ObserveAsEvents
+import com.awan.app.core.designsystem.rememberSpeechRecognizer
 import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskAction
 import com.awan.feature.addtask.presentation.AddTaskEvent
 import com.awan.feature.addtask.presentation.AddTaskViewModel
-import com.awan.feature.addtask.ui.components.rememberSpeechRecognizer
 
 @Composable
 fun GoalPreviewRouteRoot(
     onBack: () -> Unit,
     onNavigateToGoals: () -> Unit,
+    onNavigateToGoalSchedule: (String) -> Unit = {},
     viewModel: AddTaskViewModel = hiltViewModel(
         viewModelStoreOwner = checkNotNull(LocalActivity.current) as ComponentActivity,
     ),
@@ -31,6 +33,7 @@ fun GoalPreviewRouteRoot(
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
             is AddTaskEvent.GoalCreated -> onNavigateToGoals()
+            is AddTaskEvent.GoalScheduleRequested -> onNavigateToGoalSchedule(event.goalId)
             is AddTaskEvent.TaskCreated -> onBack()
             is AddTaskEvent.AiRequested -> Unit
             AddTaskEvent.Dismissed -> onBack()
@@ -43,6 +46,7 @@ fun GoalPreviewRouteRoot(
 
     val speechState = rememberSpeechRecognizer(
         onTranscript = { transcript -> viewModel.onAction(AddTaskAction.InputChanged(transcript)) },
+        currentText = { viewModel.state.value.input },
         hasRequestedMicPermission = state.hasRequestedMicPermission,
         onSetMicPermissionRequested = { requested ->
             viewModel.onAction(AddTaskAction.SetMicPermissionRequested(requested))
@@ -56,14 +60,27 @@ fun GoalPreviewRouteRoot(
     }
 
     if (state.showDiscardConfirm) {
-        AwanConfirmDialog(
+        AwanActionSheet(
             title = stringResource(R.string.add_task_discard_title),
             body = stringResource(R.string.add_task_discard_body),
-            confirmLabel = stringResource(R.string.add_task_discard_confirm),
-            confirmVariant = AwanButtonVariant.Destructive,
-            onConfirm = { viewModel.onAction(AddTaskAction.DiscardConfirmed) },
-            dismissLabel = stringResource(R.string.add_task_discard_cancel),
+            primaryLabel = stringResource(R.string.add_task_discard_confirm),
+            primaryVariant = AwanButtonVariant.Destructive,
+            onPrimary = { viewModel.onAction(AddTaskAction.DiscardConfirmed) },
+            secondaryLabel = stringResource(R.string.add_task_discard_cancel),
+            onSecondary = { viewModel.onAction(AddTaskAction.DiscardCancelled) },
             onDismiss = { viewModel.onAction(AddTaskAction.DiscardCancelled) },
+        )
+    }
+
+    if (state.showGoalSaveChoice) {
+        AwanActionSheet(
+            title = stringResource(R.string.add_task_goal_save_choice_title),
+            body = stringResource(R.string.add_task_goal_save_choice_body),
+            primaryLabel = stringResource(R.string.add_task_goal_save_choice_add_tasks),
+            onPrimary = { viewModel.onAction(AddTaskAction.AddGoalTasks) },
+            secondaryLabel = stringResource(R.string.add_task_goal_save_choice_draft),
+            onSecondary = { viewModel.onAction(AddTaskAction.SaveGoalAsDraft) },
+            onDismiss = { viewModel.onAction(AddTaskAction.GoalSaveChoiceDismissed) },
         )
     }
 
@@ -85,6 +102,7 @@ fun GoalPreviewRouteRoot(
             else speechState.startListening()
         },
         isListening = speechState.isListening,
+        micAmplitude = speechState.amplitude,
         speechError = speechState.errorMessage,
         isPermissionError = speechState.isPermissionError,
     )

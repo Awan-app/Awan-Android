@@ -16,6 +16,11 @@ import com.awan.app.core.network.dto.store.EquippedItemDto
 import com.awan.app.core.network.dto.store.OwnedItemDto
 import com.awan.app.core.network.dto.store.StoreItemDto
 import com.awan.app.core.network.dto.store.StoreItemTypeDto
+import com.awan.app.core.data.gamification.GamificationEventBus
+import com.awan.app.core.database.dao.UserDao
+import com.awan.app.core.database.model.UserEntity
+import com.awan.app.core.database.model.UserPreferencesEntity
+import com.awan.app.core.database.model.UserWithPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -58,6 +63,7 @@ class InventoryRepositoryImplTest {
             remoteDataSource = remote,
             storeDao = dao,
             profileRepository = FakeProfileRepository(),
+            gamificationEventBus = GamificationEventBus(FakeUserDao()),
             connectivityMonitor = FakeNetworkConnectivityMonitor(),
             ioDispatcher = testDispatcher,
         )
@@ -95,7 +101,7 @@ class InventoryRepositoryImplTest {
             equipCalled = true
             return equipResult
         }
-        override suspend fun unequipItem(itemId: String): Result<Unit> = Result.Success(Unit)
+        override suspend fun unequipItem(type: String): Result<Unit> = Result.Success(Unit)
     }
 
     private class FakeStoreDao : StoreDao {
@@ -110,6 +116,12 @@ class InventoryRepositoryImplTest {
         override suspend fun upsertOwnedItems(items: List<OwnedItemEntity>) { ownedItems = items }
         override fun observeOwnedItems(): Flow<List<OwnedItemEntity>> = flowOf(ownedItems)
         override suspend fun deleteAllOwnedItems() { ownedItems = emptyList() }
+        override suspend fun markAllOwnedItemsSeen() {
+            ownedItems = ownedItems.map { it.copy(isSeen = true) }
+        }
+        override fun observeUnseenOwnedCount(): Flow<Int> = flowOf(ownedItems.count { !it.isSeen })
+        override suspend fun getSeenOwnedItemIds(): List<String> = ownedItems.filter { it.isSeen }.map { it.id }
+        override suspend fun getOwnedItemIds(): List<String> = ownedItems.map { it.id }
         override suspend fun upsertEquippedItems(items: List<EquippedItemEntity>) { equippedItems = items }
         override fun observeEquippedItems(): Flow<List<EquippedItemEntity>> = flowOf(equippedItems)
         override suspend fun deleteAllEquippedItems() { equippedItems = emptyList() }
@@ -139,5 +151,21 @@ class InventoryRepositoryImplTest {
     private class FakeNetworkConnectivityMonitor : NetworkConnectivityMonitor {
         override val isOnline: Flow<Boolean> = MutableStateFlow(true)
         override fun isCurrentlyOnline(): Boolean = true
+    }
+
+    private class FakeUserDao : UserDao {
+        private var user: UserEntity? = null
+        override suspend fun upsertUser(user: UserEntity) { this.user = user }
+        override fun observeUser(userId: String): Flow<UserEntity?> = flowOf(user)
+        override suspend fun getUser(userId: String): UserEntity? = user
+        override suspend fun getFirstUser(): UserEntity? = user
+        override suspend fun deleteUser(userId: String) { user = null }
+        override suspend fun getMinExpiryTime(): Long? = null
+        override suspend fun upsertPreferences(preferences: UserPreferencesEntity) {}
+        override fun observePreferences(userId: String): Flow<UserPreferencesEntity?> = flowOf(null)
+        override suspend fun getPreferences(userId: String): UserPreferencesEntity? = null
+        override fun observeUserWithPreferences(userId: String): Flow<UserWithPreferences?> = flowOf(null)
+        override suspend fun getUserWithPreferences(userId: String): UserWithPreferences? = null
+        override suspend fun upsertUserWithPreferences(user: UserEntity, preferences: UserPreferencesEntity) { this.user = user }
     }
 }

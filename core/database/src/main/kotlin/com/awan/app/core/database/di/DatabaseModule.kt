@@ -8,6 +8,7 @@ import com.awan.app.core.database.dao.CategoryDao
 import com.awan.app.core.database.dao.GoalDao
 import com.awan.app.core.database.dao.McpTokenDao
 import com.awan.app.core.database.dao.SessionDao
+import com.awan.app.core.database.dao.ScheduleDraftDao
 import com.awan.app.core.database.dao.StoreDao
 import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.dao.TemplateDao
@@ -40,7 +41,9 @@ object DatabaseModule {
         AwanDatabase::class.java,
         "awan-database",
     )
+        .addMigrations(com.awan.app.core.database.MIGRATION_1_2)
         .fallbackToDestructiveMigration(dropAllTables = true)
+        .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
         .build()
 
     @Provides
@@ -86,4 +89,8 @@ object DatabaseModule {
     @Provides
     fun providesMcpTokenDao(database: AwanDatabase): McpTokenDao =
         database.mcpTokenDao()
+
+    @Provides
+    fun providesScheduleDraftDao(database: AwanDatabase): ScheduleDraftDao =
+        database.scheduleDraftDao()
 }

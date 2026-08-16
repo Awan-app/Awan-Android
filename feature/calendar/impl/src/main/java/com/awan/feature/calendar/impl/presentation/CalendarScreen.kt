@@ -3,9 +3,13 @@ package com.awan.feature.calendar.impl.presentation
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -16,24 +20,25 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.style.Style
-import androidx.compose.foundation.style.styleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -47,19 +52,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -74,15 +76,21 @@ import com.composables.icons.lucide.ArrowRight
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.TriangleAlert
 import com.awan.app.core.designsystem.AwanBackButton
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
+import com.awan.app.core.designsystem.AwanCard
+import com.awan.app.core.designsystem.AwanIconButton
 import com.awan.app.core.designsystem.AwanSurface
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextStyle
 import com.awan.app.core.designsystem.AwanTheme
+import com.awan.app.core.designsystem.SoapBubbleShaderLayer
+import com.awan.app.core.designsystem.SoapBubbleStyle
 import com.awan.app.core.designsystem.awanButtonHaptic
 import com.awan.feature.calendar.impl.R
+import com.composables.icons.lucide.Info
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -92,64 +100,6 @@ import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration.Companion.milliseconds
 
 
-
-@Composable
-private fun CalendarIconButton(
-    onClick: () -> Unit,
-    contentDescription: String,
-    modifier: Modifier = Modifier,
-    testTag: String? = null,
-    icon: @Composable () -> Unit,
-) {
-    val colors = AwanTheme.colors
-    val shape = RoundedCornerShape(12.dp)
-    val hapticFeedback = LocalHapticFeedback.current
-    val haptic = awanButtonHaptic(AwanButtonVariant.Secondary)
-    val scope = rememberCoroutineScope()
-    val pressAnim = remember { Animatable(0f) }
-
-    val currentTopInset = (2.5.dp * pressAnim.value)
-    val currentBottomPadding = (2.5.dp * (1f - pressAnim.value))
-
-    Box(
-        modifier = modifier
-            .size(42.dp)
-            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                role = Role.Button,
-                onClick = {
-                    haptic.let(hapticFeedback::performHapticFeedback)
-                    scope.launch {
-                        pressAnim.animateTo(1f, animationSpec = tween(40, easing = LinearOutSlowInEasing))
-                        pressAnim.animateTo(0f, animationSpec = tween(60, easing = LinearOutSlowInEasing))
-                    }
-                    onClick()
-                },
-            ),
-    ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .padding(top = currentTopInset)
-                .clip(shape)
-                .background(colors.line)
-        )
-        CompositionLocalProvider(LocalContentColor provides colors.textPrimary) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .padding(top = currentTopInset, bottom = currentBottomPadding)
-                    .clip(shape)
-                    .background(colors.surface)
-                    .border(2.dp, colors.line, shape),
-                contentAlignment = Alignment.Center,
-                content = { icon() },
-            )
-        }
-    }
-}
 
 @Composable
 fun rememberIsReducedMotion(): Boolean {
@@ -183,7 +133,7 @@ fun CalendarScreen(
     onBack: () -> Unit,
 ) {
     val isReducedMotion = rememberIsReducedMotion()
-    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    var showDeadlineInfoSheet by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -194,30 +144,30 @@ fun CalendarScreen(
             .padding(horizontal = AwanTheme.spacing.md, vertical = AwanTheme.spacing.lg),
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
     ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CalendarIconButton(
-                    onClick = onBack,
-                    contentDescription = stringResource(R.string.calendar_back),
-                ) {
-                    Icon(
-                        imageVector = if (isRtl) Lucide.ArrowRight else Lucide.ArrowLeft,
-                        contentDescription = null,
-                    )
-                }
-                Spacer(modifier = Modifier.width(AwanTheme.spacing.sm))
-                AwanText(
-                    text = stringResource(R.string.calendar_title),
-                    style = AwanTextStyle(AwanTheme.typography.title.copy(fontSize = 26.sp), AwanTheme.colors.textPrimary),
-                    modifier = Modifier.testTag("calendar_title"),
-                )
-            }
-            StreakSummaryCard(streak = state.streak)
-
-            MonthHeader(
-                yearMonth = state.currentYearMonth,
-                onPrevMonth = { onAction(CalendarAction.PreviousMonth) },
-                onNextMonth = { onAction(CalendarAction.NextMonth) },
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AwanBackButton(onClick = onBack)
+            Spacer(modifier = Modifier.width(AwanTheme.spacing.sm))
+            val titleStyle = AwanTheme.styles.titleText
+            AwanText(
+                text = stringResource(R.string.calendar_title),
+                style = titleStyle.copy(
+                    textStyle = titleStyle.textStyle.copy(fontSize = 26.sp)
+                ),
+                modifier = Modifier.testTag("calendar_title"),
             )
+        }
+        StreakHeaderCard(
+            state = state.streakHeaderState,
+            streak = state.streak,
+            isReducedMotion = isReducedMotion,
+        )
+
+        MonthHeader(
+            yearMonth = state.currentYearMonth,
+            onPrevMonth = { onAction(CalendarAction.PreviousMonth) },
+            onNextMonth = { onAction(CalendarAction.NextMonth) },
+        )
+
 
             WeekdayHeader()
 
@@ -229,10 +179,28 @@ fun CalendarScreen(
 
             Spacer(modifier = Modifier.height(AwanTheme.spacing.xs))
 
-            AwanText(
-                text = stringResource(R.string.calendar_upcoming_deadlines),
-                style = AwanTheme.styles.headingText,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AwanText(
+                    text = stringResource(R.string.calendar_upcoming_deadlines),
+                    style = AwanTheme.styles.headingText,
+                )
+                AwanIconButton(
+                    onClick = { showDeadlineInfoSheet = true },
+                    contentDescription = stringResource(R.string.calendar_deadline_info_button),
+                    modifier = Modifier.testTag("calendar_deadline_info_button"),
+                ) {
+                    Icon(
+                        imageVector = Lucide.Info,
+                        contentDescription = null,
+                        tint = AwanTheme.colors.textSecondary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
 
             if (state.isLoading) {
                 Box(
@@ -281,47 +249,189 @@ fun CalendarScreen(
             }
             Spacer(modifier = Modifier.height(100.dp))
         }
+
+    if (showDeadlineInfoSheet) {
+        DeadlineInfoBottomSheet(
+            onDismiss = { showDeadlineInfoSheet = false },
+            isReducedMotion = isReducedMotion,
+        )
+    }
 }
 
+private data class CalendarStreakHeaderVisual(
+    val circleColor: Color,
+    val iconTint: Color,
+    val titleText: String,
+    val subtitleText: String,
+)
+
 @Composable
-private fun StreakSummaryCard(streak: Int) {
-    AwanSurface(
+private fun StreakHeaderCard(
+    state: CalendarStreakHeaderState,
+    streak: Int,
+    isReducedMotion: Boolean = rememberIsReducedMotion(),
+) {
+    val colors = AwanTheme.colors
+    val variantTag = "streak_header_${state.name.lowercase()}"
+    val isDark = isSystemInDarkTheme()
+
+    val visual = when (state) {
+        CalendarStreakHeaderState.Start -> CalendarStreakHeaderVisual(
+            circleColor = colors.sky.copy(alpha = 0.16f),
+            iconTint = if (isDark) colors.sky else colors.skyPressed,
+            titleText = stringResource(R.string.calendar_streak_start_title),
+            subtitleText = stringResource(R.string.calendar_streak_start_subtitle),
+        )
+        CalendarStreakHeaderState.Restart -> CalendarStreakHeaderVisual(
+            circleColor = colors.zoneCoral.copy(alpha = 0.16f),
+            iconTint = if (isDark) colors.zoneCoral else colors.zoneCoralPressed,
+            titleText = stringResource(R.string.calendar_streak_restart_title),
+            subtitleText = stringResource(R.string.calendar_streak_restart_subtitle),
+        )
+        CalendarStreakHeaderState.Protect -> CalendarStreakHeaderVisual(
+            circleColor = colors.zoneTangerine.copy(alpha = 0.20f),
+            iconTint = if (isDark) colors.zoneTangerine else colors.zoneTangerinePressed,
+            titleText = stringResource(R.string.calendar_streak_protect_title, streak),
+            subtitleText = stringResource(R.string.calendar_streak_protect_subtitle),
+        )
+        CalendarStreakHeaderState.Celebrate -> CalendarStreakHeaderVisual(
+            circleColor = colors.zoneSun.copy(alpha = 0.25f),
+            iconTint = colors.streakIcon,
+            titleText = stringResource(R.string.calendar_streak_celebrate_title, streak),
+            subtitleText = stringResource(R.string.calendar_streak_celebrate_subtitle),
+        )
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "streakCircleTransition")
+    val outerScale by if (isReducedMotion) {
+        remember { mutableStateOf(1f) }
+    } else {
+        infiniteTransition.animateFloat(
+            initialValue = 0.94f,
+            targetValue = 1.08f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "streakOuterScale",
+        )
+    }
+    val outerAlpha by if (isReducedMotion) {
+        remember { mutableStateOf(1f) }
+    } else {
+        infiniteTransition.animateFloat(
+            initialValue = 0.55f,
+            targetValue = 0.95f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "streakOuterAlpha",
+        )
+    }
+    val innerScale by if (isReducedMotion) {
+        remember { mutableStateOf(1f) }
+    } else {
+        infiniteTransition.animateFloat(
+            initialValue = 0.98f,
+            targetValue = 1.04f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "streakInnerScale",
+        )
+    }
+
+    AwanCard(
         modifier = Modifier
             .fillMaxWidth()
-            .testTag("streak_summary_card")
+            .testTag("streak_summary_card"),
+        background = colors.surface,
+        customRimColor = colors.line,
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 18.dp),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(AwanTheme.spacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start,
+                .testTag(variantTag),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(AwanTheme.colors.streakSurface),
-                contentAlignment = Alignment.Center,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start,
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_flame_filled),
-                    contentDescription = null,
-                    tint = AwanTheme.colors.streakIcon,
-                    modifier = Modifier.testTag("streak_flame_icon"),
-                )
-            }
-            Spacer(modifier = Modifier.width(AwanTheme.spacing.md))
-            Column {
+                val outerSize = 56.dp
+                val innerSize = 42.dp
+
+                Box(
+                    modifier = Modifier.size(outerSize),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // Outer animated pulsing circle
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                scaleX = outerScale
+                                scaleY = outerScale
+                                alpha = outerAlpha
+                            }
+                            .clip(CircleShape)
+                            .then(
+                                if (state == CalendarStreakHeaderState.Protect) {
+                                    Modifier
+                                        .background(visual.circleColor.copy(alpha = 0.25f))
+                                        .border(2.dp, colors.zoneTangerine.copy(alpha = 0.7f), CircleShape)
+                                } else {
+                                    Modifier.background(visual.circleColor)
+                                }
+                            ),
+                    )
+
+                    // Inner background circle with subtle breathing scale
+                    Box(
+                        modifier = Modifier
+                            .size(innerSize)
+                            .graphicsLayer {
+                                scaleX = innerScale
+                                scaleY = innerScale
+                            }
+                            .clip(CircleShape)
+                            .background(visual.circleColor.copy(alpha = 0.65f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        val iconModifier = Modifier
+                            .size(28.dp)
+                            .testTag(
+                                when (state) {
+                                    CalendarStreakHeaderState.Start -> "streak_header_start_icon"
+                                    CalendarStreakHeaderState.Restart -> "streak_header_restart_icon"
+                                    CalendarStreakHeaderState.Protect -> "streak_header_protect_icon"
+                                    CalendarStreakHeaderState.Celebrate -> "streak_header_celebrate_icon"
+                                }
+                            )
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_flame_filled),
+                            contentDescription = null,
+                            tint = visual.iconTint,
+                            modifier = iconModifier,
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(AwanTheme.spacing.md))
                 AwanText(
-                    text = stringResource(R.string.calendar_streak_title, streak),
+                    text = visual.titleText,
                     style = AwanTheme.styles.titleText,
-                )
-                AwanText(
-                    text = stringResource(R.string.calendar_streak_subtitle),
-                    style = AwanTheme.styles.captionText,
+                    modifier = Modifier.weight(1f),
                 )
             }
+            Spacer(modifier = Modifier.height(AwanTheme.spacing.sm))
+            AwanText(
+                text = visual.subtitleText,
+                style = AwanTheme.styles.bodySecondaryText,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
@@ -344,20 +454,20 @@ private fun MonthHeader(
             style = AwanTheme.styles.titleText,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs)) {
-            CalendarIconButton(
+            AwanIconButton(
                 onClick = onPrevMonth,
                 contentDescription = stringResource(R.string.calendar_prev_month),
-                testTag = "prev_month_button",
+                modifier = Modifier.testTag("prev_month_button"),
             ) {
                 Icon(
                     imageVector = if (isRtl) Lucide.ChevronRight else Lucide.ChevronLeft,
                     contentDescription = null,
                 )
             }
-            CalendarIconButton(
+            AwanIconButton(
                 onClick = onNextMonth,
                 contentDescription = stringResource(R.string.calendar_next_month),
-                testTag = "next_month_button",
+                modifier = Modifier.testTag("next_month_button"),
             ) {
                 Icon(
                     imageVector = if (isRtl) Lucide.ChevronLeft else Lucide.ChevronRight,
@@ -432,64 +542,96 @@ private fun WeekRow(
     isReducedMotion: Boolean,
     onSelectDate: (LocalDate) -> Unit,
 ) {
-    val streakRuns = remember(rowDays) {
-        val runs = mutableListOf<IntRange>()
-        var start = -1
-        rowDays.forEachIndexed { i, day ->
-            if (day.isStreakDay) {
-                if (start == -1) start = i
-            } else {
-                if (start != -1) {
-                    runs.add(start until i)
-                    start = -1
-                }
-            }
-        }
-        if (start != -1) runs.add(start until rowDays.size)
-        runs
-    }
-
-    val streakSun = AwanTheme.colors.zoneSun
-    val streakCoral = AwanTheme.colors.zoneCoral
-    val streakBrush = Brush.horizontalGradient(listOf(streakSun, streakCoral))
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .drawBehind {
-                val cellWidth = size.width / 7f
-                // Top inset (2.dp + 2.dp = 4.dp) plus radius of 36.dp circle (18.dp) = 22.dp center
-                val centerY = 4.dp.toPx() + 18.dp.toPx()
-                val lineThickness = 34.dp.toPx()
-
-                streakRuns.forEach { run ->
-                    val startX = run.start * cellWidth + cellWidth / 2f
-                    val endX = run.endInclusive * cellWidth + cellWidth / 2f
-                    drawLine(
-                        brush = streakBrush,
-                        start = Offset(startX, centerY),
-                        end = Offset(endX, centerY),
-                        strokeWidth = lineThickness,
-                        cap = StrokeCap.Round,
-                    )
-                }
-            }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            rowDays.forEach { dayState ->
-                DayCell(
-                    dayState = dayState,
-                    isReducedMotion = isReducedMotion,
-                    onSelectDate = onSelectDate,
-                    modifier = Modifier.weight(1f),
-                )
-            }
+        rowDays.forEach { dayState ->
+            DayCell(
+                dayState = dayState,
+                isReducedMotion = isReducedMotion,
+                onSelectDate = onSelectDate,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Shader seam — replace this composable's content with a real shader when the
+// Lottie/shader asset is available.  Size and shape are kept stable so callers
+// are not affected.  Currently renders nothing (fully transparent).
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Soap bubble shader layer for calendar deadline days.
+// ---------------------------------------------------------------------------
+@Composable
+private fun DeadlineShaderHost(
+    size: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier,
+    baseColor: Color = SoapBubbleStyle.DEFAULT_BASE_COLOR,
+    isReducedMotion: Boolean = false,
+    testTag: String = "calendar_day_deadline_shader",
+) {
+    SoapBubbleShaderLayer(
+        modifier = modifier
+            .size(size)
+            .testTag(testTag),
+        baseColor = baseColor,
+        strength = 1.0f,
+        cycleDurationMillis = 12_000,
+        isReducedMotion = isReducedMotion,
+    )
+}
+
+// ---------------------------------------------------------------------------
+// Independent fire badge drawn at the cell's top-right corner above the shader
+// layer.  Used only for the today+streak+deadline combination.
+// ---------------------------------------------------------------------------
+@Composable
+private fun FireBadge(
+    tint: Color,
+    modifier: Modifier = Modifier,
+    testTag: String = "calendar_day_streak_badge",
+) {
+    val colors = AwanTheme.colors
+    Box(
+        modifier = modifier
+            .offset(x = 4.dp, y = (-4).dp)
+            .clip(CircleShape)
+            .background(colors.background)
+            .padding(1.5.dp)
+            .size(16.dp)
+            .clip(CircleShape)
+            .background(tint.copy(alpha = 0.20f))
+            .testTag(testTag),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_flame_filled),
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(11.dp),
+        )
+    }
+}
+
+@Composable
+private fun DayNumberText(
+    dayNumber: String,
+    textColor: Color,
+    numberTag: String,
+    dateDescription: String,
+    modifier: Modifier = Modifier,
+) {
+    AwanText(
+        text = dayNumber,
+        style = AwanTextStyle(AwanTheme.typography.body, textColor),
+        modifier = modifier
+            .testTag(numberTag)
+            .semantics { contentDescription = dateDescription },
+    )
 }
 
 @Composable
@@ -499,6 +641,13 @@ private fun DayCell(
     onSelectDate: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // -----------------------------------------------------------------------
+    // Tuning constants — local to this composable so they can be adjusted
+    // independently without touching callers.
+    // -----------------------------------------------------------------------
+    /** Diameter of the primary "today" and standard day circle. */
+    val dayCellCircleSize = 36.dp
+
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
@@ -509,12 +658,8 @@ private fun DayCell(
         label = "DayCellPressScale",
     )
 
-    val textColor = when {
-        dayState.isToday -> AwanTheme.colors.onSky
-        dayState.isStreakDay -> Color.White
-        !dayState.isCurrentMonth -> AwanTheme.colors.meta
-        else -> AwanTheme.colors.textPrimary
-    }
+    val colors = AwanTheme.colors
+    val standardTextColor = if (!dayState.isCurrentMonth) colors.meta else colors.textPrimary
 
     val streakDayString = stringResource(R.string.calendar_streak_day)
     val hasDeadlineString = stringResource(R.string.calendar_has_deadline)
@@ -537,6 +682,18 @@ private fun DayCell(
         }
     }
 
+    val deadlineColor = remember(dayState.deadlineProgress) {
+        SoapBubbleStyle.colorForTimeRemaining(dayState.deadlineProgress ?: 0.5f)
+    }
+
+    val dateTag = dayState.date
+    val numberTag = "calendar_day_${dateTag}_number"
+    val todayPrimaryTag = "calendar_day_${dateTag}_today_primary"
+    val streakFireTag = "calendar_day_${dateTag}_streak_fire"
+    val streakNumberTag = "calendar_day_${dateTag}_streak_number"
+    val deadlineShaderTag = "calendar_day_${dateTag}_deadline_shader"
+    val streakBadgeTag = "calendar_day_${dateTag}_streak_badge"
+
     Column(
         modifier = modifier
             .padding(2.dp)
@@ -556,58 +713,176 @@ private fun DayCell(
             .padding(vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        val bodyTextStyle = AwanTheme.typography.body
-        val selectionOutline = AwanTheme.colors.sky
-        val selectionModifier = if (dayState.isSelected && !dayState.isToday) {
-            Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(AwanTheme.colors.surface)
-                .drawBehind {
-                    drawCircle(color = selectionOutline, radius = size.minDimension / 2f, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx()))
-                }
-        } else {
-            Modifier.size(36.dp)
-        }
+        val dayNumber = dayState.date.dayOfMonth.toString()
 
-        Box(
-            modifier = selectionModifier,
-            contentAlignment = Alignment.Center,
-        ) {
-            if (dayState.isToday && dayState.isStreakDay) {
+        when {
+            // ------------------------------------------------------------------
+            // today + streak (with or without deadline)
+            // Primary blue circle + number + fire badge (+ optional shader)
+            // ------------------------------------------------------------------
+            dayState.isToday && dayState.isStreakDay -> {
                 Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(AwanTheme.colors.sky),
+                    modifier = Modifier.size(dayCellCircleSize),
                     contentAlignment = Alignment.Center,
                 ) {
-                    AwanText(
-                        text = dayState.date.dayOfMonth.toString(),
-                        style = AwanTextStyle(bodyTextStyle, AwanTheme.colors.onSky),
-                        modifier = Modifier.semantics { contentDescription = dateDescription },
+                    // Primary blue circle
+                    Box(
+                        modifier = Modifier
+                            .size(dayCellCircleSize)
+                            .clip(CircleShape)
+                            .background(colors.sky)
+                            .testTag(todayPrimaryTag),
+                    )
+                    // Deadline shader host if today has deadline
+                    if (dayState.hasDeadline) {
+                        DeadlineShaderHost(
+                            size = dayCellCircleSize,
+                            baseColor = deadlineColor,
+                            isReducedMotion = isReducedMotion,
+                            testTag = deadlineShaderTag,
+                        )
+                    }
+                    // Day number on top
+                    DayNumberText(
+                        dayNumber = dayNumber,
+                        textColor = colors.onSky,
+                        numberTag = numberTag,
+                        dateDescription = dateDescription,
+                    )
+                    // Fire badge at top-right
+                    FireBadge(
+                        tint = colors.streakIcon,
+                        testTag = streakBadgeTag,
+                        modifier = Modifier.align(Alignment.TopEnd),
                     )
                 }
-            } else if (dayState.isToday) {
+            }
+
+            // ------------------------------------------------------------------
+            // today + deadline (no streak)
+            // Primary circle + transparent shader host + number on top
+            // ------------------------------------------------------------------
+            dayState.isToday && dayState.hasDeadline -> {
                 Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(AwanTheme.colors.sky),
+                    modifier = Modifier.size(dayCellCircleSize),
                     contentAlignment = Alignment.Center,
                 ) {
-                    AwanText(
-                        text = dayState.date.dayOfMonth.toString(),
-                        style = AwanTextStyle(bodyTextStyle, AwanTheme.colors.onSky),
-                        modifier = Modifier.semantics { contentDescription = dateDescription },
+                    // Primary circle
+                    Box(
+                        modifier = Modifier
+                            .size(dayCellCircleSize)
+                            .clip(CircleShape)
+                            .background(colors.sky)
+                            .testTag(todayPrimaryTag),
+                    )
+                    // Shader host
+                    DeadlineShaderHost(
+                        size = dayCellCircleSize,
+                        baseColor = deadlineColor,
+                        isReducedMotion = isReducedMotion,
+                        testTag = deadlineShaderTag,
+                    )
+                    // Day number on top
+                    DayNumberText(
+                        dayNumber = dayNumber,
+                        textColor = colors.onSky,
+                        numberTag = numberTag,
+                        dateDescription = dateDescription,
                     )
                 }
-            } else {
-                AwanText(
-                    text = dayState.date.dayOfMonth.toString(),
-                    style = AwanTextStyle(bodyTextStyle, textColor),
-                    modifier = Modifier.semantics { contentDescription = dateDescription },
-                )
+            }
+
+            // ------------------------------------------------------------------
+            // today only (no streak, no deadline)
+            // 36.dp primary circle + number
+            // ------------------------------------------------------------------
+            dayState.isToday -> {
+                Box(
+                    modifier = Modifier
+                        .size(dayCellCircleSize)
+                        .clip(CircleShape)
+                        .background(colors.sky)
+                        .testTag(todayPrimaryTag),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    DayNumberText(
+                        dayNumber = dayNumber,
+                        textColor = colors.onSky,
+                        numberTag = numberTag,
+                        dateDescription = dateDescription,
+                    )
+                }
+            }
+
+            // ------------------------------------------------------------------
+            // streak day on previous days (not today, with or without deadline)
+            // Fire icon badge only on previous days + number (+ optional shader)
+            // ------------------------------------------------------------------
+            dayState.isStreakDay -> {
+                Box(
+                    modifier = Modifier.size(dayCellCircleSize),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (dayState.hasDeadline) {
+                        DeadlineShaderHost(
+                            size = dayCellCircleSize,
+                            baseColor = deadlineColor,
+                            isReducedMotion = isReducedMotion,
+                            testTag = deadlineShaderTag,
+                        )
+                    }
+                    DayNumberText(
+                        dayNumber = dayNumber,
+                        textColor = standardTextColor,
+                        numberTag = numberTag,
+                        dateDescription = dateDescription,
+                    )
+                    FireBadge(
+                        tint = colors.streakIcon,
+                        testTag = streakBadgeTag,
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    )
+                }
+            }
+
+            // ------------------------------------------------------------------
+            // future/past deadline (non-streak, non-today)
+            // ------------------------------------------------------------------
+            dayState.hasDeadline -> {
+                Box(
+                    modifier = Modifier.size(dayCellCircleSize),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    DeadlineShaderHost(
+                        size = dayCellCircleSize,
+                        baseColor = deadlineColor,
+                        isReducedMotion = isReducedMotion,
+                        testTag = deadlineShaderTag,
+                    )
+                    DayNumberText(
+                        dayNumber = dayNumber,
+                        textColor = standardTextColor,
+                        numberTag = numberTag,
+                        dateDescription = dateDescription,
+                    )
+                }
+            }
+
+            // ------------------------------------------------------------------
+            // Plain or missed day — number only
+            // ------------------------------------------------------------------
+            else -> {
+                Box(
+                    modifier = Modifier.size(dayCellCircleSize),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    DayNumberText(
+                        dayNumber = dayNumber,
+                        textColor = standardTextColor,
+                        numberTag = numberTag,
+                        dateDescription = dateDescription,
+                    )
+                }
             }
         }
         Row(
@@ -632,6 +907,9 @@ private fun DayCell(
                 )
             }
         }
+
+        // Consistent bottom spacer replacing the old deadline dot
+        Spacer(modifier = Modifier.height(7.dp))
     }
 }
 

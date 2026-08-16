@@ -6,6 +6,8 @@ import com.awan.app.core.data.onboarding.remote.OnboardingRemoteDataSource
 import com.awan.app.core.datastore.UserPreferencesDataSource
 import com.awan.app.core.datastore.model.UserPreferencesData
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
+import com.awan.app.core.model.DarkThemeConfig
+import com.awan.app.core.model.NotificationPreferences
 import com.awan.app.core.domain.onboarding.model.OnboardingData
 import com.awan.app.core.domain.onboarding.model.DayBounds
 import com.awan.app.core.domain.profile.model.UserProfile
@@ -78,9 +80,44 @@ class OnboardingRepositoryImplTest {
         val sentRequest = fakeRemoteDataSource.lastReceivedRequest
         assertEquals("Sarah", sentRequest?.firstName)
         assertEquals("Connor", sentRequest?.lastName)
+        assertEquals("2000-01-01", sentRequest?.birthDate)
         assertEquals(45, sentRequest?.preferredSessionDuration)
         assertEquals("07:00:00", sentRequest?.wakeupTime)
         assertEquals("23:00:00", sentRequest?.sleepTime)
+    }
+
+    @Test
+    fun `completeOnboarding defaults firstName to Friend and lastName to not entered when profile is null or blank`() = runTest(testDispatcher.scheduler) {
+        val onboardingData = OnboardingData(
+            profile = null,
+            bounds = DayBounds(wakeMinutes = 7 * 60, sleepMinutes = 23 * 60),
+            preferredTaskLengthMinutes = 45,
+        )
+
+        val result = repository.completeOnboarding(onboardingData)
+
+        assertTrue(result is Result.Success)
+        val sentRequest = fakeRemoteDataSource.lastReceivedRequest
+        assertEquals("Friend", sentRequest?.firstName)
+        assertEquals("not entered", sentRequest?.lastName)
+        assertEquals("2000-01-01", sentRequest?.birthDate)
+    }
+
+    @Test
+    fun `completeOnboarding sends not entered for blank lastName`() = runTest(testDispatcher.scheduler) {
+        val onboardingData = OnboardingData(
+            profile = UserProfile(firstName = "Sarah", lastName = ""),
+            bounds = DayBounds(wakeMinutes = 7 * 60, sleepMinutes = 23 * 60),
+            preferredTaskLengthMinutes = 45,
+        )
+
+        val result = repository.completeOnboarding(onboardingData)
+
+        assertTrue(result is Result.Success)
+        val sentRequest = fakeRemoteDataSource.lastReceivedRequest
+        assertEquals("Sarah", sentRequest?.firstName)
+        assertEquals("not entered", sentRequest?.lastName)
+        assertEquals("2000-01-01", sentRequest?.birthDate)
     }
 
     @Test
@@ -222,7 +259,7 @@ class OnboardingRepositoryImplTest {
 
         override val userPreferences: Flow<UserPreferencesData> = prefs
 
-        override suspend fun setDarkThemeEnabled(enabled: Boolean) {}
+        override suspend fun setDarkThemeConfig(config: DarkThemeConfig) {}
         override suspend fun setDynamicColorEnabled(enabled: Boolean) {}
         override suspend fun setOnboardingCompleted(completed: Boolean) {
             isOnboardingCompleted = completed
@@ -231,6 +268,7 @@ class OnboardingRepositoryImplTest {
         override suspend fun setLocale(locale: String) {}
         override suspend fun setDefaultRegion(region: String) {}
         override suspend fun setMicPermissionRequested(requested: Boolean) {}
+        override suspend fun setNotificationPreferences(preferences: NotificationPreferences) {}
     }
 
     private class FakeUserDao : com.awan.app.core.database.dao.UserDao {

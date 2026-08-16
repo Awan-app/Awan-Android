@@ -18,6 +18,7 @@ import com.awan.app.core.database.model.EquippedItemEntity
 import com.awan.app.core.database.model.GoalEntity
 import com.awan.app.core.database.model.OwnedItemEntity
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.UpcomingSessionRow
 import com.awan.app.core.database.model.StoreItemEntity
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
@@ -57,6 +58,10 @@ import com.awan.app.core.network.dto.task.BulkCreateTasksWithSessionsRequest
 import com.awan.app.core.network.dto.task.CreateTaskRequest
 import com.awan.app.core.network.dto.task.CreateTaskWithSessionsRequest
 import com.awan.app.core.network.dto.task.ScheduleTaskRequest
+import com.awan.app.core.network.dto.task.TaskUpdateRequest
+import com.awan.app.core.network.dto.task.TaskMoveRequest
+import com.awan.app.core.network.dto.task.TaskDependencyRequest
+import com.awan.app.core.network.dto.task.AddTaskSessionsRequest
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
@@ -98,8 +103,19 @@ private class FakeTaskRemoteDataSource(
     override suspend fun getTasksByRange(startDate: String, endDate: String) = rangeResult
     override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = Result.Success(emptyList())
     override suspend fun scheduleTask(request: ScheduleTaskRequest) = error("not used")
-    override suspend fun deleteTask(taskId: String) = error("not used")
+    override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = Result.Success(Unit)
+    override suspend fun completeTask(taskId: String): Result<com.awan.app.core.network.dto.task.TaskCompletionResponse> = error("not used")
+    override suspend fun getTask(taskId: String): Result<TaskInfoResponse> = error("not used")
+    override suspend fun updateTask(taskId: String, request: TaskUpdateRequest): Result<TaskInfoResponse> = error("not used")
+    override suspend fun moveTask(taskId: String, request: TaskMoveRequest): Result<TaskInfoResponse> = error("not used")
+    override suspend fun addDependency(taskId: String, request: TaskDependencyRequest): Result<Unit> = error("not used")
+    override suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit> = error("not used")
+    override suspend fun getTaskDependencies(taskId: String): Result<List<TaskInfoResponse>> = Result.Success(emptyList())
+    override suspend fun getTaskDependents(taskId: String): Result<List<TaskInfoResponse>> = Result.Success(emptyList())
+    override suspend fun getTaskSessions(taskId: String, status: String?): Result<List<SessionDto>> = Result.Success(emptyList())
+    override suspend fun addTaskSessions(taskId: String, request: AddTaskSessionsRequest): Result<List<SessionDto>> = Result.Success(emptyList())
 }
+
 
 private class FakeGoalRemoteDataSource(
     private val goalsResult: Result<List<GoalInfoResponse>> = Result.Success(emptyList()),
@@ -107,7 +123,8 @@ private class FakeGoalRemoteDataSource(
     override suspend fun getGoals(): Result<List<GoalInfoResponse>> = goalsResult
     override suspend fun createGoal(request: com.awan.app.core.network.dto.goal.CreateGoalRequest) = error("not used")
     override suspend fun getInboxGoal() = error("not used")
-    override suspend fun getGoal(goalId: String) = error("not used")
+    override suspend fun getGoal(goalId: String): Result<GoalInfoResponse> = error("not used")
+    override suspend fun updateGoal(goalId: String, request: com.awan.app.core.network.dto.goal.UpdateGoalRequest) = error("not used")
     override suspend fun deleteGoal(goalId: String) = error("not used")
     override suspend fun continueDecomposition(request: GoalDecomposeRequest) = error("not used")
     override suspend fun confirmDecomposition(sessionId: String) = error("not used")
@@ -134,7 +151,7 @@ private class FakeStoreRemoteDataSource : StoreRemoteDataSource {
     override suspend fun buyItem(itemId: String): Result<Unit> = Result.Success(Unit)
     override suspend fun getEquippedItems(): Result<List<EquippedItemDto>> = Result.Success(emptyList())
     override suspend fun equipItem(itemId: String): Result<Unit> = Result.Success(Unit)
-    override suspend fun unequipItem(itemId: String): Result<Unit> = Result.Success(Unit)
+    override suspend fun unequipItem(type: String): Result<Unit> = Result.Success(Unit)
 }
 
 private class FakeProfileRemoteDataSource : ProfileRemoteDataSource {
@@ -185,9 +202,7 @@ private class FakeTaskDao : TaskDao {
     override suspend fun upsertTask(task: TaskEntity) { upsertedTasks += task }
     override suspend fun upsertTasks(tasks: List<TaskEntity>) { upsertedTasks += tasks }
     override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override fun observeInboxTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override fun observeAllTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-    override suspend fun getAllTasks(): List<TaskEntity> = emptyList()
+    override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = emptyList()
     override fun observeTask(taskId: String): Flow<TaskEntity?> = MutableStateFlow(null)
     override suspend fun getTask(taskId: String): TaskEntity? = null
     override suspend fun deleteTask(taskId: String) {}
@@ -195,6 +210,7 @@ private class FakeTaskDao : TaskDao {
     override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
     override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
     override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+    override suspend fun getDependsOnIds(taskId: String): List<String> = emptyList()
     override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
     override suspend fun deleteAllDependenciesForTask(taskId: String) {}
     override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}
@@ -223,6 +239,8 @@ private class FakeSessionDao : SessionDao {
     override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<SessionEntity>> = flowOf(emptyList())
     override suspend fun getSessionsForDate(date: String): List<SessionEntity> = emptyList()
     override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = emptyList()
+    override fun observeUpcomingSessions(startDate: String, endDate: String): Flow<List<UpcomingSessionRow>> = flowOf(emptyList())
+    override suspend fun getUpcomingSessions(startDate: String, endDate: String): List<UpcomingSessionRow> = emptyList()
     override suspend fun getSession(id: String): SessionEntity? = null
     override suspend fun deleteSessionsForDates(dates: List<String>) { replacedDates += dates }
     override suspend fun deleteSession(id: String) {}
@@ -237,9 +255,7 @@ private class FakeGoalDao : GoalDao {
     override fun observeGoalsByStatus(status: String): Flow<List<GoalEntity>> = flowOf(emptyList())
     override fun observeGoal(goalId: String): Flow<GoalEntity?> = MutableStateFlow(null)
     override suspend fun getGoal(goalId: String): GoalEntity? = null
-    override fun observeInboxGoal(): Flow<GoalEntity?> = MutableStateFlow(null)
     override suspend fun deleteGoal(goalId: String) {}
-    override suspend fun getActiveNonInboxGoalIds(): List<String> = emptyList()
     override suspend fun getMinExpiryTime(): Long? = null
 }
 
@@ -254,6 +270,12 @@ private class FakeStoreDao : StoreDao {
     override suspend fun upsertOwnedItems(items: List<OwnedItemEntity>) { ownedItems = items }
     override fun observeOwnedItems(): Flow<List<OwnedItemEntity>> = flowOf(ownedItems)
     override suspend fun deleteAllOwnedItems() { ownedItems = emptyList() }
+    override suspend fun markAllOwnedItemsSeen() {
+        ownedItems = ownedItems.map { it.copy(isSeen = true) }
+    }
+    override fun observeUnseenOwnedCount(): Flow<Int> = flowOf(ownedItems.count { !it.isSeen })
+    override suspend fun getSeenOwnedItemIds(): List<String> = ownedItems.filter { it.isSeen }.map { it.id }
+    override suspend fun getOwnedItemIds(): List<String> = ownedItems.map { it.id }
     override suspend fun upsertEquippedItems(items: List<EquippedItemEntity>) { equippedItems = items }
     override fun observeEquippedItems(): Flow<List<EquippedItemEntity>> = flowOf(equippedItems)
     override suspend fun deleteAllEquippedItems() { equippedItems = emptyList() }

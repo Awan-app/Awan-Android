@@ -4,6 +4,7 @@ import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.UpcomingSessionRow
 import com.awan.app.core.data.zones.remote.SessionRemoteDataSource
 import com.awan.app.core.domain.network.NetworkConnectivityMonitor
 import com.awan.app.core.model.SessionStatus
@@ -34,6 +35,8 @@ private class FakeSessionDao : SessionDao {
     override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<SessionEntity>> = flowOf(emptyList())
     override suspend fun getSessionsForDate(date: String): List<SessionEntity> = sessionsToReturn
     override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = sessionsToReturn
+    override fun observeUpcomingSessions(startDate: String, endDate: String): Flow<List<UpcomingSessionRow>> = flowOf(emptyList())
+    override suspend fun getUpcomingSessions(startDate: String, endDate: String): List<UpcomingSessionRow> = emptyList()
     override suspend fun getSession(id: String): SessionEntity? = sessionToReturn
     override suspend fun deleteSessionsForDates(dates: List<String>) {}
     override suspend fun deleteSession(id: String) { deletedIds += id }

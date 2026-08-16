@@ -10,7 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
@@ -194,9 +193,7 @@ fun EditRoutineScreen(
                 },
                 navigationIcon = {
                     Box(modifier = Modifier.padding(start = 12.dp)) {
-                        AwanIconButton(onClick = onBackClick, contentDescription = stringResource(R.string.profile_back)) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = AwanTheme.colors.textPrimary)
-                        }
+                        AwanBackButton(onClick = onBackClick)
                     }
                 },
                 actions = {

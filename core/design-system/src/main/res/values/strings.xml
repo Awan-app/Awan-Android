@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">Awan</string>
     <string name="ds_no_sessions_in_zone">No scheduled sessions in this zone</string>
     <string name="ds_done_count">%1$d/%2$d done</string>
     <string name="ds_tasks_count">%1$d/%2$d sessions</string>
@@ -47,4 +48,34 @@
     <string name="ds_wheel_collect">Collect</string>
     <string name="ds_wheel_close">Close</string>
     <string name="ds_wheel_item_wedge">Gift</string>
+
+    <!-- Speech to text -->
+    <string name="ds_mic_idle">Dictate text</string>
+    <string name="ds_mic_listening">Listening… tap to stop</string>
+    <string name="ds_speech_permission_denied">Microphone permission is required for speech recognition.</string>
+    <string name="ds_speech_unavailable">Speech recognition is unavailable on this device.</string>
+    <string name="ds_speech_no_match">Didn\'t catch that. Try speaking again.</string>
+    <string name="ds_speech_error">Speech recognition error. Please try again.</string>
+    <string name="ds_speech_language_unsupported">Speech recognition doesn\'t support your app language on this device.</string>
+    <string name="ds_speech_rationale_title">Use your voice?</string>
+    <string name="ds_speech_rationale_body">Awan needs the microphone so you can dictate instead of typing. Nothing is recorded or stored.</string>
+    <string name="ds_speech_rationale_confirm">Continue</string>
+    <string name="ds_speech_rationale_cancel">Not now</string>
+    <string name="ds_speech_settings_dialog_title">Microphone Permission Required</string>
+    <string name="ds_speech_settings_dialog_body">Microphone access is turned off. Please enable it in device settings to use speech recognition.</string>
+    <string name="ds_speech_settings_dialog_confirm">Open Settings</string>
+    <string name="ds_speech_settings_dialog_cancel">Cancel</string>
+    <!-- Points shortcuts -->
+    <string name="ds_points_thousand">%1$sk</string>
+    <string name="ds_points_million">%1$sM</string>
+    <string name="ds_points_billion">%1$sB</string>
+
+    <!-- Navigation & Combos -->
+    <string name="ds_next_day">Next day</string>
+    <string name="ds_previous_day">Previous day</string>
+    <string name="ds_combo_bonus">%1$d× COMBO BONUS!</string>
+
+    <!-- Achievements -->
+    <string name="goal_achieved_title">Goal Achieved!</string>
+    <string name="goal_achieved_encouragement">You\'re making amazing progress!</string>
 </resources>

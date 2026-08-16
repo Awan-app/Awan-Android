@@ -6,8 +6,6 @@ This file provides guidance to AI coding agents when working with code in this r
 
 Awan — native Android client for an AI-assisted adaptive scheduling app. A cloud "AI Architect" (LLM behind a backend's POST request) decomposes goals into a strict JSON Contract of tasks; an on-device **Local Conflict Engine** does 100% of placement/overlap/dependency math. The AI never writes start times; the engine never guesses intent.
 
-Reference docs live in `docs/reference/` (architecture, layers, feature guide) and `docs/navigation_guide.md` (Navigation 3 patterns used here).
-
 ## Commands
 
 - Build: `./gradlew assembleDebug`
@@ -16,7 +14,11 @@ Reference docs live in `docs/reference/` (architecture, layers, feature guide) a
 - Instrumented tests (device/emulator required): `./gradlew connectedDebugAndroidTest`
 - Lint: `./gradlew lint`
 
-Gradle 9.4.1 with configuration cache enabled; daemon toolchain is JVM 21. AGP 9.2.1, Kotlin 2.4.0, compileSdk 37 / minSdk 26, Compose BOM 2026.06.01. Version catalog: `gradle/libs.versions.toml`.
+Gradle 9.4.1 with configuration cache enabled; Java/Kotlin target is 17. AGP 9.2.1, Kotlin 2.4.0, compileSdk 37 / targetSdk 36 / minSdk 26, Compose BOM 2026.06.01. Version catalog: `gradle/libs.versions.toml`.
+
+There is no detekt or ktlint task — `assembleDebug` plus `lint` is the whole static-check story.
+
+Source roots are mixed: `:core:database`, `:core:data` and `:core:domain` use `src/main/kotlin`, everything else uses `src/main/java`. Glob both when searching.
 
 ## Git & Jira
 
@@ -52,7 +54,7 @@ Dependency direction is always `presentation → domain ← data`. Domain depend
 
 - `build-logic/` convention plugins own shared Gradle config: `awan.android.application`, `awan.android.library`, `awan.jvm.library`, `awan.android.compose`, `awan.android.hilt`, `awan.android.feature`, `awan.android.room`, `awan.android.navigation`. Module build files stay declarative — apply these instead of repeating config.
 - `:core:*` modules: `model` (domain models), `domain` (repository contracts + use cases), `data` (repository impls, data sources, DTOs/mappers), `database` (Room), `common` (dispatchers, `Result`, `AppError`), `datastore` + `datastore-proto` (Proto DataStore prefs, encrypted token storage), `network` (Retrofit/OkHttp, auth interceptor + token authenticator), `design-system` (Awan components, Styles API themes, tokens), `navigation` (`Navigator`, `NavigationState`, `Route`).
-- `:feature:*` modules with **api/impl split** (api = routes only, impl = EntryProvider + screens): splash, onboarding, auth, home, calendar, chat, goals, profile, marketplace, ai-tasks. Features depend on core and other features' `api` modules, never on their `impl`. Exception: `:feature:add-task` has no split — it's a state-driven sheet, not a navigation destination, so it exports no Route and only `:app` consumes it.
+- `:feature:*` modules with **api/impl split** (api = routes only, impl = EntryProvider + screens): splash, onboarding, auth, home, calendar, chat, goals, profile, inventory, marketplace, ai-tasks. Features depend on core and other features' `api` modules, never on their `impl`. Exception: `:feature:add-task` has no split — it's a state-driven sheet, not a navigation destination, so it exports no Route and only `:app` consumes it.
 - `:app` hosts the Navigation 3 shell: `AwanApp`, `AwanAppState`, `TopLevelDestination`, `MainActivity`.
 - Hilt DI throughout; UDF ViewModels exposing `StateFlow` of sealed UI state.
 - Packages: `com.awan.app` (app), `com.awan.app.core.*` (core), `com.awan.feature.*` (features).
@@ -65,11 +67,12 @@ Built. Repositories return `Flow` from DAOs and the UI observes that; the networ
 - **Gate writes on `NetworkConnectivityMonitor.isCurrentlyOnline()`** and return `AppError.Network` when offline, instead of letting the call fail deep in the stack.
 - Freshness is per-row: entities carry `expiryTime`, filled from `SyncTtl` (schedule 15 min, goals 30 min, profile/categories/templates 1 h). Background refresh runs through `SyncWorker` (WorkManager) driven by `OfflineSyncCoordinator`.
 
-### Room migrations — silent data loss if skipped
+### Room database strategy — destructive migration fallback
 
-`AwanDatabase` is at **version 4**, with real migrations and schemas exported to `core/database/schemas/`.
+`AwanDatabase` relies on Room's destructive fallback strategy (`fallbackToDestructiveMigration(dropAllTables = true)` and `fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)`) rather than manual `Migration` objects.
 
-Any entity change needs a `Migration` **and** a version bump. `fallbackToDestructiveMigration(dropAllTables = true)` is still enabled as a backstop, so a missing or wrong migration **wipes the user's database instead of failing loudly** — it will look fine on a clean install and destroy data on upgrade. Migrations have needed follow-up fixes before; add the column to both the entity and the migration SQL, and check the exported schema JSON.
+When any entity schema changes, simply bump the `version` number in `@Database(...)` in `AwanDatabase.kt`. When an updated build runs on a device with an older (or newer) schema version, Room will automatically drop and recreate the tables.
+
 
 ### Still to build
 
@@ -85,6 +88,7 @@ Any entity change needs a `Migration` **and** a version bump. `fallbackToDestruc
 - **Points and streak are server-owned.** Never compute a balance client-side. They change only via session completion, the daily wheel, and store purchases; read them back from the response or `GET v1/gamification/progress`. A reward's `awarded`/`updated` flags — not its amounts — say whether anything was actually earned.
 - No change is committed without user approval — conflicts surface an Intelligent Nudge (Skip / Double Up / Reschedule / Approve).
 - Nightly Sweep runs via WorkManager but must always catch up on app foreground; never assume the background job ran.
+- **Every notification needs its own switch.** Any notification added or changed — a new kind, a new trigger, a new channel — ships in the *same* change with a toggle on the notification settings screen (`feature/profile/impl/.../ui/NotificationSettingsScreen.kt`), a field on `NotificationPreferences` (`:core:model`), and a proto field in `user_preferences.proto` stored **negated** so it defaults to on. A notification the user cannot turn off on its own is a bug, not a preference gap — users read unmutable notifications as spam and mute the whole app, which takes the session reminders with it. The scheduler already collects the preferences flow, so a new toggle retimes the alarms with no extra wiring.
 
 ## Feature plans
 

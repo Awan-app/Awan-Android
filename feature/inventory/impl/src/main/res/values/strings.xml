@@ -3,6 +3,10 @@
     <string name="inventory_title">Inventory</string>
     <string name="inventory_back">Back</string>
     <string name="inventory_refresh">Refresh inventory</string>
+    <string name="inventory_controls">Collection controls</string>
+    <string name="inventory_view_details">View details for %1$s</string>
+    <string name="inventory_item_equipped_state">Equipped</string>
+    <string name="inventory_item_not_equipped_state">Not equipped</string>
     <string name="inventory_filter_type">TYPE</string>
     <string name="inventory_all_types">All</string>
     <string name="inventory_filter_rarity">RARITY</string>
@@ -20,7 +24,9 @@
     <string name="inventory_rarity_rare">Rare</string>
     <string name="inventory_rarity_epic">Epic</string>
     <string name="inventory_rarity_legendary">Legendary</string>
-    <string name="inventory_rarity_unknown">Unknown</string>
+    <string name="inventory_rarity_unknown">Mysterious</string>
+    <string name="inventory_details_rarity">Rarity: %1$s</string>
+    <string name="inventory_details_type">Type: %1$s</string>
     <string name="inventory_equip">Equip</string>
     <string name="inventory_equipped">Equipped</string>
     <string name="inventory_offline_equip">You can browse saved items while offline. Connect to equip a customization.</string>
@@ -32,4 +38,8 @@
     <string name="inventory_filtered_empty_body">Try a different filter.</string>
     <string name="inventory_error_title">We couldn\'t load your inventory</string>
     <string name="inventory_retry">Try again</string>
+    <string name="inventory_details_cost">%1$d points</string>
+    <string name="inventory_pick">Pick</string>
+    <string name="inventory_already_equipped">Already Equipped</string>
+    <string name="inventory_default">Default</string>
 </resources>

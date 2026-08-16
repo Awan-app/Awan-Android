@@ -6,11 +6,13 @@ import com.awan.app.core.database.model.StoreItemEntity
 import com.awan.app.core.model.EquippedItem
 import com.awan.app.core.model.OwnedItem
 import com.awan.app.core.model.StoreItem
+import com.awan.app.core.model.StoreItemRarity
 import com.awan.app.core.model.StoreItemType
 import com.awan.app.core.network.dto.store.EquippedItemDto
 import com.awan.app.core.network.dto.store.OwnedItemDto
 import com.awan.app.core.network.dto.store.StoreItemDto
 import com.awan.app.core.network.dto.store.StoreItemTypeDto
+import com.awan.app.core.network.resolveBackendImageUrl
 
 fun StoreItemTypeDto.asExternalModel(): StoreItemType = when (this) {
     StoreItemTypeDto.FRAME -> StoreItemType.FRAME
@@ -27,6 +29,15 @@ fun String?.asStoreItemType(): StoreItemType? = when (this) {
     else -> null
 }
 
+fun String?.asStoreItemRarity(): StoreItemRarity = when (this?.uppercase()?.trim()) {
+    "COMMON" -> StoreItemRarity.COMMON
+    "UNCOMMON" -> StoreItemRarity.UNCOMMON
+    "RARE" -> StoreItemRarity.RARE
+    "EPIC" -> StoreItemRarity.EPIC
+    "LEGENDARY" -> StoreItemRarity.LEGENDARY
+    else -> StoreItemRarity.COMMON
+}
+
 fun StoreItemType.asDto(): StoreItemTypeDto = when (this) {
     StoreItemType.FRAME -> StoreItemTypeDto.FRAME
     StoreItemType.SKIN -> StoreItemTypeDto.SKIN
@@ -40,11 +51,12 @@ fun StoreItemDto.asExternalModel(): StoreItem? {
         id = id,
         name = name ?: "",
         description = description ?: "",
-        image = image ?: "",
+        image = resolveBackendImageUrl(image) ?: (image ?: ""),
         info = info,
         price = price,
         version = version ?: "",
-        type = mappedType
+        type = mappedType,
+        rarity = rarity.asStoreItemRarity(),
     )
 }
 
@@ -74,11 +86,12 @@ fun StoreItemEntity.asExternalModel(): StoreItem? {
         id = id,
         name = name,
         description = description,
-        image = image,
+        image = resolveBackendImageUrl(image) ?: image,
         info = info,
         price = price,
         version = version,
-        type = mappedType
+        type = mappedType,
+        rarity = rarity.asStoreItemRarity(),
     )
 }
 
@@ -91,6 +104,7 @@ fun StoreItem.asEntity(expiryTime: Long = 0L): StoreItemEntity = StoreItemEntity
     price = price,
     version = version,
     type = type.name,
+    rarity = rarity.name,
     expiryTime = expiryTime
 )
 
@@ -99,7 +113,8 @@ fun OwnedItemEntity.asExternalModel(items: List<StoreItem>): OwnedItem? {
     return OwnedItem(
         id = id,
         item = storeItem,
-        boughtAt = boughtAt
+        boughtAt = boughtAt,
+        isSeen = isSeen
     )
 }
 
@@ -107,7 +122,8 @@ fun OwnedItem.asEntity(expiryTime: Long = 0L): OwnedItemEntity = OwnedItemEntity
     id = id,
     itemId = item.id,
     boughtAt = boughtAt,
-    expiryTime = expiryTime
+    expiryTime = expiryTime,
+    isSeen = isSeen
 )
 
 fun EquippedItemEntity.asExternalModel(items: List<StoreItem>): EquippedItem? {

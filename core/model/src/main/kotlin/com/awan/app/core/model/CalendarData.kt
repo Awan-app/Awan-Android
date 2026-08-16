@@ -12,4 +12,5 @@ data class CalendarGoal(
     val targetDate: String?,
     val status: String,
     val isInbox: Boolean,
+    val createdAt: String? = null,
 )

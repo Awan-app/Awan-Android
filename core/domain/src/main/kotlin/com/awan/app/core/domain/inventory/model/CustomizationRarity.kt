@@ -1,5 +1,7 @@
 package com.awan.app.core.domain.inventory.model
 
+import com.awan.app.core.model.StoreItemRarity
+
 enum class CustomizationRarity {
     COMMON,
     UNCOMMON,
@@ -9,6 +11,14 @@ enum class CustomizationRarity {
     UNKNOWN;
 
     companion object {
+        fun fromStoreItemRarity(rarity: StoreItemRarity): CustomizationRarity = when (rarity) {
+            StoreItemRarity.COMMON -> COMMON
+            StoreItemRarity.UNCOMMON -> UNCOMMON
+            StoreItemRarity.RARE -> RARE
+            StoreItemRarity.EPIC -> EPIC
+            StoreItemRarity.LEGENDARY -> LEGENDARY
+        }
+
         fun fromInfo(info: String?): CustomizationRarity {
             if (info == null) return UNKNOWN
             val lower = info.lowercase()

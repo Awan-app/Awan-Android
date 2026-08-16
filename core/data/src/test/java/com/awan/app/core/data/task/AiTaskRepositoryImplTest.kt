@@ -5,6 +5,7 @@ import com.awan.app.core.common.result.Result
 import com.awan.app.core.database.dao.SessionDao
 import com.awan.app.core.database.dao.TaskDao
 import com.awan.app.core.database.model.SessionEntity
+import com.awan.app.core.database.model.UpcomingSessionRow
 import com.awan.app.core.database.model.TaskDependencyEntity
 import com.awan.app.core.database.model.TaskEntity
 import com.awan.app.core.data.task.remote.TaskRemoteDataSource
@@ -20,6 +21,10 @@ import com.awan.app.core.network.dto.session.SessionDto
 import com.awan.app.core.network.dto.task.TaskInfoResponse
 import com.awan.app.core.network.dto.task.TaskProposalResponse
 import com.awan.app.core.network.dto.task.TaskScheduleResponse
+import com.awan.app.core.network.dto.task.TaskUpdateRequest
+import com.awan.app.core.network.dto.task.TaskMoveRequest
+import com.awan.app.core.network.dto.task.TaskDependencyRequest
+import com.awan.app.core.network.dto.task.AddTaskSessionsRequest
 import com.awan.app.core.network.dto.task.TaskWithSessionsDto
 import com.awan.app.core.network.dto.task.TasksWithSessionsResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -85,18 +90,37 @@ class AiTaskRepositoryImplTest {
         override suspend fun scheduleTask(request: ScheduleTaskRequest): Result<TaskScheduleResponse> =
             error("not used")
 
-        override suspend fun deleteTask(taskId: String): Result<Unit> = error("not used")
+        override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = error("not used")
 
         override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = error("not used")
+
+        override suspend fun getTask(taskId: String): Result<TaskInfoResponse> = error("not used")
+
+        override suspend fun updateTask(taskId: String, request: TaskUpdateRequest): Result<TaskInfoResponse> = error("not used")
+
+        override suspend fun moveTask(taskId: String, request: TaskMoveRequest): Result<TaskInfoResponse> = error("not used")
+
+        override suspend fun addDependency(taskId: String, request: TaskDependencyRequest): Result<Unit> = error("not used")
+
+        override suspend fun removeDependency(taskId: String, dependsOnTaskId: String): Result<Unit> = error("not used")
+
+        override suspend fun getTaskDependencies(taskId: String): Result<List<TaskInfoResponse>> = Result.Success(emptyList())
+
+        override suspend fun getTaskDependents(taskId: String): Result<List<TaskInfoResponse>> = Result.Success(emptyList())
+
+        override suspend fun getTaskSessions(taskId: String, status: String?): Result<List<SessionDto>> = Result.Success(emptyList())
+
+        override suspend fun addTaskSessions(taskId: String, request: AddTaskSessionsRequest): Result<List<SessionDto>> = Result.Success(emptyList())
+
+        override suspend fun completeTask(taskId: String): Result<com.awan.app.core.network.dto.task.TaskCompletionResponse> = error("not used")
     }
+
 
     private val fakeTaskDao = object : TaskDao {
         override suspend fun upsertTask(task: TaskEntity) {}
         override suspend fun upsertTasks(tasks: List<TaskEntity>) {}
         override fun observeTasksByGoal(goalId: String): Flow<List<TaskEntity>> = flowOf(emptyList())
-        override fun observeInboxTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-        override fun observeAllTasks(): Flow<List<TaskEntity>> = flowOf(emptyList())
-        override suspend fun getAllTasks(): List<TaskEntity> = emptyList()
+        override suspend fun getTasksByGoal(goalId: String): List<TaskEntity> = emptyList()
         override fun observeTask(taskId: String): Flow<TaskEntity?> = flowOf(null)
         override suspend fun getTask(taskId: String): TaskEntity? = null
         override suspend fun deleteTask(taskId: String) {}
@@ -104,6 +128,7 @@ class AiTaskRepositoryImplTest {
         override suspend fun upsertDependencies(dependencies: List<TaskDependencyEntity>) {}
         override suspend fun deleteDependency(dependency: TaskDependencyEntity) {}
         override fun observeDependsOnIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
+        override suspend fun getDependsOnIds(taskId: String): List<String> = emptyList()
         override fun observeDependentIds(taskId: String): Flow<List<String>> = flowOf(emptyList())
         override suspend fun deleteAllDependenciesForTask(taskId: String) {}
         override suspend fun replaceTasksForGoal(goalId: String, tasks: List<TaskEntity>, dependencies: List<TaskDependencyEntity>) {}
@@ -118,6 +143,8 @@ class AiTaskRepositoryImplTest {
         override fun observeSessionsForDateRange(startDate: String, endDate: String): Flow<List<SessionEntity>> = flowOf(emptyList())
         override suspend fun getSessionsForDate(date: String): List<SessionEntity> = emptyList()
         override suspend fun getSessionsForDateRange(startDate: String, endDate: String): List<SessionEntity> = emptyList()
+        override fun observeUpcomingSessions(startDate: String, endDate: String): Flow<List<UpcomingSessionRow>> = flowOf(emptyList())
+        override suspend fun getUpcomingSessions(startDate: String, endDate: String): List<UpcomingSessionRow> = emptyList()
         override suspend fun getSession(id: String): SessionEntity? = null
         override suspend fun deleteSessionsForDates(dates: List<String>) {}
         override suspend fun deleteSession(id: String) {}
