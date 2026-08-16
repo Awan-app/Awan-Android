@@ -13,12 +13,12 @@ data class CreateGoalRequest(
 
 @Serializable
 data class CreateGoalTaskDto(
-    @SerialName("tempId") val tempId: String? = null,
+    @SerialName("tempId") val tempId: String,
     @SerialName("title") val title: String,
     @SerialName("description") val description: String? = null,
     @SerialName("estimatedDuration") val estimatedDuration: Int = 30,
-    @SerialName("mandatory") val mandatory: Boolean = true,
-    @SerialName("estimatedPoints") val estimatedPoints: Int = 10,
+    @SerialName("mandatory") val mandatory: Boolean = false,
+    @SerialName("estimatedPoints") val estimatedPoints: Int = 0,
     @SerialName("allowTaskSplitting") val allowTaskSplitting: Boolean = false,
     @SerialName("dependsOnTempIds") val dependsOnTempIds: List<String> = emptyList(),
     @SerialName("categoryId") val categoryId: String? = null,

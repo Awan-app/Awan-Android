@@ -71,6 +71,7 @@ fun AwanButton(
     haptic: HapticFeedbackType? = awanButtonHaptic(variant),
     icon: (@Composable () -> Unit)? = null,
     latchedPressed: Boolean = false,
+    role: Role? = Role.Button,
     content: @Composable RowScope.() -> Unit,
 ) {
     val effectiveEnabled = enabled && !isLoading
@@ -101,10 +102,16 @@ fun AwanButton(
     )
     val rimDepth = if (variant == AwanButtonVariant.Quiet) 0.dp else AwanButtonRimDepth
     val rimSide = if (variant == AwanButtonVariant.Quiet) 0.dp else AwanButtonRimSide
+    /**
+     * The sink has exactly one owner. It used to have two — a `pressed {}` transform in the face
+     * style for the finger, and this graphicsLayer for the latch — kept apart by a
+     * `latchedPressed && !isPressed` guard. On a tap that also selects, `isPressed` drops on the
+     * release frame while `latchedPressed` only arrives after the state round-trip, so for those
+     * frames neither owned the sink and the face sprang back to raised before dropping again.
+     */
     val effectivePressed = styleState.isPressed || latchedPressed
-    val latchedPressActive = latchedPressed && !styleState.isPressed
-    val latchedTranslationX = animateDpAsState(
-        targetValue = if (latchedPressActive) {
+    val pressTranslationX = animateDpAsState(
+        targetValue = if (effectivePressed) {
             buttonPressedTranslationX(LocalLayoutDirection.current)
         } else {
             0.dp
@@ -113,16 +120,16 @@ fun AwanButton(
             durationMillis = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
             easing = LinearOutSlowInEasing,
         ),
-        label = "AwanButtonLatchedTranslationX",
-    ).value
-    val latchedTranslationY = animateDpAsState(
-        targetValue = if (latchedPressActive) AwanButtonRimDepth else 0.dp,
+        label = "AwanButtonPressTranslationX",
+    )
+    val pressTranslationY = animateDpAsState(
+        targetValue = if (effectivePressed) AwanButtonRimDepth else 0.dp,
         animationSpec = tween(
             durationMillis = AWAN_BUTTON_ANIMATION_DURATION_MILLIS,
             easing = LinearOutSlowInEasing,
         ),
-        label = "AwanButtonLatchedTranslationY",
-    ).value
+        label = "AwanButtonPressTranslationY",
+    )
     // A chip's target is exactly the pill: face plus rim, with no dead margin around it.
     val minTouchSize = if (variant == AwanButtonVariant.Chip) AwanChipFaceHeight + AwanButtonRimDepth else 48.dp
     val rimTopInset = animateDpAsState(
@@ -164,7 +171,7 @@ fun AwanButton(
                 interactionSource = null,
                 indication = null,
                 enabled = effectiveEnabled,
-                role = Role.Button,
+                role = role,
                 onClick = {
                     haptic?.let(hapticFeedback::performHapticFeedback)
                     onClick()
@@ -189,11 +196,15 @@ fun AwanButton(
                 Row(
                     modifier = Modifier
                         .padding(bottom = rimDepth, start = rimSide)
-                        .styleable(styleState, faceStyle, style)
+                        // Before styleable, not after: a graphicsLayer only transforms what is
+                        // drawn inside it, so downstream of the style it moved the label while
+                        // leaving the face background behind — the button measured as latched but
+                        // still showed its rim, reading as raised.
                         .graphicsLayer {
-                            translationX = latchedTranslationX.toPx()
-                            translationY = latchedTranslationY.toPx()
-                        },
+                            translationX = pressTranslationX.value.toPx()
+                            translationY = pressTranslationY.value.toPx()
+                        }
+                        .styleable(styleState, faceStyle, style),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

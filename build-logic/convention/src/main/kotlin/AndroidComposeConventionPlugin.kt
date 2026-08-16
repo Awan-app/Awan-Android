@@ -54,6 +54,10 @@ abstract class AndroidComposeConventionPlugin : Plugin<Project> {
                 add("debugImplementation", libs.findLibrary("androidx-compose-ui-tooling").get())
                 add("debugImplementation", libs.findLibrary("androidx-compose-ui-test-manifest").get())
                 add("implementation", libs.findLibrary("androidx-compose-ui-tooling-preview").get())
+
+                // Add foundation and animation to avoid opt-in unresolved reference warnings
+                add("implementation", libs.findLibrary("androidx-compose-foundation").get())
+                add("implementation", libs.findLibrary("androidx-compose-animation").get())
             }
         }
     }

@@ -58,4 +58,4 @@ class CalendarRepositoryImpl @Inject constructor(
 }
 
 internal fun GoalResponse.asEntity() = GoalEntity(id, title, description, status, targetDate, createdAt, inbox, 0L)
-internal fun GoalEntity.asCalendarGoal() = CalendarGoal(id, title, targetDate, status, isInbox)
+internal fun GoalEntity.asCalendarGoal() = CalendarGoal(id, title, targetDate, status, isInbox, createdAt)

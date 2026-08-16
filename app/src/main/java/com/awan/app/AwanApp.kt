@@ -21,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -36,6 +35,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import com.awan.app.core.designsystem.AwanTheme
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.awan.feature.addtask.presentation.AddTaskAction
+import com.awan.feature.addtask.presentation.AddTaskViewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.entryProvider
@@ -43,6 +45,7 @@ import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.awan.app.core.designsystem.AwanBottomNavBar
+import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.BottomNavItem
 import com.awan.app.core.common.R as CommonR
 import com.awan.app.core.designsystem.ObserveAsEvents
@@ -81,6 +84,8 @@ import com.awan.feature.profile.impl.navigation.profileEntry
 import com.awan.feature.splash.api.SplashRoute
 import com.awan.feature.splash.impl.navigation.splashEntry
 import com.awan.feature.splash.impl.ui.SplashDestination
+import com.awan.feature.taskdetails.api.TaskDetailsRoute
+import com.awan.feature.taskdetails.impl.navigation.taskDetailsEntry
 
 /**
  * Decorates every sub-stack, not just the visible one.
@@ -123,10 +128,14 @@ fun AwanApp(
     rewardEvents: Flow<RewardEvent>,
     modifier: Modifier = Modifier,
     isOnline: Boolean = true,
+    addTaskViewModel: AddTaskViewModel = hiltViewModel(),
     deepLinkEvents: Flow<SessionDeepLink> = emptyFlow(),
 ) {
+    var currentHomeDate by rememberSaveable { mutableStateOf<String?>(null) }
     val navigator = remember { Navigator(appState.navigationState) }
     var showAddTask by rememberSaveable { mutableStateOf(false) }
+    var addTaskZoneId by rememberSaveable { mutableStateOf<String?>(null) }
+    var addTaskDate by rememberSaveable { mutableStateOf<String?>(null) }
     var onSelectHomeDate by remember { mutableStateOf<((LocalDate) -> Unit)?>(null) }
     var onOpenHomeSession by remember { mutableStateOf<((String) -> Unit)?>(null) }
     var pendingDeepLink by remember { mutableStateOf<SessionDeepLink?>(null) }
@@ -181,14 +190,31 @@ fun AwanApp(
     }
 
     if (showAddTask && isOnline) {
+        androidx.compose.runtime.LaunchedEffect(addTaskZoneId, addTaskDate) {
+            addTaskViewModel.onAction(
+                AddTaskAction.Initialize(
+                    zoneId = addTaskZoneId,
+                    date = addTaskDate?.let { LocalDate.parse(it) }
+                )
+            )
+        }
+
         AddTaskSheet(
-            onDismiss = { showAddTask = false },
+            onDismiss = {
+                showAddTask = false
+                addTaskZoneId = null
+                addTaskDate = null
+            },
             onNavigateToGoalPreview = {
                 showAddTask = false
+                addTaskZoneId = null
+                addTaskDate = null
                 navigator.navigate(GoalPreviewRoute)
             },
             onAiRequested = { text, note, imageUri ->
                 showAddTask = false
+                addTaskZoneId = null
+                addTaskDate = null
                 navigator.navigate(AiTaskProposalsRoute(text = text, note = note, imageUri = imageUri))
             },
         )
@@ -220,11 +246,11 @@ fun AwanApp(
                             modifier = Modifier.size(14.dp),
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
+                        AwanText(
                             text = stringResource(R.string.app_offline_banner_text),
-                            color = AwanTheme.colors.streakIcon,
-                            style = AwanTheme.typography.caption,
+                            style = AwanTheme.styles.captionText.copy(color = AwanTheme.colors.streakIcon),
                             textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
@@ -237,6 +263,10 @@ fun AwanApp(
                             SplashDestination.Auth -> navigator.replaceAll(LoginRoute)
                             SplashDestination.Onboarding -> navigator.replaceAll(OnboardingRoute)
                             SplashDestination.Home -> navigator.replaceAll(HomeRoute())
+                            is SplashDestination.ResumeGoalScheduling -> {
+                                navigator.replaceAll(HomeRoute())
+                                navigator.navigate(AiTaskProposalsRoute(goalId = destination.goalId))
+                            }
                             SplashDestination.Loading -> { /* Keep showing splash */ }
                         }
                     }
@@ -258,10 +288,16 @@ fun AwanApp(
                     onLogout = { navigator.replaceAll(LoginRoute) },
                     onNavigateToCalendar = { navigator.navigate(CalendarRoute()) },
                     onRegisterSelectDate = { callback -> onSelectHomeDate = callback },
-                    onNavigateToAddTask = { _, _ ->
+                    onNavigateToAddTask = { zoneId, date ->
+                        addTaskZoneId = zoneId
+                        addTaskDate = date?.toString()
                         showAddTask = true
                     },
+                    onDateChanged = { date ->
+                        currentHomeDate = date.toString()
+                    },
                     onRegisterOpenSession = { callback -> onOpenHomeSession = callback },
+                    onNavigateToTaskDetails = { taskId -> navigator.navigate(TaskDetailsRoute(taskId)) },
                 )
                 calendarEntry(
                     onDateSelected = { date ->
@@ -271,7 +307,11 @@ fun AwanApp(
                     onBack = { navigator.goBack() },
                 )
                 chatEntry()
-                goalsEntry()
+                goalsEntry(
+                    onNavigateToGoalDetails = { id -> navigator.navigate(com.awan.feature.goals.api.GoalDetailsRoute(id)) },
+                    onNavigateToInbox = { navigator.navigate(com.awan.feature.goals.api.InboxRoute) },
+                    onBack = { navigator.goBack() },
+                )
                 aiTasksEntry(onBack = { navigator.goBack() })
                 inventoryEntry(onBack = { navigator.goBack() })
                 profileEntry(
@@ -288,7 +328,13 @@ fun AwanApp(
                 )
                 goalPreviewEntry(
                     onBack = { navigator.goBack() },
-                    onNavigateToGoals = { navigator.replaceAll(GoalsRoute) },
+                    onNavigateToGoals = { navigator.goBack() },
+                    onNavigateToGoalSchedule = { goalId ->
+                        navigator.navigate(AiTaskProposalsRoute(goalId = goalId))
+                    },
+                )
+                taskDetailsEntry(
+                    onBack = { navigator.goBack() },
                 )
             }
 
@@ -330,6 +376,8 @@ fun AwanApp(
                 onItemSelected = { item ->
                     val dest = appState.topLevelDestinations.find { it.name == item.id }
                     if (dest?.isFab == true) {
+                        addTaskZoneId = null
+                        addTaskDate = if (currentRoute is HomeRoute) currentHomeDate else null
                         showAddTask = true
                     } else {
                         dest?.route?.let { route ->
@@ -338,6 +386,8 @@ fun AwanApp(
                     }
                 },
                 onFabClick = {
+                    addTaskZoneId = null
+                    addTaskDate = if (currentRoute is HomeRoute) currentHomeDate else null
                     showAddTask = true
                 },
                 anchoredItemId = TopLevelDestination.PROFILE.name,

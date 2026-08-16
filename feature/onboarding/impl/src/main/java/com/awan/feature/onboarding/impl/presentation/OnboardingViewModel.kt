@@ -18,6 +18,7 @@ import com.awan.app.core.domain.onboarding.usecase.CompleteOnboardingUseCase
 import com.awan.app.core.domain.profile.model.UserProfile
 import com.awan.app.core.domain.zones.model.Zone
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
+import com.awan.app.core.model.ProfileConstants
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -140,6 +141,11 @@ class OnboardingViewModel @Inject constructor(
 
     private fun onSkip() {
         when (_state.value.step) {
+            OnboardingStep.Name -> {
+                if (_state.value.firstName.isBlank()) {
+                    _state.update { it.copy(firstName = ProfileConstants.DEFAULT_FIRST_NAME_FRIEND) }
+                }
+            }
             OnboardingStep.DayBounds -> { zonesUserEdited = false; updateBounds(DayBounds.Default) }
             OnboardingStep.Zones -> applySuggestedZones()
             OnboardingStep.TaskLength -> {
@@ -188,8 +194,10 @@ class OnboardingViewModel @Inject constructor(
         if (!isBackendOnboarded) {
             awaitZoneCategories()
             val s = _state.value
+            val firstName = s.trimmedFirstName.ifBlank { ProfileConstants.DEFAULT_FIRST_NAME_FRIEND }
+            val lastName = s.lastName.trim().ifBlank { ProfileConstants.UNSET_LAST_NAME }
             val data = OnboardingData(
-                profile = UserProfile(s.trimmedFirstName, s.lastName.trim()),
+                profile = UserProfile(firstName, lastName),
                 bounds = s.bounds,
                 zones = s.zones,
                 preferredTaskLengthMinutes = s.preferredTaskLengthMinutes,

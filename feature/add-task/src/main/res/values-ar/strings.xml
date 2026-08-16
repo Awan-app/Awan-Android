@@ -72,32 +72,35 @@
     <string name="add_task_goal_writing_continue">متابعة</string>
 
     <string name="add_task_goal_preview_title">خطة الهدف</string>
+    <string name="add_task_goal_preview_read_more">عرض المزيد</string>
+    <string name="add_task_goal_preview_show_less">عرض أقل</string>
     <string name="add_task_goal_preview_close">إغلاق معاينة الهدف</string>
     <string name="add_task_goal_preview_accept_action">قبول خطة الهدف</string>
     <string name="add_task_goal_preview_accept">اعتماد الهدف</string>
+    <string name="add_task_goal_save_choice_title">حفظ هذا الهدف</string>
+    <string name="add_task_goal_save_choice_body">احتفظ بالهدف كمسودة، أم أضف كل المهام المقترحة الآن؟</string>
+    <string name="add_task_goal_save_choice_draft">حفظ كمسودة</string>
+    <string name="add_task_goal_save_choice_add_tasks">إضافة المهام</string>
     <string name="add_task_goal_preview_tasks_header">المهام المقترحة (%1$d)</string>
     <string name="add_task_goal_preview_task_item_title">%1$d. %2$s</string>
     <string name="add_task_goal_preview_revision_placeholder">اطلب تعديلات أو حسّن الخطة…</string>
     <string name="add_task_goal_preview_revision_description">طلب تعديل الخطة</string>
     <string name="add_task_goal_preview_revision_submit">تحديث الخطة</string>
+    <string name="add_task_goal_preview_approve_plan">الموافقة على الخطة</string>
+    <string name="add_task_goal_preview_remove_task">حذف المهمة</string>
+    <string name="add_task_goal_preview_task_title_placeholder">عنوان المهمة</string>
+    <string name="add_task_goal_preview_task_duration_select">اختر المدة</string>
     <string name="add_task_goal_preview_target_date">تاريخ الهدف: %1$s</string>
     <string name="add_task_goal_preview_duration">المدة التقديرية %1$s</string>
     <string name="add_task_goal_preview_points">%1$d نقاط</string>
-
-    <string name="add_task_goal_mic_idle">إملاء نصي</string>
-    <string name="add_task_goal_mic_listening">جارٍ الاستماع… انقر للإيقاف</string>
-    <string name="add_task_goal_speech_permission_denied">إذن الميكروفون مطلوب للتعرف على الصوت.</string>
-    <string name="add_task_goal_speech_unavailable">التعرف على الصوت غير متاح على هذا الجهاز.</string>
-    <string name="add_task_goal_speech_no_match">لم أتمكن من التقاط الصوت. حاول التحدث مجددًا.</string>
-    <string name="add_task_goal_speech_error">حدث خطأ أثناء التعرف على الصوت. يُرجى المحاولة مرة أخرى.</string>
 
     <string name="add_task_error_create_failed">تعذّر إضافة المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
     <string name="add_task_error_goal_continuation_failed">تعذّر على أوان تقسيم هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
     <string name="add_task_error_goal_confirm_failed">تعذّر حفظ هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
 
-    <string name="add_task_goal_permission_dialog_title">إذن الميكروفون مطلوب</string>
-    <string name="add_task_goal_permission_dialog_body">تم إيقاف إذن الميكروفون. يرجى تفعيله من إعدادات التطبيق لاستخدام الإملاء الصوتي.</string>
-    <string name="add_task_goal_permission_dialog_confirm">فتح الإعدادات</string>
-    <string name="add_task_goal_permission_dialog_cancel">إلغاء</string>
-
+    <string name="add_task_goal_thinking_1">أقرأ هدفك…</string>
+    <string name="add_task_goal_thinking_2">أقسّمه إلى خطوات…</string>
+    <string name="add_task_goal_thinking_3">أقدّر مدة كل خطوة…</string>
+    <string name="add_task_goal_thinking_4">أوشكت على الانتهاء…</string>
+    <string name="add_task_goal_plan_ready">خطتك جاهزة!</string>
 </resources>

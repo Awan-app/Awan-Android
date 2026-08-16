@@ -1,12 +1,8 @@
 package com.awan.feature.addtask.ui.components
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -24,9 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -44,70 +38,22 @@ import com.awan.app.core.designsystem.AwanAiAura
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
-import com.awan.app.core.designsystem.AwanIconButton
+import com.awan.app.core.designsystem.AwanMicButton
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.CascadeItem
 import com.awan.app.core.designsystem.reducedMotion
 import com.awan.app.core.model.GoalDecompositionBlock
-import com.awan.app.core.model.GoalProposal
-import com.awan.app.core.model.ProposedTask
 import com.awan.feature.addtask.R
 import com.awan.feature.addtask.presentation.AddTaskAction
 import com.awan.feature.addtask.presentation.AddTaskMode
 import com.awan.feature.addtask.presentation.AddTaskState
+import com.awan.feature.addtask.presentation.GoalPhase
 import com.awan.feature.addtask.presentation.GoalStep
-import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.Check
 import com.composables.icons.lucide.Lucide
-import com.composables.icons.lucide.Mic
-import com.composables.icons.lucide.MicOff
 import java.time.LocalDate
-
-@Composable
-fun GoalForm(
-    state: AddTaskState,
-    onAction: (AddTaskAction) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val speechState = rememberSpeechRecognizer(
-        onTranscript = { transcript -> onAction(AddTaskAction.InputChanged(transcript)) },
-        hasRequestedMicPermission = state.hasRequestedMicPermission,
-        onSetMicPermissionRequested = { requested ->
-            onAction(AddTaskAction.SetMicPermissionRequested(requested))
-        },
-    )
-
-    LaunchedEffect(state.isSubmitting) {
-        if (state.isSubmitting && speechState.isListening) {
-            speechState.stopListening()
-        }
-    }
-
-    val handleAction: (AddTaskAction) -> Unit = { action ->
-        if (action is AddTaskAction.InputChanged || action is AddTaskAction.GoalOptionSelected) {
-            speechState.clearError()
-        }
-        onAction(action)
-    }
-
-    GoalFormContent(
-        state = state,
-        onAction = handleAction,
-        isListening = speechState.isListening,
-        onToggleMic = {
-            if (speechState.isListening) {
-                speechState.stopListening()
-            } else {
-                speechState.startListening()
-            }
-        },
-        speechError = speechState.errorMessage,
-        isPermissionError = speechState.isPermissionError,
-        modifier = modifier,
-    )
-}
 
 @Composable
 fun GoalFormContent(
@@ -115,6 +61,7 @@ fun GoalFormContent(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    micAmplitude: () -> Float,
     speechError: String?,
     modifier: Modifier = Modifier,
     isPermissionError: Boolean = false,
@@ -128,10 +75,25 @@ fun GoalFormContent(
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md),
     ) {
         AnimatedContent(
-            targetState = state.goalStep,
-            contentKey = { step -> step::class },
+            targetState = state.goalPhase to state.goalStep,
+            // Keying on the class alone collapses two consecutive questions of the same kind into
+            // one key, and AnimatedContent then runs no transition at all between them. Keying on
+            // the question text distinguishes them; keying on the step itself would not work,
+            // because selecting an option rewrites the step in place.
+            contentKey = { (phase, step) ->
+                when (phase) {
+                    GoalPhase.Thinking -> "thinking"
+                    GoalPhase.PlanReady -> "ready"
+                    GoalPhase.Editing -> when (step) {
+                        GoalStep.Initial -> "initial"
+                        is GoalStep.MultipleChoice -> "mcq:${step.question}"
+                        is GoalStep.WritingQuestion -> "writing:${step.question}"
+                        is GoalStep.Preview -> "preview"
+                    }
+                }
+            },
             transitionSpec = {
-                if (isReduced) {
+                val transform = if (isReduced) {
                     fadeIn(animationSpec = snap()) togetherWith fadeOut(animationSpec = snap())
                 } else {
                     (fadeIn(animationSpec = tween(standardMillis)) +
@@ -141,48 +103,49 @@ fun GoalFormContent(
                                 slideOutVertically(animationSpec = tween(fastMillis)) { -it / 8 }
                         )
                 }
+                // Height belongs to the sheet's single animateContentSize, not to this.
+                transform using SizeTransform { _, _ -> snap() }
             },
             label = "goalStepTransition",
-        ) { step ->
-            when (step) {
-                GoalStep.Initial -> InitialStepContent(
-                    state = state,
-                    onAction = onAction,
-                    isListening = isListening,
-                    onToggleMic = onToggleMic,
-                    speechError = speechError,
-                    isPermissionError = isPermissionError,
-                )
+        ) { (phase, step) ->
+            when {
+                phase != GoalPhase.Editing -> GoalThinkingPanel(ready = phase == GoalPhase.PlanReady)
 
-                is GoalStep.MultipleChoice -> MultipleChoiceStepContent(
-                    step = step,
-                    state = state,
-                    onAction = onAction,
-                    isListening = isListening,
-                    onToggleMic = onToggleMic,
-                    speechError = speechError,
-                    isPermissionError = isPermissionError,
-                )
+                else -> when (step) {
+                    GoalStep.Initial -> InitialStepContent(
+                        state = state,
+                        onAction = onAction,
+                        isListening = isListening,
+                        onToggleMic = onToggleMic,
+                        micAmplitude = micAmplitude,
+                        speechError = speechError,
+                        isPermissionError = isPermissionError,
+                    )
 
-                is GoalStep.WritingQuestion -> WritingStepContent(
-                    step = step,
-                    state = state,
-                    onAction = onAction,
-                    isListening = isListening,
-                    onToggleMic = onToggleMic,
-                    speechError = speechError,
-                    isPermissionError = isPermissionError,
-                )
+                    is GoalStep.MultipleChoice -> MultipleChoiceStepContent(
+                        step = step,
+                        state = state,
+                        onAction = onAction,
+                        isListening = isListening,
+                        onToggleMic = onToggleMic,
+                        micAmplitude = micAmplitude,
+                        speechError = speechError,
+                        isPermissionError = isPermissionError,
+                    )
 
-                is GoalStep.Preview -> PreviewStepContent(
-                    step = step,
-                    state = state,
-                    onAction = onAction,
-                    isListening = isListening,
-                    onToggleMic = onToggleMic,
-                    speechError = speechError,
-                    isPermissionError = isPermissionError,
-                )
+                    is GoalStep.WritingQuestion -> WritingStepContent(
+                        step = step,
+                        state = state,
+                        onAction = onAction,
+                        isListening = isListening,
+                        onToggleMic = onToggleMic,
+                        micAmplitude = micAmplitude,
+                        speechError = speechError,
+                        isPermissionError = isPermissionError,
+                    )
+
+                    is GoalStep.Preview -> Unit
+                }
             }
         }
 
@@ -203,6 +166,7 @@ private fun InitialStepContent(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    micAmplitude: () -> Float,
     speechError: String?,
     isPermissionError: Boolean,
 ) {
@@ -233,10 +197,11 @@ private fun InitialStepContent(
                         singleLine = false,
                         isError = isPermissionError,
                         trailingContent = {
-                            GoalMicButton(
+                            AwanMicButton(
                                 isListening = isListening,
-                                onToggleMic = onToggleMic,
+                                onToggle = onToggleMic,
                                 enabled = !state.isSubmitting,
+                                amplitude = micAmplitude,
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -275,6 +240,7 @@ private fun MultipleChoiceStepContent(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    micAmplitude: () -> Float,
     speechError: String?,
     isPermissionError: Boolean,
 ) {
@@ -388,10 +354,11 @@ private fun MultipleChoiceStepContent(
                         singleLine = false,
                         isError = isPermissionError,
                         trailingContent = {
-                            GoalMicButton(
+                            AwanMicButton(
                                 isListening = isListening,
-                                onToggleMic = onToggleMic,
+                                onToggle = onToggleMic,
                                 enabled = !state.isSubmitting,
+                                amplitude = micAmplitude,
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -430,6 +397,7 @@ private fun WritingStepContent(
     onAction: (AddTaskAction) -> Unit,
     isListening: Boolean,
     onToggleMic: () -> Unit,
+    micAmplitude: () -> Float,
     speechError: String?,
     isPermissionError: Boolean,
 ) {
@@ -498,10 +466,11 @@ private fun WritingStepContent(
                         singleLine = false,
                         isError = isPermissionError,
                         trailingContent = {
-                            GoalMicButton(
+                            AwanMicButton(
                                 isListening = isListening,
-                                onToggleMic = onToggleMic,
+                                onToggle = onToggleMic,
                                 enabled = !state.isSubmitting,
+                                amplitude = micAmplitude,
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -534,112 +503,6 @@ private fun WritingStepContent(
 }
 
 @Composable
-private fun PreviewStepContent(
-    step: GoalStep.Preview,
-    state: AddTaskState,
-    onAction: (AddTaskAction) -> Unit,
-    isListening: Boolean,
-    onToggleMic: () -> Unit,
-    speechError: String?,
-    isPermissionError: Boolean,
-) {
-    val replyBlocks = state.goalReplyBlocks
-
-    Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
-        if (replyBlocks.isNotEmpty()) {
-            var proposalRendered = false
-            replyBlocks.forEachIndexed { index, block ->
-                when (block) {
-                    is GoalDecompositionBlock.Text -> {
-                        CascadeItem(index + 1, Modifier.fillMaxWidth()) {
-                            AssistantTextCard(text = block.text)
-                        }
-                    }
-
-                    is GoalDecompositionBlock.Proposal -> {
-                        if (!proposalRendered) {
-                            proposalRendered = true
-                            CascadeItem(index + 1, Modifier.fillMaxWidth()) {
-                                ProposalCard(proposal = block.proposal)
-                            }
-                        }
-                    }
-
-                    is GoalDecompositionBlock.Question -> Unit
-                }
-            }
-            if (!proposalRendered) {
-                CascadeItem(replyBlocks.size + 1, Modifier.fillMaxWidth()) {
-                    ProposalCard(proposal = step.proposal)
-                }
-            }
-        } else {
-            CascadeItem(1, Modifier.fillMaxWidth()) {
-                ProposalCard(proposal = step.proposal)
-            }
-        }
-
-        val baseIndex = if (replyBlocks.isNotEmpty()) replyBlocks.size + 2 else 2
-
-        CascadeItem(baseIndex, Modifier.fillMaxWidth()) {
-            AwanButton(
-                onClick = { onAction(AddTaskAction.AcceptGoalProposal) },
-                enabled = state.canAcceptGoal,
-                isLoading = state.isSubmitting,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                AwanText(stringResource(R.string.add_task_goal_preview_accept))
-            }
-        }
-
-        CascadeItem(baseIndex + 1, Modifier.fillMaxWidth()) {
-            Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-                AwanAiAura(active = state.isSubmitting, modifier = Modifier.fillMaxWidth()) {
-                    AwanTextField(
-                        value = state.input,
-                        onValueChange = { onAction(AddTaskAction.InputChanged(it)) },
-                        placeholder = stringResource(R.string.add_task_goal_preview_revision_placeholder),
-                        contentDescriptionText = stringResource(R.string.add_task_goal_preview_revision_description),
-                        enabled = !state.isSubmitting,
-                        singleLine = false,
-                        isError = isPermissionError,
-                        trailingContent = {
-                            GoalMicButton(
-                                isListening = isListening,
-                                onToggleMic = onToggleMic,
-                                enabled = !state.isSubmitting,
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-
-                if (speechError != null) {
-                    AwanText(
-                        text = speechError,
-                        style = AwanTheme.styles.errorText,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = AwanTheme.spacing.xxs)
-                            .semantics { liveRegion = LiveRegionMode.Polite },
-                    )
-                }
-
-                AwanButton(
-                    onClick = { onAction(AddTaskAction.Submit) },
-                    enabled = state.canSubmit,
-                    isLoading = state.isSubmitting,
-                    variant = AwanButtonVariant.Quiet,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    AwanText(stringResource(R.string.add_task_goal_preview_revision_submit))
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun AssistantTextCard(text: String) {
     AwanCard(
         background = AwanTheme.colors.surface.copy(alpha = 0.6f),
@@ -648,148 +511,6 @@ private fun AssistantTextCard(text: String) {
         AwanText(
             text = text,
             style = AwanTheme.typography.body.copy(color = AwanTheme.colors.textSecondary),
-        )
-    }
-}
-
-@Composable
-private fun ProposalCard(proposal: GoalProposal) {
-    AwanCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)) {
-            AwanText(
-                text = proposal.title,
-                style = AwanTheme.typography.title.copy(color = AwanTheme.colors.textPrimary),
-            )
-
-            proposal.description?.takeIf { it.isNotBlank() }?.let { desc ->
-                AwanText(
-                    text = desc,
-                    style = AwanTheme.typography.body.copy(color = AwanTheme.colors.textSecondary),
-                )
-            }
-
-            proposal.targetDate?.takeIf { it.isNotBlank() }?.let { dateStr ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xxs),
-                ) {
-                    Icon(
-                        imageVector = Lucide.Calendar,
-                        contentDescription = null,
-                        tint = AwanTheme.colors.sky,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    AwanText(
-                        text = stringResource(R.string.add_task_goal_preview_target_date, dateStr),
-                        style = AwanTheme.styles.metaText,
-                    )
-                }
-            }
-
-            if (proposal.tasks.isNotEmpty()) {
-                AwanText(
-                    text = stringResource(R.string.add_task_goal_preview_tasks_header, proposal.tasks.size),
-                    style = AwanTheme.typography.body.copy(
-                        color = AwanTheme.colors.textPrimary,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                    modifier = Modifier.padding(top = AwanTheme.spacing.xxs),
-                )
-
-                Column(verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-                    proposal.tasks.forEachIndexed { index, task ->
-                        TaskProposalItem(index = index + 1, task = task)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TaskProposalItem(index: Int, task: ProposedTask) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = AwanTheme.colors.line.copy(alpha = 0.3f),
-                shape = AwanTheme.shapes.chip,
-            )
-            .padding(horizontal = AwanTheme.spacing.sm, vertical = AwanTheme.spacing.xs),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            AwanText(
-                text = stringResource(R.string.add_task_goal_preview_task_item_title, index, task.title),
-                style = AwanTheme.typography.body.copy(color = AwanTheme.colors.textPrimary),
-                modifier = Modifier.weight(1f),
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)) {
-                task.estimatedDuration?.let { dur ->
-                    val durText = durationLabel(dur)
-                    AwanText(
-                        text = stringResource(R.string.add_task_goal_preview_duration, durText),
-                        style = AwanTheme.styles.metaText,
-                    )
-                }
-
-                task.estimatedPoints?.let { pts ->
-                    AwanText(
-                        text = stringResource(R.string.add_task_goal_preview_points, pts),
-                        style = AwanTheme.styles.metaText,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun GoalMicButton(
-    isListening: Boolean,
-    onToggleMic: () -> Unit,
-    enabled: Boolean = true,
-) {
-    val reduced = reducedMotion()
-    val shouldPulse = isListening && !reduced && enabled
-    val pulseScale by if (shouldPulse) {
-        val infiniteTransition = rememberInfiniteTransition(label = "micPulse")
-        infiniteTransition.animateFloat(
-            initialValue = 1.0f,
-            targetValue = 1.05f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(800, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-            label = "micPulseScale",
-        )
-    } else {
-        rememberUpdatedState(1.0f)
-    }
-
-    val desc = stringResource(
-        if (isListening) R.string.add_task_goal_mic_listening
-        else R.string.add_task_goal_mic_idle,
-    )
-
-    AwanIconButton(
-        onClick = onToggleMic,
-        contentDescription = desc,
-        enabled = enabled,
-        modifier = Modifier.graphicsLayer {
-            scaleX = pulseScale
-            scaleY = pulseScale
-        },
-    ) {
-        Icon(
-            imageVector = if (isListening) Lucide.MicOff else Lucide.Mic,
-            contentDescription = null,
-            tint = if (isListening) AwanTheme.colors.sky else AwanTheme.colors.textSecondary,
-            modifier = Modifier.size(20.dp),
         )
     }
 }
@@ -809,6 +530,7 @@ private fun GoalFormInitialPreview() {
             ),
             onAction = {},
             isListening = false,
+            micAmplitude = { 0f },
             onToggleMic = {},
             speechError = null,
             modifier = Modifier.padding(16.dp),
@@ -832,6 +554,7 @@ private fun GoalFormMcqPreview() {
             ),
             onAction = {},
             isListening = false,
+            micAmplitude = { 0f },
             onToggleMic = {},
             speechError = null,
             modifier = Modifier.padding(16.dp),
@@ -852,36 +575,7 @@ private fun GoalFormWritingPreview() {
             ),
             onAction = {},
             isListening = false,
-            onToggleMic = {},
-            speechError = null,
-            modifier = Modifier.padding(16.dp),
-        )
-    }
-}
-
-@Preview(name = "GoalForm · 4. Preview", showBackground = true)
-@Composable
-private fun GoalFormPreviewStatePreview() {
-    AwanTheme {
-        GoalFormContent(
-            state = AddTaskState(
-                today = LocalDate.of(2026, 7, 28),
-                mode = AddTaskMode.GOAL,
-                goalStep = GoalStep.Preview(
-                    proposal = GoalProposal(
-                        title = "Master Conversational Spanish",
-                        description = "Targeted practice for trip to Spain",
-                        targetDate = "2026-09-01",
-                        tasks = listOf(
-                            ProposedTask("Daily vocabulary review", estimatedDuration = 30, estimatedPoints = 10),
-                            ProposedTask("Practice with language exchange partner", estimatedDuration = 60, estimatedPoints = 25),
-                        ),
-                    ),
-                ),
-                goalSessionId = "session-123",
-            ),
-            onAction = {},
-            isListening = false,
+            micAmplitude = { 0f },
             onToggleMic = {},
             speechError = null,
             modifier = Modifier.padding(16.dp),

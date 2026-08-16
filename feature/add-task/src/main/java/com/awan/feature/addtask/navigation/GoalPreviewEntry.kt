@@ -7,11 +7,13 @@ import com.awan.feature.addtask.ui.GoalPreviewRouteRoot
 fun EntryProviderScope<Route>.goalPreviewEntry(
     onBack: () -> Unit,
     onNavigateToGoals: () -> Unit,
+    onNavigateToGoalSchedule: (String) -> Unit = {},
 ) {
     entry<GoalPreviewRoute> {
         GoalPreviewRouteRoot(
             onBack = onBack,
             onNavigateToGoals = onNavigateToGoals,
+            onNavigateToGoalSchedule = onNavigateToGoalSchedule,
         )
     }
 }

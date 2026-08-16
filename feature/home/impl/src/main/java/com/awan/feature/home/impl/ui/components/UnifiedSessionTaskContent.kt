@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -111,6 +112,7 @@ internal fun UnifiedSessionTaskContent(
     onDateChange: (LocalDate) -> Unit = {},
     onDeleteClick: (() -> Unit)? = null,
     onConfirmClose: () -> Unit = {},
+    onNavigateToTaskDetails: ((String) -> Unit)? = null,
 ) {
     var activePickerTarget by remember { mutableStateOf<DialogPickerTarget?>(null) }
 
@@ -137,6 +139,7 @@ internal fun UnifiedSessionTaskContent(
                     onOpenPicker = { activePickerTarget = it },
                     onDeleteClick = onDeleteClick,
                     onConfirmClose = onConfirmClose,
+                    onNavigateToTaskDetails = onNavigateToTaskDetails,
                 )
             }
             DialogPickerTarget.DATE -> {
@@ -192,6 +195,7 @@ private fun MainSessionTaskDetailView(
     onOpenPicker: (DialogPickerTarget) -> Unit,
     onDeleteClick: (() -> Unit)?,
     onConfirmClose: () -> Unit = {},
+    onNavigateToTaskDetails: ((String) -> Unit)? = null,
 ) {
     val isCompleted = detail.session.status == SessionStatus.COMPLETED ||
         detail.task.status == TaskStatus.COMPLETED
@@ -296,16 +300,41 @@ private fun MainSessionTaskDetailView(
                 .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Task Title
-            AwanText(
-                text = detail.task.title,
-                style = AwanTheme.typography.heading.copy(
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AwanTheme.colors.textPrimary,
-                    lineHeight = 26.sp,
-                ),
-            )
+            // Task Title (Clickable link to Task Details)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .then(
+                        if (onNavigateToTaskDetails != null) {
+                            Modifier.clickable { onNavigateToTaskDetails(detail.task.id) }
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                AwanText(
+                    text = detail.task.title,
+                    style = AwanTheme.typography.heading.copy(
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AwanTheme.colors.textPrimary,
+                        lineHeight = 26.sp,
+                    ),
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (onNavigateToTaskDetails != null) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                        contentDescription = stringResource(R.string.home_task_details_title),
+                        tint = AwanTheme.colors.sky,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
 
             // Task Description (if present)
             detail.task.description?.takeIf { it.isNotBlank() }?.let { desc ->
@@ -1323,6 +1352,7 @@ private fun CustomWheelDatePickerView(
             .padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        // Top Header Bar with Back Arrow and Title
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -1339,95 +1369,20 @@ private fun CustomWheelDatePickerView(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.home_picker_back),
+                    contentDescription = null,
                     tint = AwanTheme.colors.textPrimary,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(18.dp),
                 )
             }
-
             AwanText(
                 text = title,
-                style = AwanTheme.typography.heading.copy(
+                style = AwanTheme.typography.title.copy(
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     color = AwanTheme.colors.textPrimary,
                 ),
             )
-
-            Spacer(modifier = Modifier.size(36.dp))
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(AwanTheme.colors.sky.copy(alpha = 0.12f))
-                .padding(vertical = 16.dp, horizontal = 20.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            val fullFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d, yyyy", locale)
-            AwanText(
-                text = selectedDate.format(fullFormatter),
-                style = AwanTheme.typography.heading.copy(
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = AwanTheme.colors.sky,
-                    textAlign = TextAlign.Center,
-                ),
-            )
-        }
-
-        val today = LocalDate.now()
-        val quickOptions = listOf(
-            Pair(stringResource(R.string.home_date_today_chip), today),
-            Pair(stringResource(R.string.home_date_tomorrow_chip), today.plusDays(1)),
-            Pair(pluralStringResource(R.plurals.home_date_plus_days, 2, 2), today.plusDays(2)),
-            Pair(pluralStringResource(R.plurals.home_date_plus_days, 7, 7), today.plusDays(7)),
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            quickOptions.forEach { (label, optionDate) ->
-                val isSelected = selectedDate == optionDate
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(if (isSelected) AwanTheme.colors.sky else AwanTheme.colors.surface)
-                        .border(
-                            1.dp,
-                            if (isSelected) AwanTheme.colors.sky else AwanTheme.colors.line.copy(alpha = 0.6f),
-                            RoundedCornerShape(10.dp),
-                        )
-                        .clickable {
-                            selectedDate = optionDate
-                            year = optionDate.year
-                            month = optionDate.monthValue
-                            day = optionDate.dayOfMonth
-                            coroutineScope.launch {
-                                val targetDayIdx = cycleBase - (cycleBase % 31) + (day - 1)
-                                val targetMonthIdx = cycleBase - (cycleBase % 12) + (month - 1)
-                                val targetYearIdx = cycleBase - (cycleBase % yearCount) + (year - minYear)
-                                dayListState.scrollToItem(targetDayIdx)
-                                monthListState.scrollToItem(targetMonthIdx)
-                                yearListState.scrollToItem(targetYearIdx)
-                            }
-                        }
-                        .padding(vertical = 7.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    AwanText(
-                        text = label,
-                        style = AwanTheme.typography.caption.copy(
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSelected) AwanTheme.colors.onSky else AwanTheme.colors.textPrimary,
-                        ),
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.width(36.dp))
         }
 
         Row(

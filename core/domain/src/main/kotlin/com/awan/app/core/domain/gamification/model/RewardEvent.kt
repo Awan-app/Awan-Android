@@ -32,4 +32,10 @@ sealed interface RewardEvent {
         val name: String,
         val imageUrl: String?,
     ) : RewardEvent
+
+    data class GoalAchieved(
+        val goalId: String,
+        val title: String,
+        val emoji: String,
+    ) : RewardEvent
 }

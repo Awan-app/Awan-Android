@@ -9,6 +9,7 @@ android {
 
 dependencies {
     implementation(project(":feature:goals:api"))
+    implementation(project(":feature:add-task"))
     implementation(project(":core:domain"))
     implementation(project(":core:design-system"))
 

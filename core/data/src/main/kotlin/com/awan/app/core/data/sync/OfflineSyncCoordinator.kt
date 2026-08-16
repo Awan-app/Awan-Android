@@ -36,6 +36,7 @@ import kotlinx.coroutines.withContext
 import com.awan.app.core.data.common.extractDateFromIso
 import com.awan.app.core.data.common.extractTimeFromIso
 import com.awan.app.core.data.marketplace.asStoreItemType
+import com.awan.app.core.network.util.UrlResolver
 import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
@@ -241,7 +242,8 @@ class OfflineSyncCoordinator @Inject constructor(
                     points = res.points ?: 0,
                     streak = res.streak ?: 0,
                     maxStreak = res.maxStreak ?: 0,
-                    expiryTime = expiry
+                    expiryTime = expiry,
+                    profilePictureUrl = UrlResolver.resolve(res.profilePictureUrl)
                 )
             )
             res.preferences?.let { prefs ->
@@ -316,7 +318,7 @@ class OfflineSyncCoordinator @Inject constructor(
                     id = dto.id,
                     name = dto.name ?: "",
                     description = dto.description ?: "",
-                    image = dto.image ?: "",
+                    image = UrlResolver.resolve(dto.image) ?: "",
                     info = dto.info,
                     price = dto.price,
                     version = dto.version ?: "",

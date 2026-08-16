@@ -70,16 +70,24 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun AiTasksRouteScreen(
-    text: String,
-    note: String?,
-    imageUri: String?,
+    text: String = "",
+    note: String? = null,
+    imageUri: String? = null,
+    goalId: String? = null,
     onBack: () -> Unit,
     viewModel: AiTasksViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        viewModel.onAction(AiTasksAction.Load(text = text, note = note, imageUri = imageUri))
+        viewModel.onAction(
+            AiTasksAction.Load(
+                text = text,
+                note = note,
+                imageUri = imageUri,
+                goalId = goalId,
+            )
+        )
     }
 
     ObserveAsEvents(viewModel.events) { event ->

@@ -200,16 +200,7 @@ fun EditRoutineScreen(
                 },
                 navigationIcon = {
                     Box(modifier = Modifier.padding(start = 12.dp)) {
-                        AwanIconButton(
-                            onClick = onBackClick,
-                            contentDescription = stringResource(R.string.profile_back)
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                null,
-                                tint = AwanTheme.colors.textPrimary
-                            )
-                        }
+                        AwanBackButton(onClick = onBackClick)
                     }
                 },
                 actions = {
@@ -362,76 +353,39 @@ fun EditRoutineScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Row(
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            AwanIconButton(
-                                onClick = { 
-                                    val current = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
-                                    onAction(EditRoutineAction.DateChange(current.minusWeeks(1).toString()))
-                                },
-                                contentDescription = null,
-                                modifier = Modifier.size(32.dp)
+                            Column(
+                                modifier = Modifier.clickable { onAction(EditRoutineAction.DateChange(LocalDate.now().toString())) },
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = null,
-                                    tint = AwanTheme.colors.textSecondary,
-                                    modifier = Modifier.size(20.dp)
+                                val referenceDate = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
+                                val dayNum = referenceDate.dayOfMonth
+                                val suffix = getDayOfMonthSuffix(dayNum)
+                                val formatter = DateTimeFormatter.ofPattern("MMMM d'$suffix' EEEE", Locale.ENGLISH)
+                                val dateStr = referenceDate.format(formatter)
+                                
+                                AwanText(
+                                    text = dateStr,
+                                    style = AwanTheme.styles.bodyText.copy(
+                                        textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
+                                    )
                                 )
                             }
 
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier.clickable { onAction(EditRoutineAction.DateChange(LocalDate.now().toString())) },
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    val referenceDate = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
-                                    val dayNum = referenceDate.dayOfMonth
-                                    val suffix = getDayOfMonthSuffix(dayNum)
-                                    val formatter = DateTimeFormatter.ofPattern("MMMM d'$suffix' EEEE", Locale.ENGLISH)
-                                    val dateStr = referenceDate.format(formatter)
-                                    
-                                    AwanText(
-                                        text = dateStr,
-                                        style = AwanTheme.styles.bodyText.copy(
-                                            textStyle = AwanTheme.styles.bodyText.textStyle.copy(fontWeight = FontWeight.Bold)
-                                        )
-                                    )
-                                }
-
-                                AwanIconButton(
-                                    onClick = { showDatePicker = true },
-                                    contentDescription = null,
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CalendarToday,
-                                        contentDescription = null,
-                                        tint = AwanTheme.colors.sky,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-
                             AwanIconButton(
-                                onClick = { 
-                                    val current = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
-                                    onAction(EditRoutineAction.DateChange(current.plusWeeks(1).toString()))
-                                },
+                                onClick = { showDatePicker = true },
                                 contentDescription = null,
                                 modifier = Modifier.size(32.dp)
                             ) {
                                 Icon(
-                                    Icons.AutoMirrored.Filled.ArrowForward,
+                                    imageVector = Icons.Default.CalendarToday,
                                     contentDescription = null,
-                                    tint = AwanTheme.colors.textSecondary,
-                                    modifier = Modifier.size(20.dp)
+                                    tint = AwanTheme.colors.sky,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
@@ -451,11 +405,18 @@ fun EditRoutineScreen(
                             selectedDates = uiState.dates,
                             isTodayOnly = uiState.isTodayOnly,
                             onDaySelected = { onAction(EditRoutineAction.ToggleDay(it)) },
-                            onNextWeek = { },
-                            onPreviousWeek = { },
-                            showArrows = false,
+                            onNextWeek = { 
+                                val current = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
+                                onAction(EditRoutineAction.DateChange(current.plusWeeks(1).toString()))
+                            },
+                            onPreviousWeek = { 
+                                val current = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now())
+                                onAction(EditRoutineAction.DateChange(current.minusWeeks(1).toString()))
+                            },
+                            showTodayIndicator = false,
                             referenceDate = runCatching { LocalDate.parse(uiState.date) }.getOrDefault(LocalDate.now()),
-                            today = LocalDate.now()
+                            today = LocalDate.now(),
+                            showArrows = false
                         )
                     }
                 }

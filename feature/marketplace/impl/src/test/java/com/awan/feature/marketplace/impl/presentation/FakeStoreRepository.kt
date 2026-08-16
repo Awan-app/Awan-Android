@@ -39,4 +39,5 @@ class FakeStoreRepository : StoreRepository {
     override suspend fun refreshStoreItems(type: StoreItemType?) {}
     override suspend fun refreshInventory(): Result<Unit> = Result.Success(Unit)
     override suspend fun refreshEquippedItems(): Result<Unit> = Result.Success(Unit)
+    override suspend fun markInventorySeen() {}
 }

@@ -6,6 +6,8 @@ import com.awan.app.core.model.ProposedSession
 import com.awan.app.core.model.TaskDraft
 import java.time.LocalDate
 
+import com.awan.app.core.model.ScheduleOverlapInfo
+
 /** Which picker is open, and for which task/session it's editing — there is only ever one at a time. */
 data class SessionPickerTarget(
     val proposalId: Int,
@@ -21,6 +23,9 @@ data class ProposalUi(
     val draft: TaskDraft,
     val sessions: List<ProposedSession> = emptyList(),
     val reason: String? = null,
+    val taskId: String? = null,
+    val overlapInfo: ScheduleOverlapInfo? = null,
+    val isUnscheduled: Boolean = false,
     /** Collapsed shows a read-only summary; expanded reveals the editable fields and chip menus. */
     val isExpanded: Boolean = false,
 )
@@ -30,6 +35,7 @@ data class RemovedProposal(val proposal: ProposalUi, val index: Int)
 
 data class AiTasksState(
     val isLoading: Boolean = true,
+    val goalId: String? = null,
     val imageUri: String? = null,
     val sourceSummary: String? = null,
     val availableCategories: List<Category> = emptyList(),

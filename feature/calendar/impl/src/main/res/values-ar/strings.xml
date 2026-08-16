@@ -7,8 +7,14 @@
     <string name="calendar_upcoming_deadlines">المواعيد النهائية القادمة</string>
     <string name="calendar_retry">إعادة المحاولة</string>
     <string name="calendar_no_deadlines">لا توجد مواعيد نهائية قادمة.</string>
-    <string name="calendar_streak_title">سلسلة %d يوم متتالي</string>
-    <string name="calendar_streak_subtitle">أيام نشطة متتالية تنتهي اليوم</string>
+    <string name="calendar_streak_start_title">&#x0627;&#x0628;&#x062F;&#x0623; &#x0633;&#x0644;&#x0633;&#x0644;&#x062A;&#x0643;</string>
+    <string name="calendar_streak_start_subtitle">&#x0623;&#x0643;&#x0645;&#x0644; &#x0645;&#x0647;&#x0645;&#x0629; &#x0627;&#x0644;&#x064A;&#x0648;&#x0645; &#x0644;&#x0625;&#x0634;&#x0639;&#x0627;&#x0644; &#x062D;&#x0645;&#x0627;&#x0633;&#x0643;.</string>
+    <string name="calendar_streak_restart_title">&#x062C;&#x0627;&#x0647;&#x0632; &#x0644;&#x0644;&#x0628;&#x062F;&#x0623; &#x0645;&#x0646; &#x062C;&#x062F;&#x064A;&#x062F;&#x061F;</string>
+    <string name="calendar_streak_restart_subtitle">&#x0627;&#x0646;&#x062A;&#x0647;&#x062A; &#x0633;&#x0644;&#x0633;&#x0644;&#x062A;&#x0643; &#x0627;&#x0644;&#x0623;&#x062E;&#x064A;&#x0631;&#x0629;. &#x0623;&#x0643;&#x0645;&#x0644; &#x0645;&#x0647;&#x0645;&#x0629; &#x0627;&#x0644;&#x064A;&#x0648;&#x0645; &#x0644;&#x0628;&#x062F;&#x0623; &#x0633;&#x0644;&#x0633;&#x0644;&#x0629; &#x062C;&#x062F;&#x064A;&#x062F;&#x0629;.</string>
+    <string name="calendar_streak_protect_title">&#x0633;&#x0644;&#x0633;&#x0644;&#x0629; %1$d &#x064A;&#x0648;&#x0645; &#x0641;&#x064A; &#x062E;&#x0637;&#x0631;</string>
+    <string name="calendar_streak_protect_subtitle">&#x0623;&#x0643;&#x0645;&#x0644; &#x0645;&#x0647;&#x0645;&#x0629; &#x0627;&#x0644;&#x064A;&#x0648;&#x0645; &#x0644;&#x0644;&#x062D;&#x0641;&#x0627;&#x0638; &#x0639;&#x0644;&#x0649; &#x062D;&#x0645;&#x0627;&#x0633;&#x0643;.</string>
+    <string name="calendar_streak_celebrate_title">&#x0633;&#x0644;&#x0633;&#x0644;&#x0629; %1$d &#x064A;&#x0648;&#x0645;! &#x0623;&#x0646;&#x062A; &#x0645;&#x062A;&#x0623;&#x0644;&#x0642;</string>
+    <string name="calendar_streak_celebrate_subtitle">&#x0623;&#x0643;&#x0645;&#x0644;&#x062A; &#x0645;&#x0647;&#x0645;&#x0629; &#x0627;&#x0644;&#x064A;&#x0648;&#x0645;. &#x0627;&#x0633;&#x062A;&#x0645;&#x0631; &#x063A;&#x062F;&#x0627;&#x064B;.</string>
     <string name="calendar_target_date">المستهدف: %s</string>
     <string name="calendar_badge_today">اليوم</string>
     <string name="calendar_badge_tomorrow">غداً</string>
@@ -18,12 +24,21 @@
     <string name="calendar_has_deadline">لديه موعد نهائي</string>
     <string name="calendar_back">ارجع</string>
     <string name="calendar_has_routine">لديه روتين</string>
-    <string name="calendar_weekday_sun">&#x627;&#x644;&#x623;&#x62D;&#x62F;</string>
-    <string name="calendar_weekday_mon">&#x627;&#x644;&#x627;&#x62B;&#x646;&#x64A;&#x646;</string>
-    <string name="calendar_weekday_tue">&#x627;&#x644;&#x62B;&#x644;&#x627;&#x62B;&#x627;&#x621;</string>
-    <string name="calendar_weekday_wed">&#x627;&#x644;&#x623;&#x631;&#x628;&#x639;&#x627;&#x621;</string>
-    <string name="calendar_weekday_thu">&#x627;&#x644;&#x62E;&#x645;&#x64A;&#x633;</string>
-    <string name="calendar_weekday_fri">&#x627;&#x644;&#x62C;&#x645;&#x639;&#x629;</string>
-    <string name="calendar_weekday_sat">&#x627;&#x644;&#x633;&#x628;&#x62A;</string>
+    <string name="calendar_weekday_sun">&#x0627;&#x0644;&#x0623;&#x062D;&#x062F;</string>
+    <string name="calendar_weekday_mon">&#x0627;&#x0644;&#x0627;&#x062B;&#x0646;&#x064A;&#x0646;</string>
+    <string name="calendar_weekday_tue">&#x0627;&#x0644;&#x062B;&#x0644;&#x0627;&#x062B;&#x0627;&#x0621;</string>
+    <string name="calendar_weekday_wed">&#x0627;&#x0644;&#x0623;&#x0631;&#x0628;&#x0639;&#x0627;&#x0621;</string>
+    <string name="calendar_weekday_thu">&#x0627;&#x0644;&#x062E;&#x0645;&#x064A;&#x0633;</string>
+    <string name="calendar_weekday_fri">&#x0627;&#x0644;&#x062C;&#x0645;&#x0639;&#x0629;</string>
+    <string name="calendar_weekday_sat">&#x0627;&#x0644;&#x0633;&#x0628;&#x062A;</string>
+    <string name="calendar_deadline_info_button">حول ألوان المواعيد النهائية</string>
+    <string name="calendar_deadline_sheet_title">كيف تعمل ألوان المواعيد النهائية</string>
+    <string name="calendar_deadline_sheet_subtitle">مع مرور الوقت، يتغير التوهج الهادئ حول هدفك لتبقَ على علم دون أي ضغط.</string>
+    <string name="calendar_deadline_sheet_close">إغلاق</string>
+    <string name="calendar_deadline_phase_green_title">متسع من الوقت</string>
+    <string name="calendar_deadline_phase_green_desc">بدأت للتو أو أمامك متسع كبير. استمتع بالإنجاز بهدوء.</string>
+    <string name="calendar_deadline_phase_amber_title">في منتصف الطريق</string>
+    <string name="calendar_deadline_phase_amber_desc">أنت في منتصف رحلتك. الخطوات الثابتة تحافظ على استمرار الحماس.</string>
+    <string name="calendar_deadline_phase_red_title">الموعد النهائي يقترب</string>
+    <string name="calendar_deadline_phase_red_desc">خط النهاية قريب. جلسة تركيز ستساعدك على إنجازه.</string>
 </resources>
-

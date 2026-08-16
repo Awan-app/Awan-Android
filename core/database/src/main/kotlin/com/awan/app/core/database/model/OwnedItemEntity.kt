@@ -8,5 +8,7 @@ data class OwnedItemEntity(
     @PrimaryKey val id: String,
     val itemId: String,
     val boughtAt: String,
-    val expiryTime: Long = 0L
+    val expiryTime: Long = 0L,
+    val isSeen: Boolean = false,
 )
+

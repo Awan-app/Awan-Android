@@ -7,10 +7,33 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 
+enum class CalendarStreakHeaderState {
+    Start,
+    Restart,
+    Protect,
+    Celebrate;
+
+    companion object {
+        fun from(streak: Int, maxStreak: Int, isTodayActive: Boolean): CalendarStreakHeaderState {
+            val clampedStreak = streak.coerceAtLeast(0)
+            val clampedMaxStreak = maxStreak.coerceAtLeast(0)
+            return when {
+                clampedStreak == 0 && clampedMaxStreak == 0 -> Start
+                clampedStreak == 0 -> Restart
+                isTodayActive -> Celebrate
+                else -> Protect
+            }
+        }
+    }
+}
+
 data class CalendarUiState(
     val isLoading: Boolean = true,
     @StringRes val errorMessage: Int? = null,
     val streak: Int = 0,
+    val maxStreak: Int = 0,
+    val isTodayActive: Boolean = false,
+    val streakHeaderState: CalendarStreakHeaderState = CalendarStreakHeaderState.Start,
     val timezone: ZoneId = ZoneId.systemDefault(),
     val today: LocalDate = LocalDate.now(),
     val selectedDate: LocalDate = LocalDate.now(),
@@ -28,6 +51,7 @@ data class CalendarGoal(
     val id: String,
     val title: String,
     val targetDate: LocalDate,
+    val createdAt: LocalDate? = null,
 )
 
 data class DayState(
@@ -38,6 +62,7 @@ data class DayState(
     val isStreakDay: Boolean,
     val hasDeadline: Boolean,
     val hasRoutine: Boolean = false,
+    val deadlineProgress: Float? = null,
 )
 
 sealed interface CalendarAction {

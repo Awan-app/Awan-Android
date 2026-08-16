@@ -9,6 +9,8 @@ import java.time.ZonedDateTime
 import java.util.Date
 import java.util.Locale
 
+import com.awan.app.core.model.sanitizeLastName
+
 object ProfileHelper {
     fun parseHour(time: String?): Int? {
         if (time == null) return null
@@ -44,8 +46,9 @@ object ProfileHelper {
     }
 
     fun getDisplayName(firstName: String?, lastName: String?, email: String?): String {
-        if (!firstName.isNullOrBlank() || !lastName.isNullOrBlank()) {
-            return "${firstName.orEmpty()} ${lastName.orEmpty()}".trim()
+        val sanitizedLast = lastName.sanitizeLastName()
+        if (!firstName.isNullOrBlank() || !sanitizedLast.isNullOrBlank()) {
+            return "${firstName.orEmpty()} ${sanitizedLast.orEmpty()}".trim()
         }
         return email?.substringBefore("@") ?: ""
     }

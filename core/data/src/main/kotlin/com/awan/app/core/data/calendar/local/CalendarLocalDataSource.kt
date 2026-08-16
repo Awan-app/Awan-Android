@@ -21,6 +21,7 @@ import com.awan.app.core.domain.zones.model.DailyZone
 import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.model.TemplateOverride
 import com.awan.app.core.domain.zones.model.WeeklyTemplate
+import com.awan.app.core.model.sanitizeLastName
 import com.awan.app.core.network.dto.GoalResponse
 import com.awan.app.core.network.dto.UserProfileResponse
 import kotlinx.coroutines.flow.Flow
@@ -137,7 +138,7 @@ class CalendarLocalDataSourceImpl @Inject constructor(
                     id = profile.id,
                     email = profile.email,
                     firstName = profile.firstName,
-                    lastName = profile.lastName,
+                    lastName = profile.lastName.sanitizeLastName(),
                     birthDate = profile.birthDate,
                     points = profile.points,
                     streak = profile.streak,

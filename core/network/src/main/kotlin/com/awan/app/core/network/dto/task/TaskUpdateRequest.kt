@@ -13,4 +13,5 @@ data class TaskUpdateRequest(
     @SerialName("estimatedPoints") val estimatedPoints: Int? = null,
     @SerialName("allowTaskSplitting") val allowTaskSplitting: Boolean? = null,
     @SerialName("categoryId") val categoryId: String? = null,
+    @SerialName("goalId") val goalId: String? = null,
 )

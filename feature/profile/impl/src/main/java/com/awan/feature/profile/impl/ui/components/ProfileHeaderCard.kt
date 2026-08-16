@@ -66,7 +66,6 @@ fun ProfileHeaderCard(
                 AwanUserAvatar(
                     profilePictureUrl = profile.profilePictureUrl,
                     frameImageUrl = uiState.equippedFrameImageUrl,
-                    isDark = uiState.useDarkTheme,
                     modifier = Modifier.fillMaxSize(),
                 )
                 if (uiState.isUploadingPicture) {

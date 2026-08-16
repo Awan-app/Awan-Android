@@ -114,6 +114,57 @@ class StoreRepositoryTest {
         assertTrue((result as Result.Error).error is AppError.Unknown)
     }
 
+    @Test
+    fun `markInventorySeen calls DAO to mark all items seen`() = runTest(testDispatcher) {
+        repository.markInventorySeen()
+        assertTrue(fakeStoreDao.markAllOwnedItemsSeenCalled)
+    }
+
+    @Test
+    fun `refreshInventory preserves isSeen status of existing items`() = runTest(testDispatcher) {
+        fakeConnectivityMonitor.online = true
+        fakeStoreDao.ownedItems = listOf(
+            OwnedItemEntity(id = "o1", itemId = "1", boughtAt = "earlier", isSeen = true)
+        )
+        fakeRemoteDataSource.inventoryResponse = Result.Success(listOf(
+            OwnedItemDto("o1", StoreItemDto("1", "Item 1", type = "FRAME"), "now"),
+            OwnedItemDto("o2", StoreItemDto("2", "Item 2", type = "SKIN"), "now")
+        ))
+
+        val result = repository.refreshInventory()
+
+        assertTrue(result is Result.Success<*>)
+        val items = fakeStoreDao.ownedItems
+        assertEquals(2, items.size)
+        val o1 = items.first { it.id == "o1" }
+        val o2 = items.first { it.id == "o2" }
+        assertTrue(o1.isSeen)
+        org.junit.Assert.assertFalse(o2.isSeen)
+    }
+
+    @Test
+    fun `unequipItem calls remote with type name and deletes equipped item from dao`() = runTest(testDispatcher) {
+        fakeConnectivityMonitor.online = true
+        fakeStoreDao.equippedItems = listOf(
+            EquippedItemEntity(type = "FRAME", itemId = "frame-1", equippedAt = "2026-08-01T00:00:00Z")
+        )
+
+        val result = repository.unequipItem(StoreItemType.FRAME)
+
+        assertTrue(result is Result.Success<*>)
+        assertTrue(fakeStoreDao.equippedItems.isEmpty())
+    }
+
+    @Test
+    fun `unequipItem returns network error when offline`() = runTest(testDispatcher) {
+        fakeConnectivityMonitor.online = false
+
+        val result = repository.unequipItem(StoreItemType.FRAME)
+
+        assertTrue(result is Result.Error)
+        assertEquals(AppError.Network, (result as Result.Error).error)
+    }
+
     // Fakes
     private class FakeStoreRemoteDataSource : StoreRemoteDataSource {
         var buyCalled = false
@@ -127,13 +178,14 @@ class StoreRepositoryTest {
         }
         override suspend fun getEquippedItems(): Result<List<EquippedItemDto>> = Result.Success(emptyList())
         override suspend fun equipItem(itemId: String): Result<Unit> = Result.Success(Unit)
-        override suspend fun unequipItem(itemId: String): Result<Unit> = Result.Success(Unit)
+        override suspend fun unequipItem(type: String): Result<Unit> = Result.Success(Unit)
     }
 
     private class FakeStoreDao : StoreDao {
         var storeItems = listOf<StoreItemEntity>()
         var ownedItems = listOf<OwnedItemEntity>()
         var equippedItems = listOf<EquippedItemEntity>()
+        var markAllOwnedItemsSeenCalled = false
 
         override suspend fun upsertStoreItems(items: List<StoreItemEntity>) { storeItems = items }
         override fun observeStoreItems(): Flow<List<StoreItemEntity>> = flowOf(storeItems)
@@ -142,6 +194,13 @@ class StoreRepositoryTest {
         override suspend fun upsertOwnedItems(items: List<OwnedItemEntity>) { ownedItems = items }
         override fun observeOwnedItems(): Flow<List<OwnedItemEntity>> = flowOf(ownedItems)
         override suspend fun deleteAllOwnedItems() { ownedItems = emptyList() }
+        override suspend fun markAllOwnedItemsSeen() {
+            markAllOwnedItemsSeenCalled = true
+            ownedItems = ownedItems.map { it.copy(isSeen = true) }
+        }
+        override fun observeUnseenOwnedCount(): Flow<Int> = flowOf(ownedItems.count { !it.isSeen })
+        override suspend fun getSeenOwnedItemIds(): List<String> = ownedItems.filter { it.isSeen }.map { it.id }
+        override suspend fun getOwnedItemIds(): List<String> = ownedItems.map { it.id }
         override suspend fun upsertEquippedItems(items: List<EquippedItemEntity>) { equippedItems = items }
         override fun observeEquippedItems(): Flow<List<EquippedItemEntity>> = flowOf(equippedItems)
         override suspend fun deleteAllEquippedItems() { equippedItems = emptyList() }
