@@ -61,6 +61,5 @@ data class AiTasksState(
      */
     val canReset: Boolean get() = proposals.map { it.copy(isExpanded = false) } != originalProposals
 
-    /** Nothing is ever persisted here, so the only thing worth confirming away from is unaccepted work. */
-    val isDirty: Boolean get() = proposals.isNotEmpty()
+    val isDirty: Boolean get() = goalId != null || proposals.isNotEmpty()
 }

@@ -32,9 +32,9 @@ class Navigator(val state: NavigationState) {
         state.generation++
     }
 
-    fun resetCurrentSubStack(key: Route) {
+    fun resetCurrentSubStack() {
         state.currentSubStack.clear()
-        state.currentSubStack.add(key)
+        state.currentSubStack.add(state.currentTopLevelKey)
     }
 
     fun goBack() {
@@ -49,4 +49,3 @@ class Navigator(val state: NavigationState) {
     private fun goToTopLevel(key: Route) { state.topLevelStack.apply { val root = firstOrNull(); clear(); if (root != null) add(root); if (key != root) add(key) } }
     private fun clearSubStack() { state.currentSubStack.run { if (size > 1) subList(1, size).clear() } }
 }
-

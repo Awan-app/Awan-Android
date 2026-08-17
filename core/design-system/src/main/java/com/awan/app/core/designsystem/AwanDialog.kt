@@ -1,12 +1,7 @@
 package com.awan.app.core.designsystem
 
-import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 
 /**
  * A centered confirmation dialog following the Skyward design language.
@@ -25,65 +20,16 @@ fun AwanDialog(
     onSecondary: (() -> Unit)? = null,
     icon: (@Composable () -> Unit)? = null,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        AwanCard(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(AwanTheme.spacing.md),
-            contentPadding = PaddingValues(AwanTheme.spacing.xl)
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.md)
-            ) {
-                if (icon != null) {
-                    Box(modifier = Modifier.padding(bottom = AwanTheme.spacing.xs)) {
-                        icon()
-                    }
-                }
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs)
-                ) {
-                    AwanText(
-                        text = title,
-                        style = AwanTheme.styles.titleText.let {
-                            it.copy(textStyle = it.textStyle.copy(textAlign = TextAlign.Center))
-                        }
-                    )
-                    AwanText(
-                        text = body,
-                        style = AwanTheme.styles.bodySecondaryText.let {
-                            it.copy(textStyle = it.textStyle.copy(textAlign = TextAlign.Center))
-                        }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(AwanTheme.spacing.sm))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm)
-                ) {
-                    if (secondaryLabel != null) {
-                        AwanButton(
-                            onClick = onSecondary ?: onDismiss,
-                            modifier = Modifier.weight(1f),
-                            variant = AwanButtonVariant.Quiet
-                        ) {
-                            AwanText(secondaryLabel)
-                        }
-                    }
-                    AwanButton(
-                        onClick = onPrimary,
-                        modifier = Modifier.weight(1f),
-                        variant = primaryVariant
-                    ) {
-                        AwanText(primaryLabel)
-                    }
-                }
-            }
-        }
-    }
+    AwanConfirmDialog(
+        title = title,
+        body = body,
+        confirmLabel = primaryLabel,
+        onConfirm = onPrimary,
+        onDismiss = onDismiss,
+        modifier = modifier,
+        confirmVariant = primaryVariant,
+        dismissLabel = secondaryLabel,
+        onDismissClick = onSecondary,
+        icon = icon,
+    )
 }

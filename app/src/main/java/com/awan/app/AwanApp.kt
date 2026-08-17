@@ -318,8 +318,9 @@ fun AwanApp(
                 onBack = { navigator.goBack() },
             )
             aiTasksEntry(
-                onBack = { navigator.resetCurrentSubStack(HomeRoute()) },
-                onTasksCreated = { navigator.resetCurrentSubStack(HomeRoute()) },
+                onBack = { navigator.goBack() },
+                onGoalFlowCancelled = { navigator.resetCurrentSubStack() },
+                onTasksCreated = { navigator.navigate(HomeRoute()) },
             )
             inventoryEntry(onBack = { navigator.goBack() })
             profileEntry(

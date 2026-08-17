@@ -44,6 +44,22 @@ data class SessionDetailDialogState(
     val deleteTargetType: DeleteTargetType = DeleteTargetType.SESSION,
 )
 
+val SessionDetailDialogState.isDirty: Boolean
+    get() {
+        val d = detail ?: return false
+        val originalStartMin = d.session.start.hour * 60 + d.session.start.minute
+        val originalEndMin = d.session.end.hour * 60 + d.session.end.minute
+        val originalDate = d.session.start.toLocalDate()
+        val originalTitle = d.task.title
+        val originalDesc = d.task.description ?: ""
+        return editDate != originalDate ||
+            editStartMinutes != originalStartMin ||
+            editEndMinutes != originalEndMin ||
+            editTitle != originalTitle ||
+            editDescription != originalDesc
+    }
+
+
 sealed interface TimelineContentState {
     data object Loading : TimelineContentState
     data class Error(val message: UiText) : TimelineContentState

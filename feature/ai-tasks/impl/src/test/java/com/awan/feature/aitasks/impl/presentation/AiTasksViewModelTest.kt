@@ -21,6 +21,7 @@ import com.awan.app.core.model.TaskProposals
 import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.model.TaskWithSessionsDraft
 import com.awan.feature.aitasks.impl.R
+import com.awan.app.core.common.R as CommonR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -283,6 +284,26 @@ class AiTasksViewModelTest {
     }
 
     @Test
+    fun `a backend proposal failure does not blame the connection`() = runTest(testDispatcher) {
+        taskRepository.proposals = Result.Error(AppError.Server(500))
+        val viewModel = viewModel()
+
+        viewModel.onAction(AiTasksAction.Load(text = "note"))
+
+        assertEquals(CommonR.string.error_server, viewModel.state.value.errorMessage)
+    }
+
+    @Test
+    fun `an unavailable AI service is identified`() = runTest(testDispatcher) {
+        taskRepository.proposals = Result.Error(AppError.Server(503))
+        val viewModel = viewModel()
+
+        viewModel.onAction(AiTasksAction.Load(text = "note"))
+
+        assertEquals(R.string.ai_tasks_error_ai_unavailable, viewModel.state.value.errorMessage)
+    }
+
+    @Test
     fun `removing drops the card and offers it back, undo puts it in the slot it came from`() =
         runTest(testDispatcher) {
             taskRepository.proposals =
@@ -403,10 +424,22 @@ class AiTasksViewModelTest {
         viewModel.onAction(AiTasksAction.Accept)
 
         val state = viewModel.state.value
-        assertEquals(R.string.ai_tasks_error_accept_failed, state.acceptError)
+        assertEquals(CommonR.string.error_network, state.acceptError)
         assertNull(state.errorMessage)
         assertEquals(1, state.proposals.size)
         assertFalse(state.isAccepting)
+    }
+
+    @Test
+    fun `a backend accept failure does not blame the connection`() = runTest(testDispatcher) {
+        taskRepository.proposals = Result.Success(TaskProposals(tasks = listOf(proposal("A"))))
+        taskRepository.createResult = Result.Error(AppError.Server(500))
+        val viewModel = viewModel()
+        viewModel.onAction(AiTasksAction.Load(text = "note"))
+
+        viewModel.onAction(AiTasksAction.Accept)
+
+        assertEquals(CommonR.string.error_server, viewModel.state.value.acceptError)
     }
 
     @Test
@@ -564,6 +597,20 @@ class AiTasksViewModelTest {
         viewModel.onAction(AiTasksAction.BackRequested)
 
         assertTrue(viewModel.state.value.showDiscardConfirm)
+    }
+
+    @Test
+    fun `back from goal scheduling asks before discarding when no proposal was returned`() = runTest(testDispatcher) {
+        goalRepository.proposeResult = Result.Success(
+            com.awan.app.core.model.GoalScheduleProposal("goal-1", emptyList(), emptyList(), emptyList())
+        )
+        val viewModel = viewModel()
+        viewModel.onAction(AiTasksAction.Load(goalId = "goal-1"))
+
+        viewModel.onAction(AiTasksAction.BackRequested)
+
+        assertTrue(viewModel.state.value.showDiscardConfirm)
+        assertEquals(0, goalRepository.clearCallCount)
     }
 
     @Test
