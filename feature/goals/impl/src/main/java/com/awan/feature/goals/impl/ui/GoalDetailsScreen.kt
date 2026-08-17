@@ -37,6 +37,7 @@ fun GoalDetailsScreen(
     events: Flow<GoalDetailsEvent>,
     onAction: (GoalDetailsAction) -> Unit,
     onNavigateBack: () -> Unit,
+    onNavigateToTaskDetails: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     addTaskViewModel: AddTaskViewModel = hiltViewModel(),
 ) {
@@ -90,7 +91,8 @@ fun GoalDetailsScreen(
                         onDeleteGoalClick = { goalToDelete = state.goal.id },
                         onDeleteTaskClick = { taskToDelete = it },
                         onAddTaskClick = { onAction(GoalDetailsAction.AddTaskClicked) },
-                        onTaskToggle = { onAction(GoalDetailsAction.TaskChecked(it)) }
+                        onTaskToggle = { onAction(GoalDetailsAction.TaskChecked(it)) },
+                        onTaskClick = onNavigateToTaskDetails,
                     )
                 }
                 state.error != null -> {

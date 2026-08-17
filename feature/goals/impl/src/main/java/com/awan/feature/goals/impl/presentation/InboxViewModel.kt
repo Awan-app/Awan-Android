@@ -4,9 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.task.usecase.GetInboxTasksUseCase
-import com.awan.app.core.model.SessionStatus
-import com.awan.app.core.model.TaskWithSessions
-import com.awan.feature.goals.impl.R
+import com.awan.app.core.model.Task
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -16,9 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import javax.inject.Inject
 
 @HiltViewModel
@@ -46,17 +41,6 @@ class InboxViewModel @Inject constructor(
                 val filters = current.activeStatusFilters.toMutableSet()
                 if (!filters.add(action.filter)) filters.remove(action.filter)
                 current.copy(activeStatusFilters = filters)
-            }
-
-            is InboxAction.SessionFilterToggled -> updateState { current ->
-                val filters = current.activeSessionFilters.toMutableSet()
-                if (!filters.add(action.filter)) filters.remove(action.filter)
-                current.copy(activeSessionFilters = filters)
-            }
-
-            is InboxAction.TaskExpandToggled -> updateState { current ->
-                val newId = if (current.expandedTaskId == action.taskId) null else action.taskId
-                current.copy(expandedTaskId = newId)
             }
 
             InboxAction.FilterClicked -> updateState { it.copy(showFilterSheet = true) }
@@ -87,25 +71,11 @@ class InboxViewModel @Inject constructor(
             result = result.filter { it.displayStatus in state.activeStatusFilters }
         }
 
-        if (state.activeSessionFilters.isNotEmpty()) {
-            result = result.filter { task ->
-                task.sessions.any { session ->
-                    (InboxSessionFilter.ActiveNow in state.activeSessionFilters && session.isActiveNow) ||
-                        (InboxSessionFilter.Missed in state.activeSessionFilters && session.isMissed)
-                }
-            }
-        }
-
         val q = state.searchQuery.trim().lowercase()
         if (q.isNotEmpty()) {
             result = result.filter { task ->
                 task.title.lowercase().contains(q) ||
-                    task.description?.lowercase()?.contains(q) == true ||
-                    task.sessions.any { s ->
-                        s.dateLabel.lowercase().contains(q) ||
-                            s.startTime.lowercase().contains(q) ||
-                            s.endTime.lowercase().contains(q)
-                    }
+                    task.description?.lowercase()?.contains(q) == true
             }
         }
         return result
@@ -117,14 +87,11 @@ class InboxViewModel @Inject constructor(
             updateState { it.copy(isLoading = true, isError = false) }
             when (val result = getInboxTasksUseCase()) {
                 is Result.Success -> {
-                    val now = LocalDateTime.now()
-                    val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
-                    val timeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
                     updateState {
                         it.copy(
                             isLoading = false,
                             isError = false,
-                            allTasks = result.data.map { tws -> tws.toUiModel(now, dateFormatter, timeFormatter) },
+                            allTasks = result.data.map { task -> task.toUiModel() },
                         )
                     }
                 }
@@ -134,36 +101,12 @@ class InboxViewModel @Inject constructor(
         }
     }
 
-    private fun TaskWithSessions.toUiModel(
-        now: LocalDateTime,
-        dateFormatter: DateTimeFormatter,
-        timeFormatter: DateTimeFormatter
-    ): InboxTaskUiModel {
+    private fun Task.toUiModel(): InboxTaskUiModel {
         return InboxTaskUiModel(
-            id = task.id,
-            title = task.title,
-            description = task.description,
+            id = id,
+            title = title,
+            description = description,
             displayStatus = deriveDisplayStatus(),
-            sessions = sessions.mapNotNull { session ->
-                val isScheduled = session.status == SessionStatus.SCHEDULED
-                val isBackendMissed = session.status == SessionStatus.MISSED
-                
-                InboxSessionUiModel(
-                    id = session.id,
-                    dateLabel = session.start.format(dateFormatter),
-                    startTime = session.start.format(timeFormatter),
-                    endTime = session.end.format(timeFormatter),
-                    statusLabelRes = when (session.status) {
-                        SessionStatus.SCHEDULED -> R.string.inbox_status_scheduled
-                        SessionStatus.COMPLETED -> R.string.inbox_status_completed
-                        SessionStatus.CANCELLED -> R.string.inbox_status_cancelled
-                        SessionStatus.MISSED -> R.string.inbox_status_missed
-                        else -> R.string.inbox_status_unknown
-                    },
-                    isActiveNow = isScheduled && !now.isBefore(session.start) && !now.isAfter(session.end),
-                    isMissed = isBackendMissed || (isScheduled && now.isAfter(session.end)),
-                )
-            },
         )
     }
 }

@@ -91,7 +91,7 @@ class AiTasksViewModelTest {
 
         override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = error("not used")
 
-        override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = error("not used")
+        override suspend fun getInboxTasks(): Result<List<Task>> = error("not used")
 
         override suspend fun completeTask(taskId: String): Result<Task> = error("not used")
 

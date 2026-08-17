@@ -1,6 +1,7 @@
 package com.awan.feature.goals.impl.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -30,6 +31,7 @@ internal fun GoalTaskTimelineItem(
     isGoalAchieved: Boolean,
     onToggle: () -> Unit,
     onDelete: () -> Unit,
+    onClick: (() -> Unit)? = null,
 ) {
     val colors = AwanTheme.colors
     val spacing = AwanTheme.spacing
@@ -60,7 +62,16 @@ internal fun GoalTaskTimelineItem(
         
         // Content Column
         Column(
-            modifier = Modifier.weight(1f).padding(bottom = spacing.xl),
+            modifier = Modifier
+                .weight(1f)
+                .padding(bottom = spacing.xl)
+                .then(
+                    if (onClick != null) {
+                        Modifier.clickable(onClick = onClick)
+                    } else {
+                        Modifier
+                    }
+                ),
             verticalArrangement = Arrangement.spacedBy(spacing.xxs)
         ) {
             Row(

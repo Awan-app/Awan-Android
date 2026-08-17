@@ -209,8 +209,8 @@ class TaskRepositoryImpl @Inject constructor(
     }
 
 
-    override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = withContext(ioDispatcher) {
-        remoteDataSource.getInboxTasks().map { list -> list.map { it.toWithSessionsModel() } }
+    override suspend fun getInboxTasks(): Result<List<Task>> = withContext(ioDispatcher) {
+        remoteDataSource.getInboxTasks().map { list -> list.map { it.toTaskModel() } }
     }
 
     // ── Task Details ──────────────────────────────────────────────────────────

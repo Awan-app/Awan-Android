@@ -49,8 +49,8 @@ interface TaskRemoteDataSource {
     suspend fun deleteTask(taskId: String, cascade: Boolean = false): Result<Unit>
 
 
-    /** Fetches all inbox tasks (tasks with no goal) together with their sessions. */
-    suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>>
+    /** Fetches all inbox tasks (tasks with no goal). */
+    suspend fun getInboxTasks(): Result<List<TaskInfoResponse>>
 
     // ── Task Details ─────────────────────────────────────────────────────────
 

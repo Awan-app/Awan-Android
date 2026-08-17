@@ -96,8 +96,6 @@ fun InboxScreen(
                             items(state.visibleTasks, key = { it.id }) { task ->
                                 InboxTaskCard(
                                     task = task,
-                                    isExpanded = state.expandedTaskId == task.id,
-                                    onExpandToggle = { onAction(InboxAction.TaskExpandToggled(task.id)) },
                                     onTaskClick = { onNavigateToTaskDetails(task.id) }
                                 )
                             }

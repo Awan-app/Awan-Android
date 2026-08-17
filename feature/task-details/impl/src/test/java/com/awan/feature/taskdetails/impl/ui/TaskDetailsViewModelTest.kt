@@ -332,7 +332,7 @@ private class FakeTaskRepository : TaskRepository {
         tasks.remove(taskId)
         return Result.Success(Unit)
     }
-    override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = error("not used")
+    override suspend fun getInboxTasks(): Result<List<Task>> = error("not used")
 
     override suspend fun getTask(taskId: String): Result<Task> {
         getTaskError?.let { return Result.Error(it) }

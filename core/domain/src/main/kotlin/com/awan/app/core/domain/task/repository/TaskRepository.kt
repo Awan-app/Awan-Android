@@ -44,10 +44,9 @@ interface TaskRepository {
     suspend fun deleteTask(taskId: String, cascade: Boolean = false): Result<Unit>
 
     /**
-     * Returns all tasks whose [Task.goalId] is null (the Inbox), each bundled with their sessions.
-     * Session list may be empty for drafted tasks.
+     * Returns all tasks whose [Task.goalId] is null (the Inbox).
      */
-    suspend fun getInboxTasks(): Result<List<TaskWithSessions>>
+    suspend fun getInboxTasks(): Result<List<Task>>
 
     // ── Task Details ──────────────────────────────────────────────────────────
 

@@ -58,7 +58,8 @@ fun EntryProviderScope<Route>.goalsEntry(
     entry<GoalDetailsRoute> { route ->
         GoalDetailsRouteScreen(
             route = route,
-            onBack = onBack
+            onBack = onBack,
+            onNavigateToTaskDetails = onNavigateToTaskDetails,
         )
     }
 }
@@ -84,6 +85,7 @@ fun InboxRouteScreen(
 fun GoalDetailsRouteScreen(
     route: GoalDetailsRoute,
     onBack: () -> Unit,
+    onNavigateToTaskDetails: (String) -> Unit = {},
     viewModel: GoalDetailsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -96,7 +98,8 @@ fun GoalDetailsRouteScreen(
         state = state,
         events = viewModel.events,
         onAction = viewModel::onAction,
-        onNavigateBack = onBack
+        onNavigateBack = onBack,
+        onNavigateToTaskDetails = onNavigateToTaskDetails,
     )
 }
 
