@@ -57,12 +57,12 @@
     <string name="ai_tasks_retry">حاول مرة أخرى</string>
 
     <string name="ai_tasks_error_generic">حدث خطأ ما. حاول مرة أخرى.</string>
-    <string name="ai_tasks_error_timeout">استغرق هذا وقتًا طويلاً. تحقق من اتصالك وحاول مرة أخرى.</string>
+    <string name="ai_tasks_error_timeout">استغرق هذا وقتًا طويلاً. حاول مرة أخرى.</string>
     <string name="ai_tasks_error_ai_unavailable">أوان مشغول الآن. حاول مرة أخرى بعد قليل.</string>
     <string name="ai_tasks_error_unsupported_image">صيغة هذه الصورة غير مدعومة. جرّب PNG أو JPEG أو WebP أو GIF.</string>
     <string name="ai_tasks_error_invalid_image">تعذّر استخدام هذه الصورة. جرّب صورة أخرى.</string>
     <string name="ai_tasks_error_validation">تعذّر على أوان فهم ذلك. جرّب وصفه بطريقة مختلفة.</string>
-    <string name="ai_tasks_error_accept_failed">تعذّرت إضافة هذه المهام. تحقق من اتصالك وحاول مرة أخرى.</string>
+    <string name="ai_tasks_error_accept_failed">تعذّرت إضافة هذه المهام. حاول مرة أخرى.</string>
     <string name="ai_tasks_error_blank_title">أضف عنوانًا لكل مهمة أولًا.</string>
     <string name="ai_tasks_error_text_blank">أخبر أوان بما تحتاجه، أو أرفق صورة.</string>
     <string name="ai_tasks_error_text_too_long">هذا النص أطول من أن يقرأه أوان. اختصره وحاول مرة أخرى.</string>
@@ -72,4 +72,8 @@
     <string name="ai_tasks_discard_body">لم يُحفظ شيء بعد — الرجوع سيفقد خطة أوان.</string>
     <string name="ai_tasks_discard_confirm">تجاهل</string>
     <string name="ai_tasks_discard_cancel">متابعة المراجعة</string>
+    <string name="ai_tasks_cancel_creation">إلغاء الإنشاء</string>
+    <string name="ai_tasks_cancel_goal_schedule_title">هل تريد إلغاء جدولة الهدف؟</string>
+    <string name="ai_tasks_cancel_goal_schedule_body">سيبقى هدفك ضمن الأهداف، لكن سيتم تجاهل الجدول الذي اقترحه أوان.</string>
+    <string name="ai_tasks_cancel_goal_schedule_confirm">إلغاء الجدولة</string>
 </resources>

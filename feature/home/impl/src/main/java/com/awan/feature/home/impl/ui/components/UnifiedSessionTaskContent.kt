@@ -1,5 +1,6 @@
 package com.awan.feature.home.impl.ui.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -117,6 +118,10 @@ internal fun UnifiedSessionTaskContent(
     onNavigateToTaskDetails: ((String) -> Unit)? = null,
 ) {
     var activePickerTarget by remember { mutableStateOf<DialogPickerTarget?>(null) }
+
+    BackHandler(enabled = activePickerTarget != null) {
+        activePickerTarget = null
+    }
 
     AnimatedContent(
         targetState = activePickerTarget,

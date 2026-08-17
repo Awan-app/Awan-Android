@@ -86,7 +86,7 @@ class NavigatorTest {
         )
         val navigator = Navigator(state)
 
-        navigator.resetCurrentSubStack(TabRoute)
+        navigator.resetCurrentSubStack()
 
         assertEquals(listOf(TabRoute), state.currentSubStack)
         assertEquals(TabRoute, state.currentKey)

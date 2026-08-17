@@ -6,6 +6,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.error.AppError
+import com.awan.app.core.common.error.toUiText as toCommonUiText
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.goal.usecase.GetGoalsUseCase
@@ -381,10 +382,9 @@ class TaskDetailsViewModel @Inject constructor(
 
     private fun AppError.toUiText(): UiText = when (this) {
         is AppError.Network       -> UiText.StringResource(R.string.task_details_error_network)
-        is AppError.Timeout       -> UiText.StringResource(R.string.task_details_error_network)
         is AppError.Unauthorized  -> UiText.StringResource(R.string.task_details_error_unauthorized)
         is AppError.Api           -> body?.takeIf { it.isNotBlank() }?.let { UiText.DynamicString(it) }
                                          ?: UiText.StringResource(R.string.task_details_error_generic)
-        else                      -> UiText.StringResource(R.string.task_details_error_generic)
+        else                      -> toCommonUiText()
     }
 }

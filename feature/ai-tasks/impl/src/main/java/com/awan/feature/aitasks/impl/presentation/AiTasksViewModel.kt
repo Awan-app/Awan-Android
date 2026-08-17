@@ -22,6 +22,7 @@ import com.awan.app.core.model.TaskProposal
 import com.awan.app.core.model.TaskWithSessionsDraft
 import com.awan.app.core.model.toSessionDraft
 import com.awan.feature.aitasks.impl.R
+import com.awan.app.core.common.R as CommonR
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -404,7 +405,7 @@ class AiTasksViewModel @Inject constructor(
                 when (val result = confirmGoalScheduleUseCase(current.goalId, goalSessions)) {
                     is Result.Success -> close(AiTasksEvent.TasksCreated(result.data.size))
                     is Result.Error -> _state.update {
-                        it.copy(isAccepting = false, acceptError = R.string.ai_tasks_error_accept_failed)
+                        it.copy(isAccepting = false, acceptError = result.error.toAcceptErrorRes())
                     }
                     Result.Loading -> Unit
                 }
@@ -418,7 +419,7 @@ class AiTasksViewModel @Inject constructor(
                 when (val result = createTasks(drafts)) {
                     is Result.Success -> close(AiTasksEvent.TasksCreated(result.data.size))
                     is Result.Error -> _state.update {
-                        it.copy(isAccepting = false, acceptError = R.string.ai_tasks_error_accept_failed)
+                        it.copy(isAccepting = false, acceptError = result.error.toAcceptErrorRes())
                     }
 
                     Result.Loading -> Unit
@@ -472,14 +473,31 @@ private fun AppError.toProposalErrorRes(): Int = when (this) {
         else -> R.string.ai_tasks_error_generic
     }
 
+    AppError.Network -> CommonR.string.error_network
     AppError.Timeout -> R.string.ai_tasks_error_timeout
     is AppError.Server -> if (code == SERVICE_UNAVAILABLE) {
         R.string.ai_tasks_error_ai_unavailable
     } else {
-        R.string.ai_tasks_error_generic
+        CommonR.string.error_server
     }
+    AppError.Unauthorized -> CommonR.string.error_unauthorized
+    AppError.Serialization -> CommonR.string.error_serialization
 
     else -> R.string.ai_tasks_error_generic
+}
+
+@StringRes
+private fun AppError.toAcceptErrorRes(): Int = when (this) {
+    AppError.Network -> CommonR.string.error_network
+    AppError.Timeout -> CommonR.string.error_timeout
+    AppError.Unauthorized -> CommonR.string.error_unauthorized
+    AppError.Serialization -> CommonR.string.error_serialization
+    is AppError.Server -> if (code == SERVICE_UNAVAILABLE) {
+        R.string.ai_tasks_error_ai_unavailable
+    } else {
+        CommonR.string.error_server
+    }
+    else -> R.string.ai_tasks_error_accept_failed
 }
 
 private const val SERVICE_UNAVAILABLE = 503

@@ -1,5 +1,7 @@
 package com.awan.feature.profile.impl.presentation
 
+import com.awan.app.core.common.error.AppError
+import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.category.usecase.CreateCategoryUseCase
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.zones.model.DailyZone
@@ -7,6 +9,8 @@ import com.awan.app.core.domain.zones.model.DayOfWeek
 import com.awan.app.core.domain.zones.model.WeeklyTemplate
 import com.awan.app.core.domain.zones.usecase.GetWeeklyTemplatesUseCase
 import com.awan.app.core.domain.zones.usecase.UpdateTemplateZonesUseCase
+import com.awan.feature.profile.impl.helpers.ProfileErrorMapper
+import com.awan.app.core.common.R as CommonR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -77,5 +81,13 @@ class DailyZonesViewModelTest {
         assertEquals(DayOfWeek.TUESDAY, state.selectedDay)
         assertEquals(1, state.selectedDayZones.size)
         assertEquals("Focus", state.selectedDayZones.first().name)
+    }
+
+    @Test
+    fun `timeout is not presented as an internet connection failure`() {
+        assertEquals(
+            UiText.StringResource(CommonR.string.error_timeout),
+            ProfileErrorMapper.mapToUiText(AppError.Timeout),
+        )
     }
 }

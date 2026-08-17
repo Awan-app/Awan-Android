@@ -40,6 +40,7 @@ import com.awan.app.core.model.TaskProposals
 import com.awan.app.core.model.TaskWithSessions
 import com.awan.app.core.model.TaskWithSessionsDraft
 import com.awan.feature.addtask.R
+import com.awan.app.core.common.R as CommonR
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -727,7 +728,18 @@ class AddTaskViewModelTest {
         val state = viewModel.state.value
         assertEquals("Buy groceries tomorrow 6pm for 45m", state.input)
         assertFalse(state.isSubmitting)
-        assertEquals(R.string.add_task_error_create_failed, state.errorMessage)
+        assertEquals(CommonR.string.error_network, state.errorMessage)
+    }
+
+    @Test
+    fun `a backend create failure does not blame the connection`() = runTest(testDispatcher) {
+        taskRepository.failWith = AppError.Server(500)
+        val viewModel = viewModel()
+
+        viewModel.onAction(AddTaskAction.InputChanged("Buy groceries tomorrow 6pm for 45m"))
+        viewModel.onAction(AddTaskAction.Submit)
+
+        assertEquals(CommonR.string.error_server, viewModel.state.value.errorMessage)
     }
 
     // ── Handing off to Awan's full-screen review ─────────────────────────────
@@ -1089,7 +1101,7 @@ class AddTaskViewModelTest {
 
             val failedState = viewModel.state.value
             assertEquals("My custom timeframe", failedState.input)
-            assertEquals(R.string.add_task_error_goal_continuation_failed, failedState.errorMessage)
+            assertEquals(CommonR.string.error_network, failedState.errorMessage)
             assertFalse(failedState.isSubmitting)
 
             val successReply = GoalDecompositionReply(
@@ -1344,7 +1356,7 @@ class AddTaskViewModelTest {
         assertEquals(listOf("sess-fail-bulk"), goalRepository.confirmCalls)
         assertEquals(GoalStep.Preview(proposal), viewModel.state.value.goalStep)
         assertFalse(viewModel.state.value.isSubmitting)
-        assertEquals(R.string.add_task_error_goal_confirm_failed, viewModel.state.value.errorMessage)
+        assertEquals(CommonR.string.error_network, viewModel.state.value.errorMessage)
         assertTrue(goalRepository.cancelCalls.isEmpty())
 
     }
@@ -1470,7 +1482,7 @@ class AddTaskViewModelTest {
             assertEquals(GoalStep.Initial, failedState.goalStep)
             assertNull(failedState.goalSessionId)
             assertFalse(failedState.isSubmitting)
-            assertEquals(R.string.add_task_error_goal_continuation_failed, failedState.errorMessage)
+            assertEquals(CommonR.string.error_network, failedState.errorMessage)
 
             val proposal = GoalProposal("Goal", null, null, emptyList())
             val previewReply = GoalDecompositionReply(
@@ -1493,7 +1505,7 @@ class AddTaskViewModelTest {
             assertEquals(GoalStep.Preview(proposal), confirmFailedState.goalStep)
             assertEquals("sess-fail", confirmFailedState.goalSessionId)
             assertFalse(confirmFailedState.isSubmitting)
-            assertEquals(R.string.add_task_error_goal_confirm_failed, confirmFailedState.errorMessage)
+            assertEquals(CommonR.string.error_network, confirmFailedState.errorMessage)
         }
 
     @Test
@@ -1526,8 +1538,20 @@ class AddTaskViewModelTest {
             assertEquals(GoalStep.Preview(proposal), viewModel.state.value.goalStep)
             assertEquals("sess-draft-fail", viewModel.state.value.goalSessionId)
             assertFalse(viewModel.state.value.isSubmitting)
-            assertEquals(R.string.add_task_error_goal_confirm_failed, viewModel.state.value.errorMessage)
+            assertEquals(CommonR.string.error_network, viewModel.state.value.errorMessage)
         }
+
+    @Test
+    fun `an unavailable AI service is identified during goal decomposition`() = runTest(testDispatcher) {
+        goalRepository.nextContinueReply = Result.Error(AppError.Server(503))
+        val viewModel = viewModel()
+        viewModel.onAction(AddTaskAction.ModeChanged(AddTaskMode.GOAL))
+        viewModel.onAction(AddTaskAction.InputChanged("Learn Spanish"))
+
+        viewModel.onAction(AddTaskAction.Submit)
+
+        assertEquals(R.string.add_task_error_ai_unavailable, viewModel.state.value.errorMessage)
+    }
 
     @Test
     fun `Duplicate submit while in flight causes one continuation call`() =
@@ -1949,4 +1973,3 @@ class AddTaskViewModelTest {
         secondJob.cancel()
     }
 }
-

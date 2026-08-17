@@ -94,9 +94,10 @@
     <string name="add_task_goal_preview_duration">Est. %1$s</string>
     <string name="add_task_goal_preview_points">%1$d pts</string>
 
-    <string name="add_task_error_create_failed">Couldn\'t add that task. Check your connection and try again.</string>
-    <string name="add_task_error_goal_continuation_failed">Awan couldn\'t break down that goal. Check your connection and try again.</string>
-    <string name="add_task_error_goal_confirm_failed">Couldn\'t save this goal. Check your connection and try again.</string>
+    <string name="add_task_error_create_failed">Couldn\'t add that task. Try again.</string>
+    <string name="add_task_error_goal_continuation_failed">Awan couldn\'t break down that goal. Try again.</string>
+    <string name="add_task_error_goal_confirm_failed">Couldn\'t save this goal. Try again.</string>
+    <string name="add_task_error_ai_unavailable">Awan is busy right now. Try again in a moment.</string>
 
     <string name="add_task_goal_thinking_1">Reading your goal…</string>
     <string name="add_task_goal_thinking_2">Breaking it into steps…</string>

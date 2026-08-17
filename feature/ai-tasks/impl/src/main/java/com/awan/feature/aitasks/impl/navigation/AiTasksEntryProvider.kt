@@ -7,6 +7,7 @@ import com.awan.feature.aitasks.impl.ui.AiTasksRouteScreen
 
 fun EntryProviderScope<Route>.aiTasksEntry(
     onBack: () -> Unit,
+    onGoalFlowCancelled: () -> Unit = onBack,
     onTasksCreated: (Int) -> Unit = { onBack() },
 ) {
     entry<AiTaskProposalsRoute> { route ->
@@ -15,7 +16,7 @@ fun EntryProviderScope<Route>.aiTasksEntry(
             note = route.note,
             imageUri = route.imageUri,
             goalId = route.goalId,
-            onBack = onBack,
+            onBack = if (route.goalId == null) onBack else onGoalFlowCancelled,
             onTasksCreated = onTasksCreated,
         )
     }

@@ -3,6 +3,7 @@ package com.awan.feature.addtask.presentation
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.goal.usecase.SaveGoalProposalUseCase
@@ -21,6 +22,7 @@ import com.awan.app.core.model.GoalProposal
 import com.awan.app.core.model.ProposedTask
 import com.awan.app.core.model.Task
 import com.awan.feature.addtask.R
+import com.awan.app.core.common.R as CommonR
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -434,7 +436,10 @@ class AddTaskViewModel @Inject constructor(
                         _state.update {
                             it.copy(
                                 isSubmitting = false,
-                                errorMessage = R.string.add_task_error_goal_continuation_failed,
+                                errorMessage = result.error.toActionErrorRes(
+                                    fallback = R.string.add_task_error_goal_continuation_failed,
+                                    isAiOperation = true,
+                                ),
                             )
                         }
                     }
@@ -478,7 +483,10 @@ class AddTaskViewModel @Inject constructor(
                     is Result.Error -> _state.update {
                         it.copy(
                             isSubmitting = false,
-                            errorMessage = R.string.add_task_error_goal_confirm_failed,
+                            errorMessage = result.error.toActionErrorRes(
+                                fallback = R.string.add_task_error_goal_confirm_failed,
+                                isAiOperation = true,
+                            ),
                         )
                     }
 
@@ -499,10 +507,13 @@ class AddTaskViewModel @Inject constructor(
         createJob?.cancel()
         createJob = viewModelScope.launch {
             _state.update { it.copy(isSubmitting = true, errorMessage = null) }
-            when (createTask(current.toDraft())) {
+            when (val result = createTask(current.toDraft())) {
                 is Result.Success -> confirm(current.plannedConfirmation())
                 is Result.Error -> _state.update {
-                    it.copy(isSubmitting = false, errorMessage = R.string.add_task_error_create_failed)
+                    it.copy(
+                        isSubmitting = false,
+                        errorMessage = result.error.toActionErrorRes(R.string.add_task_error_create_failed),
+                    )
                 }
 
                 Result.Loading -> Unit
@@ -737,3 +748,21 @@ class AddTaskViewModel @Inject constructor(
         onCleared()
     }
 }
+
+private fun AppError.toActionErrorRes(
+    @androidx.annotation.StringRes fallback: Int,
+    isAiOperation: Boolean = false,
+): Int = when (this) {
+    AppError.Network -> CommonR.string.error_network
+    AppError.Timeout -> CommonR.string.error_timeout
+    AppError.Unauthorized -> CommonR.string.error_unauthorized
+    AppError.Serialization -> CommonR.string.error_serialization
+    is AppError.Server -> if (isAiOperation && code == SERVICE_UNAVAILABLE) {
+        R.string.add_task_error_ai_unavailable
+    } else {
+        CommonR.string.error_server
+    }
+    else -> fallback
+}
+
+private const val SERVICE_UNAVAILABLE = 503

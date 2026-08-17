@@ -37,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +54,7 @@ import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.home.impl.R
 import com.awan.feature.home.impl.ui.SessionDetailDialogState
+import com.awan.feature.home.impl.ui.isDirty
 import kotlinx.coroutines.launch
 
 private enum class SheetScreen { DETAIL, DISMISS_WARNING, DELETE, LOADING, ERROR }
@@ -88,43 +90,53 @@ fun SessionTaskDetailDialog(
     var isExplicitDismissing by remember { mutableStateOf(false) }
     var showDismissWarningScreen by remember { mutableStateOf(false) }
 
+    val currentIsDirty by rememberUpdatedState(state.isDirty)
+    val currentIsBusy by rememberUpdatedState(state.isSaving || state.isDeleting)
+    val currentIsExplicitDismissing by rememberUpdatedState(isExplicitDismissing)
+
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { newValue ->
-            if (newValue == SheetValue.Hidden) {
-                if (isExplicitDismissing) {
-                    true
+        confirmValueChange = remember {
+            { newValue ->
+                if (newValue == SheetValue.Hidden) {
+                    if (currentIsExplicitDismissing) {
+                        true
+                    } else if (currentIsBusy) {
+                        false
+                    } else if (currentIsDirty) {
+                        showDismissWarningScreen = true
+                        false
+                    } else {
+                        true
+                    }
                 } else {
-                    showDismissWarningScreen = true
-                    false
+                    true
                 }
-            } else {
-                true
             }
         },
     )
 
-    val handleDismissAttempt = {
-        showDismissWarningScreen = true
-    }
-
     val executeDismiss: () -> Unit = {
-        isExplicitDismissing = true
-        coroutineScope.launch {
-            try {
-                sheetState.hide()
-            } catch (_: Exception) {
-            } finally {
-                onDismiss()
+        if (!isExplicitDismissing) {
+            isExplicitDismissing = true
+            coroutineScope.launch {
+                try {
+                    sheetState.hide()
+                } catch (_: Exception) {
+                } finally {
+                    onDismiss()
+                }
             }
         }
     }
 
-    BackHandler(enabled = true) {
-        if (showDismissWarningScreen) {
-            showDismissWarningScreen = false
-        } else {
-            handleDismissAttempt()
+    val handleDismissAttempt = {
+        if (!state.isSaving && !state.isDeleting) {
+            if (state.isDirty) {
+                showDismissWarningScreen = true
+            } else {
+                executeDismiss()
+            }
         }
     }
 
@@ -144,11 +156,25 @@ fun SessionTaskDetailDialog(
             )
         },
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        properties = ModalBottomSheetProperties(
-            shouldDismissOnBackPress = false,
-        ),
         modifier = modifier,
     ) {
+        BackHandler(enabled = true) {
+            when {
+                state.isSaving || state.isDeleting -> {
+                    // Ignore back while in-flight mutation is occurring
+                }
+                showDismissWarningScreen -> {
+                    showDismissWarningScreen = false
+                }
+                state.showDeleteConfirmDialog -> {
+                    onCancelDelete()
+                }
+                else -> {
+                    handleDismissAttempt()
+                }
+            }
+        }
+
         val currentScreen = state.currentScreen(showDismissWarningScreen)
 
         AnimatedContent(
