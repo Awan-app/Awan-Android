@@ -3,13 +3,13 @@ name: Build Release APK
 on:
   push:
     branches:
-      - main
+      - "**"
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-main
+  group: release-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -19,14 +19,37 @@ jobs:
   build-release:
     name: Build Signed Release APK
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Prepare branch metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BRANCH_SLUG="$(printf '%s' "$GITHUB_REF_NAME" | sed 's#[^A-Za-z0-9._-]#-#g')"
+          TAG="ci-${BRANCH_SLUG}-${GITHUB_RUN_NUMBER}"
+
+          echo "branch_slug=$BRANCH_SLUG" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Release build context"
+            echo "- Branch: \`$GITHUB_REF_NAME\`"
+            echo "- Ref: \`$GITHUB_REF\`"
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- Run: \`$GITHUB_RUN_NUMBER\`"
+            echo "- Actor: \`$GITHUB_ACTOR\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Validate Gradle Wrapper
-        uses: gradle/wrapper-validation-action@v2
+        uses: gradle/actions/wrapper-validation@v4
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -40,24 +63,319 @@ jobs:
       - name: Grant Gradlew Permission
         run: chmod +x gradlew
 
-      # Your existing CI already stores google-services.json as raw JSON
-      # in the GOOGLE_SERVICES_JSON repository secret.
-      - name: Create google-services.json
+      # ---------------------------------------------------------
+      # Environment diagnostics
+      # ---------------------------------------------------------
+
+      - name: Print CI environment diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          {
+            echo "===== GitHub context ====="
+            echo "event=$GITHUB_EVENT_NAME"
+            echo "ref=$GITHUB_REF"
+            echo "ref_name=$GITHUB_REF_NAME"
+            echo "sha=$GITHUB_SHA"
+            echo "workspace=$GITHUB_WORKSPACE"
+            echo
+
+            echo "===== Java ====="
+            java -version 2>&1
+            echo
+
+            echo "===== Gradle ====="
+            ./gradlew --version
+            echo
+
+            echo "===== Android SDK ====="
+            echo "ANDROID_HOME=${ANDROID_HOME:-<unset>}"
+            echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<unset>}"
+            if [ -n "${ANDROID_HOME:-}" ] && [ -d "$ANDROID_HOME/build-tools" ]; then
+              echo "Installed build-tools:"
+              find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -V
+            fi
+            echo
+
+            echo "===== Disk ====="
+            df -h
+            echo
+
+            echo "===== Memory ====="
+            free -h || true
+            echo
+
+            echo "===== Repository root ====="
+            ls -la
+          } | tee ci-environment.log
+
+      - name: Validate required secrets are present
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        shell: bash
         run: |
+          set -euo pipefail
+
+          missing=0
+          for name in \
+            GOOGLE_SERVICES_JSON \
+            RELEASE_KEYSTORE_BASE64 \
+            RELEASE_STORE_PASSWORD \
+            RELEASE_KEY_ALIAS \
+            RELEASE_KEY_PASSWORD
+          do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::$name is missing or empty."
+              missing=1
+            else
+              echo "$name: SET"
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      # ---------------------------------------------------------
+      # Firebase configuration diagnostics
+      # ---------------------------------------------------------
+
+      - name: Create and validate google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
           printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+
+          if [ ! -s app/google-services.json ]; then
+            echo "::error::app/google-services.json was created but is empty."
+            exit 1
+          fi
+
+          python3 - <<'PY' | tee google-services-diagnostics.log
+          import json
+          from pathlib import Path
+
+          path = Path("app/google-services.json")
+          data = json.loads(path.read_text(encoding="utf-8"))
+
+          packages = []
+          for client in data.get("client", []):
+              package = (
+                  client.get("client_info", {})
+                  .get("android_client_info", {})
+                  .get("package_name")
+              )
+              if package:
+                  packages.append(package)
+
+          print(f"google-services.json: valid JSON ({path.stat().st_size} bytes)")
+          print("Configured Android package(s):", ", ".join(packages) if packages else "<none found>")
+          PY
+
+      # ---------------------------------------------------------
+      # Keystore diagnostics
+      # ---------------------------------------------------------
 
       - name: Restore release keystore
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        shell: bash
         run: |
-          printf '%s' "$RELEASE_KEYSTORE_BASE64" \
-            | base64 --decode \
-            > "$RUNNER_TEMP/release.jks"
+          set -euo pipefail
 
-      - name: Build release APK
-        run: ./gradlew assembleRelease
+          if ! printf '%s' "$RELEASE_KEYSTORE_BASE64" \
+            | base64 --decode \
+            > "$RUNNER_TEMP/release.jks"; then
+            echo "::error::RELEASE_KEYSTORE_BASE64 could not be decoded as Base64."
+            exit 1
+          fi
+
+          if [ ! -s "$RUNNER_TEMP/release.jks" ]; then
+            echo "::error::Decoded release keystore is empty."
+            exit 1
+          fi
+
+          echo "Decoded keystore size: $(stat -c '%s' "$RUNNER_TEMP/release.jks") bytes"
+
+      - name: Validate release keystore, alias, and certificate
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if ! keytool -list -v \
+            -keystore "$RUNNER_TEMP/release.jks" \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -alias "$KEY_ALIAS" \
+            > keystore-validation.log 2>&1; then
+            echo "::error::The keystore/password/alias validation failed."
+            cat keystore-validation.log
+            exit 1
+          fi
+
+          echo "Keystore validation passed. Safe certificate details:"
+          grep -E 'Alias name:|Entry type:|SHA1:|SHA256:' keystore-validation.log || true
+
+      # ---------------------------------------------------------
+      # Gradle configuration diagnostics
+      # ---------------------------------------------------------
+
+      - name: Inspect release signing configuration references
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          {
+            echo "===== Signing-related Gradle references ====="
+            grep -RInE \
+              --include='*.gradle' \
+              --include='*.gradle.kts' \
+              --include='gradle.properties' \
+              'signingConfig|signingConfigs|storeFile|storePassword|keyAlias|keyPassword|keystore' \
+              . \
+              --exclude-dir=.gradle \
+              --exclude-dir=build \
+              || true
+          } | tee gradle-signing-references.log
+
+      - name: Print Gradle release signing report
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew :app:signingReport \
+            --stacktrace \
+            --info \
+            --no-daemon \
+            --no-configuration-cache \
+            2>&1 | tee signing-report.log
+
+      # ---------------------------------------------------------
+      # Release build
+      # ---------------------------------------------------------
+
+      - name: Build release APK with full diagnostics
+        id: build
+        shell: bash
+        run: |
+          set -o pipefail
+
+          ./gradlew :app:assembleRelease \
+            --stacktrace \
+            --info \
+            --warning-mode all \
+            --no-daemon \
+            --no-configuration-cache \
+            2>&1 | tee release-build.log
+
+      # If assembleRelease fails, rerun only the task that failed in the
+      # original CI log. This removes noise from the other ~1,400 tasks and
+      # normally exposes the underlying PackageAndroidArtifact exception.
+      - name: Reproduce packageRelease failure in isolation
+        if: ${{ failure() && steps.build.outcome == 'failure' }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+
+          echo "Re-running :app:packageRelease in isolation..."
+          ./gradlew :app:packageRelease \
+            --stacktrace \
+            --info \
+            --warning-mode all \
+            --no-daemon \
+            --no-configuration-cache \
+            --rerun-tasks \
+            2>&1 | tee package-release-debug.log
+
+      - name: Extract root-cause lines
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+
+          {
+            echo "===== FAILURE SUMMARY ====="
+            echo
+
+            for file in release-build.log package-release-debug.log signing-report.log; do
+              if [ -f "$file" ]; then
+                echo "===== $file ====="
+                grep -nEi \
+                  'FAILURE:|What went wrong|Execution failed for task|Caused by:|Exception|error:|A failure occurred|keystore|signing|packageRelease|IncrementalSplitterRunnable|OutOfMemory|No space left|duplicate|already exists' \
+                  "$file" \
+                  | tail -n 250 \
+                  || true
+                echo
+              fi
+            done
+
+            echo "===== APK / output files ====="
+            find app/build/outputs -type f -maxdepth 8 -printf '%p (%s bytes)\n' 2>/dev/null | sort || true
+            echo
+
+            echo "===== Disk at failure ====="
+            df -h || true
+            echo
+
+            echo "===== Memory at failure ====="
+            free -h || true
+          } | tee failure-summary.log
+
+          cat failure-summary.log >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Collect Gradle problem reports
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          mkdir -p diagnostics
+
+          cp -f ci-environment.log diagnostics/ 2>/dev/null || true
+          cp -f google-services-diagnostics.log diagnostics/ 2>/dev/null || true
+          cp -f keystore-validation.log diagnostics/ 2>/dev/null || true
+          cp -f gradle-signing-references.log diagnostics/ 2>/dev/null || true
+          cp -f signing-report.log diagnostics/ 2>/dev/null || true
+          cp -f release-build.log diagnostics/ 2>/dev/null || true
+          cp -f package-release-debug.log diagnostics/ 2>/dev/null || true
+          cp -f failure-summary.log diagnostics/ 2>/dev/null || true
+
+          if [ -d build/reports ]; then
+            cp -R build/reports diagnostics/root-build-reports
+          fi
+
+          if [ -d app/build/reports ]; then
+            cp -R app/build/reports diagnostics/app-build-reports
+          fi
+
+          if [ -d app/build/outputs/logs ]; then
+            cp -R app/build/outputs/logs diagnostics/app-output-logs
+          fi
+
+          echo "Diagnostics collected:"
+          find diagnostics -type f -printf '%p (%s bytes)\n' | sort || true
+
+      - name: Upload build diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-build-diagnostics-${{ steps.meta.outputs.branch_slug }}-${{ github.run_number }}
+          path: diagnostics/**
+          if-no-files-found: warn
+          retention-days: 14
+
+      # ---------------------------------------------------------
+      # Sign final APK after Gradle successfully creates it
+      # ---------------------------------------------------------
 
       - name: Sign release APK
         env:
@@ -67,6 +385,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          echo "Release APK candidates produced by Gradle:"
+          find . -path '*/build/outputs/apk/release/*.apk' -type f -print || true
 
           UNSIGNED_APK="$(
             find . \
@@ -88,11 +409,10 @@ jobs:
 
           if [ -z "$SOURCE_APK" ]; then
             echo "::error::Could not find a release APK after assembleRelease."
-            find . -path '*/build/outputs/apk/release/*.apk' -type f || true
             exit 1
           fi
 
-          echo "Release APK: $SOURCE_APK"
+          echo "Source APK: $SOURCE_APK"
 
           BUILD_TOOLS_DIR="$(
             find "$ANDROID_HOME/build-tools" \
@@ -108,6 +428,7 @@ jobs:
             exit 1
           fi
 
+          echo "Using Android Build Tools: $BUILD_TOOLS_DIR"
           mkdir -p dist
 
           "$BUILD_TOOLS_DIR/zipalign" \
@@ -129,14 +450,15 @@ jobs:
           "$BUILD_TOOLS_DIR/apksigner" verify \
             --verbose \
             --print-certs \
-            dist/app-release.apk
+            dist/app-release.apk \
+            | tee apk-signature-verification.log
 
-          rm dist/app-release-aligned.apk
+          rm -f dist/app-release-aligned.apk
 
       - name: Upload release APK to workflow
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk-${{ github.run_number }}
+          name: release-apk-${{ steps.meta.outputs.branch_slug }}-${{ github.run_number }}
           path: dist/app-release.apk
           if-no-files-found: error
           retention-days: 30
@@ -144,12 +466,16 @@ jobs:
       - name: Attach APK to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          TAG="main-build-${{ github.run_number }}"
+          set -euo pipefail
+
+          TAG="${{ steps.meta.outputs.tag }}"
+          BRANCH="${GITHUB_REF_NAME}"
 
           gh release create "$TAG" \
             dist/app-release.apk \
-            --target "${{ github.sha }}" \
-            --title "Main Build #${{ github.run_number }}" \
-            --notes "Automated signed release APK built from main at commit ${{ github.sha }}." \
+            --target "$GITHUB_SHA" \
+            --title "${BRANCH} Build #${GITHUB_RUN_NUMBER}" \
+            --notes "Automated signed release APK built from branch ${BRANCH} at commit ${GITHUB_SHA}." \
             --prerelease
