@@ -53,6 +53,7 @@ import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.feature.home.impl.R
 import com.awan.feature.home.impl.ui.SessionDetailDialogState
+import com.awan.feature.home.impl.ui.isDirty
 import kotlinx.coroutines.launch
 
 private enum class SheetScreen { DETAIL, DISMISS_WARNING, DELETE, LOADING, ERROR }
@@ -94,9 +95,13 @@ fun SessionTaskDetailDialog(
             if (newValue == SheetValue.Hidden) {
                 if (isExplicitDismissing) {
                     true
-                } else {
+                } else if (state.isSaving || state.isDeleting) {
+                    false
+                } else if (state.isDirty) {
                     showDismissWarningScreen = true
                     false
+                } else {
+                    true
                 }
             } else {
                 true
@@ -104,27 +109,27 @@ fun SessionTaskDetailDialog(
         },
     )
 
-    val handleDismissAttempt = {
-        showDismissWarningScreen = true
-    }
-
     val executeDismiss: () -> Unit = {
-        isExplicitDismissing = true
-        coroutineScope.launch {
-            try {
-                sheetState.hide()
-            } catch (_: Exception) {
-            } finally {
-                onDismiss()
+        if (!isExplicitDismissing) {
+            isExplicitDismissing = true
+            coroutineScope.launch {
+                try {
+                    sheetState.hide()
+                } catch (_: Exception) {
+                } finally {
+                    onDismiss()
+                }
             }
         }
     }
 
-    BackHandler(enabled = true) {
-        if (showDismissWarningScreen) {
-            showDismissWarningScreen = false
-        } else {
-            handleDismissAttempt()
+    val handleDismissAttempt = {
+        if (!state.isSaving && !state.isDeleting) {
+            if (state.isDirty) {
+                showDismissWarningScreen = true
+            } else {
+                executeDismiss()
+            }
         }
     }
 
@@ -144,11 +149,25 @@ fun SessionTaskDetailDialog(
             )
         },
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        properties = ModalBottomSheetProperties(
-            shouldDismissOnBackPress = false,
-        ),
         modifier = modifier,
     ) {
+        BackHandler(enabled = true) {
+            when {
+                state.isSaving || state.isDeleting -> {
+                    // Ignore back while in-flight mutation is occurring
+                }
+                showDismissWarningScreen -> {
+                    showDismissWarningScreen = false
+                }
+                state.showDeleteConfirmDialog -> {
+                    onCancelDelete()
+                }
+                else -> {
+                    handleDismissAttempt()
+                }
+            }
+        }
+
         val currentScreen = state.currentScreen(showDismissWarningScreen)
 
         AnimatedContent(
