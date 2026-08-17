@@ -94,9 +94,10 @@
     <string name="add_task_goal_preview_duration">المدة التقديرية %1$s</string>
     <string name="add_task_goal_preview_points">%1$d نقاط</string>
 
-    <string name="add_task_error_create_failed">تعذّر إضافة المهمة. تحقق من اتصالك وحاول مرة أخرى.</string>
-    <string name="add_task_error_goal_continuation_failed">تعذّر على أوان تقسيم هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
-    <string name="add_task_error_goal_confirm_failed">تعذّر حفظ هذا الهدف. تحقق من اتصالك وحاول مرة أخرى.</string>
+    <string name="add_task_error_create_failed">تعذّر إضافة المهمة. حاول مرة أخرى.</string>
+    <string name="add_task_error_goal_continuation_failed">تعذّر على أوان تقسيم هذا الهدف. حاول مرة أخرى.</string>
+    <string name="add_task_error_goal_confirm_failed">تعذّر حفظ هذا الهدف. حاول مرة أخرى.</string>
+    <string name="add_task_error_ai_unavailable">أوان مشغول الآن. حاول مرة أخرى بعد قليل.</string>
 
     <string name="add_task_goal_thinking_1">أقرأ هدفك…</string>
     <string name="add_task_goal_thinking_2">أقسّمه إلى خطوات…</string>

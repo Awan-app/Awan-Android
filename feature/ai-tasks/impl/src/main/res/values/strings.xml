@@ -53,12 +53,12 @@
     <string name="ai_tasks_retry">Try again</string>
 
     <string name="ai_tasks_error_generic">Something went wrong. Try again.</string>
-    <string name="ai_tasks_error_timeout">That took too long. Check your connection and try again.</string>
+    <string name="ai_tasks_error_timeout">That took too long. Try again.</string>
     <string name="ai_tasks_error_ai_unavailable">Awan is busy right now. Try again in a moment.</string>
     <string name="ai_tasks_error_unsupported_image">That image format isn\'t supported. Try a PNG, JPEG, WebP or GIF.</string>
     <string name="ai_tasks_error_invalid_image">That image couldn\'t be used. Try a different one.</string>
     <string name="ai_tasks_error_validation">Awan couldn\'t make sense of that. Try describing it differently.</string>
-    <string name="ai_tasks_error_accept_failed">Couldn\'t add those tasks. Check your connection and try again.</string>
+    <string name="ai_tasks_error_accept_failed">Couldn\'t add those tasks. Try again.</string>
     <string name="ai_tasks_error_blank_title">Give every task a title first.</string>
     <string name="ai_tasks_error_text_blank">Tell Awan what you need, or attach a photo.</string>
     <string name="ai_tasks_error_text_too_long">That\'s too long for Awan to read. Trim it down and try again.</string>
@@ -68,4 +68,8 @@
     <string name="ai_tasks_discard_body">Nothing has been saved yet — going back will lose Awan\'s plan.</string>
     <string name="ai_tasks_discard_confirm">Discard</string>
     <string name="ai_tasks_discard_cancel">Keep reviewing</string>
+    <string name="ai_tasks_cancel_creation">Cancel creation</string>
+    <string name="ai_tasks_cancel_goal_schedule_title">Cancel goal scheduling?</string>
+    <string name="ai_tasks_cancel_goal_schedule_body">Your goal will stay in Goals, but Awan\'s proposed schedule will be discarded.</string>
+    <string name="ai_tasks_cancel_goal_schedule_confirm">Cancel scheduling</string>
 </resources>

@@ -87,7 +87,7 @@
     <string name="profile_daily_zones_reset_day_title">إعادة تعيين %1$s؟</string>
     <string name="profile_daily_zones_reset_day_message">سيعود %1$s إلى روتينك الافتراضي.</string>
     <string name="profile_daily_zones_error_overlap">تتداخل هذه المناطق. عدّل الأوقات وحاول مرة أخرى.</string>
-    <string name="profile_daily_zones_error_network">حدث خطأ ما. تحقق من اتصالك وحاول مجددًا.</string>
+    <string name="profile_daily_zones_error_network">لا يوجد اتصال بالإنترنت. تحقق من اتصالك وحاول مجددًا.</string>
     <string name="profile_daily_zones_error_generic">تعذّر حفظ تغييراتك. يرجى المحاولة مرة أخرى.</string>
     <string name="profile_daily_zones_error_day_assigned">يوم أو أكثر من الأيام المختارة لديه روتين بالفعل.</string>
     <string name="profile_daily_zones_custom_schedule">جدول مخصص</string>

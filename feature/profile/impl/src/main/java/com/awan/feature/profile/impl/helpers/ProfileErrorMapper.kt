@@ -11,7 +11,7 @@ object ProfileErrorMapper {
             UiText.StringResource(R.string.profile_daily_zones_error_overlap)
         error is AppError.Api && error.errorCode == "DAY_ALREADY_ASSIGNED" ->
             UiText.StringResource(R.string.profile_daily_zones_error_day_assigned)
-        error is AppError.Network || error is AppError.Timeout ->
+        error is AppError.Network ->
             UiText.StringResource(R.string.profile_daily_zones_error_network)
         error is AppError.Api ->
             UiText.StringResource(R.string.profile_daily_zones_error_generic)

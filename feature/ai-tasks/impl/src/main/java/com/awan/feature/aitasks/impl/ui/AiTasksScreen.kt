@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,7 +49,7 @@ import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
 import com.awan.app.core.designsystem.AwanConfirmDialog
 import com.awan.app.core.designsystem.AwanDatePickerDialog
-import com.awan.app.core.designsystem.AwanBackButton
+import com.awan.app.core.designsystem.AwanIconButton
 import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanText
 import com.awan.app.core.designsystem.AwanTheme
@@ -66,6 +67,8 @@ import com.awan.feature.aitasks.impl.presentation.AiTasksViewModel
 import com.awan.feature.aitasks.impl.presentation.PickerStep
 import com.awan.feature.aitasks.impl.ui.components.MinutesPerHour
 import com.awan.feature.aitasks.impl.ui.components.ProposalCard
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.X
 import kotlinx.coroutines.delay
 
 @Composable
@@ -119,7 +122,7 @@ private fun AiTasksScreen(
             .fillMaxSize()
             .background(AwanTheme.colors.background),
     ) {
-        Header(onBack = onBack)
+        Header(onCancel = onBack)
 
         Box(modifier = Modifier.weight(1f)) {
             val reduced = reducedMotion()
@@ -157,10 +160,17 @@ private fun AiTasksScreen(
     SessionPickerDialogs(state = state, onAction = onAction)
 
     if (state.showDiscardConfirm) {
+        val isGoalSchedule = state.goalId != null
         AwanConfirmDialog(
-            title = stringResource(R.string.ai_tasks_discard_title),
-            body = stringResource(R.string.ai_tasks_discard_body),
-            confirmLabel = stringResource(R.string.ai_tasks_discard_confirm),
+            title = stringResource(
+                if (isGoalSchedule) R.string.ai_tasks_cancel_goal_schedule_title else R.string.ai_tasks_discard_title
+            ),
+            body = stringResource(
+                if (isGoalSchedule) R.string.ai_tasks_cancel_goal_schedule_body else R.string.ai_tasks_discard_body
+            ),
+            confirmLabel = stringResource(
+                if (isGoalSchedule) R.string.ai_tasks_cancel_goal_schedule_confirm else R.string.ai_tasks_discard_confirm
+            ),
             confirmVariant = AwanButtonVariant.Destructive,
             onConfirm = { onAction(AiTasksAction.DiscardConfirmed) },
             dismissLabel = stringResource(R.string.ai_tasks_discard_cancel),
@@ -189,7 +199,7 @@ private fun screenPhase(state: AiTasksState): ScreenPhase = when {
 }
 
 @Composable
-private fun Header(onBack: () -> Unit) {
+private fun Header(onCancel: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -198,7 +208,17 @@ private fun Header(onBack: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.sm),
     ) {
-        AwanBackButton(onClick = onBack)
+        AwanIconButton(
+            onClick = onCancel,
+            contentDescription = stringResource(R.string.ai_tasks_cancel_creation),
+        ) {
+            Icon(
+                imageVector = Lucide.X,
+                contentDescription = null,
+                tint = AwanTheme.colors.textSecondary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
         AwanText(stringResource(R.string.ai_tasks_title), style = AwanTheme.styles.titleText)
     }
 }

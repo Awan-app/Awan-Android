@@ -2,7 +2,9 @@
 
 package com.awan.feature.taskdetails.impl.ui
 
+import com.awan.app.core.common.error.AppError
 import com.awan.app.core.common.result.Result
+import com.awan.app.core.common.text.UiText
 import com.awan.app.core.domain.goal.repository.GoalRepository
 import com.awan.app.core.domain.goal.usecase.GetGoalsUseCase
 import com.awan.app.core.domain.task.repository.TaskRepository
@@ -45,6 +47,7 @@ import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
+import com.awan.app.core.common.R as CommonR
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TaskDetailsViewModelTest {
@@ -258,6 +261,19 @@ class TaskDetailsViewModelTest {
     }
 
     @Test
+    fun `timeout is not presented as an internet connection failure`() = runTest(testDispatcher) {
+        fakeTaskRepository.getTaskError = AppError.Timeout
+
+        viewModel.initTaskId("task-1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(
+            UiText.StringResource(CommonR.string.error_timeout),
+            viewModel.uiState.value.errorMessage,
+        )
+    }
+
+    @Test
     fun `ShowAddDependencyPicker loads tasks belonging to same goal into goalTasks`() = runTest(testDispatcher) {
         val currentTask = Task(id = "task-1", title = "Task 1", goalId = "goal-1")
         val otherTaskInSameGoal = Task(id = "task-2", title = "Task 2", goalId = "goal-1")
@@ -303,6 +319,7 @@ private class FakeTaskRepository : TaskRepository {
     val sessions = mutableMapOf<String, List<TaskSession>>()
     val dependencies = mutableMapOf<String, List<Task>>()
     val dependents = mutableMapOf<String, List<Task>>()
+    var getTaskError: AppError? = null
 
     override suspend fun createTask(draft: TaskDraft): Result<Task> = error("not used")
     override suspend fun createTaskWithSessions(draft: TaskDraft, sessions: List<SessionDraft>): Result<TaskWithSessions> = error("not used")
@@ -318,6 +335,7 @@ private class FakeTaskRepository : TaskRepository {
     override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = error("not used")
 
     override suspend fun getTask(taskId: String): Result<Task> {
+        getTaskError?.let { return Result.Error(it) }
         val task = tasks[taskId] ?: return Result.Error(com.awan.app.core.common.error.AppError.NotFound)
         return Result.Success(task)
     }

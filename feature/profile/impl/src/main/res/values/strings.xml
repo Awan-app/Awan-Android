@@ -87,7 +87,7 @@
     <string name="profile_daily_zones_reset_day_title">Reset %1$s?</string>
     <string name="profile_daily_zones_reset_day_message">%1$s will return to your Default routine.</string>
     <string name="profile_daily_zones_error_overlap">These zones overlap. Adjust the times and try again.</string>
-    <string name="profile_daily_zones_error_network">Something went wrong. Check your connection and try again.</string>
+    <string name="profile_daily_zones_error_network">No internet connection. Check your connection and try again.</string>
     <string name="profile_daily_zones_error_generic">We couldn\'t save your changes. Please try again.</string>
     <string name="profile_daily_zones_error_day_assigned">One or more selected days already have a routine.</string>
     <string name="profile_daily_zones_custom_schedule">Custom schedule</string>
