@@ -37,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,22 +90,28 @@ fun SessionTaskDetailDialog(
     var isExplicitDismissing by remember { mutableStateOf(false) }
     var showDismissWarningScreen by remember { mutableStateOf(false) }
 
+    val currentIsDirty by rememberUpdatedState(state.isDirty)
+    val currentIsBusy by rememberUpdatedState(state.isSaving || state.isDeleting)
+    val currentIsExplicitDismissing by rememberUpdatedState(isExplicitDismissing)
+
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { newValue ->
-            if (newValue == SheetValue.Hidden) {
-                if (isExplicitDismissing) {
-                    true
-                } else if (state.isSaving || state.isDeleting) {
-                    false
-                } else if (state.isDirty) {
-                    showDismissWarningScreen = true
-                    false
+        confirmValueChange = remember {
+            { newValue ->
+                if (newValue == SheetValue.Hidden) {
+                    if (currentIsExplicitDismissing) {
+                        true
+                    } else if (currentIsBusy) {
+                        false
+                    } else if (currentIsDirty) {
+                        showDismissWarningScreen = true
+                        false
+                    } else {
+                        true
+                    }
                 } else {
                     true
                 }
-            } else {
-                true
             }
         },
     )
