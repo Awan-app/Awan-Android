@@ -10,6 +10,7 @@ import com.awan.app.core.designsystem.parseIsoDateTime
 import com.awan.app.core.domain.category.usecase.GetCategoriesUseCase
 import com.awan.app.core.domain.goal.usecase.ClearScheduleDraftUseCase
 import com.awan.app.core.domain.goal.usecase.ConfirmGoalScheduleUseCase
+import com.awan.app.core.domain.goal.usecase.GetGoalsUseCase
 import com.awan.app.core.domain.goal.usecase.ProposeGoalScheduleUseCase
 import com.awan.app.core.domain.image.usecase.ReadImageUseCase
 import com.awan.app.core.domain.task.usecase.CreateTasksUseCase
@@ -47,6 +48,7 @@ class AiTasksViewModel @Inject constructor(
     private val proposeFromImage: ProposeTasksFromImageUseCase,
     private val createTasks: CreateTasksUseCase,
     private val getCategories: GetCategoriesUseCase,
+    private val getGoals: GetGoalsUseCase,
     private val readImage: ReadImageUseCase,
     private val proposeGoalScheduleUseCase: ProposeGoalScheduleUseCase,
     private val confirmGoalScheduleUseCase: ConfirmGoalScheduleUseCase,
@@ -86,6 +88,15 @@ class AiTasksViewModel @Inject constructor(
 
             is AiTasksAction.DurationPicked -> updateDraft(action.id) { it.copy(durationMinutes = action.minutes) }
             is AiTasksAction.CategoryPicked -> updateDraft(action.id) { it.copy(categoryId = action.categoryId) }
+            is AiTasksAction.GoalPicked -> updateDraft(action.id) { it.copy(goalId = action.goalId) }
+            is AiTasksAction.BulkGoalPicked -> {
+                _state.update { state ->
+                    state.copy(
+                        proposals = state.proposals.map { it.copy(draft = it.draft.copy(goalId = action.goalId)) },
+                        acceptError = null,
+                    )
+                }
+            }
             is AiTasksAction.MandatoryToggled -> updateDraft(action.id) { it.copy(mandatory = !it.mandatory) }
 
             is AiTasksAction.SessionTapped -> openSessionPicker(action.id, action.sessionIndex)
@@ -234,6 +245,12 @@ class AiTasksViewModel @Inject constructor(
                         Result.Loading -> Unit
                     }
                 } else {
+                    val goalsDeferred = async { getGoals() }
+                    val goals = when (val result = goalsDeferred.await()) {
+                        is Result.Success -> result.data
+                        else -> emptyList()
+                    }
+
                     val proposalsResult = if (imageUri != null) {
                         fetchFromImage(imageUri, combineContext(text, note))
                     } else {
@@ -248,6 +265,7 @@ class AiTasksViewModel @Inject constructor(
                                     isLoading = false,
                                     sourceSummary = proposalsResult.data.sourceSummary,
                                     availableCategories = categories,
+                                    availableGoals = goals,
                                     proposals = proposals,
                                     originalProposals = proposals,
                                 )

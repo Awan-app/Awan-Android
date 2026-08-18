@@ -48,6 +48,7 @@ import com.awan.app.core.designsystem.AwanTextField
 import com.awan.app.core.designsystem.AwanTheme
 import com.awan.app.core.designsystem.reducedMotion
 import com.awan.app.core.model.Category
+import com.awan.app.core.model.Goal
 import com.awan.app.core.model.ProposedSession
 import com.awan.app.core.model.TaskDraft
 import com.awan.feature.aitasks.impl.R
@@ -69,12 +70,14 @@ fun ProposalCard(
     reason: String?,
     isExpanded: Boolean,
     categories: List<Category>,
+    goals: List<Goal> = emptyList(),
     onRemoved: () -> Unit,
     onToggleExpanded: () -> Unit,
     onTitleChanged: (String) -> Unit,
     onDescriptionChanged: (String) -> Unit,
     onDurationPicked: (Int) -> Unit,
     onCategoryPicked: (String?) -> Unit,
+    onGoalPicked: (String?) -> Unit = {},
     onMandatoryToggled: () -> Unit,
     onSessionTapped: (Int) -> Unit,
     onSessionRemoved: (Int) -> Unit,
@@ -122,8 +125,10 @@ fun ProposalCard(
                     AttributeChips(
                         draft = draft,
                         categories = categories,
+                        goals = goals,
                         onDurationPicked = onDurationPicked,
                         onCategoryPicked = onCategoryPicked,
+                        onGoalPicked = onGoalPicked,
                         onMandatoryToggled = onMandatoryToggled,
                         modifier = Modifier.weight(1f, fill = false),
                     )
@@ -184,7 +189,7 @@ fun ProposalCard(
                     }
                 }
 
-                SummaryRow(draft = draft, categories = categories)
+                SummaryRow(draft = draft, categories = categories, goals = goals)
             }
 
             SessionsList(
@@ -200,8 +205,9 @@ fun ProposalCard(
 /** Read-only stand-in for [AttributeChips] while the card is collapsed — nothing here opens a menu. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SummaryRow(draft: TaskDraft, categories: List<Category>) {
+private fun SummaryRow(draft: TaskDraft, categories: List<Category>, goals: List<Goal> = emptyList()) {
     val resolvedCategory = categories.firstOrNull { it.id == draft.categoryId }
+    val resolvedGoal = goals.firstOrNull { it.id == draft.goalId }
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
         verticalArrangement = Arrangement.spacedBy(AwanTheme.spacing.xs),
@@ -214,6 +220,12 @@ private fun SummaryRow(draft: TaskDraft, categories: List<Category>) {
             text = resolvedCategory?.name ?: stringResource(R.string.ai_tasks_chip_no_category),
             tone = AwanBadgeTone.Neutral,
         )
+        if (goals.isNotEmpty()) {
+            AwanBadge(
+                text = resolvedGoal?.title ?: stringResource(R.string.ai_tasks_chip_no_goal),
+                tone = if (resolvedGoal != null) AwanBadgeTone.Sky else AwanBadgeTone.Neutral,
+            )
+        }
         AwanBadge(
             text = stringResource(if (draft.mandatory) R.string.ai_tasks_chip_mandatory else R.string.ai_tasks_chip_optional),
             tone = AwanBadgeTone.Tangerine,
@@ -226,8 +238,10 @@ private fun SummaryRow(draft: TaskDraft, categories: List<Category>) {
 private fun AttributeChips(
     draft: TaskDraft,
     categories: List<Category>,
+    goals: List<Goal> = emptyList(),
     onDurationPicked: (Int) -> Unit,
     onCategoryPicked: (String?) -> Unit,
+    onGoalPicked: (String?) -> Unit = {},
     onMandatoryToggled: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -291,6 +305,36 @@ private fun AttributeChips(
                         selected = active,
                         leading = { AwanChipDot(tone = AwanChipTone.Lavender, active = active) },
                     )
+                }
+            }
+        }
+
+        if (goals.isNotEmpty()) {
+            var goalMenuOpen by remember { mutableStateOf(false) }
+            val resolvedGoal = goals.firstOrNull { it.id == draft.goalId }
+            Box {
+                AwanChip(
+                    label = resolvedGoal?.title ?: stringResource(R.string.ai_tasks_chip_no_goal),
+                    tone = AwanChipTone.Sky,
+                    active = resolvedGoal != null,
+                    onClick = { goalMenuOpen = true },
+                )
+                AwanDropdownMenu(expanded = goalMenuOpen, onDismissRequest = { goalMenuOpen = false }) {
+                    AwanDropdownMenuItem(
+                        label = stringResource(R.string.ai_tasks_chip_no_goal),
+                        onClick = { onGoalPicked(null); goalMenuOpen = false },
+                        selected = draft.goalId == null,
+                        leading = { AwanChipDot(tone = AwanChipTone.Sky, active = false) },
+                    )
+                    goals.forEach { goal ->
+                        val active = goal.id == draft.goalId
+                        AwanDropdownMenuItem(
+                            label = goal.title,
+                            onClick = { onGoalPicked(goal.id); goalMenuOpen = false },
+                            selected = active,
+                            leading = { AwanChipDot(tone = AwanChipTone.Sky, active = active) },
+                        )
+                    }
                 }
             }
         }

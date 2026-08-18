@@ -92,7 +92,7 @@ class AiTaskRepositoryImplTest {
 
         override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = error("not used")
 
-        override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = error("not used")
+        override suspend fun getInboxTasks(): Result<List<TaskInfoResponse>> = error("not used")
 
         override suspend fun getTask(taskId: String): Result<TaskInfoResponse> = error("not used")
 

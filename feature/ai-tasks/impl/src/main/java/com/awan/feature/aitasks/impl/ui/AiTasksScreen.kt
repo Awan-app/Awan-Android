@@ -47,8 +47,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.awan.app.core.designsystem.AwanButton
 import com.awan.app.core.designsystem.AwanButtonVariant
 import com.awan.app.core.designsystem.AwanCard
+import com.awan.app.core.designsystem.AwanChip
+import com.awan.app.core.designsystem.AwanChipDot
+import com.awan.app.core.designsystem.AwanChipTone
 import com.awan.app.core.designsystem.AwanConfirmDialog
 import com.awan.app.core.designsystem.AwanDatePickerDialog
+import com.awan.app.core.designsystem.AwanDropdownMenu
+import com.awan.app.core.designsystem.AwanDropdownMenuItem
 import com.awan.app.core.designsystem.AwanIconButton
 import com.awan.app.core.designsystem.AwanMascot
 import com.awan.app.core.designsystem.AwanText
@@ -59,6 +64,7 @@ import com.awan.app.core.designsystem.CascadeItem
 import com.awan.app.core.designsystem.MascotExpression
 import com.awan.app.core.designsystem.ObserveAsEvents
 import com.awan.app.core.designsystem.reducedMotion
+import com.awan.app.core.model.Goal
 import com.awan.feature.aitasks.impl.R
 import com.awan.feature.aitasks.impl.presentation.AiTasksAction
 import com.awan.feature.aitasks.impl.presentation.AiTasksEvent
@@ -327,6 +333,18 @@ private fun ProposalsBody(state: AiTasksState, onAction: (AiTasksAction) -> Unit
                 }
             }
         }
+        if (state.goalId == null && state.availableGoals.isNotEmpty() && state.proposals.isNotEmpty()) {
+            item(key = "bulk-goal-selector") {
+                CascadeItem(index = 0, modifier = Modifier.fillMaxWidth()) {
+                    BulkGoalSelector(
+                        goals = state.availableGoals,
+                        commonGoalId = state.commonGoalId,
+                        isMixed = state.isMixedGoals,
+                        onBulkGoalPicked = { onAction(AiTasksAction.BulkGoalPicked(it)) },
+                    )
+                }
+            }
+        }
         itemsIndexed(state.proposals, key = { _, proposal -> proposal.id }) { index, proposal ->
             // Capped so a card scrolled into view later still rises in, without sitting blank for
             // its ordinal's worth of stagger first.
@@ -344,12 +362,14 @@ private fun ProposalsBody(state: AiTasksState, onAction: (AiTasksAction) -> Unit
                     reason = proposal.reason,
                     isExpanded = proposal.isExpanded,
                     categories = state.availableCategories,
+                    goals = state.availableGoals,
                     onRemoved = { onAction(AiTasksAction.Removed(proposal.id)) },
                     onToggleExpanded = { onAction(AiTasksAction.ToggleExpanded(proposal.id)) },
                     onTitleChanged = { onAction(AiTasksAction.TitleChanged(proposal.id, it)) },
                     onDescriptionChanged = { onAction(AiTasksAction.DescriptionChanged(proposal.id, it)) },
                     onDurationPicked = { onAction(AiTasksAction.DurationPicked(proposal.id, it)) },
                     onCategoryPicked = { onAction(AiTasksAction.CategoryPicked(proposal.id, it)) },
+                    onGoalPicked = { onAction(AiTasksAction.GoalPicked(proposal.id, it)) },
                     onMandatoryToggled = { onAction(AiTasksAction.MandatoryToggled(proposal.id)) },
                     onSessionTapped = { onAction(AiTasksAction.SessionTapped(proposal.id, it)) },
                     onSessionRemoved = { onAction(AiTasksAction.SessionRemoved(proposal.id, it)) },
@@ -359,6 +379,72 @@ private fun ProposalsBody(state: AiTasksState, onAction: (AiTasksAction) -> Unit
         }
         // Leaves room for the sticky accept bar overlaid below.
         item(key = "bottom-spacer") { Box(modifier = Modifier.size(72.dp)) }
+    }
+}
+
+@Composable
+private fun BulkGoalSelector(
+    goals: List<Goal>,
+    commonGoalId: String?,
+    isMixed: Boolean,
+    onBulkGoalPicked: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    val resolvedGoal = goals.firstOrNull { it.id == commonGoalId }
+
+    AwanCard(
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            AwanText(
+                text = stringResource(R.string.ai_tasks_bulk_goal_label),
+                style = AwanTheme.styles.metaText,
+                modifier = Modifier.weight(1f),
+            )
+
+            Box {
+                val label = when {
+                    isMixed -> stringResource(R.string.ai_tasks_goal_mixed)
+                    resolvedGoal != null -> resolvedGoal.title
+                    else -> stringResource(R.string.ai_tasks_chip_no_goal)
+                }
+                AwanChip(
+                    label = label,
+                    tone = AwanChipTone.Sky,
+                    active = resolvedGoal != null || isMixed,
+                    onClick = { menuOpen = true },
+                )
+
+                AwanDropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    AwanDropdownMenuItem(
+                        label = stringResource(R.string.ai_tasks_chip_no_goal),
+                        onClick = {
+                            onBulkGoalPicked(null)
+                            menuOpen = false
+                        },
+                        selected = !isMixed && commonGoalId == null,
+                        leading = { AwanChipDot(tone = AwanChipTone.Sky, active = false) },
+                    )
+                    goals.forEach { goal ->
+                        val active = !isMixed && goal.id == commonGoalId
+                        AwanDropdownMenuItem(
+                            label = goal.title,
+                            onClick = {
+                                onBulkGoalPicked(goal.id)
+                                menuOpen = false
+                            },
+                            selected = active,
+                            leading = { AwanChipDot(tone = AwanChipTone.Sky, active = active) },
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -91,7 +91,7 @@ class AiTasksViewModelTest {
 
         override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = error("not used")
 
-        override suspend fun getInboxTasks(): Result<List<TaskWithSessions>> = error("not used")
+        override suspend fun getInboxTasks(): Result<List<Task>> = error("not used")
 
         override suspend fun completeTask(taskId: String): Result<Task> = error("not used")
 
@@ -128,7 +128,9 @@ class AiTasksViewModelTest {
             status: String?,
             targetDate: String?,
         ): Result<com.awan.app.core.model.Goal> = error("not used")
-        override suspend fun getGoals(): Result<List<com.awan.app.core.model.Goal>> = error("not used")
+        var goalsResult: Result<List<com.awan.app.core.model.Goal>> = Result.Success(emptyList())
+
+        override suspend fun getGoals(): Result<List<com.awan.app.core.model.Goal>> = goalsResult
         override suspend fun continueDecomposition(sessionId: String?, message: String): Result<com.awan.app.core.model.GoalDecompositionReply> = error("not used")
         override suspend fun confirmDecomposition(sessionId: String): Result<com.awan.app.core.model.Goal> = error("not used")
         override suspend fun createGoal(title: String, description: String?, targetDate: String?, tasks: List<com.awan.app.core.model.ProposedTask>): Result<com.awan.app.core.model.Goal> = error("not used")
@@ -170,6 +172,7 @@ class AiTasksViewModelTest {
         proposeFromImage = ProposeTasksFromImageUseCase(taskRepository),
         createTasks = CreateTasksUseCase(taskRepository),
         getCategories = GetCategoriesUseCase(FakeCategoryRepository(listOf(playCategory))),
+        getGoals = com.awan.app.core.domain.goal.usecase.GetGoalsUseCase(goalRepository),
         readImage = ReadImageUseCase(imageRepository),
         proposeGoalScheduleUseCase = com.awan.app.core.domain.goal.usecase.ProposeGoalScheduleUseCase(goalRepository),
         confirmGoalScheduleUseCase = com.awan.app.core.domain.goal.usecase.ConfirmGoalScheduleUseCase(goalRepository),
@@ -758,5 +761,67 @@ class AiTasksViewModelTest {
 
         assertEquals(1, goalRepository.clearCallCount)
         assertEquals(AiTasksEvent.Dismissed, viewModel.events.first())
+    }
+
+    @Test
+    fun `loading proposals populates available goals when goalId is null`() = runTest(testDispatcher) {
+        val testGoal = com.awan.app.core.model.Goal(id = "g1", title = "Fitness", emoji = "🎯")
+        goalRepository.goalsResult = Result.Success(listOf(testGoal))
+        taskRepository.proposals = Result.Success(TaskProposals(tasks = listOf(proposal("Task 1"))))
+
+        val viewModel = viewModel()
+        viewModel.onAction(AiTasksAction.Load(text = "sample"))
+
+        assertEquals(listOf(testGoal), viewModel.state.value.availableGoals)
+    }
+
+    @Test
+    fun `GoalPicked updates individual proposal draft goalId`() = runTest(testDispatcher) {
+        taskRepository.proposals = Result.Success(
+            TaskProposals(tasks = listOf(proposal("Task 1"), proposal("Task 2")))
+        )
+        val viewModel = viewModel()
+        viewModel.onAction(AiTasksAction.Load(text = "sample"))
+
+        val firstId = viewModel.state.value.proposals[0].id
+        viewModel.onAction(AiTasksAction.GoalPicked(firstId, "g-fitness"))
+
+        val proposals = viewModel.state.value.proposals
+        assertEquals("g-fitness", proposals[0].draft.goalId)
+        assertNull(proposals[1].draft.goalId)
+        assertTrue(viewModel.state.value.isMixedGoals)
+    }
+
+    @Test
+    fun `BulkGoalPicked updates all proposal drafts with the selected goalId`() = runTest(testDispatcher) {
+        taskRepository.proposals = Result.Success(
+            TaskProposals(tasks = listOf(proposal("Task 1"), proposal("Task 2")))
+        )
+        val viewModel = viewModel()
+        viewModel.onAction(AiTasksAction.Load(text = "sample"))
+
+        viewModel.onAction(AiTasksAction.BulkGoalPicked("g-study"))
+
+        val proposals = viewModel.state.value.proposals
+        assertEquals("g-study", proposals[0].draft.goalId)
+        assertEquals("g-study", proposals[1].draft.goalId)
+        assertEquals("g-study", viewModel.state.value.commonGoalId)
+        assertFalse(viewModel.state.value.isMixedGoals)
+    }
+
+    @Test
+    fun `accepting proposals passes goalId to createTasks`() = runTest(testDispatcher) {
+        taskRepository.proposals = Result.Success(
+            TaskProposals(tasks = listOf(proposal("Task 1"), proposal("Task 2")))
+        )
+        val viewModel = viewModel()
+        viewModel.onAction(AiTasksAction.Load(text = "sample"))
+        viewModel.onAction(AiTasksAction.GoalPicked(viewModel.state.value.proposals[0].id, "g-work"))
+
+        viewModel.onAction(AiTasksAction.Accept)
+
+        assertEquals(1, taskRepository.bulkCallCount)
+        assertEquals("g-work", taskRepository.lastBulkDrafts[0].task.goalId)
+        assertNull(taskRepository.lastBulkDrafts[1].task.goalId)
     }
 }

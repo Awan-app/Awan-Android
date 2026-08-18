@@ -101,7 +101,7 @@ private class FakeTaskRemoteDataSource(
     override suspend fun proposeTasksFromText(request: AiTextToTasksRequest) = error("not used")
     override suspend fun proposeTasksFromImage(image: ByteArray, mimeType: String, note: String?) = error("not used")
     override suspend fun getTasksByRange(startDate: String, endDate: String) = rangeResult
-    override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = Result.Success(emptyList())
+    override suspend fun getInboxTasks(): Result<List<TaskInfoResponse>> = Result.Success(emptyList())
     override suspend fun scheduleTask(request: ScheduleTaskRequest) = error("not used")
     override suspend fun deleteTask(taskId: String, cascade: Boolean): Result<Unit> = Result.Success(Unit)
     override suspend fun completeTask(taskId: String): Result<com.awan.app.core.network.dto.task.TaskCompletionResponse> = error("not used")

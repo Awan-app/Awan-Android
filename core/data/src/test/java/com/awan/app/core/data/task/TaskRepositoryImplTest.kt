@@ -277,7 +277,7 @@ class TaskRepositoryImplTest {
         var lastMoveRequest: TaskMoveRequest? = null
         var lastAddSessionsRequest: AddTaskSessionsRequest? = null
 
-        override suspend fun getInboxTasks(): Result<List<TaskWithSessionsDto>> = Result.Success(emptyList())
+        override suspend fun getInboxTasks(): Result<List<TaskInfoResponse>> = Result.Success(emptyList())
 
         override suspend fun getTask(taskId: String): Result<TaskInfoResponse> =
             Result.Success(TaskInfoResponse(id = taskId, title = "Task $taskId"))

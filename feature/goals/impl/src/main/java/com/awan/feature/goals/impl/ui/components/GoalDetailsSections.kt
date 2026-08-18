@@ -87,7 +87,8 @@ internal fun GoalDetailsContent(
     onDeleteGoalClick: () -> Unit,
     onDeleteTaskClick: (String) -> Unit,
     onAddTaskClick: () -> Unit,
-    onTaskToggle: (String) -> Unit
+    onTaskToggle: (String) -> Unit,
+    onTaskClick: (String) -> Unit = {},
 ) {
     val spacing = AwanTheme.spacing
     val accentColor = goalAccentColor(goal.id.hashCode())
@@ -141,7 +142,8 @@ internal fun GoalDetailsContent(
                 isCompleting = completingTaskIds.contains(task.id),
                 isGoalAchieved = isAchieved,
                 onToggle = { onTaskToggle(task.id) },
-                onDelete = { onDeleteTaskClick(task.id) }
+                onDelete = { onDeleteTaskClick(task.id) },
+                onClick = { onTaskClick(task.id) },
             )
         }
 

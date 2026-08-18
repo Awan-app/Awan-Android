@@ -120,7 +120,7 @@ class TaskRemoteDataSourceTest {
     }
 
     @Test
-    fun `getInboxTasks pairs every task with an empty session list`() = runTest(testDispatcher) {
+    fun `getInboxTasks returns tasks from api`() = runTest(testDispatcher) {
         val api = object : FakeTaskApiService() {
             override suspend fun getInboxTasks() = InboxTasksResponse(
                 tasks = listOf(TaskInfoResponse(id = "task-inbox", title = "Read Clean Code")),
@@ -130,9 +130,9 @@ class TaskRemoteDataSourceTest {
         val result = dataSource(api, json, testDispatcher).getInboxTasks()
 
         assertTrue(result is Result.Success)
-        val tasks = (result as Result.Success<List<TaskWithSessionsDto>>).data
-        assertEquals("task-inbox", tasks.single().task.id)
-        assertTrue(tasks.single().sessions.isEmpty())
+        val tasks = (result as Result.Success<List<TaskInfoResponse>>).data
+        assertEquals("task-inbox", tasks.single().id)
+        assertEquals("Read Clean Code", tasks.single().title)
     }
 
     @Test
