@@ -27,6 +27,11 @@
     <string name="ai_tasks_chip_no_category">غير مصنّف</string>
     <string name="ai_tasks_category_menu_empty">لا توجد فئات بعد</string>
 
+    <string name="ai_tasks_chip_no_goal">بدون هدف</string>
+    <string name="ai_tasks_goal_menu_empty">لا توجد أهداف بعد</string>
+    <string name="ai_tasks_bulk_goal_label">تعيين الهدف للكل</string>
+    <string name="ai_tasks_goal_mixed">أهداف متعددة</string>
+
     <string name="ai_tasks_chip_mandatory">يجب إنجازها</string>
     <string name="ai_tasks_chip_optional">يمكن تخطيها</string>
 

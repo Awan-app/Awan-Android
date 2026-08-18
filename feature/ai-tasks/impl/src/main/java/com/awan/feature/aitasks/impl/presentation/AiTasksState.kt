@@ -2,6 +2,7 @@ package com.awan.feature.aitasks.impl.presentation
 
 import androidx.annotation.StringRes
 import com.awan.app.core.model.Category
+import com.awan.app.core.model.Goal
 import com.awan.app.core.model.ProposedSession
 import com.awan.app.core.model.TaskDraft
 import java.time.LocalDate
@@ -39,6 +40,7 @@ data class AiTasksState(
     val imageUri: String? = null,
     val sourceSummary: String? = null,
     val availableCategories: List<Category> = emptyList(),
+    val availableGoals: List<Goal> = emptyList(),
     val proposals: List<ProposalUi> = emptyList(),
     /** What Awan first sent back, untouched, so [canReset] has something to restore to. */
     val originalProposals: List<ProposalUi> = emptyList(),
@@ -62,4 +64,16 @@ data class AiTasksState(
     val canReset: Boolean get() = proposals.map { it.copy(isExpanded = false) } != originalProposals
 
     val isDirty: Boolean get() = goalId != null || proposals.isNotEmpty()
+
+    val commonGoalId: String? get() {
+        if (proposals.isEmpty()) return null
+        val first = proposals.first().draft.goalId
+        return if (proposals.all { it.draft.goalId == first }) first else null
+    }
+
+    val isMixedGoals: Boolean get() {
+        if (proposals.size <= 1) return false
+        val first = proposals.first().draft.goalId
+        return proposals.any { it.draft.goalId != first }
+    }
 }

@@ -27,6 +27,11 @@
     <string name="ai_tasks_chip_no_category">Unassigned</string>
     <string name="ai_tasks_category_menu_empty">No categories set up yet</string>
 
+    <string name="ai_tasks_chip_no_goal">No goal</string>
+    <string name="ai_tasks_goal_menu_empty">No goals set up yet</string>
+    <string name="ai_tasks_bulk_goal_label">Apply goal to all</string>
+    <string name="ai_tasks_goal_mixed">Mixed goals</string>
+
     <string name="ai_tasks_chip_mandatory">Must do</string>
     <string name="ai_tasks_chip_optional">Can skip</string>
 

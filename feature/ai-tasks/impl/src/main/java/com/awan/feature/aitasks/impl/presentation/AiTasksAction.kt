@@ -24,6 +24,8 @@ sealed interface AiTasksAction {
     data class DescriptionChanged(val id: Int, val description: String) : AiTasksAction
     data class DurationPicked(val id: Int, val minutes: Int) : AiTasksAction
     data class CategoryPicked(val id: Int, val categoryId: String?) : AiTasksAction
+    data class GoalPicked(val id: Int, val goalId: String?) : AiTasksAction
+    data class BulkGoalPicked(val goalId: String?) : AiTasksAction
     data class MandatoryToggled(val id: Int) : AiTasksAction
 
     /** Opens the date step of the session picker for this task/session. */
