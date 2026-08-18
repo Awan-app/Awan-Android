@@ -1,5 +1,6 @@
 package com.awan.feature.auth.impl.ui.email
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.awan.app.core.common.error.AppError
@@ -25,36 +26,63 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EmailViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val requestOtpUseCase: RequestOtpUseCase,
     private val getLastUsedEmailUseCase: GetLastUsedEmailUseCase,
     private val signInWithFirebaseUseCase: SignInWithFirebaseUseCase,
     private val googleSignInHelper: GoogleSignInHelper,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(EmailUiState())
+    private val savedEmail: String? = savedStateHandle[KEY_EMAIL]
+    private val savedRateLimitTimestamp: Long? = savedStateHandle[KEY_RATE_LIMIT_TIMESTAMP]
+    private val savedRateLimitedEmail: String? = savedStateHandle[KEY_RATE_LIMIT_EMAIL]
+
+    private var rateLimitedEmail: String? = savedRateLimitedEmail
+
+    private val _uiState = MutableStateFlow(
+        run {
+            val initialEmail = savedEmail.orEmpty()
+            val isValid = if (initialEmail.isNotEmpty()) EMAIL_REGEX.matches(initialEmail) else false
+            val remainingCooldown = if (savedRateLimitTimestamp != null && savedRateLimitedEmail != null && savedRateLimitedEmail == initialEmail) {
+                val elapsed = (System.currentTimeMillis() - savedRateLimitTimestamp) / 1000
+                (RATE_LIMIT_COOLDOWN_SECONDS - elapsed).coerceAtLeast(0).toInt()
+            } else {
+                0
+            }
+            val isRateLimited = remainingCooldown > 0
+
+            EmailUiState(
+                email = initialEmail,
+                isEmailValid = isValid,
+                isRateLimited = isRateLimited,
+                rateLimitSecondsRemaining = remainingCooldown,
+            )
+        }
+    )
     val uiState: StateFlow<EmailUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<EmailEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
-    private var rateLimitedEmail: String? = null
-
     init {
-        viewModelScope.launch {
-            val lastEmail = try {
-                getLastUsedEmailUseCase()
-            } catch (e: GeneralSecurityException) {
-                null
-            } catch (e: IOException) {
-                null
-            }
-            if (!lastEmail.isNullOrBlank() && _uiState.value.email.isEmpty()) {
-                onEmailChanged(lastEmail)
+        if (_uiState.value.email.isEmpty()) {
+            viewModelScope.launch {
+                val lastEmail = try {
+                    getLastUsedEmailUseCase()
+                } catch (e: GeneralSecurityException) {
+                    null
+                } catch (e: IOException) {
+                    null
+                }
+                if (!lastEmail.isNullOrBlank() && _uiState.value.email.isEmpty()) {
+                    onEmailChanged(lastEmail)
+                }
             }
         }
     }
 
     fun onEmailChanged(email: String) {
+        savedStateHandle[KEY_EMAIL] = email
         _uiState.update { current ->
             val isValid = EMAIL_REGEX.matches(email)
             val isRateLimited = if (rateLimitedEmail != null && email == rateLimitedEmail) {
@@ -82,6 +110,8 @@ class EmailViewModel @Inject constructor(
             when (val result = requestOtpUseCase(state.email)) {
                 is Result.Success -> {
                     rateLimitedEmail = null
+                    savedStateHandle.remove<String>(KEY_RATE_LIMIT_EMAIL)
+                    savedStateHandle.remove<Long>(KEY_RATE_LIMIT_TIMESTAMP)
                     _uiState.update { it.copy(isLoading = false, isRateLimited = false) }
                     _events.send(EmailEvent.NavigateToOtp(state.email))
                 }
@@ -95,6 +125,8 @@ class EmailViewModel @Inject constructor(
 
                     if (isRateLimited) {
                         rateLimitedEmail = state.email
+                        savedStateHandle[KEY_RATE_LIMIT_EMAIL] = state.email
+                        savedStateHandle[KEY_RATE_LIMIT_TIMESTAMP] = System.currentTimeMillis()
                     }
 
                     _uiState.update {
@@ -173,6 +205,8 @@ class EmailViewModel @Inject constructor(
 
     fun onRateLimitExpired() {
         rateLimitedEmail = null
+        savedStateHandle.remove<String>(KEY_RATE_LIMIT_EMAIL)
+        savedStateHandle.remove<Long>(KEY_RATE_LIMIT_TIMESTAMP)
         _uiState.update {
             it.copy(
                 isRateLimited = false,
@@ -209,9 +243,12 @@ class EmailViewModel @Inject constructor(
         else -> toUiText()
     }
 
-    private companion object {
+    companion object {
+        const val KEY_EMAIL = "auth_email"
+        const val KEY_RATE_LIMIT_EMAIL = "auth_rate_limit_email"
+        const val KEY_RATE_LIMIT_TIMESTAMP = "auth_rate_limit_timestamp"
         private const val HTTP_TOO_MANY_REQUESTS = 429
-        private const val RATE_LIMIT_COOLDOWN_SECONDS = 60
+        const val RATE_LIMIT_COOLDOWN_SECONDS = 60
 
         val EMAIL_REGEX = Regex(
             "[a-zA-Z0-9+._%\\-]{1,256}" +
