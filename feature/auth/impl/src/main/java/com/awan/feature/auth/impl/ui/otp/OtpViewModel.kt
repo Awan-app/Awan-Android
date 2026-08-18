@@ -21,15 +21,41 @@ import javax.inject.Inject
 
 @HiltViewModel
 class OtpViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: SavedStateHandle,
     private val verifyOtpUseCase: VerifyOtpUseCase,
     private val requestOtpUseCase: RequestOtpUseCase,
 ) : ViewModel() {
 
-    private var email: String = savedStateHandle["email"] ?: ""
+    private var email: String = savedStateHandle[KEY_EMAIL] ?: savedStateHandle["email"] ?: ""
 
     private val _uiState = MutableStateFlow(
-        OtpUiState(email = email, resendSecondsRemaining = RESEND_COOLDOWN_SECONDS)
+        run {
+            val savedDigits: ArrayList<String>? = savedStateHandle[KEY_DIGITS]
+            val savedStatusName: String? = savedStateHandle[KEY_STATUS]
+            val savedSentTimestamp: Long? = savedStateHandle[KEY_SENT_TIMESTAMP]
+
+            val remainingCooldown = if (savedSentTimestamp != null) {
+                val elapsed = (System.currentTimeMillis() - savedSentTimestamp) / 1000
+                (RESEND_COOLDOWN_SECONDS - elapsed).coerceAtLeast(0).toInt()
+            } else {
+                RESEND_COOLDOWN_SECONDS
+            }
+            val isResendEnabled = remainingCooldown == 0
+            val initialStatus = savedStatusName?.let { name ->
+                runCatching { OtpStatus.valueOf(name) }.getOrNull()
+            }?.let { status ->
+                if (status == OtpStatus.Verifying) OtpStatus.Idle else status
+            } ?: OtpStatus.Idle
+
+            OtpUiState(
+                email = email,
+                digits = savedDigits ?: List(OTP_LENGTH) { "" },
+                status = initialStatus,
+                errorMessage = null,
+                isResendEnabled = isResendEnabled,
+                resendSecondsRemaining = remainingCooldown,
+            )
+        }
     )
     val uiState: StateFlow<OtpUiState> = _uiState.asStateFlow()
 
@@ -38,10 +64,26 @@ class OtpViewModel @Inject constructor(
 
     fun setEmail(email: String) {
         if (email.isNotBlank()) {
+            val isSameEmail = this.email == email
+            val hasSavedTimestamp = savedStateHandle.contains(KEY_SENT_TIMESTAMP)
+
+            if (isSameEmail && hasSavedTimestamp) {
+                // State was already restored from SavedStateHandle across process death
+                return
+            }
+
             this.email = email
+            val now = System.currentTimeMillis()
+            val initialDigits = List(OTP_LENGTH) { "" }
+
+            savedStateHandle[KEY_EMAIL] = email
+            savedStateHandle[KEY_DIGITS] = ArrayList(initialDigits)
+            savedStateHandle[KEY_STATUS] = OtpStatus.Idle.name
+            savedStateHandle[KEY_SENT_TIMESTAMP] = now
+
             _uiState.value = OtpUiState(
                 email = email,
-                digits = List(OTP_LENGTH) { "" },
+                digits = initialDigits,
                 status = OtpStatus.Idle,
                 errorMessage = null,
                 isResendEnabled = false,
@@ -52,6 +94,9 @@ class OtpViewModel @Inject constructor(
 
     fun onDigitsChanged(digits: List<String>) {
         if (_uiState.value.areCellsLocked) return
+
+        savedStateHandle[KEY_DIGITS] = ArrayList(digits)
+        savedStateHandle[KEY_STATUS] = OtpStatus.Idle.name
 
         _uiState.update {
             it.copy(
@@ -72,6 +117,13 @@ class OtpViewModel @Inject constructor(
             _uiState.value.status != OtpStatus.Locked
         ) return
 
+        val now = System.currentTimeMillis()
+        val emptyDigits = List(OTP_LENGTH) { "" }
+
+        savedStateHandle[KEY_SENT_TIMESTAMP] = now
+        savedStateHandle[KEY_DIGITS] = ArrayList(emptyDigits)
+        savedStateHandle[KEY_STATUS] = OtpStatus.Idle.name
+
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
@@ -79,7 +131,7 @@ class OtpViewModel @Inject constructor(
                     resendSecondsRemaining = RESEND_COOLDOWN_SECONDS,
                     status = OtpStatus.Idle,
                     errorMessage = null,
-                    digits = List(OTP_LENGTH) { "" },
+                    digits = emptyDigits,
                 )
             }
             requestOtpUseCase(email)
@@ -96,6 +148,7 @@ class OtpViewModel @Inject constructor(
 
             when (val result = verifyOtpUseCase(email = email, code = code)) {
                 is Result.Success -> {
+                    clearSavedState()
                     _uiState.update { it.copy(status = OtpStatus.Idle) }
                     val isNewUser = result.data.user?.isNew == true
                     if (isNewUser) {
@@ -106,21 +159,32 @@ class OtpViewModel @Inject constructor(
                 }
                 is Result.Error -> {
                     val (newStatus, message) = result.error.toOtpStatusAndMessage()
+                    savedStateHandle[KEY_STATUS] = newStatus.name
+                    val updatedDigits = if (newStatus == OtpStatus.Wrong) {
+                        List(OTP_LENGTH) { "" }
+                    } else {
+                        _uiState.value.digits
+                    }
+                    savedStateHandle[KEY_DIGITS] = ArrayList(updatedDigits)
+
                     _uiState.update {
                         it.copy(
                             status = newStatus,
                             errorMessage = message,
-                            digits = if (newStatus == OtpStatus.Wrong) {
-                                List(OTP_LENGTH) { "" }
-                            } else {
-                                it.digits
-                            },
+                            digits = updatedDigits,
                         )
                     }
                 }
                 Result.Loading -> Unit
             }
         }
+    }
+
+    fun clearSavedState() {
+        savedStateHandle.remove<String>(KEY_EMAIL)
+        savedStateHandle.remove<ArrayList<String>>(KEY_DIGITS)
+        savedStateHandle.remove<String>(KEY_STATUS)
+        savedStateHandle.remove<Long>(KEY_SENT_TIMESTAMP)
     }
 
     private fun AppError.toOtpStatusAndMessage(): Pair<OtpStatus, UiText?> = when (this) {
@@ -143,14 +207,19 @@ class OtpViewModel @Inject constructor(
         else -> OtpStatus.Idle to toUiText()
     }
 
-    private companion object {
+    companion object {
+        const val KEY_EMAIL = "otp_email"
+        const val KEY_DIGITS = "otp_digits"
+        const val KEY_STATUS = "otp_status"
+        const val KEY_SENT_TIMESTAMP = "otp_sent_timestamp"
+
         const val OTP_LENGTH = 6
         const val RESEND_COOLDOWN_SECONDS = 120
 
-        const val HTTP_BAD_REQUEST = 400
-        const val HTTP_UNPROCESSABLE = 422
-        const val HTTP_GONE = 410
-        const val HTTP_TOO_MANY_REQUESTS = 429
+        private const val HTTP_BAD_REQUEST = 400
+        private const val HTTP_UNPROCESSABLE = 422
+        private const val HTTP_GONE = 410
+        private const val HTTP_TOO_MANY_REQUESTS = 429
     }
 }
 
