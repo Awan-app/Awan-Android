@@ -57,9 +57,10 @@ class AwanFirebaseMessagingService : FirebaseMessagingService() {
 
         val type = remoteMessage.data[KEY_TYPE]
         if (type == TYPE_SCHEDULE_CHANGED) {
-            // FCM is an invalidation signal, not the schedule payload. Force the existing offline
-            // sync so a still-valid 15-minute cache cannot hide an MCP/other-device update.
-            SyncWorker.enqueueImmediateSync(applicationContext, forceRefresh = true)
+            // FCM is an invalidation signal, not the schedule payload. The dedicated work slot forces
+            // the existing offline sync so a still-valid 15-minute cache cannot hide an MCP or
+            // other-device update, and cannot be replaced by an ordinary immediate sync.
+            SyncWorker.enqueueScheduleInvalidationSync(applicationContext)
             Log.d(TAG, "Schedule invalidated by push; forced background sync enqueued")
             return
         }
