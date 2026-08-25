@@ -2,6 +2,7 @@ package com.awan.app.notification
 
 import android.util.Log
 import com.awan.app.R
+import com.awan.app.core.data.sync.SyncWorker
 import com.awan.app.core.datastore.auth.AuthTokenProvider
 import com.awan.app.core.domain.devicetoken.repository.DeviceTokenRepository
 import com.awan.app.core.domain.notifications.usecase.GetNotificationPreferencesUseCase
@@ -17,12 +18,12 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * Push is no longer how session notifications reach the user.
+ * Push is not how session notifications reach the user.
  *
- * A push cannot arrive with the radio off, which made every session reminder unreliable exactly when
- * the schedule mattered most. Sessions are now driven entirely on-device from Room by
- * `:core:notifications`. What survives here is token registration, so the backend can still reach
- * this device, and delivery of the payloads it alone knows about — the daily wheel and rewards.
+ * Session reminders are driven on-device from Room by `:core:notifications`. FCM is kept for token
+ * registration, server-owned notifications, and schedule invalidation: when MCP or another client
+ * changes the server schedule, the push wakes a forced background reconciliation that refreshes
+ * Room. The local scheduler then remains the authority for the actual reminder timing.
  */
 @AndroidEntryPoint
 class AwanFirebaseMessagingService : FirebaseMessagingService() {
@@ -55,6 +56,14 @@ class AwanFirebaseMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(remoteMessage)
 
         val type = remoteMessage.data[KEY_TYPE]
+        if (type == TYPE_SCHEDULE_CHANGED) {
+            // FCM is an invalidation signal, not the schedule payload. Force the existing offline
+            // sync so a still-valid 15-minute cache cannot hide an MCP/other-device update.
+            SyncWorker.enqueueImmediateSync(applicationContext, forceRefresh = true)
+            Log.d(TAG, "Schedule invalidated by push; forced background sync enqueued")
+            return
+        }
+
         if (type in LOCALLY_OWNED_TYPES) {
             // The device already schedules these itself. Showing the server's copy as well would
             // double every reminder for as long as the backend keeps sending them.
@@ -88,6 +97,7 @@ class AwanFirebaseMessagingService : FirebaseMessagingService() {
         const val KEY_TYPE = "type"
         const val KEY_TITLE = "title"
         const val KEY_BODY = "body"
+        const val TYPE_SCHEDULE_CHANGED = "schedule_changed"
 
         /** Types the on-device scheduler owns; anything else is still the server's to deliver. */
         val LOCALLY_OWNED_TYPES = setOf(
