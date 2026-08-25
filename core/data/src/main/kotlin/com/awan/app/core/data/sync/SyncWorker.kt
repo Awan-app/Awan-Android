@@ -11,6 +11,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.time.Duration
@@ -23,13 +24,15 @@ class SyncWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        val success = syncCoordinator.syncAll()
+        val forceRefresh = inputData.getBoolean(KEY_FORCE_REFRESH, false)
+        val success = syncCoordinator.syncAll(forceRefresh = forceRefresh)
         return if (success) Result.success() else Result.retry()
     }
 
     companion object {
         const val PERIODIC_SYNC_WORK_NAME = "PeriodicSyncWork"
         const val IMMEDIATE_SYNC_WORK_NAME = "ImmediateSyncWork"
+        private const val KEY_FORCE_REFRESH = "force_refresh"
 
         fun schedulePeriodicSync(context: Context) {
             val constraints = Constraints.Builder()
@@ -47,13 +50,18 @@ class SyncWorker @AssistedInject constructor(
             )
         }
 
-        fun enqueueImmediateSync(context: Context) {
+        /**
+         * Enqueues a one-off reconciliation. Server invalidations must set [forceRefresh] so a
+         * recently cached schedule cannot hide an MCP/other-device mutation behind its TTL.
+         */
+        fun enqueueImmediateSync(context: Context, forceRefresh: Boolean = false) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
             val request = OneTimeWorkRequestBuilder<SyncWorker>()
                 .setConstraints(constraints)
+                .setInputData(workDataOf(KEY_FORCE_REFRESH to forceRefresh))
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
